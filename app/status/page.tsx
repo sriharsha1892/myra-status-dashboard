@@ -140,15 +140,6 @@ export default function StatusPage() {
           fetchStatus(true);
         }
       }
-      // / to focus search
-      if (e.key === '/') {
-        e.preventDefault();
-        document.getElementById('search-input')?.focus();
-      }
-      // Escape to clear search
-      if (e.key === 'Escape') {
-        setSearchQuery('');
-      }
     };
 
     window.addEventListener('keydown', handleKeyPress);
