@@ -372,31 +372,9 @@ export default function StatusPage() {
 
         {/* Internal Systems */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h2 style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Internal Systems
-            </h2>
-            <a
-              href="/admin"
-              className="card"
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 600,
-                color: '#667eea',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              Update Status
-              <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
-          </div>
+          <h2 style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
+            Internal Systems
+          </h2>
           <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
             {internalStatuses.map((status, index) => (
               <InternalStatusItem
