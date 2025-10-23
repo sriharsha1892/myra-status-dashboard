@@ -727,7 +727,7 @@ function ProviderCard({ data }: { data: any }) {
   const { provider, status, components, incidents, history = [], uptimePercentage = 100 } = data;
   const [showAllServices, setShowAllServices] = useState(false);
 
-  const hasActiveIncidents = incidents.some(i =>
+  const hasActiveIncidents = incidents.some((i: any) =>
     i.status !== 'resolved' && i.status !== 'postmortem'
   );
 
@@ -899,7 +899,7 @@ function ProviderCard({ data }: { data: any }) {
               Active Incidents
             </span>
           </div>
-          {incidents.filter(i => i.status !== 'resolved' && i.status !== 'postmortem').slice(0, 2).map((incident) => (
+          {incidents.filter((i: any) => i.status !== 'resolved' && i.status !== 'postmortem').slice(0, 2).map((incident: any) => (
             <div key={incident.id} style={{ fontSize: '12px', color: '#dc2626', marginLeft: '28px', marginBottom: '4px' }}>
               • {incident.name}
             </div>
@@ -911,9 +911,9 @@ function ProviderCard({ data }: { data: any }) {
       {components.length > 0 && (
         <div style={{ padding: '16px 20px' }}>
           <div style={{ display: 'grid', gap: '8px' }}>
-            {displayedServices.map((component) => {
+            {displayedServices.map((component: any) => {
               const compConfig = getStatusConfig(component.status);
-              const isPriority = priorityPatterns.some(pattern => pattern.test(component.name));
+              const isPriority = priorityPatterns.some((pattern: RegExp) => pattern.test(component.name));
               return (
                 <div
                   key={component.id}

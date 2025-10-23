@@ -222,7 +222,7 @@ export class StatusFetcher {
                 incident_updates: descMatch ? [{ body: descMatch[1] }] : [],
               };
             })
-            .filter((i): i is Incident => i !== null);
+            .filter((i): i is any => i !== null);
 
           return { region, hasIssues: incidents.length > 0, incidents };
         } catch (error) {
