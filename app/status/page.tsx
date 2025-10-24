@@ -376,15 +376,47 @@ export default function StatusPage() {
             Internal Systems
           </h2>
           <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            {internalStatuses.map((status, index) => (
-              <InternalStatusItem
-                key={status.organization}
-                org={status.organization === 'prodgain' ? 'Prodgain' : 'Mordor Intelligence'}
-                status={status.status}
-                message={status.message}
-                isFirst={index === 0}
-              />
-            ))}
+            {(() => {
+              // Combine all internal statuses into one
+              const statusPriority: Record<string, number> = {
+                'major_outage': 4,
+                'partial_outage': 3,
+                'degraded_performance': 2,
+                'under_maintenance': 1,
+                'operational': 0,
+              };
+
+              // Get worst status
+              let worstStatus = 'operational';
+              let worstPriority = 0;
+
+              internalStatuses.forEach((status) => {
+                const priority = statusPriority[status.status] || 0;
+                if (priority > worstPriority) {
+                  worstStatus = status.status;
+                  worstPriority = priority;
+                }
+              });
+
+              // Combine messages if there are any non-operational statuses
+              const messages = internalStatuses
+                .filter(s => s.status !== 'operational' && s.message)
+                .map(s => s.message);
+
+              const combinedMessage = messages.length > 0
+                ? messages.join('. ')
+                : 'All systems operational';
+
+              return (
+                <InternalStatusItem
+                  key="myra-ai"
+                  org="myRA AI"
+                  status={worstStatus}
+                  message={combinedMessage}
+                  isFirst={true}
+                />
+              );
+            })()}
           </div>
         </div>
 
