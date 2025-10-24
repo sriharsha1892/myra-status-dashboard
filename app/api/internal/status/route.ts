@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import InternalStatusStore from '@/lib/internal-status';
+import { logAuditEntry } from '@/lib/audit-log';
 
 export async function GET() {
   try {
@@ -56,6 +57,17 @@ export async function POST(request: NextRequest) {
       message,
       updatedBy,
       timestamp: new Date().toISOString()
+    });
+
+    // Log the audit entry
+    logAuditEntry({
+      action: 'status_update',
+      organization,
+      status,
+      message,
+      updatedBy,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
     return NextResponse.json({

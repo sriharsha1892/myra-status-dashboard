@@ -6,8 +6,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "myRA AI - System Status",
-  description: "Real-time status monitoring for myRA AI infrastructure and LLM providers",
-  keywords: ["myRA AI", "status", "monitoring", "OpenAI", "Anthropic", "Claude", "Gemini", "Exa", "Brave"],
+  description: "Real-time status monitoring for myRA AI platform services",
+  keywords: ["myRA AI", "status", "monitoring", "system status", "platform health"],
 };
 
 export const viewport: Viewport = {

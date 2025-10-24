@@ -22,6 +22,17 @@ interface Toast {
   providerId?: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'maintenance';
+  active: boolean;
+  createdAt: string;
+  createdBy?: string;
+  expiresAt?: string;
+}
+
 export default function StatusPage() {
   const [statusData, setStatusData] = useState<StatusResponse | null>(null);
   const [internalStatuses, setInternalStatuses] = useState<InternalStatus[]>([]);
@@ -30,6 +41,7 @@ export default function StatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdateText, setLastUpdateText] = useState('Just now');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   const addToast = (message: string, type: Toast['type'], providerId?: string) => {
     const id = Date.now().toString();
@@ -114,9 +126,25 @@ export default function StatusPage() {
     return () => clearInterval(interval);
   }, [statusData]);
 
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await fetch('/api/announcements');
+      const data = await response.json();
+      if (data.success) {
+        setAnnouncements(data.announcements);
+      }
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(() => fetchStatus(), 60000);
+    fetchAnnouncements();
+    const interval = setInterval(() => {
+      fetchStatus();
+      fetchAnnouncements();
+    }, 60000);
 
     // Keyboard shortcuts
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -323,19 +351,77 @@ export default function StatusPage() {
               delay={100}
             />
             <AnimatedStat
-              value={allIncidents.length}
-              label="Incidents (30d)"
-              color="#f59e0b"
-              delay={200}
-            />
-            <AnimatedStat
               value={Math.round((operationalCount / statusData.providers.length) * 100)}
               label="Uptime"
               suffix="%"
               color="#10b981"
-              delay={300}
+              delay={200}
             />
           </div>
+
+          {/* Announcements */}
+          {announcements.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              {announcements.map((announcement) => {
+                const typeColors = {
+                  info: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa' },
+                  warning: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
+                  success: { bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
+                  maintenance: { bg: 'rgba(139, 92, 246, 0.1)', border: 'rgba(139, 92, 246, 0.3)', text: '#a78bfa' }
+                };
+                const colors = typeColors[announcement.type];
+                const icons = {
+                  info: 'ℹ️',
+                  warning: '⚠️',
+                  success: '✅',
+                  maintenance: '🔧'
+                };
+
+                return (
+                  <div
+                    key={announcement.id}
+                    className="card"
+                    style={{
+                      padding: '16px 20px',
+                      marginBottom: '12px',
+                      background: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                      <span style={{ fontSize: '20px', lineHeight: 1 }}>
+                        {icons[announcement.type]}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: colors.text,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            {announcement.type}
+                          </span>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>
+                            {announcement.title}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
+                          {announcement.message}
+                        </div>
+                        {announcement.createdBy && (
+                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+                            Posted by {announcement.createdBy} • {new Date(announcement.createdAt).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Status Message */}
           {!hasIssues ? (
