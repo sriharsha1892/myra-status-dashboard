@@ -336,6 +336,38 @@ export class StatusFetcher {
     }
   }
 
+  private static async fetchExaStatus(provider: Provider): Promise<ProviderStatus> {
+    try {
+      const data = await this.fetchWithTimeout(provider.apiEndpoint);
+
+      // Exa returns: {"page":{"name":"Exa","url":"https://status.exa.ai","status":"UP"}}
+      const isOperational = data.page?.status === 'UP';
+
+      return {
+        provider,
+        status: isOperational ? 'operational' : 'major_outage',
+        indicator: isOperational ? 'none' : 'critical',
+        lastUpdated: new Date().toISOString(),
+        components: [{
+          id: 'exa-search-api',
+          name: 'Exa Search API',
+          status: isOperational ? 'operational' : 'major_outage',
+        }],
+        incidents: [],
+      };
+    } catch (error) {
+      console.error(`Error fetching Exa status:`, error);
+      return {
+        provider,
+        status: 'unknown',
+        indicator: 'unknown',
+        lastUpdated: new Date().toISOString(),
+        components: [],
+        incidents: [],
+      };
+    }
+  }
+
   public static async fetchProviderStatus(provider: Provider): Promise<ProviderStatus> {
     if (provider.id === 'google') {
       return this.fetchGoogleStatus(provider);
@@ -345,6 +377,9 @@ export class StatusFetcher {
     }
     if (provider.id === 'aws') {
       return this.fetchAWSStatus(provider);
+    }
+    if (provider.id === 'exa') {
+      return this.fetchExaStatus(provider);
     }
     return this.fetchStatusPageIO(provider);
   }
