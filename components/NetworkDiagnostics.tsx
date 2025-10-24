@@ -21,9 +21,9 @@ export default function NetworkDiagnostics() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [endpoints, setEndpoints] = useState<EndpointTest[]>([
-    { name: 'Primary DNS', url: 'https://dns.google/resolve?name=google.com', latency: null, status: 'idle' },
-    { name: 'Cloudflare DNS', url: 'https://1.1.1.1/cdn-cgi/trace', latency: null, status: 'idle' },
-    { name: 'Status API', url: '/api/status/current', latency: null, status: 'idle' },
+    { name: 'Your Connection', url: '/api/status/current', latency: null, status: 'idle' },
+    { name: 'Global CDN', url: 'https://www.cloudflare.com/cdn-cgi/trace', latency: null, status: 'idle' },
+    { name: 'Status Server', url: '/api/announcements', latency: null, status: 'idle' },
   ]);
 
   const getConnectionQuality = (): ConnectionQuality => {
@@ -54,16 +54,17 @@ export default function NetworkDiagnostics() {
       const timeout = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch(endpoint.url, {
-        method: 'HEAD',
+        method: 'GET',
         cache: 'no-cache',
         signal: controller.signal,
+        mode: endpoint.url.startsWith('/') ? 'same-origin' : 'cors',
       });
 
       clearTimeout(timeout);
       const endTime = performance.now();
       const latency = Math.round(endTime - startTime);
 
-      if (response.ok || endpoint.url.includes('1.1.1.1')) {
+      if (response.ok || endpoint.url.includes('cloudflare.com')) {
         return { ...endpoint, latency, status: 'success' };
       } else {
         return { ...endpoint, latency, status: 'error', error: `HTTP ${response.status}` };
@@ -76,7 +77,7 @@ export default function NetworkDiagnostics() {
         ...endpoint,
         latency: latency > 5000 ? null : latency,
         status: 'error',
-        error: error.name === 'AbortError' ? 'Timeout' : 'Failed'
+        error: error.name === 'AbortError' ? 'Timeout' : 'Connection Failed'
       };
     }
   };
@@ -100,18 +101,33 @@ export default function NetworkDiagnostics() {
   const hasResults = endpoints.some(e => e.status !== 'idle');
 
   return (
-    <div className="glass-white" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+    <div className="glass-white" style={{
+      borderRadius: '12px',
+      overflow: 'hidden',
+      border: hasResults && !isTesting ? '1px solid rgba(102, 126, 234, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
+      boxShadow: hasResults && !isTesting ? '0 0 20px rgba(102, 126, 234, 0.2)' : undefined,
+    }}>
       {/* Compact Header */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
         style={{
-          padding: '12px 16px',
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
-          transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          background: isExpanded ? 'rgba(102, 126, 234, 0.05)' : 'transparent',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: isExpanded ? 'rgba(102, 126, 234, 0.08)' : hasResults ? 'rgba(102, 126, 234, 0.04)' : 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          if (!isExpanded) {
+            e.currentTarget.style.background = 'rgba(102, 126, 234, 0.06)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isExpanded) {
+            e.currentTarget.style.background = hasResults ? 'rgba(102, 126, 234, 0.04)' : 'transparent';
+          }
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -131,16 +147,49 @@ export default function NetworkDiagnostics() {
           </div>
 
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#171717' }}>
-              Network Connection
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
+              Network Connection Test
             </div>
-            <div style={{ fontSize: '11px', color: '#737373', marginTop: '2px' }}>
-              {isTesting ? 'Testing...' : hasResults ? `${quality.text} connection` : 'Click to test'}
+            <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '2px' }}>
+              {isTesting ? 'Testing your connection speed...' : hasResults ? `${quality.text} connection detected` : 'Check if slowness is on your end'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {!hasResults && !isTesting && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                runDiagnostics();
+              }}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+              }}
+            >
+              Test Now
+            </button>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {hasResults && !isTesting && (
             <button
               onClick={(e) => {
@@ -174,10 +223,11 @@ export default function NetworkDiagnostics() {
           <div style={{
             transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            color: '#94a3b8',
-            fontSize: '16px',
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: '14px',
           }}>
             ▼
+          </div>
           </div>
         </div>
       </div>
@@ -192,7 +242,7 @@ export default function NetworkDiagnostics() {
           {!hasResults ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌐</div>
-              <p style={{ fontSize: '13px', color: '#525252', marginBottom: '16px' }}>
+              <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '16px' }}>
                 Test your network connection to diagnose potential issues
               </p>
               <button
@@ -237,10 +287,10 @@ export default function NetworkDiagnostics() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                   <div style={{ fontSize: '24px' }}>{quality.emoji}</div>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#171717' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
                       {quality.text} Connection
                     </div>
-                    <div style={{ fontSize: '12px', color: '#525252', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '2px' }}>
                       {endpoints.filter(e => e.status === 'success').length} of {endpoints.length} endpoints reachable
                     </div>
                   </div>
@@ -268,7 +318,7 @@ export default function NetworkDiagnostics() {
                         {endpoint.status === 'testing' ? '⚡' : endpoint.status === 'success' ? '✅' : endpoint.status === 'error' ? '❌' : '⚪'}
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#171717' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
                           {endpoint.name}
                         </div>
                         {endpoint.error && (

@@ -6,6 +6,7 @@ import NetworkDiagnostics from '@/components/NetworkDiagnostics';
 import AnimatedStat from '@/components/AnimatedStat';
 import MiniUptimeChart from '@/components/MiniUptimeChart';
 import SkeletonCard from '@/components/SkeletonCard';
+import AnimatedBackground from '@/components/AnimatedBackground';
 
 interface InternalStatus {
   organization: string;
@@ -247,6 +248,62 @@ export default function StatusPage() {
   const hasIssues = statusData.overallStatus !== 'operational';
   const timeSinceUpdate = Math.round((Date.now() - new Date(statusData.lastUpdated).getTime()) / 1000);
 
+  // Calculate weighted system health based on provider priority
+  const calculateSystemHealth = () => {
+    const primaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'primary');
+    const secondaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'secondary');
+
+    const primaryWeight = 0.8;
+    const secondaryWeight = 0.2;
+
+    const primaryOperational = primaryProviders.filter((p: any) => p.status === 'operational').length;
+    const secondaryOperational = secondaryProviders.filter((p: any) => p.status === 'operational').length;
+
+    const primaryScore = primaryProviders.length > 0 ? (primaryOperational / primaryProviders.length) * primaryWeight : 0;
+    const secondaryScore = secondaryProviders.length > 0 ? (secondaryOperational / secondaryProviders.length) * secondaryWeight : 0;
+
+    return Math.round((primaryScore + secondaryScore) * 100);
+  };
+
+  // Find last incident from priority services
+  const getLastIncidentData = () => {
+    const primaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'primary');
+    const allPriorityIncidents = primaryProviders.flatMap((p: any) =>
+      p.incidents.map((i: any) => ({ ...i, provider: p.provider, created: new Date(i.created_at).getTime() }))
+    );
+
+    if (allPriorityIncidents.length === 0) {
+      return null;
+    }
+
+    allPriorityIncidents.sort((a: any, b: any) => b.created - a.created);
+    const lastIncident = allPriorityIncidents[0];
+    const now = Date.now();
+    const diffMs = now - lastIncident.created;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    let timeText = '';
+    if (diffMinutes < 1) timeText = 'Just now';
+    else if (diffMinutes < 60) timeText = `${diffMinutes}min ago`;
+    else if (diffHours < 24) timeText = `${diffHours}h ago`;
+    else if (diffDays === 1) timeText = 'Yesterday';
+    else if (diffDays < 7) timeText = `${diffDays}d ago`;
+    else if (diffDays < 30) timeText = `${Math.floor(diffDays / 7)}w ago`;
+    else if (diffDays < 365) timeText = `${Math.floor(diffDays / 30)}mo ago`;
+    else timeText = `${Math.floor(diffDays / 365)}y ago`;
+
+    return {
+      serviceName: lastIncident.provider.name,
+      timeText,
+      impact: lastIncident.impact || 'unknown',
+      incidentName: lastIncident.name,
+    };
+  };
+
+  const systemHealth = calculateSystemHealth();
+  const lastIncidentData = getLastIncidentData();
 
   // Collect all incidents for timeline view - only show last 30 days
   const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -259,7 +316,8 @@ export default function StatusPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: '40px' }}>
+    <div style={{ minHeight: '100vh', paddingBottom: '40px', position: 'relative' }}>
+      <AnimatedBackground />
       {/* Header */}
       <header style={{
         borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -272,10 +330,42 @@ export default function StatusPage() {
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
           <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
                 myRA AI Status
               </h1>
+              <a
+                href="https://ask-myra.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+                }}
+              >
+                myRA AI
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', fontWeight: 500 }}>
@@ -339,24 +429,77 @@ export default function StatusPage() {
             marginBottom: '24px'
           }}>
             <AnimatedStat
-              value={operationalCount}
-              label="Online"
-              color="#10b981"
+              value={systemHealth}
+              label="System Health"
+              suffix="%"
+              color={systemHealth >= 95 ? "#10b981" : systemHealth >= 80 ? "#f59e0b" : "#ef4444"}
               delay={0}
             />
-            <AnimatedStat
-              value={statusData.providers.length}
-              label="Total Providers"
-              color="#667eea"
-              delay={100}
-            />
-            <AnimatedStat
-              value={Math.round((operationalCount / statusData.providers.length) * 100)}
-              label="Uptime"
-              suffix="%"
-              color="#10b981"
-              delay={200}
-            />
+            <div className="glass-white" style={{
+              borderRadius: '12px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              minHeight: '100px',
+              opacity: 0,
+              animation: 'fadeInUp 0.6s ease-out 0.1s forwards',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Last Incident
+              </div>
+              {!lastIncidentData ? (
+                <div style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>✓</span>
+                  <span style={{ fontSize: '16px' }}>None Reported</span>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: lastIncidentData.impact === 'major' ? '#ef4444' : lastIncidentData.impact === 'minor' ? '#f59e0b' : '#94a3b8',
+                      flexShrink: 0,
+                    }} />
+                    {lastIncidentData.timeText}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.4' }}>
+                    {lastIncidentData.serviceName}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="glass-white" style={{
+              borderRadius: '12px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              minHeight: '100px',
+              opacity: 0,
+              animation: 'fadeInUp 0.6s ease-out 0.2s forwards',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Services Status
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: operationalCount === statusData.providers.length ? '#10b981' : '#f59e0b' }}>
+                  {operationalCount}
+                </span>
+                <span style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.4)' }}>/</span>
+                <span style={{ fontSize: '20px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                  {statusData.providers.length}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
+                {operationalCount === statusData.providers.length ? 'All Operational' : `${statusData.providers.length - operationalCount} with issues`}
+              </div>
+            </div>
           </div>
 
           {/* Announcements */}
@@ -723,23 +866,35 @@ function ProviderCard({ data }: { data: any }) {
     i.status !== 'resolved' && i.status !== 'postmortem'
   );
 
-  // Prioritize key services for agentic tasks
-  // Note: Most providers don't expose model-level status, only infrastructure components
+  // Prioritize key services for agentic tasks - only core API functionality
+  // Explicitly exclude voice, images, moderation, assistants, and other non-core services
+  const excludePatterns = [
+    /voice/i,
+    /tts/i,
+    /whisper/i,
+    /audio/i,
+    /dall[-\s]?e/i,
+    /image/i,
+    /vision/i,
+    /moderation/i,
+    /assistant/i,
+    /fine[-\s]?tun/i,
+    /batch/i,
+    /file/i,
+    /upload/i,
+  ];
+
   const priorityPatterns = [
-    // OpenAI core services
-    /chat completions/i,
-    /completions/i,
-    /api/i,
-    /realtime/i,
+    // OpenAI core services - ONLY chat completions and embeddings
+    /^chat completions$/i,
+    /^completions api$/i,
+    /^embeddings$/i,
     // Anthropic core services
     /claude api/i,
     /api\.anthropic/i,
     // Google - shows actual model names
     /gemini[\s-]?(2\.0|2|1\.5)[\s-]?(flash|pro)/i,
-    /gemini/i,
     /vertex.*api/i,
-    // General priority terms
-    /\bapi\b/i,
   ];
 
   const priorityServices: any[] = [];
@@ -747,6 +902,13 @@ function ProviderCard({ data }: { data: any }) {
 
   components.forEach((component: any) => {
     const name = component.name;
+
+    // Skip if matches any exclude pattern
+    const isExcluded = excludePatterns.some(pattern => pattern.test(name));
+    if (isExcluded) {
+      return; // Don't show at all
+    }
+
     const isPriority = priorityPatterns.some(pattern => pattern.test(name));
 
     if (isPriority) {
@@ -757,11 +919,12 @@ function ProviderCard({ data }: { data: any }) {
   });
 
   // By default show only priority services (up to 8), or if no priority services exist, show first 6
+  const allFilteredServices = [...priorityServices, ...otherServices];
   const displayedServices = showAllServices
-    ? [...priorityServices, ...otherServices]
+    ? allFilteredServices
     : priorityServices.length > 0
       ? priorityServices.slice(0, 8)
-      : components.slice(0, 6);
+      : allFilteredServices.slice(0, 6);
 
   const getStatusConfig = (s: string) => {
     switch(s) {
@@ -810,7 +973,7 @@ function ProviderCard({ data }: { data: any }) {
             {provider.displayName}
           </h3>
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>
-            {components.length} {components.length === 1 ? 'service' : 'services'} monitored
+            {priorityServices.length + otherServices.length} core {priorityServices.length + otherServices.length === 1 ? 'service' : 'services'}
           </p>
         </div>
         <div style={{
@@ -976,7 +1139,7 @@ function ProviderCard({ data }: { data: any }) {
                 </div>
               );
             })}
-            {!showAllServices && components.length > displayedServices.length && (
+            {!showAllServices && allFilteredServices.length > displayedServices.length && (
               <button
                 onClick={() => setShowAllServices(true)}
                 style={{
@@ -998,7 +1161,7 @@ function ProviderCard({ data }: { data: any }) {
                   e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
                 }}
               >
-                Show {components.length - displayedServices.length} other {components.length - displayedServices.length === 1 ? 'service' : 'services'}
+                Show {allFilteredServices.length - displayedServices.length} other {allFilteredServices.length - displayedServices.length === 1 ? 'service' : 'services'}
               </button>
             )}
             {showAllServices && otherServices.length > 0 && (
@@ -1023,35 +1186,6 @@ function ProviderCard({ data }: { data: any }) {
         </div>
       )}
 
-      {/* Footer */}
-      <div style={{
-        padding: '12px 20px',
-        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-        background: 'rgba(255, 255, 255, 0.02)'
-      }}>
-        <a
-          href={provider.statusPageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontSize: '12px',
-            color: '#667eea',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontWeight: 600,
-            transition: 'gap 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.gap = '8px'}
-          onMouseLeave={(e) => e.currentTarget.style.gap = '6px'}
-        >
-          View official status page
-          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-        </a>
-      </div>
     </div>
   );
 }
