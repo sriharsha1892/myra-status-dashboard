@@ -133,7 +133,39 @@ export class StatusCache {
 
   public getUptimePercentage(providerId: string): number {
     const checks = this.history.get(providerId) || [];
-    if (checks.length === 0) return 100;
+
+    // If no history, calculate from current provider data
+    if (checks.length === 0) {
+      const provider = this.cache.find(p => p.provider.id === providerId);
+      if (!provider) return 100;
+
+      // Check for active incidents in last 24 hours
+      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+      const recentIncidents = (provider.incidents || []).filter(incident => {
+        const incidentTime = new Date(incident.updated_at || incident.created_at).getTime();
+        return incidentTime > twentyFourHoursAgo;
+      });
+
+      // If there are recent incidents, estimate lower uptime
+      if (recentIncidents.length > 0) {
+        // Estimate based on incident impact
+        const hasActiveIncident = recentIncidents.some(i =>
+          i.status !== 'resolved' && i.status !== 'postmortem'
+        );
+        if (hasActiveIncident) return 95; // Active issue
+        return 98; // Recent resolved issues
+      }
+
+      // Check component statuses
+      const components = provider.components || [];
+      if (components.length > 0) {
+        const operationalComponents = components.filter(c => c.status === 'operational').length;
+        return Math.round((operationalComponents / components.length) * 100);
+      }
+
+      // Default to current status
+      return provider.status === 'operational' ? 100 : 95;
+    }
 
     const operationalChecks = checks.filter(c => c.status === 'operational').length;
     return Math.round((operationalChecks / checks.length) * 100);

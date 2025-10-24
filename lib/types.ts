@@ -8,6 +8,7 @@ export interface Provider {
   apiEndpoint: string;
   icon?: string;
   color: string;
+  priority?: 'primary' | 'secondary'; // Primary = core dependencies, Secondary = fallback options
 }
 
 export interface Component {
