@@ -424,7 +424,7 @@ export default function StatusPage() {
         <div style={{ marginBottom: '32px' }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '16px',
             marginBottom: '24px'
           }}>
@@ -447,58 +447,27 @@ export default function StatusPage() {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Last Incident
+                Uptime Streak
               </div>
               {!lastIncidentData ? (
-                <div style={{ fontSize: '20px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '18px' }}>✓</span>
-                  <span style={{ fontSize: '16px' }}>None Reported</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981' }}>
+                    30+ Days
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>
+                    No incidents reported
+                  </div>
                 </div>
               ) : (
                 <>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: lastIncidentData.impact === 'major' ? '#ef4444' : lastIncidentData.impact === 'minor' ? '#f59e0b' : '#94a3b8',
-                      flexShrink: 0,
-                    }} />
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', marginBottom: '4px' }}>
                     {lastIncidentData.timeText}
                   </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.4' }}>
-                    {lastIncidentData.serviceName}
+                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.4' }}>
+                    Since last issue ({lastIncidentData.serviceName})
                   </div>
                 </>
               )}
-            </div>
-            <div className="glass-white" style={{
-              borderRadius: '12px',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              minHeight: '100px',
-              opacity: 0,
-              animation: 'fadeInUp 0.6s ease-out 0.2s forwards',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Services Status
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: operationalCount === statusData.providers.length ? '#10b981' : '#f59e0b' }}>
-                  {operationalCount}
-                </span>
-                <span style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.4)' }}>/</span>
-                <span style={{ fontSize: '20px', color: 'rgba(255, 255, 255, 0.7)' }}>
-                  {statusData.providers.length}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
-                {operationalCount === statusData.providers.length ? 'All Operational' : `${statusData.providers.length - operationalCount} with issues`}
-              </div>
             </div>
           </div>
 
@@ -972,8 +941,8 @@ function ProviderCard({ data }: { data: any }) {
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px', letterSpacing: '-0.01em' }}>
             {provider.displayName}
           </h3>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>
-            {priorityServices.length + otherServices.length} core {priorityServices.length + otherServices.length === 1 ? 'service' : 'services'}
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+            {priorityServices.length + otherServices.length} monitored
           </p>
         </div>
         <div style={{
@@ -1161,7 +1130,7 @@ function ProviderCard({ data }: { data: any }) {
                   e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
                 }}
               >
-                Show {allFilteredServices.length - displayedServices.length} other {allFilteredServices.length - displayedServices.length === 1 ? 'service' : 'services'}
+                Show {allFilteredServices.length - displayedServices.length} more
               </button>
             )}
             {showAllServices && otherServices.length > 0 && (
