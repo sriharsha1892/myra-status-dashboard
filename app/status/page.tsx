@@ -420,11 +420,11 @@ export default function StatusPage() {
           </div>
         </div>
 
-        {/* AI Infrastructure Providers */}
+        {/* Platform Dependencies */}
         {viewMode === 'grid' ? (
           <div>
             <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
-              AI Infrastructure Providers
+              Platform Dependencies
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '16px' }}>
               {statusData.providers.map((providerStatus: any) => (
