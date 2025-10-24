@@ -72,13 +72,13 @@ export class StatusFetcher {
         description: c.description,
       }));
 
-      // Get incidents from both sources (summary might have some, incidents.json has more recent ones)
+      // Get incidents from both sources (incidents.json has more recent data, so put it first)
       const allIncidents = [
-        ...(summaryData.incidents || []),
-        ...(incidentsData.incidents || [])
+        ...(incidentsData.incidents || []),
+        ...(summaryData.incidents || [])
       ];
 
-      // Deduplicate by id
+      // Deduplicate by id (keeps first occurrence, which is from incidents.json)
       const uniqueIncidents = Array.from(
         new Map(allIncidents.map(i => [i.id, i])).values()
       );

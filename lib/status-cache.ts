@@ -132,57 +132,56 @@ export class StatusCache {
   }
 
   public getUptimePercentage(providerId: string): number {
-    const checks = this.history.get(providerId) || [];
+    const provider = this.cache.find(p => p.provider.id === providerId);
+    if (!provider) return 100;
 
-    // If no history, calculate from current provider data
-    if (checks.length === 0) {
-      const provider = this.cache.find(p => p.provider.id === providerId);
-      if (!provider) return 100;
+    // ALWAYS check for incidents first (most accurate)
+    const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const recentIncidents = (provider.incidents || []).filter(incident => {
+      const incidentTime = new Date(incident.updated_at || incident.created_at).getTime();
+      return incidentTime > twentyFourHoursAgo;
+    });
 
-      // Check for incidents in last 24 hours
-      const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-      const recentIncidents = (provider.incidents || []).filter(incident => {
-        const incidentTime = new Date(incident.updated_at || incident.created_at).getTime();
-        return incidentTime > twentyFourHoursAgo;
-      });
+    // Calculate uptime based on incidents if any exist
+    if (recentIncidents.length > 0) {
+      // Check for active incidents
+      const hasActiveIncident = recentIncidents.some(i =>
+        i.status !== 'resolved' && i.status !== 'postmortem'
+      );
 
-      // Calculate uptime based on incidents
-      if (recentIncidents.length > 0) {
-        // Check for active incidents
-        const hasActiveIncident = recentIncidents.some(i =>
-          i.status !== 'resolved' && i.status !== 'postmortem'
-        );
-
-        if (hasActiveIncident) {
-          return 92; // Currently experiencing issues
-        }
-
-        // Calculate based on number and severity of resolved incidents
-        const criticalIncidents = recentIncidents.filter(i => i.impact === 'critical' || i.impact === 'major').length;
-        const minorIncidents = recentIncidents.filter(i => i.impact === 'minor' || i.impact === 'none').length;
-
-        // Estimate downtime impact
-        // Critical/major: ~30 min avg, minor: ~10 min avg
-        const estimatedDowntimeMinutes = (criticalIncidents * 30) + (minorIncidents * 10);
-        const minutesIn24Hours = 24 * 60; // 1440 minutes
-        const uptimePercentage = ((minutesIn24Hours - estimatedDowntimeMinutes) / minutesIn24Hours) * 100;
-
-        return Math.max(90, Math.round(uptimePercentage * 10) / 10); // Never go below 90%
+      if (hasActiveIncident) {
+        return 92; // Currently experiencing issues
       }
 
-      // Check component statuses
-      const components = provider.components || [];
-      if (components.length > 0) {
-        const operationalComponents = components.filter(c => c.status === 'operational').length;
-        return Math.round((operationalComponents / components.length) * 100);
-      }
+      // Calculate based on number and severity of resolved incidents
+      const criticalIncidents = recentIncidents.filter(i => i.impact === 'critical' || i.impact === 'major').length;
+      const minorIncidents = recentIncidents.filter(i => i.impact === 'minor' || i.impact === 'none').length;
 
-      // Default to current status
-      return provider.status === 'operational' ? 100 : 95;
+      // Estimate downtime impact
+      // Critical/major: ~30 min avg, minor: ~10 min avg
+      const estimatedDowntimeMinutes = (criticalIncidents * 30) + (minorIncidents * 10);
+      const minutesIn24Hours = 24 * 60; // 1440 minutes
+      const uptimePercentage = ((minutesIn24Hours - estimatedDowntimeMinutes) / minutesIn24Hours) * 100;
+
+      return Math.max(90, Math.round(uptimePercentage * 10) / 10); // Never go below 90%
     }
 
-    const operationalChecks = checks.filter(c => c.status === 'operational').length;
-    return Math.round((operationalChecks / checks.length) * 100);
+    // If no incidents, use historical checks if available
+    const checks = this.history.get(providerId) || [];
+    if (checks.length > 0) {
+      const operationalChecks = checks.filter(c => c.status === 'operational').length;
+      return Math.round((operationalChecks / checks.length) * 100);
+    }
+
+    // Fallback: Check component statuses
+    const components = provider.components || [];
+    if (components.length > 0) {
+      const operationalComponents = components.filter(c => c.status === 'operational').length;
+      return Math.round((operationalComponents / components.length) * 100);
+    }
+
+    // Default to current status
+    return provider.status === 'operational' ? 100 : 95;
   }
 
   public getOverallStatus(): ServiceStatus {
