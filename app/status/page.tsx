@@ -5,6 +5,7 @@ import { StatusResponse, ProviderStatus } from '@/lib/types';
 import NetworkDiagnostics from '@/components/NetworkDiagnostics';
 import AnimatedStat from '@/components/AnimatedStat';
 import MiniUptimeChart from '@/components/MiniUptimeChart';
+import SkeletonCard from '@/components/SkeletonCard';
 
 interface InternalStatus {
   organization: string;
@@ -136,21 +137,53 @@ export default function StatusPage() {
     };
   }, []);
 
-  if (loading) {
+  if (loading && !statusData) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="glass" style={{ padding: '40px', borderRadius: '16px', textAlign: 'center' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '3px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#fff',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>Loading status...</p>
-        </div>
+      <div style={{ minHeight: '100vh', paddingBottom: '40px' }}>
+        {/* Header */}
+        <header style={{
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          background: 'linear-gradient(180deg, rgba(88, 80, 236, 0.04) 0%, rgba(30, 31, 38, 0.95) 100%)',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+        }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
+            <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
+                  myRA AI Status
+                </h1>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>
+                  Loading...
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content with Skeleton Cards */}
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
+              Core Services
+            </h2>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
+              gap: '16px'
+            }}>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -217,9 +250,50 @@ export default function StatusPage() {
               </h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>
+              <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', fontWeight: 500 }}>
                 {lastUpdateText}
               </span>
+              <button
+                onClick={() => fetchStatus(true)}
+                disabled={refreshing}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: refreshing
+                    ? 'rgba(255, 255, 255, 0.05)'
+                    : 'rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: refreshing ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  opacity: refreshing ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!refreshing) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = refreshing
+                    ? 'rgba(255, 255, 255, 0.05)'
+                    : 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+              >
+                <span style={{
+                  display: 'inline-block',
+                  animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                }}>
+                  ↻
+                </span>
+                Refresh
+              </button>
             </div>
           </div>
         </div>
@@ -375,7 +449,11 @@ export default function StatusPage() {
           <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
             Core Services
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '16px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
+            gap: '16px'
+          }}>
             {statusData.providers
               .filter((p: any) => p.provider.priority === 'primary')
               .map((providerStatus: any) => (
@@ -406,7 +484,13 @@ export default function StatusPage() {
                   ({statusData.providers.filter((p: any) => p.provider.priority === 'secondary').length} services)
                 </span>
               </summary>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '12px', paddingTop: '8px', opacity: 0.8 }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
+                gap: '12px',
+                paddingTop: '8px',
+                opacity: 0.8
+              }}>
                 {statusData.providers
                   .filter((p: any) => p.provider.priority === 'secondary')
                   .map((providerStatus: any) => (
