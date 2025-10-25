@@ -151,7 +151,7 @@ export default function NetworkDiagnostics() {
               Network Connection Test
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '2px' }}>
-              {isTesting ? 'Testing your connection speed...' : hasResults ? `${quality.text} connection detected` : 'Check if slowness is on your end'}
+              {isTesting ? 'Testing your connection speed...' : hasResults ? `${quality.text} connection detected` : 'Diagnose network connectivity'}
             </div>
           </div>
         </div>
@@ -305,8 +305,8 @@ export default function NetworkDiagnostics() {
                     style={{
                       padding: '12px',
                       borderRadius: '8px',
-                      background: endpoint.status === 'success' ? '#f0fdf4' : endpoint.status === 'error' ? '#fef2f2' : '#f9fafb',
-                      border: `1px solid ${endpoint.status === 'success' ? '#bbf7d0' : endpoint.status === 'error' ? '#fecaca' : '#e5e7eb'}`,
+                      background: endpoint.status === 'success' ? 'rgba(16, 185, 129, 0.15)' : endpoint.status === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                      border: `1px solid ${endpoint.status === 'success' ? 'rgba(16, 185, 129, 0.3)' : endpoint.status === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(148, 163, 184, 0.3)'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -322,7 +322,7 @@ export default function NetworkDiagnostics() {
                           {endpoint.name}
                         </div>
                         {endpoint.error && (
-                          <div style={{ fontSize: '10px', color: '#dc2626', marginTop: '2px' }}>
+                          <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '2px' }}>
                             {endpoint.error}
                           </div>
                         )}
@@ -332,7 +332,7 @@ export default function NetworkDiagnostics() {
                     <div style={{
                       fontSize: '13px',
                       fontWeight: 700,
-                      color: endpoint.status === 'success' ? '#059669' : endpoint.status === 'error' ? '#dc2626' : '#94a3b8',
+                      color: endpoint.status === 'success' ? '#10b981' : endpoint.status === 'error' ? '#ef4444' : '#94a3b8',
                     }}>
                       {endpoint.status === 'testing' ? '...' : endpoint.latency !== null ? `${endpoint.latency}ms` : '-'}
                     </div>
@@ -346,13 +346,13 @@ export default function NetworkDiagnostics() {
                   marginTop: '16px',
                   padding: '12px',
                   borderRadius: '8px',
-                  background: '#fef3c7',
-                  border: '1px solid #fde68a',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
                 }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#92400e', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#fbbf24', marginBottom: '4px' }}>
                     ⚠️ Connection Issues Detected
                   </div>
-                  <div style={{ fontSize: '11px', color: '#78350f', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5 }}>
                     Your network connection appears to be slow or unstable. If you're experiencing issues with the status dashboard, it may be due to your local network connection rather than the services themselves.
                   </div>
                 </div>
@@ -361,10 +361,10 @@ export default function NetworkDiagnostics() {
                   marginTop: '16px',
                   padding: '12px',
                   borderRadius: '8px',
-                  background: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
                 }}>
-                  <div style={{ fontSize: '11px', color: '#065f46', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5 }}>
                     ✓ Your network connection is working well. If you see issues with any services above, they are likely experiencing actual problems.
                   </div>
                 </div>

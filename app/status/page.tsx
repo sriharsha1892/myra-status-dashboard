@@ -329,8 +329,8 @@ export default function StatusPage() {
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
                 myRA AI Status
               </h1>
@@ -351,6 +351,7 @@ export default function StatusPage() {
                   gap: '6px',
                   transition: 'all 0.2s',
                   boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                  whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -367,7 +368,7 @@ export default function StatusPage() {
                 </svg>
               </a>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', fontWeight: 500 }}>
                 {lastUpdateText}
               </span>
@@ -464,7 +465,7 @@ export default function StatusPage() {
                     {lastIncidentData.timeText}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.4' }}>
-                    Since last issue ({lastIncidentData.serviceName})
+                    {lastIncidentData.serviceName ? `Since last issue on ${lastIncidentData.serviceName}` : 'Since last issue'}
                   </div>
                 </>
               )}
