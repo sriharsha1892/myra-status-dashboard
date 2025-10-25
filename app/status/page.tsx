@@ -529,6 +529,7 @@ export default function StatusPage() {
               })}
             </div>
           )}
+        </div>
 
         {/* Network Diagnostics */}
         <div style={{ marginBottom: '24px' }}>
