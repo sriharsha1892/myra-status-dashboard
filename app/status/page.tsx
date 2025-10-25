@@ -530,58 +530,6 @@ export default function StatusPage() {
             </div>
           )}
 
-          {/* Status Message */}
-          {!hasIssues ? (
-            <div className="card" style={{
-              padding: '20px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#10b981',
-                flexShrink: 0
-              }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>
-                  All Systems Operational
-                </div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
-                  All {statusData.providers.length} providers running smoothly
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="card" style={{
-              padding: '20px 24px',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#ef4444',
-                  marginTop: '6px',
-                  flexShrink: 0
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', marginBottom: '4px' }}>
-                    Service Disruption Detected
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-                    {statusData.providers.length - operationalCount} {statusData.providers.length - operationalCount === 1 ? 'provider' : 'providers'} experiencing issues
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Network Diagnostics */}
         <div style={{ marginBottom: '24px' }}>
           <NetworkDiagnostics />
