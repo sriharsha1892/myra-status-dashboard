@@ -265,45 +265,31 @@ export default function StatusPage() {
     return Math.round((primaryScore + secondaryScore) * 100);
   };
 
-  // Find last incident from priority services
-  const getLastIncidentData = () => {
+  // Get current active issues from all providers (prioritize primary)
+  const getCurrentStatusData = () => {
     const primaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'primary');
-    const allPriorityIncidents = primaryProviders.flatMap((p: any) =>
-      p.incidents.map((i: any) => ({ ...i, provider: p.provider, created: new Date(i.created_at).getTime() }))
-    );
+    const affectedProviders = primaryProviders.filter((p: any) => p.status !== 'operational');
 
-    if (allPriorityIncidents.length === 0) {
-      return null;
+    if (affectedProviders.length === 0) {
+      return {
+        allOperational: true,
+        issueCount: 0,
+        affectedServices: [],
+      };
     }
 
-    allPriorityIncidents.sort((a: any, b: any) => b.created - a.created);
-    const lastIncident = allPriorityIncidents[0];
-    const now = Date.now();
-    const diffMs = now - lastIncident.created;
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    let timeText = '';
-    if (diffMinutes < 1) timeText = 'Just now';
-    else if (diffMinutes < 60) timeText = `${diffMinutes}min ago`;
-    else if (diffHours < 24) timeText = `${diffHours}h ago`;
-    else if (diffDays === 1) timeText = 'Yesterday';
-    else if (diffDays < 7) timeText = `${diffDays}d ago`;
-    else if (diffDays < 30) timeText = `${Math.floor(diffDays / 7)}w ago`;
-    else if (diffDays < 365) timeText = `${Math.floor(diffDays / 30)}mo ago`;
-    else timeText = `${Math.floor(diffDays / 365)}y ago`;
-
     return {
-      serviceName: lastIncident.provider.name,
-      timeText,
-      impact: lastIncident.impact || 'unknown',
-      incidentName: lastIncident.name,
+      allOperational: false,
+      issueCount: affectedProviders.length,
+      affectedServices: affectedProviders.map((p: any) => ({
+        name: p.provider.displayName,
+        status: p.status,
+      })),
     };
   };
 
   const systemHealth = calculateSystemHealth();
-  const lastIncidentData = getLastIncidentData();
+  const currentStatus = getCurrentStatusData();
 
   // Collect all incidents for timeline view - only show last 30 days
   const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -448,24 +434,32 @@ export default function StatusPage() {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Uptime Streak
+                Current Status
               </div>
-              {!lastIncidentData ? (
+              {currentStatus.allOperational ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981' }}>
-                    30+ Days
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>All Operational</span>
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>
-                    No incidents reported
+                    {statusData.providers.filter((p: any) => p.provider.priority === 'primary').length} services running normally
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)', marginBottom: '4px' }}>
-                    {lastIncidentData.timeText}
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: currentStatus.issueCount === 1 ? '#f59e0b' : '#ef4444', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: currentStatus.issueCount === 1 ? '#f59e0b' : '#ef4444',
+                      flexShrink: 0,
+                    }} />
+                    {currentStatus.issueCount} {currentStatus.issueCount === 1 ? 'Issue' : 'Issues'} Detected
                   </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.4' }}>
-                    {lastIncidentData.serviceName ? `Since last issue on ${lastIncidentData.serviceName}` : 'Since last issue'}
+                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.4' }}>
+                    {currentStatus.affectedServices.map((s: any) => s.name).join(', ')}
                   </div>
                 </>
               )}
