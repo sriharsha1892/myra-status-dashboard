@@ -1,12 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { StatusResponse, ProviderStatus } from '@/lib/types';
-import NetworkDiagnostics from '@/components/NetworkDiagnostics';
 import AnimatedStat from '@/components/AnimatedStat';
-import MiniUptimeChart from '@/components/MiniUptimeChart';
+import ServiceStatusCard from '@/components/ServiceStatusCard';
+import HeroStatusBanner from '@/components/HeroStatusBanner';
 import SkeletonCard from '@/components/SkeletonCard';
 import AnimatedBackground from '@/components/AnimatedBackground';
+import IncidentHistory from '@/components/IncidentHistory';
+import StatusHistory from '@/components/StatusHistory';
+import ServiceDependencies from '@/components/ServiceDependencies';
+import { useStatusNotifications } from '@/hooks/useStatusNotifications';
+
+// Lazy load NetworkDiagnostics for better initial load performance
+const NetworkDiagnostics = dynamic(() => import('@/components/NetworkDiagnostics'), {
+  loading: () => <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>Loading diagnostics...</div>,
+  ssr: false // Don't render on server for performance
+});
 
 interface InternalStatus {
   organization: string;
@@ -43,6 +54,10 @@ export default function StatusPage() {
   const [lastUpdateText, setLastUpdateText] = useState('Just now');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+  // Enable status change notifications
+  useStatusNotifications(statusData?.providers || []);
 
   const addToast = (message: string, type: Toast['type'], providerId?: string) => {
     const id = Date.now().toString();
@@ -405,67 +420,22 @@ export default function StatusPage() {
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px', paddingLeft: '16px', paddingRight: '16px' }}>
 
-        {/* Premium Stats Dashboard */}
+        {/* Hero Status Banner */}
+        <HeroStatusBanner
+          providers={statusData.providers}
+          lastUpdated={statusData.lastUpdated}
+        />
+
+        {/* Impact Radius - Shows only when there are issues */}
+        <ServiceDependencies providers={statusData.providers} />
+
+        {/* Incident History */}
+        <IncidentHistory providers={statusData.providers} />
+
+        {/* Announcements */}
         <div style={{ marginBottom: '32px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px'
-          }}>
-            <AnimatedStat
-              value={systemHealth}
-              label="System Health"
-              suffix="%"
-              color={systemHealth >= 95 ? "#10b981" : systemHealth >= 80 ? "#f59e0b" : "#ef4444"}
-              delay={0}
-            />
-            <div className="glass-white" style={{
-              borderRadius: '12px',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              minHeight: '100px',
-              opacity: 0,
-              animation: 'fadeInUp 0.6s ease-out 0.1s forwards',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.6)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Current Status
-              </div>
-              {currentStatus.allOperational ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>All Operational</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)' }}>
-                    {statusData.providers.filter((p: any) => p.provider.priority === 'primary').length} services running normally
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: currentStatus.issueCount === 1 ? '#f59e0b' : '#ef4444', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: currentStatus.issueCount === 1 ? '#f59e0b' : '#ef4444',
-                      flexShrink: 0,
-                    }} />
-                    {currentStatus.issueCount} {currentStatus.issueCount === 1 ? 'Issue' : 'Issues'} Detected
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.4' }}>
-                    {currentStatus.affectedServices.map((s: any) => s.name).join(', ')}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
           {/* Announcements */}
           {announcements.length > 0 && (
             <div style={{ marginBottom: '24px' }}>
@@ -531,9 +501,45 @@ export default function StatusPage() {
           )}
         </div>
 
-        {/* Network Diagnostics */}
+        {/* Network Diagnostics - Collapsible */}
         <div style={{ marginBottom: '24px' }}>
-          <NetworkDiagnostics />
+          <details open={showDiagnostics} onToggle={(e: any) => setShowDiagnostics(e.target.open)}>
+            <summary
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.7)',
+                marginBottom: '12px',
+                cursor: 'pointer',
+                listStyle: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 16px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+              }}
+            >
+              <span style={{ transition: 'transform 0.2s', transform: showDiagnostics ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                ▸
+              </span>
+              Network Diagnostics
+              <span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 'auto' }}>
+                Advanced troubleshooting
+              </span>
+            </summary>
+            <div style={{ marginTop: '12px' }}>
+              <NetworkDiagnostics />
+            </div>
+          </details>
         </div>
 
         {/* Internal Systems */}
@@ -586,98 +592,90 @@ export default function StatusPage() {
           </div>
         </div>
 
-        {/* Core Services - Primary Dependencies */}
+        {/* Service Status */}
         <div style={{ marginBottom: '32px' }}>
           <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
-            Core Services
+            Service Status
           </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
-            gap: '16px'
-          }}>
+          <div>
             {statusData.providers
               .filter((p: any) => p.provider.priority === 'primary')
               .map((providerStatus: any) => (
-                <ProviderCard key={providerStatus.provider.id} data={providerStatus} />
+                <ServiceStatusCard
+                  key={providerStatus.provider.id}
+                  providerStatus={providerStatus}
+                  onNotificationSubscribe={(message) => addToast(message, 'success')}
+                />
               ))}
           </div>
         </div>
 
-        {/* Secondary Services - Fallback Options */}
-        {statusData.providers.filter((p: any) => p.provider.priority === 'secondary').length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <details style={{ cursor: 'pointer' }}>
-              <summary style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.6)',
-                marginBottom: '12px',
-                letterSpacing: '-0.01em',
-                listStyle: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 0'
-              }}>
-                <span style={{ transition: 'transform 0.2s' }}>▸</span>
-                Alternative Services
-                <span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>
-                  ({statusData.providers.filter((p: any) => p.provider.priority === 'secondary').length} services)
-                </span>
-              </summary>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
-                gap: '12px',
-                paddingTop: '8px',
-                opacity: 0.8
-              }}>
-                {statusData.providers
-                  .filter((p: any) => p.provider.priority === 'secondary')
-                  .map((providerStatus: any) => (
-                    <div key={providerStatus.provider.id} style={{ transform: 'scale(0.95)' }}>
-                      <ProviderCard data={providerStatus} />
-                    </div>
-                  ))}
-              </div>
-            </details>
-          </div>
-        )}
+        {/* Status History */}
+        <StatusHistory providers={statusData.providers} />
       </main>
 
       {/* Toast Notifications */}
       <div style={{ position: 'fixed', top: '90px', right: '20px', zIndex: 200, display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px' }}>
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            style={{
-              padding: '16px 20px',
-              borderRadius: '10px',
-              background: toast.type === 'success' ? '#d1fae5' : toast.type === 'error' ? '#fee2e2' : toast.type === 'warning' ? '#fef3c7' : '#e0e7ff',
-              border: `1px solid ${toast.type === 'success' ? '#10b981' : toast.type === 'error' ? '#ef4444' : toast.type === 'warning' ? '#f59e0b' : '#667eea'}40`,
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              animation: 'slideInRight 0.3s ease-out',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onClick={() => {
-              setToasts(prev => prev.filter(t => t.id !== toast.id));
-              if (toast.providerId) {
-                document.getElementById(`provider-${toast.providerId}`)?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-5px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
-          >
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
-              {toast.message}
+        {toasts.map((toast) => {
+          const toastColors = {
+            success: { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#10b981', icon: '✓' },
+            error: { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', icon: '✕' },
+            warning: { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#f59e0b', icon: '⚠' },
+            info: { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#3b82f6', icon: 'i' }
+          };
+          const colors = toastColors[toast.type];
+
+          return (
+            <div
+              key={toast.id}
+              style={{
+                padding: '14px 18px',
+                borderRadius: '10px',
+                background: colors.bg,
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${colors.border}`,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                animation: 'slideInRight 0.3s ease-out',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+              onClick={() => {
+                setToasts(prev => prev.filter(t => t.id !== toast.id));
+                if (toast.providerId) {
+                  document.getElementById(`provider-${toast.providerId}`)?.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-5px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: colors.text,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {colors.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
+                  {toast.message}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '4px' }}>
-              Click to view details
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Footer */}
@@ -689,9 +687,50 @@ export default function StatusPage() {
           <p style={{ fontSize: '14px', color: '#fff', marginBottom: '6px' }}>
             <strong style={{ fontWeight: 700 }}>myRA AI</strong> Status Dashboard
           </p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '12px' }}>
             A joint undertaking of Mordor Intelligence and Prodgain
           </p>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
+            <a
+              href="/api/rss"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: '12px',
+                color: '#60a5fa',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              RSS Feed
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+            <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>•</span>
+            <a
+              href="/widget-demo"
+              style={{
+                fontSize: '12px',
+                color: '#60a5fa',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              Embed Widget
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </a>
+          </div>
         </div>
       </footer>
 
@@ -771,334 +810,3 @@ function InternalStatusItem({ org, status, message, isFirst }: { org: string, st
   );
 }
 
-function ProviderCard({ data }: { data: any }) {
-  const { provider, status, components, incidents, history = [], uptimePercentage = 100 } = data;
-  const [showAllServices, setShowAllServices] = useState(false);
-
-  const hasActiveIncidents = incidents.some((i: any) =>
-    i.status !== 'resolved' && i.status !== 'postmortem'
-  );
-
-  // Prioritize key services for agentic tasks - only core API functionality
-  // Explicitly exclude voice, images, moderation, assistants, and other non-core services
-  const excludePatterns = [
-    /voice/i,
-    /tts/i,
-    /whisper/i,
-    /audio/i,
-    /dall[-\s]?e/i,
-    /image/i,
-    /vision/i,
-    /moderation/i,
-    /assistant/i,
-    /fine[-\s]?tun/i,
-    /batch/i,
-    /file/i,
-    /upload/i,
-  ];
-
-  const priorityPatterns = [
-    // OpenAI core services - ONLY chat completions and embeddings
-    /^chat completions$/i,
-    /^completions api$/i,
-    /^embeddings$/i,
-    // Anthropic core services
-    /claude api/i,
-    /api\.anthropic/i,
-    // Google - shows actual model names
-    /gemini[\s-]?(2\.0|2|1\.5)[\s-]?(flash|pro)/i,
-    /vertex.*api/i,
-  ];
-
-  const priorityServices: any[] = [];
-  const otherServices: any[] = [];
-
-  components.forEach((component: any) => {
-    const name = component.name;
-
-    // Skip if matches any exclude pattern
-    const isExcluded = excludePatterns.some(pattern => pattern.test(name));
-    if (isExcluded) {
-      return; // Don't show at all
-    }
-
-    const isPriority = priorityPatterns.some(pattern => pattern.test(name));
-
-    if (isPriority) {
-      priorityServices.push(component);
-    } else {
-      otherServices.push(component);
-    }
-  });
-
-  // By default show only priority services (up to 8), or if no priority services exist, show first 6
-  const allFilteredServices = [...priorityServices, ...otherServices];
-  const displayedServices = showAllServices
-    ? allFilteredServices
-    : priorityServices.length > 0
-      ? priorityServices.slice(0, 8)
-      : allFilteredServices.slice(0, 6);
-
-  const getStatusConfig = (s: string) => {
-    switch(s) {
-      case 'operational':
-        return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', text: 'All systems normal', gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' };
-      case 'degraded_performance':
-        return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', text: 'Running slowly', gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' };
-      case 'partial_outage':
-        return { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', text: 'Some features affected', gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' };
-      case 'major_outage':
-        return { color: '#dc2626', bg: 'rgba(220, 38, 38, 0.15)', text: 'Service unavailable', gradient: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' };
-      default:
-        return { color: '#6b7280', bg: 'rgba(107, 114, 128, 0.15)', text: 'Checking status...', gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)' };
-    }
-  };
-
-  const statusConfig = getStatusConfig(status);
-
-  return (
-    <div id={`provider-${provider.id}`} className="card" style={{
-      borderRadius: '12px',
-      overflow: 'hidden',
-      transition: 'all 0.3s ease',
-      border: hasActiveIncidents ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255,255,255,0.12)'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'translateY(-4px)';
-      e.currentTarget.style.boxShadow = '0 12px 40px rgba(31, 38, 135, 0.25)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(31, 38, 135, 0.15)';
-    }}
-    >
-      {/* Header with gradient accent */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%)',
-        padding: '16px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
-      }}>
-        <div>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#fff', marginBottom: '4px', letterSpacing: '-0.01em' }}>
-            {provider.displayName}
-          </h3>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-            {priorityServices.length + otherServices.length} monitored
-          </p>
-        </div>
-        <div style={{
-          padding: '6px 14px',
-          borderRadius: '8px',
-          background: 'rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(10px)',
-          fontSize: '12px',
-          fontWeight: 700,
-          color: 'rgba(255, 255, 255, 0.95)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          border: '1px solid rgba(255, 255, 255, 0.15)'
-        }}>
-          {statusConfig.text}
-        </div>
-      </div>
-
-      {/* 24-Hour Uptime Timeline */}
-      {history.length > 0 && (
-        <div style={{
-          padding: '16px 20px',
-          background: 'rgba(255, 255, 255, 0.02)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px'
-        }}>
-          <div style={{
-            fontSize: '11px',
-            color: 'rgba(255, 255, 255, 0.6)',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            minWidth: '100px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px'
-          }}>
-            <span>24h Uptime</span>
-            <div style={{
-              fontSize: '20px',
-              fontWeight: 800,
-              color: uptimePercentage >= 99 ? '#10b981' : uptimePercentage >= 95 ? '#f59e0b' : '#ef4444',
-            }}>
-              {uptimePercentage}%
-            </div>
-          </div>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <MiniUptimeChart history={history} width={400} height={48} />
-          </div>
-        </div>
-      )}
-
-      {/* Active Incidents */}
-      {hasActiveIncidents && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
-          padding: '12px 20px',
-          borderBottom: '1px solid rgba(239, 68, 68, 0.2)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <div style={{
-              width: '20px',
-              height: '20px',
-              borderRadius: '6px',
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 3v3M6 8h.01" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Active Incidents
-            </span>
-          </div>
-          {incidents.filter((i: any) => i.status !== 'resolved' && i.status !== 'postmortem').slice(0, 2).map((incident: any) => (
-            <div key={incident.id} style={{ fontSize: '12px', color: '#dc2626', marginLeft: '28px', marginBottom: '4px' }}>
-              • {incident.name}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Services - Visual Status Cards */}
-      {components.length > 0 && (
-        <div style={{ padding: '16px 20px' }}>
-          <div style={{ display: 'grid', gap: '8px' }}>
-            {displayedServices.map((component: any) => {
-              const compConfig = getStatusConfig(component.status);
-              const isPriority = priorityPatterns.some((pattern: RegExp) => pattern.test(component.name));
-              return (
-                <div
-                  key={component.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.9)', fontWeight: isPriority ? 600 : 500 }}>
-                      {component.name}
-                    </span>
-                    {isPriority && (
-                      <span
-                        style={{
-                          fontSize: '9px',
-                          fontWeight: 700,
-                          color: '#667eea',
-                          background: 'rgba(102, 126, 234, 0.1)',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          border: '1px solid rgba(102, 126, 234, 0.2)',
-                        }}
-                        title="Priority model for agentic tasks"
-                      >
-                        Priority
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Status badge */}
-                  <div style={{
-                    padding: '3px 10px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    {component.status === 'operational' ? (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <circle cx="6" cy="6" r="5" fill="rgba(255, 255, 255, 0.3)" opacity="0.3"/>
-                        <path d="M3 6l2 2 4-4" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : component.status === 'degraded_performance' ? (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M6 2v5M6 9h.01" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <circle cx="6" cy="6" r="5" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5"/>
-                        <path d="M4 4l4 4M8 4l-4 4" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    )}
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.9)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                      {compConfig.text}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            {!showAllServices && allFilteredServices.length > displayedServices.length && (
-              <button
-                onClick={() => setShowAllServices(true)}
-                style={{
-                  padding: '10px 14px',
-                  fontSize: '12px',
-                  color: '#667eea',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  background: 'rgba(102, 126, 234, 0.1)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(102, 126, 234, 0.2)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(102, 126, 234, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
-                }}
-              >
-                Show {allFilteredServices.length - displayedServices.length} more
-              </button>
-            )}
-            {showAllServices && otherServices.length > 0 && (
-              <button
-                onClick={() => setShowAllServices(false)}
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '11px',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  cursor: 'pointer'
-                }}
-              >
-                Show less
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
