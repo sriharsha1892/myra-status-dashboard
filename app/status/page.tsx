@@ -11,6 +11,7 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';
 import ServiceDependencies from '@/components/ServiceDependencies';
+import ActiveIncidentsTimeline from '@/components/ActiveIncidentsTimeline';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
 import ViewModeToggle from '@/components/ViewModeToggle';
@@ -429,6 +430,9 @@ function StatusPageContent() {
           providers={statusData.providers}
           lastUpdated={statusData.lastUpdated}
         />
+
+        {/* Active Incidents Timeline with Cognitive Severity Assessment */}
+        <ActiveIncidentsTimeline providers={statusData.providers} />
 
         {/* Impact Radius - Shows only when there are issues */}
         <ServiceDependencies providers={statusData.providers} />
