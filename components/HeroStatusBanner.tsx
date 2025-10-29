@@ -1,6 +1,8 @@
 'use client';
 
 import { ProviderStatus } from '@/lib/types';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface HeroStatusBannerProps {
   providers: ProviderStatus[];
@@ -33,6 +35,7 @@ const formatTimestamp = (dateString: string) => {
 };
 
 export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusBannerProps) {
+  const { isAdminView } = useViewMode();
   const primaryProviders = providers.filter((p) => p.provider.priority === 'primary');
   const issuesCount = primaryProviders.filter((p) => p.status !== 'operational').length;
   const allOperational = issuesCount === 0;
@@ -186,7 +189,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
                       color: 'rgba(255, 255, 255, 0.85)',
                     }}
                   >
-                    • {p.provider.displayName}
+                    • {getProviderDisplayName(p.provider, isAdminView)}
                   </div>
                 ))}
               {degradedServices.length > 0 &&
@@ -200,7 +203,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
                       color: 'rgba(255, 255, 255, 0.85)',
                     }}
                   >
-                    • {p.provider.displayName}
+                    • {getProviderDisplayName(p.provider, isAdminView)}
                   </div>
                 ))}
             </div>

@@ -3,12 +3,16 @@
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { PROVIDERS } from '@/lib/providers';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface ServiceDependenciesProps {
   providers: ProviderStatus[];
 }
 
 export default function ServiceDependencies({ providers }: ServiceDependenciesProps) {
+  const { isAdminView } = useViewMode();
+
   // Find services with issues
   const servicesWithIssues = providers.filter(
     (p) => p.status !== 'operational' && p.provider.priority === 'primary'
@@ -94,7 +98,7 @@ export default function ServiceDependencies({ providers }: ServiceDependenciesPr
                       color: 'rgba(255, 255, 255, 0.9)',
                     }}
                   >
-                    {service.provider.displayName}
+                    {getProviderDisplayName(service.provider, isAdminView)}
                   </div>
                   <div
                     style={{
@@ -172,7 +176,7 @@ export default function ServiceDependencies({ providers }: ServiceDependenciesPr
                                 : 'rgba(255, 255, 255, 0.6)',
                             }}
                           >
-                            {impacted.displayName}
+                            {getProviderDisplayName(impacted, isAdminView)}
                           </span>
                           {isActuallyAffected && (
                             <span

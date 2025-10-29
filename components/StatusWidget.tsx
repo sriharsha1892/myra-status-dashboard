@@ -152,7 +152,7 @@ export default function StatusWidget({
                     {provider.provider.name.substring(0, 2)}
                   </div>
                   <span className="text-sm font-medium text-slate-700">
-                    {provider.provider.displayName}
+                    {provider.provider.userFacingName}
                   </span>
                 </div>
                 <StatusIndicator

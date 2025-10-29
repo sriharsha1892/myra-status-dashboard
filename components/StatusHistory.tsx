@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface StatusHistoryProps {
   providers: ProviderStatus[];
@@ -9,6 +11,7 @@ interface StatusHistoryProps {
 
 export default function StatusHistory({ providers }: StatusHistoryProps) {
   const [hoveredCell, setHoveredCell] = React.useState<string | null>(null);
+  const { isAdminView } = useViewMode();
 
   // Sanitize incident names to remove provider-specific references
   const sanitizeIncidentName = (name: string) => {
@@ -209,7 +212,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                     borderBottom: providerIndex < primaryProviders.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
                   }}
                 >
-                  {provider.provider.displayName}
+                  {getProviderDisplayName(provider.provider, isAdminView)}
                 </td>
                 {last7Days.map((day, dayIndex) => {
                   const dayStatus = getStatusForDay(provider, day);
@@ -280,7 +283,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                               }}
                             >
                               <div style={{ marginBottom: dayStatus.uptime === 100 ? '0' : '6px', fontWeight: 600 }}>
-                                {provider.provider.displayName}
+                                {getProviderDisplayName(provider.provider, isAdminView)}
                               </div>
                               <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', marginBottom: dayStatus.uptime === 100 ? '0' : '6px' }}>
                                 {day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {dayStatus.uptime}% uptime

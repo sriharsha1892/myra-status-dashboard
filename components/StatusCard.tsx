@@ -2,6 +2,8 @@
 
 import { ProviderStatus } from '@/lib/types';
 import StatusIndicator from './StatusIndicator';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface StatusCardProps {
   providerStatus: ProviderStatus;
@@ -9,6 +11,7 @@ interface StatusCardProps {
 
 export default function StatusCard({ providerStatus }: StatusCardProps) {
   const { provider, status, incidents, components } = providerStatus;
+  const { isAdminView } = useViewMode();
 
   const hasActiveIncidents = incidents.length > 0 &&
     incidents.some(i => i.status !== 'resolved' && i.status !== 'postmortem');
@@ -48,7 +51,7 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="text-base font-bold text-slate-900">
-                {provider.displayName}
+                {getProviderDisplayName(provider, isAdminView)}
               </h3>
               <StatusIndicator status={status} showLabel={false} size="sm" showPulse={status !== 'operational'} />
             </div>
