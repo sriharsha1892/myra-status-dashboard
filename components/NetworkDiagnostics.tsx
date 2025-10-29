@@ -14,7 +14,7 @@ interface ConnectionQuality {
   level: 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
   color: string;
   text: string;
-  emoji: string;
+  badge: string;
 }
 
 export default function NetworkDiagnostics() {
@@ -30,19 +30,19 @@ export default function NetworkDiagnostics() {
     const successfulTests = endpoints.filter(e => e.status === 'success' && e.latency !== null);
 
     if (successfulTests.length === 0) {
-      return { level: 'offline', color: '#ef4444', text: 'No Connection', emoji: '🔴' };
+      return { level: 'offline', color: '#ef4444', text: 'No Connection', badge: 'OFFLINE' };
     }
 
     const avgLatency = successfulTests.reduce((sum, e) => sum + (e.latency || 0), 0) / successfulTests.length;
 
     if (avgLatency < 100) {
-      return { level: 'excellent', color: '#10b981', text: 'Excellent', emoji: '🟢' };
+      return { level: 'excellent', color: '#10b981', text: 'Excellent', badge: 'EXCELLENT' };
     } else if (avgLatency < 200) {
-      return { level: 'good', color: '#22c55e', text: 'Good', emoji: '🟢' };
+      return { level: 'good', color: '#22c55e', text: 'Good', badge: 'GOOD' };
     } else if (avgLatency < 400) {
-      return { level: 'fair', color: '#f59e0b', text: 'Fair', emoji: '🟡' };
+      return { level: 'fair', color: '#f59e0b', text: 'Fair', badge: 'FAIR' };
     } else {
-      return { level: 'poor', color: '#f97316', text: 'Poor', emoji: '🟠' };
+      return { level: 'poor', color: '#f97316', text: 'Poor', badge: 'POOR' };
     }
   };
 
@@ -132,18 +132,20 @@ export default function NetworkDiagnostics() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
+            padding: '4px 8px',
+            borderRadius: '6px',
             background: hasResults ? quality.color : '#94a3b8',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '16px',
+            fontSize: '9px',
+            fontWeight: 800,
+            color: '#ffffff',
+            letterSpacing: '0.5px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             animation: isTesting ? 'pulse 1.5s ease-in-out infinite' : 'none',
           }}>
-            {isTesting ? '⚡' : hasResults ? quality.emoji : '🌐'}
+            {isTesting ? 'TEST' : hasResults ? quality.badge : 'NET'}
           </div>
 
           <div>
@@ -241,7 +243,19 @@ export default function NetworkDiagnostics() {
         }}>
           {!hasResults ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🌐</div>
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 800,
+                padding: '12px 20px',
+                borderRadius: '8px',
+                background: '#667eea',
+                color: '#ffffff',
+                display: 'inline-block',
+                marginBottom: '12px',
+                letterSpacing: '1px',
+              }}>
+                NETWORK TEST
+              </div>
               <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', marginBottom: '16px' }}>
                 Test your network connection to diagnose potential issues
               </p>
@@ -285,7 +299,17 @@ export default function NetworkDiagnostics() {
                 marginBottom: '16px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <div style={{ fontSize: '24px' }}>{quality.emoji}</div>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    background: quality.color,
+                    color: '#ffffff',
+                    letterSpacing: '0.5px',
+                  }}>
+                    {quality.badge}
+                  </span>
                   <div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
                       {quality.text} Connection
@@ -314,9 +338,17 @@ export default function NetworkDiagnostics() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ fontSize: '16px' }}>
-                        {endpoint.status === 'testing' ? '⚡' : endpoint.status === 'success' ? '✅' : endpoint.status === 'error' ? '❌' : '⚪'}
-                      </div>
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: 800,
+                        padding: '4px 6px',
+                        borderRadius: '4px',
+                        background: endpoint.status === 'testing' ? '#94a3b8' : endpoint.status === 'success' ? '#10b981' : endpoint.status === 'error' ? '#ef4444' : '#6b7280',
+                        color: '#ffffff',
+                        letterSpacing: '0.3px',
+                      }}>
+                        {endpoint.status === 'testing' ? 'TEST' : endpoint.status === 'success' ? 'OK' : endpoint.status === 'error' ? 'FAIL' : 'IDLE'}
+                      </span>
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
                           {endpoint.name}
@@ -350,7 +382,7 @@ export default function NetworkDiagnostics() {
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                 }}>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: '#fbbf24', marginBottom: '4px' }}>
-                    ⚠️ Connection Issues Detected
+                    Connection Issues Detected
                   </div>
                   <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5 }}>
                     Your network connection appears to be slow or unstable. If you're experiencing issues with the status dashboard, it may be due to your local network connection rather than the services themselves.
@@ -365,7 +397,7 @@ export default function NetworkDiagnostics() {
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                 }}>
                   <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1.5 }}>
-                    ✓ Your network connection is working well. If you see issues with any services above, they are likely experiencing actual problems.
+                    Your network connection is working well. If you see issues with any services above, they are likely experiencing actual problems.
                   </div>
                 </div>
               )}
