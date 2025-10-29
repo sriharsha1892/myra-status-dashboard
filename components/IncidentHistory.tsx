@@ -10,6 +10,16 @@ interface IncidentHistoryProps {
 export default function IncidentHistory({ providers }: IncidentHistoryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Sanitize incident names to remove provider-specific references
+  const sanitizeIncidentName = (name: string) => {
+    return name
+      .replace(/\b(AWS|Amazon Web Services|OpenAI|Anthropic|Google|Gemini|Exa|Brave)\b/gi, 'Service')
+      .replace(/\b(GPT-\d+|Claude|Gemini Flash)\b/gi, 'AI Model')
+      .replace(/\b(API Gateway|Lambda|S3|EC2)\b/gi, 'Component')
+      .replace(/Service Service/gi, 'Service')
+      .trim();
+  };
+
   // Collect and sort all incidents from all providers
   const allIncidents = providers
     .flatMap((p) =>
@@ -190,7 +200,7 @@ export default function IncidentHistory({ providers }: IncidentHistoryProps) {
                           marginBottom: '4px',
                         }}
                       >
-                        {incident.name}
+                        {sanitizeIncidentName(incident.name)}
                       </div>
                       <div
                         style={{

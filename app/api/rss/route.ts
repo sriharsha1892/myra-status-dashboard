@@ -3,6 +3,16 @@ import { StatusCache } from '@/lib/status-cache';
 
 export const dynamic = 'force-dynamic';
 
+// Sanitize incident names to remove provider-specific references
+function sanitizeIncidentName(name: string): string {
+  return name
+    .replace(/\b(AWS|Amazon Web Services|OpenAI|Anthropic|Google|Gemini|Exa|Brave)\b/gi, 'Service')
+    .replace(/\b(GPT-\d+|Claude|Gemini Flash)\b/gi, 'AI Model')
+    .replace(/\b(API Gateway|Lambda|S3|EC2)\b/gi, 'Component')
+    .replace(/Service Service/gi, 'Service')
+    .trim();
+}
+
 export async function GET() {
   try {
     const cache = StatusCache.getInstance();
@@ -29,7 +39,8 @@ export async function GET() {
 
     const rssItems = recentIncidents.map((incident: any) => {
       const createdDate = new Date(incident.created_at);
-      const title = `${incident.provider.displayName}: ${incident.name}`;
+      const sanitizedName = sanitizeIncidentName(incident.name);
+      const title = `${incident.provider.displayName}: ${sanitizedName}`;
       const description = incident.incident_updates?.[0]?.body || 'No details available';
       const status = incident.status === 'resolved' ? 'Resolved' : 'Ongoing';
 

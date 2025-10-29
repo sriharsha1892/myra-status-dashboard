@@ -8,6 +8,19 @@ interface StatusHistoryProps {
 }
 
 export default function StatusHistory({ providers }: StatusHistoryProps) {
+  const [hoveredCell, setHoveredCell] = React.useState<string | null>(null);
+
+  // Sanitize incident names to remove provider-specific references
+  const sanitizeIncidentName = (name: string) => {
+    // Remove common provider names and identifiers
+    return name
+      .replace(/\b(AWS|Amazon Web Services|OpenAI|Anthropic|Google|Gemini|Exa|Brave)\b/gi, 'Service')
+      .replace(/\b(GPT-\d+|Claude|Gemini Flash)\b/gi, 'AI Model')
+      .replace(/\b(API Gateway|Lambda|S3|EC2)\b/gi, 'Component')
+      .replace(/Service Service/gi, 'Service')
+      .trim();
+  };
+
   // Generate last 7 days
   const generateLast7Days = () => {
     const days = [];
@@ -201,10 +214,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                 {last7Days.map((day, dayIndex) => {
                   const dayStatus = getStatusForDay(provider, day);
                   const isToday = dayIndex === 6;
-
-                  const tooltipText = dayStatus.uptime === 100
-                    ? `${provider.provider.displayName}\n${day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: 100% uptime`
-                    : `${provider.provider.displayName}\n${day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${dayStatus.uptime}% uptime\n${dayStatus.incidents.map(i => `• ${i.name} (${formatDuration(i.duration)})`).join('\n')}`;
+                  const cellId = `${provider.provider.id}-${dayIndex}`;
 
                   return (
                     <td
@@ -213,6 +223,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                         textAlign: 'center',
                         padding: '16px 12px',
                         borderBottom: providerIndex < primaryProviders.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                        position: 'relative',
                       }}
                     >
                       <div
@@ -239,18 +250,66 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                             color: 'rgba(255, 255, 255, 0.95)',
                             transition: 'all 0.2s ease',
                             cursor: 'pointer',
+                            position: 'relative',
                           }}
-                          title={tooltipText}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.08)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
+                          onMouseEnter={() => setHoveredCell(cellId)}
+                          onMouseLeave={() => setHoveredCell(null)}
                         >
                           {dayStatus.uptime}%
+
+                          {/* Custom tooltip */}
+                          {hoveredCell === cellId && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                marginBottom: '8px',
+                                padding: '10px 12px',
+                                background: 'rgba(20, 20, 25, 0.98)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                borderRadius: '8px',
+                                whiteSpace: 'nowrap',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: 'rgba(255, 255, 255, 0.95)',
+                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
+                                zIndex: 1000,
+                                pointerEvents: 'none',
+                              }}
+                            >
+                              <div style={{ marginBottom: dayStatus.uptime === 100 ? '0' : '6px', fontWeight: 600 }}>
+                                {provider.provider.displayName}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', marginBottom: dayStatus.uptime === 100 ? '0' : '6px' }}>
+                                {day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {dayStatus.uptime}% uptime
+                              </div>
+                              {dayStatus.incidents.length > 0 && (
+                                <div style={{ fontSize: '11px', lineHeight: '1.5' }}>
+                                  {dayStatus.incidents.map((incident, idx) => (
+                                    <div key={idx} style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                      • {sanitizeIncidentName(incident.name)} ({formatDuration(incident.duration)})
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Tooltip arrow */}
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  left: '50%',
+                                  transform: 'translateX(-50%)',
+                                  width: '0',
+                                  height: '0',
+                                  borderLeft: '6px solid transparent',
+                                  borderRight: '6px solid transparent',
+                                  borderTop: '6px solid rgba(20, 20, 25, 0.98)',
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                         {dayStatus.incidents.length > 0 && (
                           <div
