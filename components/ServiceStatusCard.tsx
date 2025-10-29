@@ -3,6 +3,8 @@
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
 import UptimeSparkline from './UptimeSparkline';
+import { useViewMode } from '@/contexts/ViewModeContext';
+import { getProviderDisplayName, shouldShowSensitiveInfo } from '@/lib/view-utils';
 
 interface ServiceStatusCardProps {
   providerStatus: ProviderStatus;
@@ -100,9 +102,12 @@ const getTimeSince = (dateString: string) => {
 export default function ServiceStatusCard({ providerStatus, onNotificationSubscribe }: ServiceStatusCardProps) {
   const { provider, status, incidents, components } = providerStatus;
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const { isAdminView } = useViewMode();
 
   const isOperational = status === 'operational';
   const hasIssues = !isOperational;
+  const displayName = getProviderDisplayName(provider, isAdminView);
+  const showSensitive = shouldShowSensitiveInfo(isAdminView);
 
   // Get most recent active incident
   const activeIncident = incidents?.find(
@@ -110,7 +115,7 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
   );
 
   // Determine if there's additional info to show
-  const hasAdditionalInfo = provider.models || provider.regions || provider.services || provider.impacts || provider.role;
+  const hasAdditionalInfo = (showSensitive && (provider.models || provider.regions || provider.services)) || provider.impacts || provider.role;
 
   return (
     <div
@@ -156,7 +161,7 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
                   color: 'rgba(255, 255, 255, 0.95)',
                 }}
               >
-                {provider.displayName}
+                {displayName}
               </div>
               {provider.role && (
                 <span
@@ -298,8 +303,8 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
-                  {/* Models */}
-                  {provider.models && provider.models.length > 0 && (
+                  {/* Models (admin only) */}
+                  {showSensitive && provider.models && provider.models.length > 0 && (
                     <div style={{ marginBottom: '12px' }}>
                       <div
                         style={{
@@ -333,8 +338,8 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
                     </div>
                   )}
 
-                  {/* Regions */}
-                  {provider.regions && provider.regions.length > 0 && (
+                  {/* Regions (admin only) */}
+                  {showSensitive && provider.regions && provider.regions.length > 0 && (
                     <div style={{ marginBottom: '12px' }}>
                       <div
                         style={{
@@ -368,8 +373,8 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
                     </div>
                   )}
 
-                  {/* Services (for AWS) */}
-                  {provider.services && provider.services.length > 0 && (
+                  {/* Services (admin only) */}
+                  {showSensitive && provider.services && provider.services.length > 0 && (
                     <div>
                       <div
                         style={{
