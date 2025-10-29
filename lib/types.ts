@@ -33,6 +33,7 @@ export interface Incident {
   impact: string;
   created_at: string;
   updated_at: string;
+  resolved_at?: string;
   shortlink?: string;
   incident_updates: Array<{
     body: string;
