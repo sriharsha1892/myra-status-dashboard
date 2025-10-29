@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ProviderStatusOverride from '@/components/ProviderStatusOverride';
 
 interface InternalStatus {
   organization: string;
@@ -36,6 +37,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
+  const [activeTab, setActiveTab] = useState<'org-status' | 'provider-override' | 'announcements'>('provider-override');
 
   const [organization, setOrganization] = useState<'prodgain' | 'mordor'>('prodgain');
   const [status, setStatus] = useState('operational');
@@ -340,14 +342,14 @@ export default function AdminPage() {
       <header className="glass" style={{
         borderBottom: '1px solid rgba(255,255,255,0.2)'
       }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
           <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>
-                Internal Status Update
+                Admin Panel
               </h1>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', marginTop: '4px', fontWeight: 500 }}>
-                Update status for Prodgain and Mordor Intelligence
+                Manage providers, organizations, and announcements
               </p>
             </div>
             <a
@@ -371,14 +373,57 @@ export default function AdminPage() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[
+              { id: 'provider-override' as const, label: 'Provider Overrides', icon: '🛠️' },
+              { id: 'org-status' as const, label: 'Organization Status', icon: '🏢' },
+              { id: 'announcements' as const, label: 'Announcements', icon: '📢' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '14px 20px',
+                  border: 'none',
+                  background: activeTab === tab.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  color: activeTab === tab.id ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  borderBottom: activeTab === tab.id ? '2px solid #667eea' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-          {/* Update Form */}
-          <div className="glass-white" style={{ borderRadius: '12px', padding: '24px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#171717', marginBottom: '20px' }}>
-              Post Status Update
-            </h2>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        {/* Provider Override Tab */}
+        {activeTab === 'provider-override' && (
+          <ProviderStatusOverride />
+        )}
+
+        {/* Organization Status Tab */}
+        {activeTab === 'org-status' && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              {/* Update Form */}
+              <div className="glass-white" style={{ borderRadius: '12px', padding: '24px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#171717', marginBottom: '20px' }}>
+                  Post Status Update
+                </h2>
 
             <form onSubmit={handleSubmit}>
               {/* Organization */}
@@ -691,7 +736,12 @@ Content-Type: application/json
             )}
           </div>
         </div>
+          </>
+        )}
 
+        {/* Announcements Tab */}
+        {activeTab === 'announcements' && (
+        <div>
         {/* Announcements Management */}
         <div className="glass-white" style={{ borderRadius: '12px', padding: '24px', marginTop: '24px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#171717', marginBottom: '16px' }}>
@@ -994,6 +1044,8 @@ Content-Type: application/json
             </div>
           </div>
         </div>
+        </div>
+        )}
       </main>
     </div>
   );
