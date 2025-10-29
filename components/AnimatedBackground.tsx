@@ -31,7 +31,7 @@ export default function AnimatedBackground() {
       hue: number;
     }> = [];
 
-    const particleCount = window.innerWidth < 768 ? 50 : 80;
+    const particleCount = window.innerWidth < 768 ? 30 : 50; // Reduced for performance
 
     for (let i = 0; i < particleCount; i++) {
       particles.push({
@@ -128,7 +128,7 @@ export default function AnimatedBackground() {
       ctx.fillStyle = gradient3;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw particles
+      // Update and draw particles (optimized)
       particles.forEach((particle, i) => {
         particle.x += particle.vx;
         particle.y += particle.vy;
@@ -139,25 +139,30 @@ export default function AnimatedBackground() {
         if (particle.y < 0) particle.y = canvas.height;
         if (particle.y > canvas.height) particle.y = 0;
 
-        // Draw particle with enhanced glow
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = `hsla(${particle.hue}, 80%, 65%, ${particle.opacity * 0.8})`;
+        // Draw particle with reduced glow (performance)
+        ctx.shadowBlur = 10; // Reduced from 20
+        ctx.shadowColor = `hsla(${particle.hue}, 80%, 65%, ${particle.opacity * 0.5})`;
         ctx.fillStyle = `hsla(${particle.hue}, 80%, 65%, ${particle.opacity})`;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw connections to nearby particles
-        for (let j = i + 1; j < particles.length; j++) {
+        // Draw connections to nearby particles (optimized)
+        // Only check next 10 particles instead of all
+        const maxCheck = Math.min(i + 10, particles.length);
+        for (let j = i + 1; j < maxCheck; j++) {
           const dx = particles[j].x - particle.x;
           const dy = particles[j].y - particle.y;
+
+          // Quick distance check before expensive sqrt
+          if (Math.abs(dx) > 150 || Math.abs(dy) > 150) continue;
+
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 200) {
-            ctx.shadowBlur = 3;
-            ctx.shadowColor = `hsla(${particle.hue}, 80%, 65%, ${0.2 * (1 - distance / 200)})`;
-            ctx.strokeStyle = `hsla(${particle.hue}, 80%, 65%, ${0.25 * (1 - distance / 200)})`;
-            ctx.lineWidth = 1.5;
+          if (distance < 150) { // Reduced from 200
+            ctx.shadowBlur = 0; // No shadow for lines (performance)
+            ctx.strokeStyle = `hsla(${particle.hue}, 80%, 65%, ${0.2 * (1 - distance / 150)})`;
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -169,23 +174,25 @@ export default function AnimatedBackground() {
       // Reset shadow
       ctx.shadowBlur = 0;
 
-      // Draw grid pattern (responsive) with enhanced visibility
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-      ctx.lineWidth = 1;
-      const gridSize = window.innerWidth < 768 ? 40 : 30;
+      // Draw grid pattern - only every 10th frame for performance
+      if (Math.random() > 0.9) { // Randomized to reduce aliasing
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)'; // Reduced opacity
+        ctx.lineWidth = 1;
+        const gridSize = window.innerWidth < 768 ? 60 : 50; // Larger grid = fewer lines
 
-      for (let x = 0; x < canvas.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
+        for (let x = 0; x < canvas.width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
 
-      for (let y = 0; y < canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
+        for (let y = 0; y < canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
       }
 
       animationFrame = requestAnimationFrame(animate);

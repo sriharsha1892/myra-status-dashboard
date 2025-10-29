@@ -3,7 +3,8 @@ export type ServiceStatus = 'operational' | 'degraded_performance' | 'partial_ou
 export interface Provider {
   id: string;
   name: string;
-  displayName: string;
+  displayName: string; // Admin-facing name (real provider)
+  userFacingName: string; // User-facing name (abstracted)
   enables: string; // What user features this service enables
   statusPageUrl: string;
   apiEndpoint: string;
@@ -14,7 +15,7 @@ export interface Provider {
   impacts?: string; // What happens when this service is down
   regions?: string[]; // AWS regions being monitored
   services?: string[]; // Specific AWS services being used
-  models?: string[]; // AI models available from this provider
+  models?: string[]; // AI models available from this provider (admin only)
   role?: 'primary' | 'fallback'; // Role in the AI service stack
 }
 

@@ -12,6 +12,8 @@ import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';
 import ServiceDependencies from '@/components/ServiceDependencies';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
+import { ViewModeProvider } from '@/contexts/ViewModeContext';
+import ViewModeToggle from '@/components/ViewModeToggle';
 
 // Lazy load NetworkDiagnostics for better initial load performance
 const NetworkDiagnostics = dynamic(() => import('@/components/NetworkDiagnostics'), {
@@ -45,7 +47,7 @@ interface Announcement {
   expiresAt?: string;
 }
 
-export default function StatusPage() {
+function StatusPageContent() {
   const [statusData, setStatusData] = useState<StatusResponse | null>(null);
   const [internalStatuses, setInternalStatuses] = useState<InternalStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -810,3 +812,13 @@ function InternalStatusItem({ org, status, message, isFirst }: { org: string, st
   );
 }
 
+
+// Wrap with ViewModeProvider for admin/user view switching
+export default function StatusPage() {
+  return (
+    <ViewModeProvider>
+      <ViewModeToggle />
+      <StatusPageContent />
+    </ViewModeProvider>
+  );
+}
