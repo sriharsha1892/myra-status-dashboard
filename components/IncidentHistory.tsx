@@ -212,8 +212,6 @@ export default function IncidentHistory({ providers }: IncidentHistoryProps) {
                           flexWrap: 'wrap',
                         }}
                       >
-                        <span>{incident.provider.displayName}</span>
-                        <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>•</span>
                         <span>{getTimeSince(incident.created_at)}</span>
                         {incident.resolved_at && (
                           <>
