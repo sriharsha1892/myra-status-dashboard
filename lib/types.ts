@@ -51,6 +51,9 @@ export interface ProviderStatus {
   components: Component[];
   incidents: Incident[];
   scheduledMaintenances?: any[];
+  uptimePercentage?: number;
+  history?: any[];
+  impactDescription?: string;
 }
 
 export interface StatusResponse {
