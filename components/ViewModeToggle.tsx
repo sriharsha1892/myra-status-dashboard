@@ -1,9 +1,35 @@
 'use client';
 
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { useState, useEffect } from 'react';
 
 export default function ViewModeToggle() {
   const { viewMode, setViewMode, isAdminView } = useViewMode();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if user is authenticated as admin
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const auth = localStorage.getItem('admin_authenticated');
+        const token = localStorage.getItem('admin_token');
+        setIsAuthenticated(auth === 'true' && !!token);
+      }
+    };
+
+    checkAuth();
+
+    // Re-check auth status when localStorage changes (e.g., after login/logout)
+    const handleStorageChange = () => checkAuth();
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Only show toggle if user is authenticated as admin
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div
