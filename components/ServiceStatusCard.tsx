@@ -128,8 +128,7 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
           hasIssues ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.1)'
         }`,
         borderRadius: '12px',
-        padding: hasIssues ? '18px 22px' : '16px 22px',
-        marginBottom: '12px',
+        padding: hasIssues ? '14px 18px' : '12px 18px',
         transition: 'all 0.2s ease',
       }}
       onMouseEnter={(e) => {
@@ -152,7 +151,7 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0' }}>
         <div style={{ flex: 1 }}>
           {/* Header Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div
                 style={{
@@ -197,12 +196,44 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
             </span>
           </div>
 
+          {/* At-a-glance metrics */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '8px',
+            fontSize: '11px',
+            color: 'rgba(255, 255, 255, 0.5)',
+            flexWrap: 'wrap'
+          }}>
+            {providerStatus.uptimePercentage !== undefined && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: 600, color: providerStatus.uptimePercentage >= 99 ? '#10b981' : providerStatus.uptimePercentage >= 95 ? '#f59e0b' : '#ef4444' }}>
+                  {providerStatus.uptimePercentage.toFixed(1)}%
+                </span>
+                <span>uptime</span>
+              </span>
+            )}
+            {activeIncident && (
+              <>
+                <span>•</span>
+                <span>Issue started {getTimeSince(activeIncident.created_at)}</span>
+              </>
+            )}
+            {!activeIncident && incidents && incidents.length > 0 && (
+              <>
+                <span>•</span>
+                <span>Last issue {getTimeSince(incidents[0].created_at)}</span>
+              </>
+            )}
+          </div>
+
           {/* Description / Enables */}
           <div
             style={{
               fontSize: '13px',
               color: isOperational ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-              marginBottom: hasIssues ? '10px' : '8px',
+              marginBottom: hasIssues ? '8px' : '6px',
               lineHeight: '1.5',
             }}
           >

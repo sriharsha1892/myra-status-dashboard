@@ -202,7 +202,8 @@ export async function GET() {
         provider: {
           // Only expose safe fields with obfuscated ID
           id: obfuscateProviderId(p.provider.id), // Obfuscated for client exposure (e.g., "srv-a3f2")
-          displayName: p.provider.displayName, // Safe obfuscated name
+          displayName: p.provider.displayName, // Safe obfuscated name (admin view)
+          userFacingName: p.provider.userFacingName, // User-friendly name (user view)
           color: p.provider.color,
           priority: p.provider.priority,
           // REMOVED: name, statusPageUrl, apiEndpoint (all reveal vendor)

@@ -84,24 +84,24 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
       style={{
         background: style.bg,
         border: `2px solid ${style.border}`,
-        borderRadius: '16px',
-        padding: '32px 36px',
-        marginBottom: '32px',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        marginBottom: '16px',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '300px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '250px' }}>
           {/* Status Badge */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '10px' }}>
             <span
               style={{
                 display: 'inline-block',
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 900,
-                padding: '8px 16px',
-                borderRadius: '8px',
+                padding: '6px 12px',
+                borderRadius: '6px',
                 background: style.statusBadgeBg,
                 color: '#ffffff',
                 letterSpacing: '1px',
@@ -116,41 +116,41 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
           {/* Main Message */}
           <div
             style={{
-              fontSize: '28px',
+              fontSize: '18px',
               fontWeight: 700,
               color: 'rgba(255, 255, 255, 0.98)',
-              marginBottom: '12px',
-              lineHeight: '1.2',
-              letterSpacing: '-0.02em',
+              marginBottom: '6px',
+              lineHeight: '1.3',
+              letterSpacing: '-0.01em',
             }}
           >
             {style.message}
           </div>
 
-          {/* Subtext */}
-          <div
-            style={{
-              fontSize: '15px',
-              color: 'rgba(255, 255, 255, 0.7)',
-              marginBottom: '16px',
-              lineHeight: '1.5',
-            }}
-          >
-            {style.subtext}
-          </div>
+          {/* Subtext - only show when there are issues */}
+          {!allOperational && (
+            <div
+              style={{
+                fontSize: '13px',
+                color: 'rgba(255, 255, 255, 0.7)',
+                marginBottom: '10px',
+                lineHeight: '1.4',
+              }}
+            >
+              {style.subtext}
+            </div>
+          )}
 
           {/* Timestamp */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              fontSize: '13px',
+              gap: '8px',
+              fontSize: '11px',
               color: 'rgba(255, 255, 255, 0.5)',
             }}
           >
-            <span>Last updated: {formatTimestamp(lastUpdated)}</span>
-            <span>•</span>
             <span>{getTimeSince(lastUpdated)}</span>
           </div>
         </div>
@@ -160,31 +160,31 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
           <div
             style={{
               background: 'rgba(0, 0, 0, 0.2)',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              minWidth: '240px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              minWidth: '200px',
               border: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
                 color: 'rgba(255, 255, 255, 0.5)',
-                marginBottom: '12px',
+                marginBottom: '8px',
               }}
             >
               Affected Services
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {criticalIssues.length > 0 &&
                 criticalIssues.map((p) => (
                   <div
                     key={p.provider.id}
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 500,
                       color: 'rgba(255, 255, 255, 0.85)',
                     }}
@@ -198,7 +198,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
                   <div
                     key={p.provider.id}
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: 500,
                       color: 'rgba(255, 255, 255, 0.85)',
                     }}

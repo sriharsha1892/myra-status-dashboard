@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ProviderStatusOverride from '@/components/ProviderStatusOverride';
 
 interface InternalStatus {
@@ -34,9 +35,9 @@ interface Announcement {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [authError, setAuthError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'org-status' | 'provider-override' | 'announcements'>('provider-override');
 
   const [organization, setOrganization] = useState<'prodgain' | 'mordor'>('prodgain');
@@ -60,14 +61,25 @@ export default function AdminPage() {
   const [announcementSuccess, setAnnouncementSuccess] = useState(false);
   const [announcementError, setAnnouncementError] = useState('');
 
+  // Check authentication on mount
   useEffect(() => {
-    // Check if already authenticated via sessionStorage
-    const auth = sessionStorage.getItem('admin_auth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
+    const checkAuth = () => {
+      const auth = localStorage.getItem('admin_authenticated');
+      const token = localStorage.getItem('admin_token');
 
+      if (auth === 'true' && token) {
+        setIsAuthenticated(true);
+        setIsLoading(false);
+      } else {
+        // Redirect to login page
+        router.push('/admin/login');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Fetch data when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchCurrentStatuses();
@@ -76,17 +88,10 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
-  const handleAuth = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple password check - in production, this should be hashed server-side
-    // Password: myra-admin-2025
-    if (passwordInput === 'myra-admin-2025') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('admin_auth', 'true');
-      setAuthError('');
-    } else {
-      setAuthError('Invalid password');
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_token');
+    router.push('/admin/login');
   };
 
   const fetchCurrentStatuses = async () => {
@@ -257,81 +262,38 @@ export default function AdminPage() {
 
   const currentStatus = currentStatuses.find(s => s.organization === organization);
 
-  // Show login form if not authenticated
-  if (!isAuthenticated) {
+  // Show loading state while checking auth (will redirect to /admin/login if not authenticated)
+  if (isLoading || !isAuthenticated) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-        <div className="glass-white" style={{ maxWidth: '400px', width: '100%', padding: '32px', borderRadius: '12px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#171717', marginBottom: '8px' }}>
-              Admin Access
-            </h1>
-            <p style={{ fontSize: '13px', color: '#737373' }}>
-              Enter password to access the admin panel
-            </p>
-          </div>
-
-          <form onSubmit={handleAuth}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#171717', marginBottom: '8px' }}>
-                Password
-              </label>
-              <input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Enter admin password"
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: authError ? '1px solid #ef4444' : '1px solid #e5e5e5',
-                  fontSize: '14px',
-                  color: '#171717',
-                  background: 'white'
-                }}
-              />
-              {authError && (
-                <p style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>
-                  {authError}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              Sign In
-            </button>
-          </form>
-
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <a
-              href="/status"
-              style={{
-                fontSize: '13px',
-                color: '#667eea',
-                textDecoration: 'none',
-                fontWeight: 600
-              }}
-            >
-              ← Back to Status
-            </a>
-          </div>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #1e1f26 0%, #2d2e38 100%)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid rgba(102, 126, 234, 0.2)',
+            borderTopColor: '#667eea',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <p style={{
+            fontSize: '14px',
+            color: 'rgba(255, 255, 255, 0.6)',
+          }}>
+            Checking authentication...
+          </p>
         </div>
+        <style jsx>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -352,23 +314,47 @@ export default function AdminPage() {
                 Manage providers, organizations, and announcements
               </p>
             </div>
-            <a
-              href="/status"
-              className="glass-white"
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#667eea',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              ← Back to Status
-            </a>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <a
+                href="/status"
+                className="glass-white"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#667eea',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                ← Back to Status
+              </a>
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                }}
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

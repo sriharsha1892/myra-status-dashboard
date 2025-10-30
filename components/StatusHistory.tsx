@@ -24,10 +24,10 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
       .trim();
   };
 
-  // Generate last 7 days
-  const generateLast7Days = () => {
+  // Generate last 3 days
+  const generateLast3Days = () => {
     const days = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 2; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       date.setHours(0, 0, 0, 0);
@@ -36,7 +36,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
     return days;
   };
 
-  const last7Days = generateLast7Days();
+  const last3Days = generateLast3Days();
   const primaryProviders = providers.filter((p) => p.provider.priority === 'primary');
 
   // Calculate uptime percentage and worst status for each day
@@ -76,8 +76,14 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
         // Use actual resolution time
         incidentEnd = new Date(incident.resolved_at).getTime();
       } else if (incident.status === 'resolved' || incident.status === 'postmortem') {
-        // Marked as resolved but missing timestamp - skip it
-        continue;
+        // Marked as resolved but no resolved_at - use updated_at as resolution time
+        if (incident.updated_at) {
+          incidentEnd = new Date(incident.updated_at).getTime();
+        } else {
+          // No timestamp available - estimate based on when it was last seen
+          // Use a reasonable default of 2 hours after creation for resolved incidents
+          incidentEnd = incidentStart + (2 * 60 * 60 * 1000);
+        }
       } else {
         // Unresolved incident - use intelligent estimation
         if (incidentAge < oneDayMs) {
@@ -151,9 +157,9 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
   };
 
   return (
-    <div style={{ marginBottom: '24px' }}>
-      <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
-        7-Day Status History
+    <div style={{ marginBottom: '20px' }}>
+      <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '12px', letterSpacing: '-0.01em' }}>
+        3-Day Status History
       </h2>
 
       <div
@@ -161,8 +167,9 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: '12px',
-          padding: '20px',
+          padding: '16px',
           overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -180,7 +187,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
               >
                 Service
               </th>
-              {last7Days.map((day, index) => (
+              {last3Days.map((day, index) => (
                 <th
                   key={index}
                   style={{
@@ -214,9 +221,9 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                 >
                   {getProviderDisplayName(provider.provider, isAdminView)}
                 </td>
-                {last7Days.map((day, dayIndex) => {
+                {last3Days.map((day, dayIndex) => {
                   const dayStatus = getStatusForDay(provider, day);
-                  const isToday = dayIndex === 6;
+                  const isToday = dayIndex === 2;
                   const cellId = `${provider.provider.id}-${dayIndex}`;
 
                   return (
@@ -240,23 +247,30 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
                       >
                         <div
                           style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '6px',
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '8px',
                             background: getStatusColor(dayStatus.worstStatus, dayStatus.uptime),
-                            border: isToday ? '2px solid rgba(255, 255, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+                            border: isToday ? '3px solid rgba(102, 126, 234, 0.8)' : '1px solid rgba(255, 255, 255, 0.1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '11px',
+                            fontSize: '13px',
                             fontWeight: 700,
                             color: 'rgba(255, 255, 255, 0.95)',
                             transition: 'all 0.2s ease',
                             cursor: 'pointer',
                             position: 'relative',
+                            boxShadow: isToday ? '0 0 0 2px rgba(102, 126, 234, 0.2)' : 'none',
                           }}
-                          onMouseEnter={() => setHoveredCell(cellId)}
-                          onMouseLeave={() => setHoveredCell(null)}
+                          onMouseEnter={(e) => {
+                            setHoveredCell(cellId);
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            setHoveredCell(null);
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
                         >
                           {dayStatus.uptime}%
 
@@ -347,7 +361,7 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
             <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Major Issues</span>
           </div>
           <div style={{ marginLeft: 'auto', color: 'rgba(255, 255, 255, 0.5)' }}>
-            Hover for incident details • Today highlighted with border
+            Hover for details • Today highlighted in blue
           </div>
         </div>
       </div>

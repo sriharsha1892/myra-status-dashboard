@@ -76,9 +76,21 @@ function StatusPageContent() {
     if (isManualRefresh) setRefreshing(true);
 
     try {
+      // Add timestamp to prevent browser caching
+      const timestamp = Date.now();
       const [statusResponse, internalResponse] = await Promise.all([
-        fetch('/api/status/current'),
-        fetch('/api/internal/status')
+        fetch(`/api/status/current?_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }),
+        fetch(`/api/internal/status?_t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
       ]);
 
       if (!statusResponse.ok) throw new Error('Failed to fetch status');
@@ -147,7 +159,13 @@ function StatusPageContent() {
 
   const fetchAnnouncements = async () => {
     try {
-      const response = await fetch('/api/announcements');
+      const timestamp = Date.now();
+      const response = await fetch(`/api/announcements?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setAnnouncements(data.announcements);
@@ -441,7 +459,7 @@ function StatusPageContent() {
         <IncidentHistory providers={statusData.providers} />
 
         {/* Announcements */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '20px' }}>
           {/* Announcements */}
           {announcements.length > 0 && (
             <div style={{ marginBottom: '24px' }}>
@@ -508,7 +526,7 @@ function StatusPageContent() {
         </div>
 
         {/* Network Diagnostics - Collapsible */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <details open={showDiagnostics} onToggle={(e: any) => setShowDiagnostics(e.target.open)}>
             <summary
               style={{
@@ -548,62 +566,16 @@ function StatusPageContent() {
           </details>
         </div>
 
-        {/* Internal Systems */}
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
-            Internal Systems
-          </h2>
-          <div className="card" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            {(() => {
-              // Combine all internal statuses into one
-              const statusPriority: Record<string, number> = {
-                'major_outage': 4,
-                'partial_outage': 3,
-                'degraded_performance': 2,
-                'under_maintenance': 1,
-                'operational': 0,
-              };
-
-              // Get worst status
-              let worstStatus = 'operational';
-              let worstPriority = 0;
-
-              internalStatuses.forEach((status) => {
-                const priority = statusPriority[status.status] || 0;
-                if (priority > worstPriority) {
-                  worstStatus = status.status;
-                  worstPriority = priority;
-                }
-              });
-
-              // Combine messages if there are any non-operational statuses
-              const messages = internalStatuses
-                .filter(s => s.status !== 'operational' && s.message)
-                .map(s => s.message);
-
-              const combinedMessage = messages.length > 0
-                ? messages.join('. ')
-                : 'All systems operational';
-
-              return (
-                <InternalStatusItem
-                  key="myra-ai"
-                  org="myRA AI"
-                  status={worstStatus}
-                  message={combinedMessage}
-                  isFirst={true}
-                />
-              );
-            })()}
-          </div>
-        </div>
-
         {/* Service Status */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
             Service Status
           </h2>
-          <div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))',
+            gap: '16px'
+          }}>
             {statusData.providers
               .filter((p: any) => p.provider.priority === 'primary')
               .map((providerStatus: any) => (
