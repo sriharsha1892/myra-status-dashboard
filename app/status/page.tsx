@@ -13,6 +13,7 @@ import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';
 import ServiceDependencies from '@/components/ServiceDependencies';
 import ActiveIncidentsTimeline from '@/components/ActiveIncidentsTimeline';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
 import ViewModeToggle from '@/components/ViewModeToggle';
@@ -463,71 +464,7 @@ function StatusPageContent() {
         <IncidentHistory providers={statusData.providers} />
 
         {/* Announcements */}
-        <div style={{ marginBottom: '20px' }}>
-          {/* Announcements */}
-          {announcements.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              {announcements.map((announcement) => {
-                const typeColors = {
-                  info: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.3)', text: '#60a5fa' },
-                  warning: { bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.3)', text: '#fbbf24' },
-                  success: { bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.3)', text: '#34d399' },
-                  maintenance: { bg: 'rgba(139, 92, 246, 0.1)', border: 'rgba(139, 92, 246, 0.3)', text: '#a78bfa' }
-                };
-                const colors = typeColors[announcement.type];
-                const icons = {
-                  info: 'ℹ️',
-                  warning: '⚠️',
-                  success: '✅',
-                  maintenance: '🔧'
-                };
-
-                return (
-                  <div
-                    key={announcement.id}
-                    className="card"
-                    style={{
-                      padding: '16px 20px',
-                      marginBottom: '12px',
-                      background: colors.bg,
-                      border: `1px solid ${colors.border}`,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                      <span style={{ fontSize: '20px', lineHeight: 1 }}>
-                        {icons[announcement.type]}
-                      </span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            color: colors.text,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                          }}>
-                            {announcement.type}
-                          </span>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>
-                            {announcement.title}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.5' }}>
-                          {announcement.message}
-                        </div>
-                        {announcement.createdBy && (
-                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
-                            Posted by {announcement.createdBy} • {new Date(announcement.createdAt).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <AnnouncementBanner />
 
         {/* Network Diagnostics - Collapsible */}
         <div style={{ marginBottom: '16px' }}>
