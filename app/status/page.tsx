@@ -451,6 +451,46 @@ function StatusPageContent() {
           lastUpdated={statusData.lastUpdated}
         />
 
+        {/* Internal Organization Status */}
+        {internalStatuses && internalStatuses.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(255, 255, 255, 0.02)',
+              }}>
+                <h3 style={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  letterSpacing: '-0.01em',
+                  textTransform: 'uppercase',
+                  margin: 0,
+                }}>
+                  Organization Status Updates
+                </h3>
+              </div>
+              {internalStatuses.map((s, idx) => (
+                <InternalStatusItem
+                  key={s.organization}
+                  org={s.organization === 'mixprodgain' ? 'MI X Prodgain' : s.organization}
+                  status={s.status}
+                  message={s.message}
+                  isFirst={idx === 0}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Workflow Status - Primary View */}
         <WorkflowStatus providers={statusData.providers} />
 

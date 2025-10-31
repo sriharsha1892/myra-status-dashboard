@@ -40,7 +40,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'org-status' | 'provider-override' | 'announcements'>('provider-override');
 
-  const [organization, setOrganization] = useState<'prodgain' | 'mordor'>('prodgain');
+  const [organization, setOrganization] = useState('mixprodgain');
   const [status, setStatus] = useState('operational');
   const [message, setMessage] = useState('');
   const [updatedBy, setUpdatedBy] = useState('');
@@ -417,22 +417,22 @@ export default function AdminPage() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#171717', marginBottom: '8px' }}>
                   Organization
                 </label>
-                <select
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value as 'prodgain' | 'mordor')}
+                <input
+                  type="text"
+                  value="MI X Prodgain"
+                  disabled
                   style={{
                     width: '100%',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    border: '1px solid #e5e5e5',
+                    border: '2px solid #667eea',
                     fontSize: '14px',
+                    fontWeight: 600,
                     color: '#171717',
-                    background: 'white'
+                    background: 'rgba(102, 126, 234, 0.05)',
+                    cursor: 'not-allowed'
                   }}
-                >
-                  <option value="prodgain">Prodgain</option>
-                  <option value="mordor">Mordor Intelligence</option>
-                </select>
+                />
               </div>
 
               {/* Status */}
@@ -597,7 +597,7 @@ export default function AdminPage() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#171717' }}>
-                        {s.organization === 'prodgain' ? 'Prodgain' : 'Mordor Intelligence'}
+                        MI X Prodgain
                       </h3>
                       <div style={{
                         padding: '4px 12px',
