@@ -220,7 +220,7 @@ function StatusPageContent() {
             <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
-                  myRA AI Status
+                  myRA AI System Status
                 </h1>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -355,7 +355,7 @@ function StatusPageContent() {
           <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
-                myRA AI Status
+                myRA AI System Status
               </h1>
               <a
                 href="https://ask-myra.ai"
@@ -858,27 +858,6 @@ function StatusPageContent() {
             A joint undertaking of Mordor Intelligence and Prodgain
           </p>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
-            <a
-              href="/api/rss"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontSize: '12px',
-                color: '#60a5fa',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-            >
-              RSS Feed
-              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
-            <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>•</span>
             <a
               href="/widget-demo"
               style={{
