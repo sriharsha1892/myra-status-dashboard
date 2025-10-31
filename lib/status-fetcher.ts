@@ -1,4 +1,5 @@
 import { Provider, ProviderStatus, ServiceStatus, Component, Incident } from './types';
+import { filterRelevantIncidents } from './model-filter';
 
 export class StatusFetcher {
   private static async fetchWithTimeout(url: string, timeout = 10000): Promise<any> {
@@ -90,9 +91,13 @@ export class StatusFetcher {
         impact: i.impact,
         created_at: i.created_at,
         updated_at: i.updated_at,
+        resolved_at: i.resolved_at,
         shortlink: i.shortlink,
         incident_updates: i.incident_updates || [],
       }));
+
+      // Filter to only show incidents relevant to our tracked models
+      const relevantIncidents = filterRelevantIncidents(incidents, provider);
 
       return {
         provider,
@@ -100,7 +105,7 @@ export class StatusFetcher {
         indicator: summaryData.status?.indicator || 'none',
         lastUpdated: new Date().toISOString(),
         components,
-        incidents,
+        incidents: relevantIncidents,
         scheduledMaintenances: summaryData.scheduled_maintenances || [],
       };
     } catch (error) {
@@ -135,7 +140,10 @@ export class StatusFetcher {
           incident_updates: [],
         }));
 
-      const hasActiveIncidents = recentIncidents.some((i: Incident) =>
+      // Filter to only show incidents relevant to our tracked models
+      const relevantIncidents = filterRelevantIncidents(recentIncidents, provider);
+
+      const hasActiveIncidents = relevantIncidents.some((i: Incident) =>
         i.status !== 'resolved' && i.status !== 'postmortem'
       );
 
@@ -149,7 +157,7 @@ export class StatusFetcher {
           name: 'Gemini API',
           status: hasActiveIncidents ? 'partial_outage' : 'operational',
         }],
-        incidents: recentIncidents,
+        incidents: relevantIncidents,
       };
     } catch (error) {
       console.error(`Error fetching Google status:`, error);

@@ -150,10 +150,10 @@ export default function NetworkDiagnostics() {
 
           <div>
             <div style={{ fontSize: '14px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.95)' }}>
-              Network Connection Test
+              Your Internet Connection
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', marginTop: '2px' }}>
-              {isTesting ? 'Testing your connection speed...' : hasResults ? `${quality.text} connection detected` : 'Diagnose network connectivity'}
+              {isTesting ? 'Testing your connection speed...' : hasResults ? `Your connection: ${quality.text}` : 'Test your internet speed and latency'}
             </div>
           </div>
         </div>
