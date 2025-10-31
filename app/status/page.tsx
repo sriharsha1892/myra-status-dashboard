@@ -451,45 +451,154 @@ function StatusPageContent() {
           lastUpdated={statusData.lastUpdated}
         />
 
-        {/* Internal Organization Status */}
-        {internalStatuses && internalStatuses.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <div
-              style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(255, 255, 255, 0.02)',
-              }}>
-                <h3 style={{
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  letterSpacing: '-0.01em',
-                  textTransform: 'uppercase',
-                  margin: 0,
-                }}>
-                  Organization Status Updates
-                </h3>
-              </div>
-              {internalStatuses.map((s, idx) => (
-                <InternalStatusItem
-                  key={s.organization}
-                  org={s.organization === 'mixprodgain' ? 'MI X Prodgain' : s.organization}
-                  status={s.status}
-                  message={s.message}
-                  isFirst={idx === 0}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Team Status Update & Announcements */}
+        {(() => {
+          const teamStatus = internalStatuses.find(s => s.organization === 'mixprodgain');
+          return (
+            <>
+              {/* Team Status Update */}
+              {teamStatus && (
+                <div style={{ marginBottom: '16px' }}>
+                  {(() => {
+                    const getStatusConfig = (s: string) => {
+                      switch(s) {
+                        case 'operational':
+                          return {
+                            color: '#10b981',
+                            bg: 'rgba(16, 185, 129, 0.15)',
+                            border: 'rgba(16, 185, 129, 0.4)',
+                            icon: '✓',
+                            label: 'All Systems Operational'
+                          };
+                        case 'degraded_performance':
+                          return {
+                            color: '#f59e0b',
+                            bg: 'rgba(245, 158, 11, 0.15)',
+                            border: 'rgba(245, 158, 11, 0.4)',
+                            icon: '⚠',
+                            label: 'Performance Issues'
+                          };
+                        case 'partial_outage':
+                          return {
+                            color: '#ef4444',
+                            bg: 'rgba(239, 68, 68, 0.15)',
+                            border: 'rgba(239, 68, 68, 0.4)',
+                            icon: '!',
+                            label: 'Partial Outage'
+                          };
+                        case 'major_outage':
+                          return {
+                            color: '#dc2626',
+                            bg: 'rgba(220, 38, 38, 0.15)',
+                            border: 'rgba(220, 38, 38, 0.4)',
+                            icon: '✕',
+                            label: 'Major Outage'
+                          };
+                        case 'under_maintenance':
+                          return {
+                            color: '#8b5cf6',
+                            bg: 'rgba(139, 92, 246, 0.15)',
+                            border: 'rgba(139, 92, 246, 0.4)',
+                            icon: '🔧',
+                            label: 'Scheduled Maintenance'
+                          };
+                        default:
+                          return {
+                            color: '#6b7280',
+                            bg: 'rgba(107, 114, 128, 0.15)',
+                            border: 'rgba(107, 114, 128, 0.4)',
+                            icon: '?',
+                            label: 'Status Unknown'
+                          };
+                      }
+                    };
+
+                    const config = getStatusConfig(teamStatus.status);
+                    const timestamp = new Date(teamStatus.timestamp).toLocaleString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'GMT'
+                    }) + ' GMT';
+
+                    return (
+                      <div
+                        style={{
+                          background: config.bg,
+                          border: `2px solid ${config.border}`,
+                          borderRadius: '12px',
+                          padding: '16px 20px',
+                          backdropFilter: 'blur(12px)',
+                          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          {/* Icon */}
+                          <div
+                            style={{
+                              fontSize: '24px',
+                              lineHeight: '1',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {config.icon}
+                          </div>
+
+                          {/* Content */}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                                myRA AI Team Update
+                              </h3>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  fontSize: '9px',
+                                  fontWeight: 800,
+                                  padding: '3px 8px',
+                                  borderRadius: '4px',
+                                  background: config.color,
+                                  color: '#ffffff',
+                                  letterSpacing: '0.5px',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                {config.label}
+                              </span>
+                            </div>
+                            <p
+                              style={{
+                                fontSize: '13px',
+                                color: 'rgba(255, 255, 255, 0.85)',
+                                margin: '0 0 8px 0',
+                                lineHeight: '1.5',
+                              }}
+                            >
+                              {teamStatus.message}
+                            </p>
+                            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>Posted: {timestamp}</span>
+                              {teamStatus.updatedBy && (
+                                <>
+                                  <span>•</span>
+                                  <span>By: {teamStatus.updatedBy}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Announcements */}
+              <AnnouncementBanner />
+            </>
+          );
+        })()}
 
         {/* Workflow Status - Primary View */}
         <WorkflowStatus providers={statusData.providers} />
@@ -502,9 +611,6 @@ function StatusPageContent() {
 
         {/* Incident History */}
         <IncidentHistory providers={statusData.providers} />
-
-        {/* Announcements */}
-        <AnnouncementBanner />
 
         {/* Network Diagnostics - Collapsible */}
         <div style={{ marginBottom: '16px' }}>
@@ -701,74 +807,6 @@ function StatusPageContent() {
     </div>
   );
 }
-
-function InternalStatusItem({ org, status, message, isFirst }: { org: string, status: string, message: string, isFirst: boolean }) {
-  const getStatusConfig = (s: string) => {
-    switch(s) {
-      case 'operational':
-        return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', text: 'All good', icon: '✓' };
-      case 'degraded_performance':
-        return { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', text: 'Minor delays', icon: '⚠' };
-      case 'partial_outage':
-        return { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', text: 'Some issues', icon: '!' };
-      case 'major_outage':
-        return { color: '#dc2626', bg: 'rgba(220, 38, 38, 0.15)', text: 'Service down', icon: '✕' };
-      case 'under_maintenance':
-        return { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', text: 'Scheduled maintenance', icon: '⚙' };
-      default:
-        return { color: '#6b7280', bg: 'rgba(107, 114, 128, 0.15)', text: 'Checking...', icon: '?' };
-    }
-  };
-
-  const config = getStatusConfig(status);
-
-  return (
-    <div style={{
-      padding: '12px 20px',
-      borderTop: isFirst ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      background: 'rgba(255, 255, 255, 0.04)',
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)' }}>{org}</div>
-        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>{message}</div>
-      </div>
-
-      {/* Status badge */}
-      <div style={{
-        padding: '4px 12px',
-        borderRadius: '12px',
-        background: 'rgba(255, 255, 255, 0.06)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      }}>
-        {status === 'operational' ? (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="5" fill="rgba(255, 255, 255, 0.3)" opacity="0.3"/>
-            <path d="M3 6l2 2 4-4" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        ) : status === 'degraded_performance' || status === 'under_maintenance' ? (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 2v5M6 9h.01" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        ) : (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <circle cx="6" cy="6" r="5" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5"/>
-            <path d="M4 4l4 4M8 4l-4 4" stroke="rgba(255, 255, 255, 0.9)" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        )}
-        <span style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255, 255, 255, 0.9)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-          {config.text}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 
 // Wrap with ViewModeProvider for admin/user view switching
 export default function StatusPage() {
