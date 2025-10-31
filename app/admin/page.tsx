@@ -40,7 +40,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'org-status' | 'provider-override' | 'announcements'>('provider-override');
 
-  const [organization, setOrganization] = useState('mixprodgain');
+  const [organization, setOrganization] = useState('prodgain');
   const [status, setStatus] = useState('operational');
   const [message, setMessage] = useState('');
   const [updatedBy, setUpdatedBy] = useState('');

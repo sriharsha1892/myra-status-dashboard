@@ -473,7 +473,7 @@ function StatusPageContent() {
 
           {/* Team Content */}
           {(() => {
-            const teamStatus = internalStatuses.find(s => s.organization === 'mixprodgain');
+            const teamStatus = internalStatuses.find(s => s.organization === 'prodgain');
             return (
               <>
                 {/* Team Status Update */}
