@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "myRA AI - System Status",
+  title: "myRA AI System Status",
   description: "Real-time status monitoring for myRA AI platform services",
   keywords: ["myRA AI", "status", "monitoring", "system status", "platform health"],
 };
