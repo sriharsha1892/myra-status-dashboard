@@ -58,35 +58,35 @@ export default function AnnouncementBanner() {
           bg: 'rgba(59, 130, 246, 0.15)',
           border: 'rgba(59, 130, 246, 0.4)',
           badge: '#3b82f6',
-          icon: '9',
+          icon: '\u2139\uFE0F', // info icon
         };
       case 'warning':
         return {
           bg: 'rgba(245, 158, 11, 0.15)',
           border: 'rgba(245, 158, 11, 0.4)',
           badge: '#f59e0b',
-          icon: ' ',
+          icon: '\u26A0\uFE0F', // warning icon
         };
       case 'success':
         return {
           bg: 'rgba(16, 185, 129, 0.15)',
           border: 'rgba(16, 185, 129, 0.4)',
           badge: '#10b981',
-          icon: '',
+          icon: '\u2713', // checkmark
         };
       case 'maintenance':
         return {
           bg: 'rgba(139, 92, 246, 0.15)',
           border: 'rgba(139, 92, 246, 0.4)',
           badge: '#8b5cf6',
-          icon: '='',
+          icon: '\u{1F527}', // wrench
         };
       default:
         return {
           bg: 'rgba(107, 114, 128, 0.15)',
           border: 'rgba(107, 114, 128, 0.4)',
           badge: '#6b7280',
-          icon: '=â',
+          icon: '\u{1F4E2}', // megaphone
         };
     }
   };
@@ -168,13 +168,13 @@ export default function AnnouncementBanner() {
                   <span>Posted: {formatShortGMT(announcement.createdAt)}</span>
                   {announcement.expiresAt && (
                     <>
-                      <span>"</span>
+                      <span>â€¢</span>
                       <span>Expires: {formatShortGMT(announcement.expiresAt)}</span>
                     </>
                   )}
                   {announcement.createdBy && (
                     <>
-                      <span>"</span>
+                      <span>â€¢</span>
                       <span>By: {announcement.createdBy}</span>
                     </>
                   )}
