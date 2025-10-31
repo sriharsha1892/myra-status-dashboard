@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server';
 import { StatusCache } from '@/lib/status-cache';
+import { sanitizeIncidentName } from '@/lib/model-filter';
 
 export const dynamic = 'force-dynamic';
-
-// Sanitize incident names to remove provider-specific references
-function sanitizeIncidentName(name: string): string {
-  return name
-    .replace(/\b(AWS|Amazon Web Services|OpenAI|Anthropic|Google|Gemini|Exa|Brave)\b/gi, 'Service')
-    .replace(/\b(GPT-\d+|Claude|Gemini Flash)\b/gi, 'AI Model')
-    .replace(/\b(API Gateway|Lambda|S3|EC2)\b/gi, 'Component')
-    .replace(/Service Service/gi, 'Service')
-    .trim();
-}
 
 export async function GET() {
   try {
