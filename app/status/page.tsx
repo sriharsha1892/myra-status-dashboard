@@ -16,7 +16,6 @@ import ActiveIncidentsTimeline from '@/components/ActiveIncidentsTimeline';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
-import ViewModeToggle from '@/components/ViewModeToggle';
 
 // Lazy load NetworkDiagnostics for better initial load performance
 const NetworkDiagnostics = dynamic(() => import('@/components/NetworkDiagnostics'), {
@@ -812,7 +811,6 @@ function StatusPageContent() {
 export default function StatusPage() {
   return (
     <ViewModeProvider>
-      <ViewModeToggle />
       <StatusPageContent />
     </ViewModeProvider>
   );
