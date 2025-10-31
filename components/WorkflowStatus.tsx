@@ -198,7 +198,7 @@ export default function WorkflowStatus({ providers }: WorkflowStatusProps) {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: isAdminView ? '4px' : '0' }}>
                         <div style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>
                           {stage.name}
                         </div>
@@ -218,9 +218,11 @@ export default function WorkflowStatus({ providers }: WorkflowStatusProps) {
                           {getStatusText(status)}
                         </div>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.4' }}>
-                        {stage.description}
-                      </div>
+                      {isAdminView && (
+                        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: '1.4' }}>
+                          {stage.description}
+                        </div>
+                      )}
                     </div>
 
                     {isAdminView && (
