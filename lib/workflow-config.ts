@@ -40,8 +40,8 @@ export const WORKFLOW_STAGES: WorkflowStage[] = [
   },
   {
     id: 'validator',
-    name: 'Quality Validator',
-    description: 'Validates research quality and identifies gaps',
+    name: 'Data Validator',
+    description: 'Validates research accuracy and identifies gaps',
     primaryServices: ['openai'],
     requiredModels: ['GPT-5 mini', 'GPT-5-mini'],
     fallbackServices: ['google'],
