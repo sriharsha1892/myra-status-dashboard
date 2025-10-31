@@ -444,20 +444,41 @@ function StatusPageContent() {
       {/* Main Content */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px', paddingLeft: '16px', paddingRight: '16px' }}>
 
-        {/* Hero Status Banner */}
-        <HeroStatusBanner
-          providers={statusData.providers}
-          lastUpdated={statusData.lastUpdated}
-        />
+        {/* Team Communications Section */}
+        <div style={{ marginBottom: '32px' }}>
+          {/* Section Header */}
+          <div style={{
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid rgba(139, 92, 246, 0.3)'
+          }}>
+            <h2 style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'rgba(255, 255, 255, 0.95)',
+              marginBottom: '6px',
+              letterSpacing: '-0.01em',
+              textTransform: 'uppercase'
+            }}>
+              Team Communications
+            </h2>
+            <p style={{
+              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              lineHeight: '1.5'
+            }}>
+              Official updates and announcements from the myRA AI operations team
+            </p>
+          </div>
 
-        {/* Team Status Update & Announcements */}
-        {(() => {
-          const teamStatus = internalStatuses.find(s => s.organization === 'mixprodgain');
-          return (
-            <>
-              {/* Team Status Update */}
-              {teamStatus && (
-                <div style={{ marginBottom: '16px' }}>
+          {/* Team Content */}
+          {(() => {
+            const teamStatus = internalStatuses.find(s => s.organization === 'mixprodgain');
+            return (
+              <>
+                {/* Team Status Update */}
+                {teamStatus && (
+                  <div style={{ marginBottom: '16px' }}>
                   {(() => {
                     const getStatusConfig = (s: string) => {
                       switch(s) {
@@ -593,90 +614,167 @@ function StatusPageContent() {
                 </div>
               )}
 
-              {/* Announcements */}
-              <AnnouncementBanner />
-            </>
-          );
-        })()}
+                {/* Announcements */}
+                <AnnouncementBanner />
+              </>
+            );
+          })()}
+        </div>
 
-        {/* Workflow Status - Primary View */}
-        <WorkflowStatus providers={statusData.providers} />
+        {/* Infrastructure Status Section */}
+        <div style={{ marginTop: '32px', marginBottom: '32px' }}>
+          {/* Section Header */}
+          <div style={{
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid rgba(59, 130, 246, 0.3)'
+          }}>
+            <h2 style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'rgba(255, 255, 255, 0.95)',
+              marginBottom: '6px',
+              letterSpacing: '-0.01em',
+              textTransform: 'uppercase'
+            }}>
+              Infrastructure Status
+            </h2>
+            <p style={{
+              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              lineHeight: '1.5'
+            }}>
+              Real-time monitoring of infrastructure partner health and service dependencies that power myRA AI operations
+            </p>
+          </div>
 
-        {/* Active Incidents Timeline with Cognitive Severity Assessment */}
-        <ActiveIncidentsTimeline providers={statusData.providers} />
+          {/* Infrastructure Content */}
+          <div style={{
+            padding: '24px',
+            background: 'rgba(59, 130, 246, 0.03)',
+            border: '2px solid rgba(59, 130, 246, 0.2)',
+            borderRadius: '16px'
+          }}>
+            {/* Hero Status Banner */}
+            <HeroStatusBanner
+              providers={statusData.providers}
+              lastUpdated={statusData.lastUpdated}
+            />
 
-        {/* Impact Radius - Shows only when there are issues */}
-        <ServiceDependencies providers={statusData.providers} />
+            {/* Workflow Status - Primary View */}
+            <WorkflowStatus providers={statusData.providers} />
 
-        {/* Incident History */}
-        <IncidentHistory providers={statusData.providers} />
+            {/* Active Incidents Timeline with Cognitive Severity Assessment */}
+            <ActiveIncidentsTimeline providers={statusData.providers} />
 
-        {/* Network Diagnostics - Collapsible */}
-        <div style={{ marginBottom: '16px' }}>
+            {/* Impact Radius - Shows only when there are issues */}
+            <ServiceDependencies providers={statusData.providers} />
+
+            {/* Incident History */}
+            <IncidentHistory providers={statusData.providers} />
+
+            {/* Infrastructure Partners Cards */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '4px', letterSpacing: '-0.01em' }}>
+                  Service Status Details
+                </h3>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4' }}>
+                  Detailed status of individual infrastructure partner services
+                </p>
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))',
+                gap: '16px'
+              }}>
+                {statusData.providers
+                  .filter((p: any) => p.provider.priority === 'primary')
+                  .map((providerStatus: any) => (
+                    <ServiceStatusCard
+                      key={providerStatus.provider.id}
+                      providerStatus={providerStatus}
+                      onNotificationSubscribe={(message) => addToast(message, 'success')}
+                    />
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Diagnostic Tools Section */}
+        <div style={{ marginTop: '32px', marginBottom: '32px' }}>
+          {/* Section Header */}
+          <div style={{
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid rgba(245, 158, 11, 0.3)'
+          }}>
+            <h2 style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'rgba(255, 255, 255, 0.95)',
+              marginBottom: '6px',
+              letterSpacing: '-0.01em',
+              textTransform: 'uppercase'
+            }}>
+              Diagnostic Tools
+            </h2>
+            <p style={{
+              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              lineHeight: '1.5'
+            }}>
+              Connectivity testing and network diagnostics to isolate performance issues between your environment and myRA AI services
+            </p>
+          </div>
+
+          {/* Diagnostic Content */}
           <details open={showDiagnostics} onToggle={(e: any) => setShowDiagnostics(e.target.open)}>
             <summary
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'rgba(255,255,255,0.7)',
+                color: 'rgba(255,255,255,0.85)',
                 marginBottom: '12px',
                 cursor: 'pointer',
                 listStyle: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '12px 16px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '14px 18px',
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '2px solid rgba(245, 158, 11, 0.2)',
                 borderRadius: '12px',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.2)';
               }}
             >
               <span style={{ transition: 'transform 0.2s', transform: showDiagnostics ? 'rotate(90deg)' : 'rotate(0deg)' }}>
                 ▸
               </span>
-              Network Diagnostics
+              Run Network Tests
               <span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 'auto' }}>
-                Advanced troubleshooting
+                {showDiagnostics ? 'Hide' : 'Show'} detailed diagnostics
               </span>
             </summary>
-            <div style={{ marginTop: '12px' }}>
+            <div style={{
+              marginTop: '12px',
+              padding: '20px',
+              background: 'rgba(245, 158, 11, 0.03)',
+              border: '2px solid rgba(245, 158, 11, 0.15)',
+              borderRadius: '12px'
+            }}>
               <NetworkDiagnostics />
             </div>
           </details>
-        </div>
-
-        {/* Infrastructure Partners Status */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '4px', letterSpacing: '-0.01em' }}>
-              Infrastructure Partners
-            </h2>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4' }}>
-              Status of infrastructure partners that power myRA AI
-            </p>
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))',
-            gap: '16px'
-          }}>
-            {statusData.providers
-              .filter((p: any) => p.provider.priority === 'primary')
-              .map((providerStatus: any) => (
-                <ServiceStatusCard
-                  key={providerStatus.provider.id}
-                  providerStatus={providerStatus}
-                  onNotificationSubscribe={(message) => addToast(message, 'success')}
-                />
-              ))}
-          </div>
         </div>
 
         {/* Status History */}
