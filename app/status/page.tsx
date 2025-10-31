@@ -652,11 +652,16 @@ function StatusPageContent() {
           </details>
         </div>
 
-        {/* Service Status */}
+        {/* Infrastructure Partners Status */}
         <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
-            Service Status
-          </h2>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '4px', letterSpacing: '-0.01em' }}>
+              Infrastructure Partners
+            </h2>
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4' }}>
+              Status of infrastructure partners that power myRA AI
+            </p>
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))',

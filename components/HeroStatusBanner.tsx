@@ -30,7 +30,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
         statusBadge: 'OPERATIONAL',
         statusBadgeBg: '#10b981',
         message: 'All Systems Operational',
-        subtext: 'All AI services and infrastructure are functioning normally',
+        subtext: 'myRA AI services and infrastructure partners are functioning normally',
       };
     }
     if (criticalIssues.length > 0) {
@@ -39,8 +39,8 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
         border: 'rgba(239, 68, 68, 0.35)',
         statusBadge: 'DEGRADED',
         statusBadgeBg: '#ef4444',
-        message: 'Service Disruption',
-        subtext: `${issuesCount} ${issuesCount === 1 ? 'service is' : 'services are'} experiencing issues. Some capabilities may be temporarily unavailable.`,
+        message: 'Service Disruption Detected',
+        subtext: `Infrastructure partner issues affecting ${issuesCount} ${issuesCount === 1 ? 'service' : 'services'}. Some capabilities may be temporarily unavailable.`,
       };
     }
     return {
@@ -48,8 +48,8 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
       border: 'rgba(245, 158, 11, 0.35)',
       statusBadge: 'DEGRADED',
       statusBadgeBg: '#f59e0b',
-      message: 'Performance Issues',
-      subtext: `${issuesCount} ${issuesCount === 1 ? 'service is' : 'services are'} experiencing slowdowns. Core functionality remains available.`,
+      message: 'Performance Issues Detected',
+      subtext: `Infrastructure partner issues affecting ${issuesCount} ${issuesCount === 1 ? 'service' : 'services'}. Core functionality remains available.`,
     };
   };
 
@@ -152,7 +152,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
                 marginBottom: '8px',
               }}
             >
-              Affected Services
+              Affected Partners
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {criticalIssues.length > 0 &&

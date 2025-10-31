@@ -209,10 +209,10 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
     <div style={{ marginBottom: '24px' }}>
       <div style={{ marginBottom: '16px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.95)', marginBottom: '8px', letterSpacing: '-0.01em' }}>
-          Active Incidents ({activeIncidents.length})
+          Infrastructure Partner Incidents ({activeIncidents.length})
         </h2>
         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
-          Real-time incident tracking with intelligent severity assessment
+          Real-time tracking of infrastructure partner incidents affecting myRA AI
         </p>
       </div>
 
