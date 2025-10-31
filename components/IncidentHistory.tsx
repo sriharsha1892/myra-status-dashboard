@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ProviderStatus } from '@/lib/types';
+import { getTimeSinceGMT, getDurationGMT } from '@/lib/time-utils';
 
 interface IncidentHistoryProps {
   providers: ProviderStatus[];
@@ -36,32 +37,6 @@ export default function IncidentHistory({ providers }: IncidentHistoryProps) {
   if (allIncidents.length === 0) {
     return null;
   }
-
-  const getTimeSince = (dateString: string) => {
-    const now = new Date();
-    const then = new Date(dateString);
-    const diffMs = now.getTime() - then.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
-  };
-
-  const getDuration = (start: string, end: string) => {
-    const startTime = new Date(start).getTime();
-    const endTime = new Date(end).getTime();
-    const diffMs = endTime - startTime;
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 60) return `${diffMins}m`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ${diffHours % 24}h`;
-  };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
@@ -212,12 +187,12 @@ export default function IncidentHistory({ providers }: IncidentHistoryProps) {
                           flexWrap: 'wrap',
                         }}
                       >
-                        <span>{getTimeSince(incident.created_at)}</span>
+                        <span>{getTimeSinceGMT(incident.created_at)}</span>
                         {incident.resolved_at && (
                           <>
                             <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>•</span>
                             <span>
-                              Duration: {getDuration(incident.created_at, incident.resolved_at)}
+                              Duration: {getDurationGMT(incident.created_at, incident.resolved_at)}
                             </span>
                           </>
                         )}

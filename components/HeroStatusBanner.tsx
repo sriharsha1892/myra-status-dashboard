@@ -3,36 +3,12 @@
 import { ProviderStatus } from '@/lib/types';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
+import { getTimeSinceGMT, formatShortGMT } from '@/lib/time-utils';
 
 interface HeroStatusBannerProps {
   providers: ProviderStatus[];
   lastUpdated: string;
 }
-
-const getTimeSince = (dateString: string) => {
-  const now = new Date();
-  const then = new Date(dateString);
-  const diffMs = now.getTime() - then.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-
-  if (diffSecs < 60) return `${diffSecs} seconds ago`;
-  const diffMins = Math.floor(diffSecs / 60);
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-};
-
-const formatTimestamp = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  });
-};
 
 export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusBannerProps) {
   const { isAdminView } = useViewMode();
@@ -151,7 +127,7 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
               color: 'rgba(255, 255, 255, 0.5)',
             }}
           >
-            <span>{getTimeSince(lastUpdated)}</span>
+            <span>Last checked: {getTimeSinceGMT(lastUpdated)}</span>
           </div>
         </div>
 

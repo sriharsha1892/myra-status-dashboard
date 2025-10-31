@@ -4,6 +4,7 @@ import React from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
+import { getIncidentLifecycle, formatShortGMT, getTimeSinceGMT } from '@/lib/time-utils';
 
 interface ActiveIncidentsTimelineProps {
   providers: ProviderStatus[];
@@ -401,13 +402,16 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
               }}
             >
               <div>
-                <span style={{ fontWeight: 600 }}>Started:</span> {new Date(incident.created_at).toLocaleString()}
+                <span style={{ fontWeight: 600 }}>Started:</span> {formatShortGMT(incident.created_at)}
               </div>
               {incident.updated_at !== incident.created_at && (
                 <div>
-                  <span style={{ fontWeight: 600 }}>Updated:</span> {new Date(incident.updated_at).toLocaleString()}
+                  <span style={{ fontWeight: 600 }}>Updated:</span> {formatShortGMT(incident.updated_at)}
                 </div>
               )}
+              <div>
+                <span style={{ fontWeight: 600 }}>Duration:</span> {getTimeSinceGMT(incident.created_at)}
+              </div>
               <div>
                 <span style={{ fontWeight: 600 }}>Impact:</span> {incident.impact}
               </div>
