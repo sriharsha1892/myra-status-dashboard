@@ -4,7 +4,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'aws',
     name: 'AWS',
-    displayName: 'AWS Infrastructure',
+    displayName: 'Cloud Infrastructure',
     userFacingName: 'Cloud Infrastructure',
     enables: 'Platform hosting, API routing, data storage across Singapore & Mumbai regions',
     statusPageUrl: 'https://health.aws.amazon.com/health/status',
@@ -18,7 +18,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'openai',
     name: 'OpenAI',
-    displayName: 'OpenAI Services',
+    displayName: 'Research Architecture & Data Collection',
     userFacingName: 'Research Architecture & Data Collection',
     enables: 'Methodology design, data collection orchestration, quality validation',
     statusPageUrl: 'https://status.openai.com',
@@ -33,7 +33,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'anthropic',
     name: 'Anthropic',
-    displayName: 'Anthropic Services',
+    displayName: 'Research Orchestration & Output Generation',
     userFacingName: 'Research Orchestration & Output Generation',
     enables: 'Project coordination, research brief creation, presentation generation',
     statusPageUrl: 'https://status.anthropic.com',
@@ -48,7 +48,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'google',
     name: 'Google',
-    displayName: 'Google Gemini Services',
+    displayName: 'Research Continuity Services',
     userFacingName: 'Research Continuity Services',
     enables: 'Backup capabilities for research workflows during primary service degradation',
     statusPageUrl: 'https://status.cloud.google.com',
@@ -63,7 +63,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'exa',
     name: 'Exa',
-    displayName: 'Exa Search',
+    displayName: 'Web Intelligence Service',
     userFacingName: 'Web Intelligence Service',
     enables: 'Primary web search, data enrichment, source verification for research',
     statusPageUrl: 'https://status.exa.ai',
@@ -76,7 +76,7 @@ export const PROVIDERS: Provider[] = [
   {
     id: 'brave',
     name: 'Brave',
-    displayName: 'Brave Search',
+    displayName: 'Search Continuity Service',
     userFacingName: 'Search Continuity Service',
     enables: 'Backup web search capabilities, source diversity',
     statusPageUrl: 'https://status.brave.app',
