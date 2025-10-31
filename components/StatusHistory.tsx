@@ -157,8 +157,8 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
   };
 
   return (
-    <div style={{ marginBottom: '20px' }}>
-      <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '12px', letterSpacing: '-0.01em' }}>
+    <div style={{ marginBottom: '16px' }}>
+      <h2 style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: '10px', letterSpacing: '-0.01em' }}>
         3-Day Status History
       </h2>
 
@@ -166,8 +166,8 @@ export default function StatusHistory({ providers }: StatusHistoryProps) {
         style={{
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          padding: '16px',
+          borderRadius: '10px',
+          padding: '12px',
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}

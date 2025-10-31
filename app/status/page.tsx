@@ -6,6 +6,7 @@ import { StatusResponse, ProviderStatus } from '@/lib/types';
 import AnimatedStat from '@/components/AnimatedStat';
 import ServiceStatusCard from '@/components/ServiceStatusCard';
 import HeroStatusBanner from '@/components/HeroStatusBanner';
+import WorkflowStatus from '@/components/WorkflowStatus';
 import SkeletonCard from '@/components/SkeletonCard';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import IncidentHistory from '@/components/IncidentHistory';
@@ -448,6 +449,9 @@ function StatusPageContent() {
           providers={statusData.providers}
           lastUpdated={statusData.lastUpdated}
         />
+
+        {/* Workflow Status - Primary View */}
+        <WorkflowStatus providers={statusData.providers} />
 
         {/* Active Incidents Timeline with Cognitive Severity Assessment */}
         <ActiveIncidentsTimeline providers={statusData.providers} />

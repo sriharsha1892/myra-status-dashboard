@@ -8,7 +8,7 @@ interface IncidentHistoryProps {
 }
 
 export default function IncidentHistory({ providers }: IncidentHistoryProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Sanitize incident names to remove provider-specific references
   const sanitizeIncidentName = (name: string) => {
