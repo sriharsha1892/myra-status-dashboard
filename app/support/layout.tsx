@@ -10,7 +10,9 @@ import {
   BarChart3,
   Users2,
   LogOut,
-  Map
+  Map,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import NotificationsBell from '@/components/NotificationsBell';
 
@@ -129,6 +131,18 @@ export default function SupportLayout({
             </button>
 
             <button
+              onClick={() => router.push('/support/tickets')}
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
+                pathname?.startsWith('/support/tickets')
+                  ? 'text-slate-900 bg-slate-900/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <FileText className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/tickets') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <span>Tickets</span>
+            </button>
+
+            <button
               onClick={() => router.push('/support/reports')}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/reports'
@@ -168,8 +182,20 @@ export default function SupportLayout({
             )}
           </div>
 
-          {/* Sign Out Button - Prominent placement */}
-          <div className="mt-auto pt-4 border-t border-slate-200">
+          {/* Bottom Actions */}
+          <div className="mt-auto pt-4 border-t border-slate-200 space-y-1">
+            {/* Link to Public Status Page */}
+            <a
+              href="/status"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+            >
+              <ExternalLink className="w-5 h-5 shrink-0" strokeWidth={2} />
+              <span>Public Status</span>
+            </a>
+
+            {/* Sign Out Button */}
             <button
               onClick={() => signOut()}
               className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full text-slate-600 hover:text-red-600 hover:bg-red-50"
