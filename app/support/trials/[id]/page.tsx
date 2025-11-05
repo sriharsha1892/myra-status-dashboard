@@ -200,23 +200,38 @@ export default function OrganizationDetailPage() {
 
   const handleSaveOrganization = async () => {
     try {
+      // Only update editable fields, exclude immutable fields like org_id, created_at
+      const updatePayload: any = {
+        org_name: editedOrg.org_name,
+        org_domain: editedOrg.org_domain,
+        account_manager: editedOrg.account_manager,
+        org_lifecycle_stage: editedOrg.org_lifecycle_stage,
+        trial_start_date: editedOrg.trial_start_date,
+        trial_end_date: editedOrg.trial_end_date,
+        engagement_score: editedOrg.engagement_score,
+        last_activity_date: editedOrg.last_activity_date,
+        comments: editedOrg.comments,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('💾 Saving organization with payload:', updatePayload);
+
       const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
         .from('trial_organizations')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update(editedOrg)
+        .update(updatePayload)
         .eq('org_id', orgId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
 
+      console.log('✅ Organization saved successfully');
       toast.success('Organization updated successfully');
       setOrganization({ ...organization!, ...editedOrg });
     } catch (error: any) {
-      console.error('Error updating organization:', error);
-      toast.error('Failed to update organization');
+      console.error('💥 Error updating organization:', error);
+      toast.error(`Failed to update organization: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -698,23 +713,26 @@ export default function OrganizationDetailPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
                   <select
-                    value={editedOrg.account_manager_id || ''}
+                    value={editedOrg.account_manager || ''}
                     onChange={(e) => {
-                      const selectedManager = accountManagers.find(m => m.user_id === e.target.value);
+                      const managerName = e.target.value;
+                      console.log('🔄 Account manager changed to:', managerName);
                       setEditedOrg({
                         ...editedOrg,
-                        account_manager_id: e.target.value || null,
-                        account_manager: selectedManager?.full_name || selectedManager?.email || null
+                        account_manager: managerName || null
                       });
                     }}
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select account manager...</option>
-                    {accountManagers.map((manager) => (
-                      <option key={manager.user_id} value={manager.user_id}>
-                        {manager.full_name} ({manager.email})
-                      </option>
-                    ))}
+                    {accountManagers.map((manager) => {
+                      const displayName = `${manager.full_name} (${manager.email})`;
+                      return (
+                        <option key={manager.user_id} value={displayName}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
