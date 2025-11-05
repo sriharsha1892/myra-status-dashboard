@@ -4,9 +4,22 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 
 // Helper to create Supabase Admin client at runtime
 function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
+    throw new Error('Server configuration error: Missing Supabase URL');
+  }
+
+  if (!serviceRoleKey) {
+    console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+    throw new Error('Server configuration error: Missing Supabase service role key');
+  }
+
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,
