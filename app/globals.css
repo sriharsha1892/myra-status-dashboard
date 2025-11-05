@@ -2,6 +2,15 @@
 
 @source "**/*.{js,ts,jsx,tsx}";
 
+@theme {
+  /* Custom myRA colors */
+  --color-myra-primary: #6366f1;
+  --color-myra-secondary: #8b5cf6;
+  --color-myra-accent: #a78bfa;
+  --color-myra-dark: #1e1b4b;
+  --color-myra-light: #f5f3ff;
+}
+
 /* Global resets */
 * {
   box-sizing: border-box;
