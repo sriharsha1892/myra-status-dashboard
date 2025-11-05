@@ -135,11 +135,41 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Insert notifications
+    // Filter notifications based on user preferences
     if (notifications.length > 0) {
-      await supabase
-        .from('activity_note_notifications')
-        .insert(notifications);
+      const userEmails = [...new Set(notifications.map(n => n.user_email))];
+
+      // Fetch user preferences
+      const { data: preferences } = await supabase
+        .from('user_notification_preferences' as any)
+        .select('user_email, notification_type, enabled')
+        .in('user_email', userEmails) as any;
+
+      // Create a map of user preferences
+      const preferencesMap = new Map<string, Set<string>>();
+      if (preferences) {
+        for (const pref of preferences as any[]) {
+          if (!pref.enabled) {
+            if (!preferencesMap.has(pref.user_email)) {
+              preferencesMap.set(pref.user_email, new Set());
+            }
+            preferencesMap.get(pref.user_email)!.add(pref.notification_type);
+          }
+        }
+      }
+
+      // Filter out notifications for users who have disabled them
+      const filteredNotifications = notifications.filter(notif => {
+        const disabledTypes = preferencesMap.get(notif.user_email);
+        return !disabledTypes || !disabledTypes.has(notif.notification_type);
+      });
+
+      // Insert filtered notifications
+      if (filteredNotifications.length > 0) {
+        await supabase
+          .from('activity_note_notifications')
+          .insert(filteredNotifications as any);
+      }
     }
 
     return NextResponse.json({ note }, { status: 201 });
