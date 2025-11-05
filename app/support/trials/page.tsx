@@ -190,13 +190,16 @@ export default function TrialOrganizationsPage() {
         return;
       }
 
-      // Update both account_manager_id and account_manager fields
+      // Update account_manager field (account_manager_id doesn't exist in DB schema)
+      const managerDisplayName = `${selectedManager.full_name || selectedManager.email} (${selectedManager.email})`;
+
+      console.log(`💾 Bulk updating ${selectedOrgIds.size} organizations with account manager:`, managerDisplayName);
+
       const { error } = await supabase
         .from('trial_organizations')
-        // @ts-ignore - Supabase typing issue with dynamic columns
         .update({
-          account_manager_id: selectedManager.user_id,
-          account_manager: selectedManager.full_name || selectedManager.email
+          account_manager: managerDisplayName,
+          updated_at: new Date().toISOString(),
         })
         .in('org_id', Array.from(selectedOrgIds));
 
