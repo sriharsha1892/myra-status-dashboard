@@ -101,16 +101,48 @@ export default function OrganizationDetailPage() {
         return;
       }
 
-      // Fetch account managers (from users table)
-      const { data: managersData, error: managersError } = await supabase
-        .from('users')
-        .select('id as user_id, email, full_name')
-        .order('full_name', { ascending: true });
+      // Fetch account managers from API (users are stored in Supabase Auth, not a database table)
+      try {
+        console.log('🔍 Fetching account managers from API...');
+        const response = await fetch('/api/admin/users');
+        console.log('📡 API Response Status:', response.status);
 
-      if (!managersError && managersData) {
-        setAccountManagers(managersData);
-      } else {
-        // Fallback to empty list if users table doesn't work
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📦 API Response Data:', data);
+          const users = data.users || [];
+          console.log(`👥 Total users from API: ${users.length}`, users);
+
+          // Filter for admins and account managers
+          const managers = users
+            .filter((u: any) => {
+              const role = u.role?.toLowerCase() || '';
+              console.log(`Checking user ${u.email}: role="${role}"`);
+              return role === 'admin' || role === 'account manager';
+            })
+            .map((u: any) => ({
+              user_id: u.id,
+              email: u.email,
+              full_name: u.name,
+            }))
+            .sort((a: any, b: any) => (a.full_name || '').localeCompare(b.full_name || ''));
+
+          console.log(`✅ Found ${managers.length} account managers:`, managers);
+
+          if (managers.length === 0) {
+            toast.error('No account managers found. Please ensure users have "Admin" or "Account Manager" roles.');
+          }
+
+          setAccountManagers(managers);
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Failed to fetch account managers from API:', response.status, errorText);
+          toast.error(`Failed to load account managers: ${response.status}`);
+          setAccountManagers([]);
+        }
+      } catch (error) {
+        console.error('💥 Error fetching account managers:', error);
+        toast.error('Error loading account managers. Check console for details.');
         setAccountManagers([]);
       }
 
@@ -739,12 +771,12 @@ export default function OrganizationDetailPage() {
           </div>
         )}
 
-        {/* REMOVED: Broken Users Tab - OrgUsersTab queries non-existent managed_org_ids column */}
-        {/* {activeTab === 'users' && (
+        {/* Trial Users Tab */}
+        {activeTab === 'users' && (
           <div className="space-y-6">
-            <OrgUsersTab orgId={orgId} />
+            <TrialUsersTab orgId={orgId} users={users} onRefresh={fetchOrganizationData} />
           </div>
-        )} */}
+        )}
 
         {/* Support Queries Tab */}
         {activeTab === 'queries' && (
