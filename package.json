@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "smart-import": "tsx scripts/smart-import.ts"
+    "smart-import": "tsx scripts/smart-import.ts",
+    "batch-import": "tsx scripts/batch-import.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
