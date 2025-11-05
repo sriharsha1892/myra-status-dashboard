@@ -12,13 +12,13 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'Admin' | 'Account Manager' | 'Product' | 'Prodgain User' | 'Team';
+  role: 'Admin' | 'Sales Admin' | 'Research Admin' | 'Account Manager' | 'Product' | 'Prodgain User' | 'Team';
   status: 'Active' | 'Invited';
   created_at: string;
   last_sign_in_at: string | null;
 }
 
-const ROLES = ['Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'] as const;
+const ROLES = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'] as const;
 
 export default function UsersPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
@@ -49,11 +49,19 @@ export default function UsersPage() {
       const response = await fetch('/api/admin/users');
 
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API Error:', response.status, errorData);
+
+        if (response.status === 403) {
+          toast.error('Access denied. Admin permission required.');
+        } else {
+          toast.error(errorData.error || 'Failed to load users');
+        }
+        return;
       }
 
       const data = await response.json();
-      setUsers(data.users);
+      setUsers(data.users || []);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');

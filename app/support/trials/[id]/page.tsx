@@ -8,7 +8,7 @@ import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
 import PlatformUsersTab from '@/components/PlatformUsersTab';
-// import OrgUsersTab from '@/components/OrgUsersTab'; // REMOVED: Broken component - queries non-existent managed_org_ids column
+import TrialUsersTab from '@/components/TrialUsersTab';
 import SupportQueriesTab from '@/components/SupportQueriesTab';
 import EngagementTimelineTab from '@/components/EngagementTimelineTab';
 import DealTrackingTab from '@/components/DealTrackingTab';
@@ -26,7 +26,7 @@ type MeetingNote = Database['public']['Tables']['meeting_notes']['Row'];
 type TabType = 'overview' | 'users' | 'queries' | 'deals' | 'activity' | 'demos' | 'meetings' | 'features' | 'followups' | 'activitylog';
 
 export default function OrganizationDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
   const params = useParams();
   const orgId = params.id as string;
@@ -516,8 +516,7 @@ export default function OrganizationDetailPage() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
             </button>
-            {/* REMOVED: Broken Users tab - OrgUsersTab queries non-existent managed_org_ids column */}
-            {/* <button
+            <button
               onClick={() => setActiveTab('users')}
               className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
                 activeTab === 'users'
@@ -525,11 +524,11 @@ export default function OrganizationDetailPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Users ({users.length})
+              Trial Users ({users.length})
               {activeTab === 'users' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
-            </button> */}
+            </button>
             <button
               onClick={() => setActiveTab('queries')}
               className={`pb-3 px-1 text-sm font-medium transition-colors relative ${

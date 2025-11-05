@@ -252,18 +252,64 @@ export default function ReportsPage() {
               {/* Reports Tab */}
               {activeTab === 'reports' && (
                 <>
-                  {/* Filters Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
+                  {/* Summary Stats - Above fold */}
+              <div className="grid grid-cols-3 gap-5 mb-6">
+                <div className="relative group">
+                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-600 mb-1.5">Total Tickets</p>
+                        <p className="text-3xl font-bold text-gray-900 tracking-tight">{filteredTickets.length}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-base font-bold text-gray-900">Filters</h3>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="relative group">
+                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-600 mb-1.5">Open Tickets</p>
+                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
+                          {filteredTickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-sm">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-600 mb-1.5">Resolved</p>
+                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
+                          {filteredTickets.filter((t) => ['Resolved', 'Closed'].includes(t.status)).length}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+                  {/* Compact Filters Section */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-sm p-4 mb-6">
+                <div className="grid grid-cols-6 gap-3">
                   {/* Date Range Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
@@ -385,61 +431,6 @@ export default function ReportsPage() {
                   >
                     Clear All Filters
                   </button>
-                </div>
-              </div>
-
-              {/* Summary Stats */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-gray-900/5 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 mb-2">Total Tickets</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">{filteredTickets.length}</p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-gray-900/5 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 mb-2">Open Tickets</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                          {filteredTickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length}
-                        </p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-gray-900/5 hover:-translate-y-1">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-600 mb-2">Resolved</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
-                          {filteredTickets.filter((t) => ['Resolved', 'Closed'].includes(t.status)).length}
-                        </p>
-                      </div>
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
