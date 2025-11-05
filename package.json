@@ -11,6 +11,7 @@
     "batch-import": "tsx scripts/batch-import.ts"
   },
   "dependencies": {
+    "@azure/msal-node": "^3.8.1",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.39.3",
