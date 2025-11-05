@@ -1,191 +1,116 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function AdminLogin() {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+export default function AdminLoginPage() {
   const router = useRouter();
+  const { user, setUser } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/trials');
+    }
+  }, [user, router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+
+    if (!email || !password) {
+      toast.error('Email and password are required');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/auth', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password })
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        // Store auth token
-        localStorage.setItem('admin_authenticated', 'true');
-        localStorage.setItem('admin_token', data.token);
-        router.push('/admin');
-      } else {
-        setError('Invalid password');
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-    } catch (err) {
-      setError('Authentication failed');
+
+      // Store user in context and localStorage
+      const userData = data.user;
+      setUser(userData);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+
+      toast.success('Login successful!');
+      router.push('/trials');
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1e1f26 0%, #2d2e38 100%)',
-    }}>
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.05)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '16px',
-        padding: '40px',
-        maxWidth: '400px',
-        width: '100%',
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          color: 'rgba(255, 255, 255, 0.95)',
-          marginBottom: '8px',
-          textAlign: 'center',
-        }}>
-          Admin Login
-        </h1>
-        <p style={{
-          fontSize: '14px',
-          color: 'rgba(255, 255, 255, 0.6)',
-          marginBottom: '32px',
-          textAlign: 'center',
-        }}>
-          myRA AI Status Dashboard
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">MyRA Admin</h1>
+          <p className="text-gray-600 mt-2">Dashboard Login</p>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.8)',
-              marginBottom: '8px',
-            }}>
-              Password
-            </label>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                color: 'rgba(255, 255, 255, 0.95)',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'all 0.2s',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'rgba(102, 126, 234, 0.5)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-              }}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@example.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
             />
           </div>
 
-          {error && (
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
-              fontSize: '13px',
-              marginBottom: '24px',
-            }}>
-              {error}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
             </div>
-          )}
+          </div>
 
           <button
             type="submit"
-            disabled={loading || !password}
-            style={{
-              width: '100%',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              background: loading || !password
-                ? 'rgba(102, 126, 234, 0.3)'
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: loading || !password ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: loading || !password
-                ? 'none'
-                : '0 4px 12px rgba(102, 126, 234, 0.3)',
-            }}
-            onMouseEnter={(e) => {
-              if (!loading && password) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = loading || !password
-                ? 'none'
-                : '0 4px 12px rgba(102, 126, 234, 0.3)';
-            }}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Authenticating...' : 'Login'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <div style={{
-          marginTop: '24px',
-          textAlign: 'center',
-        }}>
-          <a
-            href="/status"
-            style={{
-              fontSize: '13px',
-              color: 'rgba(255, 255, 255, 0.5)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-          >
-            ← Back to Status Page
-          </a>
-        </div>
+        <p className="text-center text-sm text-gray-600 mt-6">
+          © 2025 MyRA AI. All rights reserved.
+        </p>
       </div>
     </div>
   );

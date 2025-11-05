@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
-// Create Supabase Admin client with service role key
+// Create Supabase Admin client with service role key (for admin operations)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -15,48 +15,27 @@ const supabaseAdmin = createClient(
 );
 
 // Helper function to verify admin access
-async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: boolean; userId?: string }> {
+async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: string }> {
   try {
-    // Get the authorization header or cookie
-    const authHeader = request.headers.get('authorization');
-    const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
+    // Use the proper server client that handles cookies automatically
+    const supabase = await createServerClient();
 
-    // Find Supabase auth token from cookies
-    let accessToken = '';
-
-    if (authHeader) {
-      accessToken = authHeader.replace('Bearer ', '');
-    } else {
-      // Try to find auth token in cookies
-      const authCookie = allCookies.find(cookie =>
-        cookie.name.includes('sb-') && cookie.name.includes('auth-token')
-      );
-
-      if (authCookie) {
-        try {
-          const cookieValue = JSON.parse(authCookie.value);
-          accessToken = cookieValue.access_token || cookieValue[0];
-        } catch {
-          accessToken = authCookie.value;
-        }
-      }
-    }
-
-    if (!accessToken) {
-      return { authorized: false };
-    }
-
-    // Verify the user using admin API
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(accessToken);
+    // Get the current user from the session
+    const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
       return { authorized: false };
     }
 
-    // Check if user has Admin role
+    // Check if user has Admin role (case-insensitive)
     const role = user.user_metadata?.role;
-    if (role !== 'Admin') {
+    if (!role) {
+      return { authorized: false };
+    }
+
+    const lowerRole = role.toLowerCase();
+    const isAdmin = lowerRole === 'admin' || lowerRole === 'sales admin' || lowerRole === 'research admin';
+    if (!isAdmin) {
       return { authorized: false };
     }
 
@@ -71,7 +50,7 @@ async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: bo
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess(request);
+    const { authorized } = await verifyAdminAccess();
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -115,7 +94,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess(request);
+    const { authorized } = await verifyAdminAccess();
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -135,10 +114,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'];
+    const validRoles = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team', 'AM'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { error: 'Invalid role. Must be Admin, Account Manager, Product, Prodgain User, or Team' },
+        { error: 'Invalid role' },
         { status: 400 }
       );
     }
@@ -178,11 +157,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH - Update user role
+// PATCH - Update user (email, name, or role)
 export async function PATCH(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess(request);
+    const { authorized } = await verifyAdminAccess();
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -191,31 +170,51 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, role } = body;
+    const { userId, role, email, name } = body;
 
-    // Validate input
-    if (!userId || !role) {
+    // Validate user ID
+    if (!userId) {
       return NextResponse.json(
-        { error: 'User ID and role are required' },
+        { error: 'User ID is required' },
         { status: 400 }
       );
     }
 
-    // Validate role
-    const validRoles = ['Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: 'Invalid role. Must be Admin, Account Manager, Product, Prodgain User, or Team' },
-        { status: 400 }
-      );
+    // Prepare update payload
+    const updatePayload: any = {};
+    const metadataUpdates: any = {};
+
+    // Handle role update
+    if (role) {
+      const validRoles = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team', 'AM'];
+      if (!validRoles.includes(role)) {
+        return NextResponse.json(
+          { error: 'Invalid role' },
+          { status: 400 }
+        );
+      }
+      metadataUpdates.role = role;
     }
 
-    // Update user metadata using admin API
+    // Handle name update
+    if (name !== undefined) {
+      metadataUpdates.name = name;
+    }
+
+    // Handle email update
+    if (email) {
+      updatePayload.email = email;
+    }
+
+    // Add metadata updates if any
+    if (Object.keys(metadataUpdates).length > 0) {
+      updatePayload.user_metadata = metadataUpdates;
+    }
+
+    // Update user using admin API
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
-      {
-        user_metadata: { role },
-      }
+      updatePayload
     );
 
     if (error) {
@@ -231,6 +230,7 @@ export async function PATCH(request: NextRequest) {
       user: {
         id: data.user.id,
         email: data.user.email,
+        name: data.user.user_metadata?.name,
         role: data.user.user_metadata?.role,
       },
     });
@@ -247,7 +247,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized, userId: adminUserId } = await verifyAdminAccess(request);
+    const { authorized, userId: adminUserId } = await verifyAdminAccess();
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
