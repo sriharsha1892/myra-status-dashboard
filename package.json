@@ -28,6 +28,7 @@
     "react-hot-toast": "^2.4.1",
     "tailwindcss": "^4.1.15",
     "tsx": "^4.7.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "xlsx": "^0.18.5"
   }
 }
