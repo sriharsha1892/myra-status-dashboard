@@ -26,6 +26,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.4.1",
+    "recharts": "^3.3.0",
     "tailwindcss": "^4.1.15",
     "tsx": "^4.7.1",
     "typescript": "^5.9.3",
