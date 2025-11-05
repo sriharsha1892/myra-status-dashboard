@@ -7,6 +7,13 @@ export function getUserRole(user: User | null): UserRole | null {
   return user.user_metadata?.role || null;
 }
 
+export function isAdmin(user: User | null): boolean {
+  const role = getUserRole(user);
+  if (!role) return false;
+  const lowerRole = role.toLowerCase();
+  return lowerRole === 'admin' || lowerRole === 'sales admin' || lowerRole === 'research admin';
+}
+
 export function canAccessRoute(user: User | null, route: string): boolean {
   const role = getUserRole(user);
   if (!role) return false;
@@ -16,8 +23,8 @@ export function canAccessRoute(user: User | null, route: string): boolean {
     return route.startsWith('/support/submit');
   }
 
-  // Team and Admin can access all support routes
-  if (role === 'Team' || role === 'Admin') {
+  // Team and all Admin roles can access all support routes
+  if (role?.toLowerCase() === 'team' || isAdmin(user)) {
     return true;
   }
 
@@ -26,25 +33,23 @@ export function canAccessRoute(user: User | null, route: string): boolean {
 
 export function canUpdateTicket(user: User | null): boolean {
   const role = getUserRole(user);
-  return role === 'Team' || role === 'Admin';
+  return role?.toLowerCase() === 'team' || isAdmin(user);
 }
 
 export function canDeleteTicket(user: User | null): boolean {
-  const role = getUserRole(user);
-  return role === 'Admin';
+  return isAdmin(user);
 }
 
 export function canManageOrganizations(user: User | null): boolean {
-  const role = getUserRole(user);
-  return role === 'Admin';
+  return isAdmin(user);
 }
 
 export function canViewAllTickets(user: User | null): boolean {
   const role = getUserRole(user);
-  return role === 'Team' || role === 'Admin';
+  return role?.toLowerCase() === 'team' || isAdmin(user);
 }
 
 export function canAddComments(user: User | null): boolean {
   const role = getUserRole(user);
-  return role === 'Team' || role === 'Admin';
+  return role?.toLowerCase() === 'team' || isAdmin(user);
 }
