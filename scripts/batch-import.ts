@@ -8,6 +8,22 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
+import * as path from 'path';
+
+// Load environment variables from .env.local
+const envPath = path.join(process.cwd(), '.env.local');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        process.env[key.trim()] = valueParts.join('=').trim();
+      }
+    }
+  });
+}
 
 // ============================================================================
 // TYPES
@@ -125,10 +141,33 @@ function parseCSV(content: string): OrgData[] {
 // DATABASE OPERATIONS
 // ============================================================================
 
+function fuzzyMatchAccountManager(salesPocName: string, managers: any[]): any | null {
+  if (!salesPocName) return null;
+
+  const searchName = salesPocName.toLowerCase().trim();
+
+  // Try exact match first
+  let match = managers.find(m =>
+    m.full_name?.toLowerCase().includes(searchName) ||
+    m.email?.toLowerCase().includes(searchName)
+  );
+
+  if (match) return match;
+
+  // Try partial match (first name)
+  const firstWord = searchName.split(/[\/\s]/)[0]; // Handle "Rupak/Paras" or "Rupak Paras"
+  match = managers.find(m =>
+    m.full_name?.toLowerCase().includes(firstWord) ||
+    m.email?.toLowerCase().startsWith(firstWord)
+  );
+
+  return match || null;
+}
+
 async function createOrganization(
   supabase: ReturnType<typeof createClient>,
   data: OrgData,
-  accountManagerId: string,
+  accountManagerId: string | null,
   salesPocId: string | null
 ): Promise<string | null> {
   try {
@@ -226,35 +265,42 @@ async function main() {
 
   // Fetch account managers
   log('📋 Fetching account managers...', 'cyan');
-  const { data: managers } = await supabase
+  const { data: managers, error: managersError } = await supabase
     .from('users')
     .select('id, full_name, email, role')
     .in('role', ['admin', 'account_manager']);
 
-  if (!managers || managers.length === 0) {
-    log('❌ No account managers found in database!', 'red');
-    process.exit(1);
-  }
+  let accountManagerId: string | null = null;
 
-  log(`✅ Found ${managers.length} account managers`, 'green');
-  managers.forEach((am, idx) => {
-    console.log(`  ${idx + 1}. ${am.full_name} (${am.email})`);
-  });
-
-  // Select account manager
-  let accountManagerId: string;
-  if (defaultAMEmail) {
-    const am = managers.find(m => m.email.toLowerCase() === defaultAMEmail.toLowerCase());
-    if (!am) {
-      log(`❌ Account manager not found: ${defaultAMEmail}`, 'red');
-      process.exit(1);
-    }
-    accountManagerId = am.id;
-    log(`\n✅ Using account manager: ${am.full_name} (${am.email})`, 'green');
+  if (managersError) {
+    log(`⚠️  Could not fetch account managers: ${managersError.message}`, 'yellow');
+    log('⚠️  Will create organizations without account manager assignment', 'yellow');
+  } else if (!managers || managers.length === 0) {
+    log('⚠️  No account managers found in database', 'yellow');
+    log('⚠️  Organizations will be created without account manager assignment', 'yellow');
+    log('⚠️  You can assign them later through the UI', 'yellow');
   } else {
-    // Use first account manager as default
-    accountManagerId = managers[0].id;
-    log(`\n⚠️  No account manager specified, using first: ${managers[0].full_name}`, 'yellow');
+    log(`✅ Found ${managers.length} account managers`, 'green');
+    managers.forEach((am, idx) => {
+      console.log(`  ${idx + 1}. ${am.full_name} (${am.email})`);
+    });
+
+    // Select account manager
+    if (defaultAMEmail) {
+      const am = managers.find(m => m.email.toLowerCase() === defaultAMEmail.toLowerCase());
+      if (!am) {
+        log(`⚠️  Account manager not found: ${defaultAMEmail}`, 'yellow');
+        log(`⚠️  Using first account manager: ${managers[0].full_name}`, 'yellow');
+        accountManagerId = managers[0].id;
+      } else {
+        accountManagerId = am.id;
+        log(`\n✅ Using account manager: ${am.full_name} (${am.email})`, 'green');
+      }
+    } else {
+      // Use first account manager as default
+      accountManagerId = managers[0].id;
+      log(`\n✅ Using default account manager: ${managers[0].full_name}`, 'green');
+    }
   }
 
   // Fetch sales POCs
@@ -285,7 +331,19 @@ async function main() {
 
     console.log(`${progress} Processing: ${org.org_name}...`);
 
-    // Try to match sales POC
+    // Match sales POC name to account manager
+    let orgAccountManagerId = accountManagerId; // Use default if no match
+    if (org.sales_poc_name && managers && managers.length > 0) {
+      const matchedAM = fuzzyMatchAccountManager(org.sales_poc_name, managers);
+      if (matchedAM) {
+        orgAccountManagerId = matchedAM.id;
+        console.log(`    → Assigned to: ${matchedAM.full_name}`);
+      } else if (accountManagerId) {
+        console.log(`    → Using default AM (no match for "${org.sales_poc_name}")`);
+      }
+    }
+
+    // Try to match sales POC (from sales_pocs table, different from account managers)
     let salesPocId: string | null = null;
     if (org.sales_poc_name && pocs) {
       const poc = pocs.find(p =>
@@ -297,7 +355,7 @@ async function main() {
       }
     }
 
-    const orgId = await createOrganization(supabase, org, accountManagerId, salesPocId);
+    const orgId = await createOrganization(supabase, org, orgAccountManagerId, salesPocId);
     if (orgId) {
       results.created++;
     } else {
