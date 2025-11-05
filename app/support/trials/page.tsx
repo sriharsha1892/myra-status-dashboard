@@ -43,6 +43,7 @@ export default function TrialOrganizationsPage() {
   const [bulkTrialEndDate, setBulkTrialEndDate] = useState('');
   const [onlyUpdateMissingDates, setOnlyUpdateMissingDates] = useState(false);
   const [bulkStage, setBulkStage] = useState<string>('');
+  const [accountManagers, setAccountManagers] = useState<Array<{ user_id: string; email: string; full_name: string | null }>>([]);
 
   const supabase = createClient();
 
@@ -55,6 +56,7 @@ export default function TrialOrganizationsPage() {
   useEffect(() => {
     if (user) {
       fetchOrganizations();
+      fetchAccountManagers();
     }
   }, [user]);
 
@@ -116,6 +118,22 @@ export default function TrialOrganizationsPage() {
     }
   };
 
+  const fetchAccountManagers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('user_id, email, full_name')
+        .in('role', ['admin', 'account_manager'])
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      // @ts-ignore - Supabase typing issue
+      setAccountManagers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching account managers:', error);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...organizations];
 
@@ -159,17 +177,27 @@ export default function TrialOrganizationsPage() {
   const handleBulkAssignAccountManager = async () => {
     setBulkProcessing(true);
     try {
-      const accountManager = bulkAccountManager === 'Other' ? bulkAccountManagerOther : bulkAccountManager;
-
-      if (!accountManager) {
-        toast.error('Please enter an account manager');
+      if (!bulkAccountManager) {
+        toast.error('Please select an account manager');
         return;
       }
 
+      // Find the selected manager's details
+      const selectedManager = accountManagers.find(m => m.user_id === bulkAccountManager);
+
+      if (!selectedManager) {
+        toast.error('Selected account manager not found');
+        return;
+      }
+
+      // Update both account_manager_id and account_manager fields
       const { error } = await supabase
         .from('trial_organizations')
         // @ts-ignore - Supabase typing issue with dynamic columns
-        .update({ account_manager: accountManager })
+        .update({
+          account_manager_id: selectedManager.user_id,
+          account_manager: selectedManager.full_name || selectedManager.email
+        })
         .in('org_id', Array.from(selectedOrgIds));
 
       if (error) throw error;
@@ -177,7 +205,6 @@ export default function TrialOrganizationsPage() {
       toast.success(`Updated ${selectedOrgIds.size} organizations`);
       setShowBulkAccountManagerModal(false);
       setBulkAccountManager('');
-      setBulkAccountManagerOther('');
       setSelectedOrgIds(new Set());
       await fetchOrganizations();
     } catch (error: any) {
@@ -665,26 +692,13 @@ export default function TrialOrganizationsPage() {
                   className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select account manager...</option>
-                  <option value="John Smith">John Smith</option>
-                  <option value="Sarah Johnson">Sarah Johnson</option>
-                  <option value="Michael Brown">Michael Brown</option>
-                  <option value="Emily Davis">Emily Davis</option>
-                  <option value="Other">Other</option>
+                  {accountManagers.map((manager) => (
+                    <option key={manager.user_id} value={manager.user_id}>
+                      {manager.full_name || manager.email} ({manager.email})
+                    </option>
+                  ))}
                 </select>
               </div>
-
-              {bulkAccountManager === 'Other' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Custom Name</label>
-                  <input
-                    type="text"
-                    value={bulkAccountManagerOther}
-                    onChange={(e) => setBulkAccountManagerOther(e.target.value)}
-                    placeholder="Enter account manager name..."
-                    className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -696,7 +710,7 @@ export default function TrialOrganizationsPage() {
               </button>
               <button
                 onClick={handleBulkAssignAccountManager}
-                disabled={bulkProcessing || (!bulkAccountManager || (bulkAccountManager === 'Other' && !bulkAccountManagerOther))}
+                disabled={bulkProcessing || !bulkAccountManager}
                 className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {bulkProcessing ? 'Applying...' : `Apply to ${selectedOrgIds.size} org${selectedOrgIds.size !== 1 ? 's' : ''}`}

@@ -45,6 +45,13 @@ type RoadmapItem = {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  // New spreadsheet fields
+  proposer?: string;
+  goal?: string;
+  area?: string;
+  rationale?: string;
+  version_planned?: string;
+  assigned_to?: string;
 };
 
 type ViewMode = 'kanban' | 'list' | 'analytics';
@@ -79,6 +86,8 @@ export default function AdminRoadmapPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [selectedVersion, setSelectedVersion] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedGoal, setSelectedGoal] = useState('all');
+  const [selectedArea, setSelectedArea] = useState('all');
 
   const [newItem, setNewItem] = useState({
     title: '',
@@ -91,6 +100,12 @@ export default function AdminRoadmapPage() {
     version: '',
     category: '',
     notes: '',
+    proposer: '',
+    goal: '',
+    area: '',
+    rationale: '',
+    version_planned: '',
+    assigned_to: '',
   });
 
   const supabase = createClient();
@@ -203,6 +218,12 @@ export default function AdminRoadmapPage() {
       version: '',
       category: '',
       notes: '',
+      proposer: '',
+      goal: '',
+      area: '',
+      rationale: '',
+      version_planned: '',
+      assigned_to: '',
     });
   };
 
@@ -219,6 +240,12 @@ export default function AdminRoadmapPage() {
       version: item.version || '',
       category: item.category || '',
       notes: item.notes || '',
+      proposer: item.proposer || '',
+      goal: item.goal || '',
+      area: item.area || '',
+      rationale: item.rationale || '',
+      version_planned: item.version_planned || '',
+      assigned_to: item.assigned_to || '',
     });
     setShowAddModal(true);
   };
@@ -289,7 +316,11 @@ export default function AdminRoadmapPage() {
         item.owner?.toLowerCase().includes(query) ||
         item.source_org_name?.toLowerCase().includes(query) ||
         item.category?.toLowerCase().includes(query) ||
-        item.version?.toLowerCase().includes(query)
+        item.version?.toLowerCase().includes(query) ||
+        item.proposer?.toLowerCase().includes(query) ||
+        item.goal?.toLowerCase().includes(query) ||
+        item.area?.toLowerCase().includes(query) ||
+        item.rationale?.toLowerCase().includes(query)
       );
       if (!matchesSearch) return false;
     }
@@ -304,12 +335,24 @@ export default function AdminRoadmapPage() {
       return false;
     }
 
+    // Goal filter
+    if (selectedGoal !== 'all' && item.goal !== selectedGoal) {
+      return false;
+    }
+
+    // Area filter
+    if (selectedArea !== 'all' && item.area !== selectedArea) {
+      return false;
+    }
+
     return true;
   });
 
-  // Get unique versions and categories
+  // Get unique versions, categories, goals, and areas
   const uniqueVersions = Array.from(new Set(roadmapItems.map(item => item.version).filter(Boolean)));
   const uniqueCategories = Array.from(new Set(roadmapItems.map(item => item.category).filter(Boolean)));
+  const uniqueGoals = Array.from(new Set(roadmapItems.map(item => item.goal).filter(Boolean)));
+  const uniqueAreas = Array.from(new Set(roadmapItems.map(item => item.area).filter(Boolean)));
 
   // Analytics calculations
   const statusCounts = {
@@ -443,6 +486,38 @@ export default function AdminRoadmapPage() {
               {uniqueCategories.map((category) => (
                 <option key={category} value={category} className="text-slate-900">
                   {category}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Goal Filter */}
+          {uniqueGoals.length > 0 && (
+            <select
+              value={selectedGoal}
+              onChange={(e) => setSelectedGoal(e.target.value)}
+              className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
+            >
+              <option value="all" className="text-slate-900">All Goals</option>
+              {uniqueGoals.map((goal) => (
+                <option key={goal} value={goal} className="text-slate-900">
+                  {goal}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Area Filter */}
+          {uniqueAreas.length > 0 && (
+            <select
+              value={selectedArea}
+              onChange={(e) => setSelectedArea(e.target.value)}
+              className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
+            >
+              <option value="all" className="text-slate-900">All Areas</option>
+              {uniqueAreas.map((area) => (
+                <option key={area} value={area} className="text-slate-900">
+                  {area}
                 </option>
               ))}
             </select>
@@ -648,39 +723,84 @@ export default function AdminRoadmapPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Proposer</th>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Goal</th>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Area</th>
                   <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Item</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Priority</th>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Rationale</th>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Version</th>
+                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Assigned To</th>
                   <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Status</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Owner</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Due Date</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Source</th>
                   <th className="text-right text-xs font-semibold text-slate-700 px-6 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-slate-500">
                       No roadmap items found
                     </td>
                   </tr>
                 ) : (
                   filteredItems.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
+                      {/* Proposer */}
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                        <span className="text-sm text-slate-900">{item.proposer || '-'}</span>
+                      </td>
+
+                      {/* Goal */}
+                      <td className="px-6 py-4">
+                        {item.goal ? (
+                          <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-medium">
+                            {item.goal}
+                          </span>
+                        ) : '-'}
+                      </td>
+
+                      {/* Area */}
+                      <td className="px-6 py-4">
+                        {item.area ? (
+                          <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-medium">
+                            {item.area}
+                          </span>
+                        ) : '-'}
+                      </td>
+
+                      {/* Item (title + description) */}
+                      <td className="px-6 py-4">
+                        <div className="max-w-xs">
+                          <p className="text-sm font-medium text-slate-900 line-clamp-1">{item.title}</p>
                           {item.description && (
                             <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">{item.description}</p>
                           )}
                         </div>
                       </td>
+
+                      {/* Rationale */}
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${PRIORITY_COLORS[item.priority].bg} ${PRIORITY_COLORS[item.priority].text}`}>
-                          <Flag className={`w-3 h-3 ${PRIORITY_COLORS[item.priority].icon}`} />
-                          {item.priority}
-                        </span>
+                        <p className="text-sm text-slate-600 line-clamp-2 max-w-xs">{item.rationale || '-'}</p>
                       </td>
+
+                      {/* Version */}
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-slate-900">{item.version_planned || item.version || '-'}</span>
+                      </td>
+
+                      {/* Assigned To (multiple badges) */}
+                      <td className="px-6 py-4">
+                        {item.assigned_to ? (
+                          <div className="flex flex-wrap gap-1">
+                            {item.assigned_to.split(',').map((name, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                {name.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        ) : '-'}
+                      </td>
+
+                      {/* Status */}
                       <td className="px-6 py-4">
                         <select
                           value={item.status}
@@ -694,27 +814,8 @@ export default function AdminRoadmapPage() {
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-slate-900">{item.owner || '-'}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-sm ${
-                          item.due_date && isAfter(new Date(), new Date(item.due_date)) && item.status !== 'completed'
-                            ? 'text-red-600 font-medium'
-                            : 'text-slate-900'
-                        }`}>
-                          {item.due_date ? format(new Date(item.due_date), 'MMM d, yyyy') : '-'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {item.source_type === 'admin' ? (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">
-                            Admin
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-600">{item.source_org_name || 'Unknown'}</span>
-                        )}
-                      </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
@@ -1039,6 +1140,99 @@ export default function AdminRoadmapPage() {
                 <p className="mt-2 text-xs text-slate-500">
                   Detailed notes for team collaboration and context
                 </p>
+              </div>
+
+              {/* Spreadsheet Fields Section */}
+              <div className="pt-4 border-t border-slate-200">
+                <h4 className="text-sm font-bold text-slate-900 mb-4">Roadmap Details</h4>
+
+                {/* Two Column Layout - Row 1 */}
+                <div className="grid grid-cols-2 gap-5 mb-5">
+                  {/* Proposer */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Proposer</label>
+                    <input
+                      type="text"
+                      value={newItem.proposer}
+                      onChange={(e) => setNewItem({ ...newItem, proposer: e.target.value })}
+                      placeholder="Person who proposed this"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+
+                  {/* Goal */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Goal</label>
+                    <select
+                      value={newItem.goal}
+                      onChange={(e) => setNewItem({ ...newItem, goal: e.target.value })}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    >
+                      <option value="">Select Goal</option>
+                      <option value="Addtl. Functionality">Addtl. Functionality</option>
+                      <option value="Better Data">Better Data</option>
+                      <option value="Better Security">Better Security</option>
+                      <option value="Better Support">Better Support</option>
+                      <option value="Better UX">Better UX</option>
+                      <option value="Cost optimization">Cost optimization</option>
+                      <option value="Cost rationalization">Cost rationalization</option>
+                      <option value="Prompt Trimming">Prompt Trimming</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Two Column Layout - Row 2 */}
+                <div className="grid grid-cols-2 gap-5 mb-5">
+                  {/* Area */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Area</label>
+                    <input
+                      type="text"
+                      value={newItem.area}
+                      onChange={(e) => setNewItem({ ...newItem, area: e.target.value })}
+                      placeholder="e.g., Dashboards, Sharing, API, Support..."
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Dashboards, Sharing, API, IP security, Support, Language Selection, etc.</p>
+                  </div>
+
+                  {/* Version Planned */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">Version Planned</label>
+                    <input
+                      type="text"
+                      value={newItem.version_planned}
+                      onChange={(e) => setNewItem({ ...newItem, version_planned: e.target.value })}
+                      placeholder="e.g., V2, V3"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Assigned To */}
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Assigned To</label>
+                  <input
+                    type="text"
+                    value={newItem.assigned_to}
+                    onChange={(e) => setNewItem({ ...newItem, assigned_to: e.target.value })}
+                    placeholder="e.g., Harsha,Abin (comma-separated)"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Enter multiple names separated by commas</p>
+                </div>
+
+                {/* Rationale */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Rationale</label>
+                  <textarea
+                    value={newItem.rationale}
+                    onChange={(e) => setNewItem({ ...newItem, rationale: e.target.value })}
+                    rows={3}
+                    placeholder="Why does this item matter?"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                  />
+                </div>
               </div>
             </div>
 

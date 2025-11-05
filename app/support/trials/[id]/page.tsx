@@ -666,13 +666,20 @@ export default function OrganizationDetailPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
                   <select
-                    value={editedOrg.account_manager || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, account_manager: e.target.value })}
+                    value={editedOrg.account_manager_id || ''}
+                    onChange={(e) => {
+                      const selectedManager = accountManagers.find(m => m.user_id === e.target.value);
+                      setEditedOrg({
+                        ...editedOrg,
+                        account_manager_id: e.target.value || null,
+                        account_manager: selectedManager?.full_name || selectedManager?.email || null
+                      });
+                    }}
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select account manager...</option>
                     {accountManagers.map((manager) => (
-                      <option key={manager.user_id} value={manager.full_name}>
+                      <option key={manager.user_id} value={manager.user_id}>
                         {manager.full_name} ({manager.email})
                       </option>
                     ))}
