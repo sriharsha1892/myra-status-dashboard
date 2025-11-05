@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 import BulkEditPanel from '@/components/BulkEditPanel';
 
+// Force dynamic rendering - don't pre-render at build time
+export const dynamic = 'force-dynamic';
+
 export default function BulkEditPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
