@@ -40,3 +40,7 @@ next-env.d.ts
 *.swo
 *~
 .env.local
+
+# Import data files (sensitive customer data)
+myra-*.csv
+analyze-data.txt
