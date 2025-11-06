@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
+import toast from 'react-hot-toast'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,6 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+
+  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +35,33 @@ export default function LoginPage() {
 
     // Success - layout will handle redirect automatically
     // (see support/layout.tsx lines 39-44)
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setResetLoading(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/support/login?reset=true`,
+      })
+
+      if (error) throw error
+
+      toast.success(
+        <div>
+          <div className="font-semibold">Password reset email sent!</div>
+          <div className="text-xs mt-1">Check your inbox for reset instructions.</div>
+        </div>,
+        { duration: 5000 }
+      )
+      setShowForgotPassword(false)
+      setResetEmail('')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email')
+    } finally {
+      setResetLoading(false)
+    }
   }
 
   return (
@@ -133,6 +167,7 @@ export default function LoginPage() {
                   </label>
                   <button
                     type="button"
+                    onClick={() => setShowForgotPassword(true)}
                     disabled={loading}
                     className="text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -201,15 +236,103 @@ export default function LoginPage() {
         <div className="mt-6 text-center animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
           <p className="text-sm text-gray-600">
             Need assistance?{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors inline-flex items-center gap-1">
+            <a href="mailto:support@myra.ai" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors inline-flex items-center gap-1">
               Contact support
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </a>
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full animate-in zoom-in-95 duration-300">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Reset Password</h3>
+                <p className="text-sm text-gray-600 mt-1">Enter your email to receive reset instructions</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false)
+                  setResetEmail('')
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              <div>
+                <label htmlFor="reset-email" className="block text-sm font-semibold text-gray-900 mb-2">
+                  Email address
+                </label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  required
+                  disabled={resetLoading}
+                  className="w-full h-12 px-4 text-sm text-gray-900 bg-white/50 backdrop-blur-sm border-2 border-gray-200 rounded-xl placeholder:text-gray-400
+                           focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-white
+                           disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+                           transition-all duration-200"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setResetEmail('')
+                  }}
+                  disabled={resetLoading}
+                  className="flex-1 h-11 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-1 h-11 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-lg shadow-blue-600/30 hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  {resetLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </button>
+              </div>
+            </form>
+
+            <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex gap-2">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-xs text-blue-900">
+                  A password reset link will be sent to your email. Click the link to create a new password.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

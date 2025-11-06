@@ -154,7 +154,7 @@ export default function NotificationsBell() {
         className={`relative p-3 rounded-xl transition-all duration-200 ${
           unreadCount > 0
             ? 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl'
-            : 'bg-slate-100 hover:bg-slate-200'
+            : 'bg-white/80 hover:bg-white backdrop-blur-sm border border-slate-200 hover:border-slate-300'
         } group`}
       >
         <svg
