@@ -24,7 +24,6 @@ export default function ReportsPage() {
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [trendsPeriod, setTrendsPeriod] = useState<Period>('30d');
-  const [activeTab, setActiveTab] = useState<'reports' | 'insights'>('reports');
 
   // Filter states
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -183,54 +182,28 @@ export default function ReportsPage() {
 
   return (
     <main className="flex-1 overflow-y-auto">
-      {/* Modern Header with Tabs */}
+      {/* Modern Header */}
         <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 shadow-sm sticky top-0 z-10">
-          <div className="px-8 py-4 border-b border-gray-200/40">
+          <div className="px-8 py-6">
             <Breadcrumbs items={[
               { label: 'Dashboard', href: '/support/dashboard' },
               { label: 'Reports & Analytics' }
             ]} />
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-between mt-3">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Reports & Analytics</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Comprehensive support ticket analytics and insights</p>
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Reports & Analytics</h2>
+                <p className="text-sm text-gray-500 mt-1">Comprehensive support ticket analytics with deep insights</p>
               </div>
+              <button
+                onClick={handleExportTrends}
+                className="flex items-center gap-2 h-10 px-5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Export Analytics (CSV)</span>
+              </button>
             </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="px-8 flex items-center gap-2 border-b border-gray-200/40">
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
-                activeTab === 'reports'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Reports</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('insights')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
-                activeTab === 'insights'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Insights</span>
-              </div>
-            </button>
           </div>
         </header>
 
@@ -248,10 +221,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             <>
-              {/* Reports Tab */}
-              {activeTab === 'reports' && (
-                <>
-                  {/* Summary Stats - Above fold */}
+              {/* Summary Stats - Above fold */}
               <div className="grid grid-cols-3 gap-5 mb-6">
                 <div className="relative group">
                   <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
@@ -569,57 +539,35 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-                </>
-              )}
-
-              {/* Insights Tab */}
-              {activeTab === 'insights' && (
-                <>
-                  {/* Category Trends Section */}
-                  <div className="space-y-6">
-                    {/* Section Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                          </svg>
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Deep Dive Analytics</h2>
-                      </div>
-                      <button
-                        onClick={handleExportTrends}
-                        className="flex items-center gap-2 h-10 px-5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Export Analytics (CSV)</span>
-                      </button>
-                    </div>
-
-                    {/* Insights Panel */}
-                    <div className="mb-6">
-                      <TrendInsightsPanel tickets={filteredTickets} period={trendsPeriod} />
-                    </div>
-
-                    {/* Trends Chart */}
-                    <div>
-                      <CategoryTrendsChart
-                        tickets={filteredTickets}
-                        period={trendsPeriod}
-                        onPeriodChange={setTrendsPeriod}
-                        onCategoryClick={handleCategoryClick}
-                      />
-                    </div>
-
-                    {/* Trends Table */}
-                    <div className="mt-6">
-                      <CategoryTrendsTable tickets={filteredTickets} onCategoryClick={handleCategoryClick} />
-                    </div>
+              {/* Deep Dive Analytics Section */}
+              <div className="space-y-6 mt-8">
+                {/* Section Header */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
                   </div>
-                </>
-              )}
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Deep Dive Analytics</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Advanced insights and trends over time</p>
+                  </div>
+                </div>
+
+                {/* Insights Panel */}
+                <TrendInsightsPanel tickets={filteredTickets} period={trendsPeriod} />
+
+                {/* Trends Chart */}
+                <CategoryTrendsChart
+                  tickets={filteredTickets}
+                  period={trendsPeriod}
+                  onPeriodChange={setTrendsPeriod}
+                  onCategoryClick={handleCategoryClick}
+                />
+
+                {/* Trends Table */}
+                <CategoryTrendsTable tickets={filteredTickets} onCategoryClick={handleCategoryClick} />
+              </div>
             </>
           )}
         </div>
