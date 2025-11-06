@@ -105,11 +105,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Invite new user
+// POST - Create signup link for new user
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess();
+    const { authorized, userId: adminUserId } = await verifyAdminAccess();
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -137,31 +137,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Invite user using admin API (sends email invitation)
-    const { data, error } = await getSupabaseAdmin().auth.admin.inviteUserByEmail(email, {
-      data: {
-        name,
-        role,
-      },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/support/login`,
-    });
+    const adminClient = getSupabaseAdmin();
 
-    if (error) {
-      console.error('Error inviting user:', error);
+    // Check if user already exists
+    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+    const userExists = existingUsers.users.some(u => u.email === email);
+
+    if (userExists) {
       return NextResponse.json(
-        { error: error.message || 'Failed to invite user' },
+        { error: 'User with this email already exists' },
         { status: 400 }
       );
     }
 
+    // Generate unique token
+    const token = crypto.randomUUID();
+
+    // Token expires in 7 days
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Store signup token in database
+    const { error: tokenError } = await adminClient
+      .from('signup_tokens')
+      .insert({
+        token,
+        email,
+        user_role: role,
+        expires_at: expiresAt.toISOString(),
+        created_by: adminUserId,
+      });
+
+    if (tokenError) {
+      console.error('Error creating signup token:', tokenError);
+      return NextResponse.json(
+        { error: 'Failed to generate signup link' },
+        { status: 500 }
+      );
+    }
+
+    // Generate signup URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const signupUrl = `${baseUrl}/support/signup?token=${token}`;
+
     return NextResponse.json({
       success: true,
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name,
-        role,
-      },
+      signupUrl,
+      email,
+      name,
+      role,
+      expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Error in POST /api/admin/users:', error);
