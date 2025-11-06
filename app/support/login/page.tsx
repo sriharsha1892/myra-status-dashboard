@@ -49,7 +49,7 @@ export default function LoginPage() {
       </div>
 
       {/* Main content */}
-      <div className="relative w-full max-w-[440px] animate-[scaleIn_0.5s_ease-out]">
+      <div className="relative w-full max-w-lg animate-[scaleIn_0.5s_ease-out]">
         {/* Logo & Title */}
         <div className="text-center mb-10 animate-[fadeInUp_0.6s_ease-out]">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl mb-4 shadow-2xl shadow-blue-600/30 relative overflow-hidden group">
