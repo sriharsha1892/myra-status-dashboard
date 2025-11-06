@@ -4,9 +4,7 @@ import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Database } from '@/lib/supabase/types';
-import { MentionPill } from './MentionPill';
 import { UserProfilePanel } from './UserProfilePanel';
-import { formatMentionsInText } from '@/lib/support/mentions';
 
 type TicketComment = Database['public']['Tables']['ticket_comments']['Row'];
 
@@ -25,9 +23,6 @@ export function Comment({ comment, userName, userRole }: CommentProps) {
   if (isInternal && userRole === 'AM') {
     return null;
   }
-
-  // Parse comment text for mentions
-  const { parts } = formatMentionsInText(comment.comment);
 
   const handleMentionClick = (userId: string) => {
     setSelectedUserId(userId);
@@ -72,26 +67,14 @@ export function Comment({ comment, userName, userRole }: CommentProps) {
         </div>
       </div>
 
-      {/* Comment body */}
+      {/* Comment body - Render HTML from rich text editor */}
       <div className="px-4 py-3">
         <div
-          className={`text-sm whitespace-pre-wrap ${
+          className={`text-sm prose prose-sm max-w-none ${
             isInternal ? 'text-gray-700' : 'text-gray-900'
           }`}
-        >
-          {parts.map((part, index) => {
-            if (part.type === 'mention') {
-              return (
-                <MentionPill
-                  key={index}
-                  username={part.content}
-                  onProfileClick={handleMentionClick}
-                />
-              );
-            }
-            return <span key={index}>{part.content}</span>;
-          })}
-        </div>
+          dangerouslySetInnerHTML={{ __html: comment.comment }}
+        />
       </div>
 
       {/* User Profile Panel */}
@@ -102,6 +85,25 @@ export function Comment({ comment, userName, userRole }: CommentProps) {
           onClose={() => setShowUserProfile(false)}
         />
       )}
+
+      {/* Styles for mentions in rendered HTML */}
+      <style jsx>{`
+        :global(.mention) {
+          background: #dbeafe;
+          color: #1e40af;
+          padding: 2px 6px;
+          border-radius: 6px;
+          font-weight: 500;
+          font-size: 0.875rem;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        :global(.mention:hover) {
+          background: #bfdbfe;
+          color: #1e3a8a;
+        }
+      `}</style>
     </div>
   );
 }
