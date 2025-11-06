@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { format, isAfter, isBefore, subDays, isPast } from 'date-fns';
@@ -44,7 +46,6 @@ const MEETING_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function MeetingsPage() {
-  const supabase = createClient();
   const [meetings, setMeetings] = useState<MeetingNote[]>([]);
   const [filteredMeetings, setFilteredMeetings] = useState<MeetingNote[]>([]);
   const [loading, setLoading] = useState(true);

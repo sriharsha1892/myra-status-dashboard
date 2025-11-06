@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -38,7 +40,6 @@ interface OrgUserMap {
 
 export default function ImportDemoLogPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [step, setStep] = useState<'upload' | 'review' | 'importing' | 'complete'>(
     'upload'
@@ -139,6 +140,7 @@ export default function ImportDemoLogPage() {
   };
 
   const handleStartImport = async () => {
+    const supabase = createClient();
     if (!summary || parsedData.length === 0) {
       toast.error('No valid data to import');
       return;

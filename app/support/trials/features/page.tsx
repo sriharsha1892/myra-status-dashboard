@@ -17,7 +17,6 @@ export default function FeaturesPage() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
 
   useEffect(() => {
     // Only access useSearchParams on client side

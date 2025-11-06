@@ -46,6 +46,11 @@ export default function SupportLayout({
     }
   }, [user, authLoading, router, pathname]);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   // Show loading state while checking auth
   if (!mounted || authLoading) {
     return (
@@ -132,6 +137,26 @@ export default function SupportLayout({
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Hamburger Button - Mobile Only */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+      >
+        {mobileMenuOpen ? (
+          <X className="w-5 h-5" strokeWidth={2} />
+        ) : (
+          <Menu className="w-5 h-5" strokeWidth={2} />
+        )}
+      </button>
 
       {/* Modern Sidebar */}
       <aside className={`

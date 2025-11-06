@@ -34,8 +34,6 @@ export default function ReportsPage() {
   const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'7' | '30' | '90' | 'all'>('all');
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -53,6 +51,7 @@ export default function ReportsPage() {
   }, [tickets, selectedStatus, selectedPriority, selectedCategory, selectedAssignedTo, selectedOrganization, dateRange]);
 
   const fetchTickets = async () => {
+    const supabase = createClient();
     setLoading(true);
     try {
       const { data, error } = await supabase.from('tickets').select('*');

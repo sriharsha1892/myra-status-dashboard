@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +17,6 @@ export default function FollowUpsPage() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { format, isPast, isToday, isFuture } from 'date-fns';
@@ -32,7 +34,6 @@ interface ActionItemWithContext extends ActionItem {
 }
 
 export default function ActionItemsPage() {
-  const supabase = createClient();
   const [meetings, setMeetings] = useState<MeetingWithActions[]>([]);
   const [actionItems, setActionItems] = useState<ActionItemWithContext[]>([]);
   const [filteredItems, setFilteredItems] = useState<ActionItemWithContext[]>([]);

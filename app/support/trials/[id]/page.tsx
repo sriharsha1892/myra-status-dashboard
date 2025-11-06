@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,8 +67,6 @@ export default function OrganizationDetailPage() {
     user_id: '',
     activity_type: 'login' as 'login' | 'query_executed' | 'report_generated' | 'feature_used',
   });
-
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -236,6 +236,7 @@ export default function OrganizationDetailPage() {
   };
 
   const handleAddUser = async () => {
+    const supabase = createClient();
     try {
       // @ts-ignore - Supabase typing issue with dynamic columns
       const { error } = await supabase.from('trial_users').insert({
@@ -256,6 +257,7 @@ export default function OrganizationDetailPage() {
   };
 
   const handleLogActivity = async () => {
+    const supabase = createClient();
     try {
       // @ts-ignore - Supabase typing issue with dynamic columns
       const { error } = await supabase.from('user_activity_log').insert({

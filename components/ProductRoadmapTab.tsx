@@ -1,23 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar } from 'lucide-react';
 import AddRoadmapItemModal from './AddRoadmapItemModal';
+import RoadmapDetailPanel from './roadmap/RoadmapDetailPanel';
+import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
+import RoadmapFilters from './roadmap/RoadmapFilters';
+import RoadmapAnalytics from './roadmap/RoadmapAnalytics';
+import CalendarView from './roadmap/CalendarView';
 
 interface RoadmapItem {
   id: string;
   org_id: string;
   title: string;
-  description?: string;
+  description: string | null;
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  target_date?: string;
-  estimated_completion_date?: string;
-  created_by?: string;
+  target_date: string | null;
+  estimated_completion_date: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
+  linked_features: string[] | null;
+  blocked_by_ids: string[] | null;
+  blocks_ids: string[] | null;
+  label_ids: string[] | null;
+  milestone_id: string | null;
+}
+
+interface Label {
+  id: string;
+  org_id: string;
+  name: string;
+  color: string;
+  description: string | null;
+}
+
+interface Milestone {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  target_date: string | null;
+  status: 'active' | 'completed' | 'cancelled';
+  color: string;
 }
 
 interface ProductRoadmapTabProps {
@@ -38,40 +67,147 @@ const PRIORITY_CONFIG: { [key: string]: { icon: string; color: string; label: st
   critical: { icon: '🚨', color: 'red', label: 'Critical' },
 };
 
+type ViewMode = 'cards' | 'kanban' | 'analytics' | 'calendar';
+
 export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [items, setItems] = useState<RoadmapItem[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
+  const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
+    start: null,
+    end: null,
+  });
+  const [showBlockedOnly, setShowBlockedOnly] = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
-    fetchRoadmapItems();
+    fetchAll();
   }, [orgId]);
 
-  const fetchRoadmapItems = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      // Fetch items
+      const { data: itemsData, error: itemsError } = await supabase
         .from('org_product_roadmap')
         .select('*')
         .eq('org_id', orgId)
         .order('target_date', { ascending: true, nullsFirst: false });
 
-      const { data, error } = await query;
+      if (itemsError) throw itemsError;
+      setItems(itemsData || []);
 
-      if (error) throw error;
-      setItems(data || []);
+      // Fetch labels
+      const { data: labelsData, error: labelsError } = await supabase
+        .from('roadmap_labels')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('name');
+
+      if (labelsError) throw labelsError;
+      setLabels(labelsData || []);
+
+      // Fetch milestones
+      const { data: milestonesData, error: milestonesError } = await supabase
+        .from('roadmap_milestones')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('target_date', { ascending: true, nullsFirst: false });
+
+      if (milestonesError) throw milestonesError;
+      setMilestones(milestonesData || []);
     } catch (error: any) {
-      console.error('Error fetching roadmap:', error);
-      toast.error('Failed to load roadmap');
+      console.error('Error fetching roadmap data:', error);
+      toast.error('Failed to load roadmap data');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredItems = filterStatus ? items.filter((item) => item.status === filterStatus) : items;
+  // Apply filters
+  const filteredItems = useMemo(() => {
+    let filtered = items;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.title.toLowerCase().includes(query) ||
+          item.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter((item) => selectedStatuses.includes(item.status));
+    }
+
+    // Priority filter
+    if (selectedPriorities.length > 0) {
+      filtered = filtered.filter((item) => selectedPriorities.includes(item.priority));
+    }
+
+    // Date range filter
+    if (dateRange.start || dateRange.end) {
+      filtered = filtered.filter((item) => {
+        if (!item.target_date) return false;
+        const itemDate = new Date(item.target_date);
+        if (dateRange.start && itemDate < new Date(dateRange.start)) return false;
+        if (dateRange.end && itemDate > new Date(dateRange.end)) return false;
+        return true;
+      });
+    }
+
+    // Label filter
+    if (selectedLabelIds.length > 0) {
+      filtered = filtered.filter((item) => {
+        if (!item.label_ids || item.label_ids.length === 0) return false;
+        return selectedLabelIds.some(labelId => item.label_ids?.includes(labelId));
+      });
+    }
+
+    // Milestone filter
+    if (selectedMilestoneIds.length > 0) {
+      filtered = filtered.filter((item) => {
+        return item.milestone_id && selectedMilestoneIds.includes(item.milestone_id);
+      });
+    }
+
+    // Blocked only filter
+    if (showBlockedOnly) {
+      filtered = filtered.filter((item) => {
+        if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return false;
+        // Check if any blocker is not completed
+        const blockers = items.filter((i) => item.blocked_by_ids?.includes(i.id));
+        return blockers.some((blocker) => blocker.status !== 'completed');
+      });
+    }
+
+    return filtered;
+  }, [items, searchQuery, selectedStatuses, selectedPriorities, selectedLabelIds, selectedMilestoneIds, dateRange, showBlockedOnly]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedStatuses([]);
+    setSelectedPriorities([]);
+    setSelectedLabelIds([]);
+    setSelectedMilestoneIds([]);
+    setDateRange({ start: null, end: null });
+    setShowBlockedOnly(false);
+  };
 
   const getStatusColor = (status: string) => {
     const config = STATUS_CONFIG[status];
@@ -103,133 +239,215 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
     }
   };
 
+  const hasActiveBlockers = (item: RoadmapItem) => {
+    if (!item.blocked_by_ids || item.blocked_by_ids.length === 0) return false;
+    const blockers = items.filter((i) => item.blocked_by_ids?.includes(i.id));
+    return blockers.some((blocker) => blocker.status !== 'completed');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="flex flex-col items-center gap-2">
-          <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="text-sm text-gray-600">Loading roadmap...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Product Roadmap</h3>
-          <p className="text-sm text-gray-600 mt-1">Planned features and improvements</p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Add Item</span>
-        </button>
-      </div>
-
-      {/* Status Filter */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilterStatus(null)}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterStatus === null
-              ? 'bg-blue-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          All Items ({items.length})
-        </button>
-        {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-          const count = items.filter((item) => item.status === status).length;
-          return (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                filterStatus === status
-                  ? `${getStatusColor(status)} border`
-                  : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {config.icon} {config.label} ({count})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Roadmap Items */}
-      {filteredItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 px-4 bg-white/50 rounded-lg border border-dashed border-gray-300">
-          <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-gray-600 font-medium">No roadmap items</p>
-          <p className="text-sm text-gray-500 mt-1">
-            {filterStatus ? 'No items with this status' : 'Start by adding your first roadmap item'}
+          <h2 className="text-2xl font-bold text-gray-900">Product Roadmap</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+            {filteredItems.length !== items.length && ` (filtered from ${items.length})`}
           </p>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {filteredItems.map((item) => {
-            const statusConfig = STATUS_CONFIG[item.status];
-            const priorityConfig = PRIORITY_CONFIG[item.priority];
 
-            return (
-              <div key={item.id} className={`rounded-lg border-2 p-4 ${getStatusColor(item.status)}`}>
-                {/* Header */}
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{statusConfig.icon}</span>
-                      <h4 className="text-lg font-semibold text-gray-900">{item.title}</h4>
-                    </div>
-                    {item.description && (
-                      <p className="text-sm text-gray-700 mt-2">{item.description}</p>
-                    )}
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(item.priority)}`}>
-                    {priorityConfig.icon} {priorityConfig.label}
-                  </div>
-                </div>
+        <div className="flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                viewMode === 'cards'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                viewMode === 'kanban'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <LayoutList className="w-4 h-4" />
+              <span className="hidden sm:inline">Kanban</span>
+            </button>
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                viewMode === 'analytics'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </button>
+          </div>
 
-                {/* Details */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {item.target_date && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-700 opacity-75">Target Date</span>
-                      <p className="text-gray-900">{format(new Date(item.target_date), 'MMM dd, yyyy')}</p>
-                    </div>
-                  )}
-                  {item.estimated_completion_date && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-700 opacity-75">Est. Completion</span>
-                      <p className="text-gray-900">{format(new Date(item.estimated_completion_date), 'MMM dd, yyyy')}</p>
-                    </div>
-                  )}
-                  {item.created_by && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-700 opacity-75">Created By</span>
-                      <p className="text-gray-900">{item.created_by}</p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-xs font-medium text-gray-700 opacity-75">Created</span>
-                    <p className="text-gray-900">{format(new Date(item.created_at), 'MMM dd, yyyy')}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {/* Add Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Item</span>
+          </button>
         </div>
+      </div>
+
+      {/* Filters */}
+      {viewMode !== 'analytics' && viewMode !== 'calendar' && (
+        <RoadmapFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedStatuses={selectedStatuses}
+          onStatusChange={setSelectedStatuses}
+          selectedPriorities={selectedPriorities}
+          onPriorityChange={setSelectedPriorities}
+          selectedLabelIds={selectedLabelIds}
+          onLabelIdsChange={setSelectedLabelIds}
+          selectedMilestoneIds={selectedMilestoneIds}
+          onMilestoneIdsChange={setSelectedMilestoneIds}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          showBlockedOnly={showBlockedOnly}
+          onShowBlockedOnlyChange={setShowBlockedOnly}
+          onClearFilters={clearFilters}
+          labels={labels}
+          milestones={milestones}
+        />
+      )}
+
+      {/* Content */}
+      {viewMode === 'analytics' ? (
+        <RoadmapAnalytics items={items} />
+      ) : viewMode === 'calendar' ? (
+        <CalendarView
+          orgId={orgId}
+          items={filteredItems}
+          labels={labels}
+          milestones={milestones}
+          onItemClick={setSelectedItemId}
+          onUpdate={fetchAll}
+        />
+      ) : viewMode === 'kanban' ? (
+        <RoadmapKanbanView
+          orgId={orgId}
+          items={filteredItems}
+          onItemClick={setSelectedItemId}
+          onUpdate={fetchAll}
+        />
+      ) : (
+        /* Cards View */
+        <>
+          {filteredItems.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <p className="text-gray-500">
+                {items.length === 0
+                  ? 'No roadmap items yet. Click "Add Item" to get started.'
+                  : 'No items match your filters.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredItems.map((item) => {
+                const statusConfig = STATUS_CONFIG[item.status];
+                const priorityConfig = PRIORITY_CONFIG[item.priority];
+                const isBlocked = hasActiveBlockers(item);
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-lg border-2 p-4 ${getStatusColor(
+                      item.status
+                    )} cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01]`}
+                    onClick={() => setSelectedItemId(item.id)}
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{statusConfig.icon}</span>
+                          <h4 className="text-lg font-semibold text-gray-900">{item.title}</h4>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {item.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                    )}
+
+                    {/* Priority Badge */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${getPriorityColor(
+                          item.priority
+                        )}`}
+                      >
+                        {priorityConfig.icon} {priorityConfig.label}
+                      </span>
+                      {isBlocked && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Blocked
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Dates */}
+                    <div className="text-xs text-gray-500 space-y-1">
+                      {item.target_date && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Target:</span>
+                          <span>{format(new Date(item.target_date), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                      {item.estimated_completion_date && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Est. Complete:</span>
+                          <span>
+                            {format(new Date(item.estimated_completion_date), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Add Modal */}
@@ -237,7 +455,19 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         orgId={orgId}
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSuccess={fetchRoadmapItems}
+        onSuccess={fetchAll}
+      />
+
+      {/* Detail Panel */}
+      <RoadmapDetailPanel
+        itemId={selectedItemId || ''}
+        orgId={orgId}
+        isOpen={!!selectedItemId}
+        onClose={() => setSelectedItemId(null)}
+        onUpdate={fetchAll}
+        allItems={items}
+        labels={labels}
+        milestones={milestones}
       />
     </div>
   );

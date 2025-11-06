@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -87,8 +89,6 @@ export default function TicketDetailPage() {
   const [emailThreads, setEmailThreads] = useState<any[]>([]);
   const [showCalendarForm, setShowCalendarForm] = useState(false);
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -97,6 +97,7 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     if (user && ticketId) {
+      const supabase = createClient();
       fetchTicket();
       fetchEmailThreads();
 
@@ -142,6 +143,7 @@ export default function TicketDetailPage() {
   }, [user, ticketId]);
 
   const fetchTicket = async () => {
+    const supabase = createClient();
     try {
       const { data, error } = await supabase
         .from('tickets')
@@ -160,6 +162,7 @@ export default function TicketDetailPage() {
   };
 
   const fetchEmailThreads = async () => {
+    const supabase = createClient();
     try {
       const { data, error } = await supabase
         .from('email_threads')
@@ -228,6 +231,7 @@ export default function TicketDetailPage() {
   };
 
   const handleLinkCreated = async (linkedTicketId: string, linkType: string, shouldMerge: boolean) => {
+    const supabase = createClient();
     if (shouldMerge) {
       // Fetch the target ticket for merge modal
       const { data: linkedTicket } = await supabase

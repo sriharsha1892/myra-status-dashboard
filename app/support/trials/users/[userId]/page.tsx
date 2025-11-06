@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -63,7 +65,6 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
 
-  const supabase = createClient();
   const [user, setUser] = useState<PlatformUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingStage, setEditingStage] = useState(false);

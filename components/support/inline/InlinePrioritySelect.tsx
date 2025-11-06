@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Flag, Loader2 } from 'lucide-react';
+import { Flag, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface InlinePrioritySelectProps {
   value: string;
@@ -25,6 +25,7 @@ export default function InlinePrioritySelect({
 }: InlinePrioritySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState(value);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -74,6 +75,9 @@ export default function InlinePrioritySelect({
       await onChange(ticketId, newPriority);
       setSelectedPriority(newPriority);
       setIsOpen(false);
+      // Show success checkmark briefly
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 1500);
     } catch (error) {
       // Rollback on error
       setSelectedPriority(value);
@@ -105,6 +109,11 @@ export default function InlinePrioritySelect({
           <>
             <Loader2 className="w-3 h-3 mr-1.5 animate-spin" strokeWidth={2} />
             Saving...
+          </>
+        ) : showSaved ? (
+          <>
+            <CheckCircle2 className="w-3 h-3 mr-1.5 text-green-600" strokeWidth={2} />
+            {selectedPriority}
           </>
         ) : (
           <>

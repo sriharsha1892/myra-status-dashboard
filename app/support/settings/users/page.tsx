@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,8 +37,6 @@ export default function UsersPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('AM');
   const [inviting, setInviting] = useState(false);
-
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {

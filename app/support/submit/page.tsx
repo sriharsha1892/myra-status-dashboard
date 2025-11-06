@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,8 +65,6 @@ export default function SubmitTicketPage() {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -73,6 +73,7 @@ export default function SubmitTicketPage() {
 
   useEffect(() => {
     const fetchOrganizations = async () => {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('organizations')
         .select('name')
@@ -91,7 +92,7 @@ export default function SubmitTicketPage() {
     if (user) {
       fetchOrganizations();
     }
-  }, [user, supabase]);
+  }, [user]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};

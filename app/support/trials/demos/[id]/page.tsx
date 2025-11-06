@@ -31,7 +31,6 @@ export default function DemoDetailPage() {
     demo_rating: 0
   });
 
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {
