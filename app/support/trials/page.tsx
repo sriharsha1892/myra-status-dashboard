@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -28,6 +29,7 @@ export default function TrialOrganizationsPage() {
   const [filteredOrgs, setFilteredOrgs] = useState<OrgWithUsers[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
 
@@ -61,7 +63,7 @@ export default function TrialOrganizationsPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [organizations, searchQuery, stageFilter]);
+  }, [organizations, debouncedSearchQuery, stageFilter]);
 
   // Update trial end date when start date changes
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function TrialOrganizationsPage() {
       setFilteredOrgs(orgsWithUsers);
     } catch (error: any) {
       console.error('Error fetching organizations:', error);
-      toast.error('Failed to load organizations');
+      toast.error('Failed to load organizations', { duration: 5000 });
     } finally {
       setLoading(false);
     }
@@ -121,12 +123,12 @@ export default function TrialOrganizationsPage() {
     let filtered = [...organizations];
 
     // Search filter
-    if (searchQuery) {
+    if (debouncedSearchQuery) {
       filtered = filtered.filter(
         (org) =>
-          org.org_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.account_manager?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.org_domain?.toLowerCase().includes(searchQuery.toLowerCase())
+          org.org_name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          org.account_manager?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          org.org_domain?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
     }
 
@@ -183,7 +185,7 @@ export default function TrialOrganizationsPage() {
       await fetchOrganizations();
     } catch (error: any) {
       console.error('Error updating account managers:', error);
-      toast.error('Failed to update account managers');
+      toast.error('Failed to update account managers', { duration: 5000 });
     } finally {
       setBulkProcessing(false);
     }
@@ -231,7 +233,7 @@ export default function TrialOrganizationsPage() {
       await fetchOrganizations();
     } catch (error: any) {
       console.error('Error updating trial dates:', error);
-      toast.error('Failed to update trial dates');
+      toast.error('Failed to update trial dates', { duration: 5000 });
     } finally {
       setBulkProcessing(false);
     }
@@ -260,7 +262,7 @@ export default function TrialOrganizationsPage() {
       await fetchOrganizations();
     } catch (error: any) {
       console.error('Error updating stage:', error);
-      toast.error('Failed to update stage');
+      toast.error('Failed to update stage', { duration: 5000 });
     } finally {
       setBulkProcessing(false);
     }
@@ -326,6 +328,13 @@ export default function TrialOrganizationsPage() {
 
   const formatStage = (stage: string) => {
     return stage.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const extractName = (accountManager: string | null) => {
+    if (!accountManager) return '-';
+    // Extract name before email (e.g., "John Doe <john@example.com>" -> "John Doe")
+    const match = accountManager.match(/^([^<]+)/);
+    return match ? match[1].trim() : accountManager;
   };
 
   const isBackwardStageChange = (newStage: string) => {
@@ -562,7 +571,7 @@ export default function TrialOrganizationsPage() {
                               className="px-6 py-4 cursor-pointer"
                               onClick={() => router.push(`/support/trials/${org.org_id}`)}
                             >
-                              <p className="text-sm text-gray-900">{org.account_manager || '-'}</p>
+                              <p className="text-sm text-gray-900">{extractName(org.account_manager)}</p>
                             </td>
                           </tr>
                         ))

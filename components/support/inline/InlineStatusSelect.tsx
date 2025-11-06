@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 
 interface InlineStatusSelectProps {
   value: string;
@@ -26,6 +26,7 @@ export default function InlineStatusSelect({
 }: InlineStatusSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(value);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -75,6 +76,9 @@ export default function InlineStatusSelect({
       await onChange(ticketId, newStatus);
       setSelectedStatus(newStatus);
       setIsOpen(false);
+      // Show success checkmark briefly
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 1500);
     } catch (error) {
       // Rollback on error
       setSelectedStatus(value);
@@ -106,6 +110,11 @@ export default function InlineStatusSelect({
           <>
             <Loader2 className="w-3 h-3 mr-1.5 animate-spin" strokeWidth={2} />
             Saving...
+          </>
+        ) : showSaved ? (
+          <>
+            <CheckCircle2 className="w-3 h-3 mr-1.5 text-green-600" strokeWidth={2} />
+            {selectedStatus}
           </>
         ) : (
           selectedStatus

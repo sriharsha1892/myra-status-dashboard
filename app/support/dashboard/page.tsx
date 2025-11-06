@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -74,8 +76,8 @@ export default function DashboardPage() {
   }, [user, authLoading, role, router]);
 
   const filteredTickets = tickets.filter((ticket) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
       return (
         ticket.ticket_number.toLowerCase().includes(query) ||
         ticket.organization.toLowerCase().includes(query) ||
@@ -125,7 +127,7 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Error fetching tickets:', error);
-      toast.error('Failed to load tickets');
+      toast.error('Failed to load tickets', { duration: 5000 });
     } finally {
       setLoading(false);
     }
@@ -172,7 +174,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Error updating status:', error);
       setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, status: oldStatus } : t)));
-      toast.error('Failed to update status');
+      toast.error('Failed to update status', { duration: 5000 });
       throw error;
     }
   };
@@ -204,7 +206,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Error updating priority:', error);
       setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, priority: oldPriority } : t)));
-      toast.error('Failed to update priority');
+      toast.error('Failed to update priority', { duration: 5000 });
       throw error;
     }
   };
@@ -262,7 +264,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Error updating assignee:', error);
       setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, assigned_to: oldAssigneeId } : t)));
-      toast.error('Failed to update assignee');
+      toast.error('Failed to update assignee', { duration: 5000 });
       throw error;
     }
   };
@@ -324,7 +326,7 @@ export default function DashboardPage() {
           {loading ? (
             <>
               {/* Skeleton for metric cards */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <SkeletonCard />
                 <SkeletonCard />
                 <SkeletonCard />
@@ -341,7 +343,7 @@ export default function DashboardPage() {
           ) : (
             <>
               {/* Metric Cards */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatCard
                   title="Total Tickets"
                   value={totalTickets}

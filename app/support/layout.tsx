@@ -10,7 +10,9 @@ import {
   BarChart3,
   Users2,
   LogOut,
-  Map
+  Map,
+  Menu,
+  X
 } from 'lucide-react';
 import NotificationsBell from '@/components/NotificationsBell';
 
@@ -23,6 +25,7 @@ export default function SupportLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -40,6 +43,11 @@ export default function SupportLayout({
       router.push('/support/dashboard');
     }
   }, [user, authLoading, router, pathname]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // Show loading state while checking auth
   if (!mounted || authLoading) {
@@ -74,8 +82,30 @@ export default function SupportLayout({
     <div className="flex h-screen bg-slate-50">
       <Toaster position="top-right" />
 
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Hamburger Button - Mobile Only */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+      >
+        {mobileMenuOpen ? (
+          <X className="w-5 h-5" strokeWidth={2} />
+        ) : (
+          <Menu className="w-5 h-5" strokeWidth={2} />
+        )}
+      </button>
+
       {/* Modern Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <aside className={`w-64 bg-white border-r border-slate-200 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Logo Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-3">
@@ -199,7 +229,7 @@ export default function SupportLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto lg:ml-0">{children}</main>
     </div>
   );
 }
