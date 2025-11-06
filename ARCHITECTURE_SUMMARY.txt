@@ -1,0 +1,315 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    FEATURE REQUESTS & ROADMAP ARCHITECTURE                    ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             CURRENT ARCHITECTURE                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+FEATURE REQUESTS PAGE                          ROADMAP PAGE
+/support/trials/features                       /support/trials/roadmap
+        │                                              │
+        ├─→ FeatureRequestsTab                        ├─→ ProductRoadmapTabEnhanced
+        │       │                                     │       │
+        │       ├─ Fetches: feature_requests         │       ├─ Fetches: org_product_roadmap
+        │       │   - org_id filter                  │       │   - org_id filter
+        │       │   - Status/Votes sort              │       │   - Status/Priority filter
+        │       │                                     │       │   - Target date sort
+        │       ├─ Displays:                          │       │
+        │       │   - Status (7 types)               │       ├─ Displays:
+        │       │   - Priority badges                │       │   - List view
+        │       │   - Vote counts                    │       │   - Kanban view
+        │       │   - Product responses              │       │   - Timeline view
+        │       │                                     │       │
+        │       └─ Actions:                          │       └─ Actions:
+        │           - Filter by status              │           - Filter by status/priority
+        │           - Sort by votes/date            │           - Bulk status changes
+        │           - Add new request               │           - Bulk priority changes
+        │                                             │           - Add new item
+        └─ AddFeatureRequestModal                    └─ AddRoadmapItemModal
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATABASE SCHEMA (CURRENT)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────┐      ┌──────────────────────────────┐
+│     feature_requests         │      │   org_product_roadmap        │
+├──────────────────────────────┤      ├──────────────────────────────┤
+│ id: UUID [PK]                │      │ id: UUID [PK]                │
+│ org_id: UUID [FK]            │      │ org_id: UUID [FK]            │
+│ user_id: UUID [FK] (NULL OK) │      │ title: TEXT                  │
+│ title: TEXT                  │      │ description: TEXT (NULL OK)  │
+│ description: TEXT            │      │ status: enum (4 types)       │
+│ use_case: TEXT (NULL OK)     │      │ priority: enum (4 types)     │
+│ status: enum (7 types)       │      │ target_date: DATE (NULL OK)  │
+│ priority: enum (4 types)     │      │ estimated_completion: DATE   │
+│ votes: INT                   │      │ created_by: TEXT (NULL OK)   │
+│ product_response: TEXT       │      │ created_at: TIMESTAMP        │
+│ product_responded_at: TIME   │      │ updated_at: TIMESTAMP        │
+│ product_responded_by: TEXT   │      └──────────────────────────────┘
+│ expected_availability: DATE  │
+│ created_at: TIMESTAMP        │              ❌ NO LINK
+│ updated_at: TIMESTAMP        │              (Currently Independent)
+└──────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PROPOSED LINKING ARCHITECTURE                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+OPTION A: JUNCTION TABLE (RECOMMENDED)
+═════════════════════════════════════════
+
+┌──────────────────────────┐     ┌─────────────────────────────────┐
+│   feature_requests       │     │  feature_roadmap_links (NEW)    │
+├──────────────────────────┤     ├─────────────────────────────────┤
+│ id: UUID [PK]            │◄──┐ │ id: UUID [PK]                   │
+│ org_id: UUID [FK]        │   │ │ feature_request_id: UUID [FK]   │
+│ title: TEXT              │   │ │ roadmap_item_id: UUID [FK]──┐   │
+│ ...                      │   │ │ link_type: ENUM              │   │
+│                          │   │ │ created_by: TEXT             │   │
+└──────────────────────────┘   │ │ created_at: TIMESTAMP        │   │
+                               │ │ updated_at: TIMESTAMP        │   │
+                               │ │ [UNIQUE constraint]          │   │
+                               │ └─────────────────────────────────┘
+                               │                                    │
+                               │  ┌──────────────────────────────┐  │
+                               └──│  org_product_roadmap         │◄─┘
+                                  ├──────────────────────────────┤
+                                  │ id: UUID [PK]                │
+                                  │ org_id: UUID [FK]            │
+                                  │ title: TEXT                  │
+                                  │ ...                          │
+                                  └──────────────────────────────┘
+
+Advantages:
+  ✓ Many-to-many relationships (1 feature → many roadmaps)
+  ✓ Multiple link types supported
+  ✓ Historical tracking (created_by, timestamps)
+  ✓ Flexible and extensible
+  ✓ Follows existing ticket_links pattern
+
+Link Types:
+  - 'addresses': Roadmap item addresses this feature
+  - 'blocked_by': Feature blocked by roadmap dependencies
+  - 'blocked_by_same_priority': Features with same priority
+
+
+OPTION B: FOREIGN KEY IN ROADMAP (SIMPLER)
+═════════════════════════════════════════
+
+┌──────────────────────────┐     ┌──────────────────────────────────┐
+│   feature_requests       │     │   org_product_roadmap            │
+├──────────────────────────┤     ├──────────────────────────────────┤
+│ id: UUID [PK]            │┐    │ id: UUID [PK]                    │
+│ org_id: UUID [FK]        ││    │ org_id: UUID [FK]                │
+│ title: TEXT              ││    │ title: TEXT                      │
+│ ...                      ││    │ linked_feature_request_id: UUID◄─┼─ [FK]
+│                          ││    │ ...                              │
+└──────────────────────────┘│    └──────────────────────────────────┘
+                            │
+                            └─ Optional: only 1 feature per roadmap
+
+Advantages:
+  ✓ Simpler schema
+  ✓ Fewer queries
+  ✓ Faster joins
+
+Limitations:
+  ✗ One-to-one only (1 roadmap → 1 feature)
+  ✗ Can't track multiple inspiring features
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         COMPONENT ENHANCEMENT PLAN                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+FEATUREREQUESTSTAB ENHANCEMENTS:
+════════════════════════════════════
+
+Before: FeatureRequest with no roadmap link
+After:  FeatureRequest + linked roadmap item data
+
+Updated Interface:
+  interface FeatureRequest {
+    // existing fields...
+    linked_roadmap_item?: {
+      id: string;
+      title: string;
+      status: string;
+      target_date?: string;
+    };
+  }
+
+New Query:
+  .select(`
+    *,
+    roadmap_item:linked_roadmap_item_id(id, title, status, target_date)
+  `)
+
+New UI Section (in feature card, when status='planned' or link exists):
+  ┌─────────────────────────────────────────┐
+  │ Linked to Roadmap Item                  │
+  ├─────────────────────────────────────────┤
+  │ > Advanced Analytics Integration        │
+  │   Status: In Progress                   │
+  │   Target: Dec 15, 2024                  │
+  │   [Click to view roadmap]               │
+  └─────────────────────────────────────────┘
+
+
+PRODUCTROADMAPTABENHANCED ENHANCEMENTS:
+════════════════════════════════════════
+
+Before: RoadmapItem with no feature links
+After:  RoadmapItem + count/list of linked features
+
+Updated Interface:
+  interface RoadmapItem {
+    // existing fields...
+    linked_feature_requests?: Array<{
+      id: string;
+      title: string;
+      priority: string;
+      votes: number;
+      status: string;
+    }>;
+    _featureCount?: number;
+  }
+
+New Query (dual-step):
+  Step 1: Get all roadmap items (existing)
+  Step 2: For each item, fetch linked features via junction table
+
+New UI Sections:
+
+List View (add to card footer):
+  ┌──────────────────────────────────────────┐
+  │ [📌] 5 Linked Feature Requests [expand]  │
+  └──────────────────────────────────────────┘
+  
+Kanban View (add to card):
+  ┌─────────────────────┐
+  │ Advanced Analytics  │
+  │                     │
+  │ [High]  [5 features]│
+  │ Nov 15              │
+  └─────────────────────┘
+
+Timeline View (add indicator):
+  📌 Advanced Analytics | Dec 15, 2024 [5 linked]
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW ILLUSTRATION                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+FEATURE REQUEST LIFECYCLE WITH ROADMAP LINKING:
+═════════════════════════════════════════════════
+
+    Customer              Product Team          Platform
+        │                     │                      │
+        │  Submit Request    │                      │
+        ├────────────────────►│                      │
+        │   (submitted)       │                      │
+        │                     │  Review              │
+        │                     ├─────────────────────►│
+        │                     │  (reviewed)          │
+        │                     │                      │
+        │                     │  Plan & Link        │
+        │                     ├─────────────────────►│
+        │                     │ (planned)            │
+        │                     │                 Create/Link
+        │                     │                 Roadmap Item
+        │                     │◄─────────────────────┤
+        │                     │                      │
+        │  Notify             │                      │
+        │◄────────────────────┤                      │
+        │  (Roadmap Item URL) │                      │
+        │                     │  Development         │
+        │                     ├─────────────────────►│
+        │                     │ (in_progress)        │
+        │                     │                      │
+        │  Release            │                      │
+        │◄────────────────────┤◄─────────────────────┤
+        │  (completed)        │  (completed)         │
+
+Status Timeline:
+  submitted → reviewed → planned [+ LINK] → in_progress → completed
+
+
+STATUS COMPATIBILITY MATRIX:
+════════════════════════════
+
+Feature Status          Can Link?    Notes
+─────────────────────   ─────────    ─────────────────────────────────
+submitted               ✗            Too early - not approved yet
+reviewed                ✗            Pending decision
+planned                 ✓            YES - ready to be added to roadmap
+in_progress             ✓            YES - actively being developed
+completed               ✓            YES - already released
+rejected                ✗            Won't be built
+duplicate               ✗            User should see primary instead
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      IMPLEMENTATION CHECKLIST                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PHASE 1: DATABASE (Week 1)
+  □ Create feature_roadmap_links migration
+  □ Add RLS policies
+  □ Create indexes
+  □ Add database triggers for timestamps
+  □ Test junction table with sample data
+
+PHASE 2: COMPONENT UPDATES (Week 2)
+  □ Update FeatureRequestsTab query
+  □ Update RoadmapItem interface
+  □ Add linked data display in FeatureRequestsTab
+  □ Update ProductRoadmapTabEnhanced query
+  □ Add feature count display in all views
+  □ Add hover/expand functionality
+
+PHASE 3: MODALS & INTERACTIONS (Week 3)
+  □ Create LinkFeatureRoadmapModal component
+  □ Add linking to AddFeatureRequestModal
+  □ Add linking to AddRoadmapItemModal
+  □ Add unlinking functionality
+  □ Update error handling
+
+PHASE 4: NAVIGATION & UX (Week 4)
+  □ Add "view in roadmap" links
+  □ Add breadcrumb navigation
+  □ Add notification when feature is linked
+  □ Add analytics for feature→roadmap conversions
+  □ User testing and refinement
+
+FILES TO CREATE/MODIFY:
+  CREATE:
+    - supabase/migrations/[timestamp]_feature_roadmap_links.sql
+    - components/LinkFeatureRoadmapModal.tsx
+    
+  MODIFY:
+    - components/FeatureRequestsTab.tsx
+    - components/ProductRoadmapTabEnhanced.tsx
+    - components/AddFeatureRequestModal.tsx (optional)
+    - components/AddRoadmapItemModal.tsx (optional)
+    - app/support/trials/features/page.tsx
+    - app/support/trials/roadmap/page.tsx
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                              KEY TAKEAWAYS                                      ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+1. NO EXISTING LINKS: Tables are currently independent
+2. READY FOR LINKING: Both use org_id and similar status patterns
+3. JUNCTION TABLE RECOMMENDED: Follows existing ticket_links pattern
+4. MINIMAL COMPONENT CHANGES: Update queries + add display sections
+5. STATUS FILTERING NEEDED: Only link planned/in_progress/completed features
+6. SEPARATE MODALS: Keep linking logic in dedicated components
+7. BI-DIRECTIONAL DISPLAY: Show links in both feature and roadmap views
+8. PERFORMANCE: Add indexes on foreign keys and use lazy loading
+
