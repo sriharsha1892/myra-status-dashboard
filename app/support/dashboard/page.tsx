@@ -544,6 +544,23 @@ export default function DashboardPage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
+
+                {/* Bulk Activity - Admin Only */}
+                {role?.toLowerCase() === 'admin' && (
+                  <button
+                    onClick={() => router.push('/support/admin/bulk-activity')}
+                    className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 rounded-xl transition-all group"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                      <Calendar className="w-5 h-5" strokeWidth={2} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-900">Bulk Activity Entry</p>
+                      <p className="text-xs text-slate-600">Add historical notes</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                )}
               </div>
             </div>
 
