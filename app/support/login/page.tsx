@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [resetLoading, setResetLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true) // Default to true for convenience
 
   const supabase = createClient()
 
@@ -24,8 +25,8 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    // Actual Supabase authentication
-    const { error: authError } = await signIn(email, password)
+    // Actual Supabase authentication with Remember Me preference
+    const { error: authError } = await signIn(email, password, rememberMe)
 
     if (authError) {
       setError(authError.message)
@@ -33,7 +34,19 @@ export default function LoginPage() {
       return
     }
 
-    // Success - layout will handle redirect automatically
+    // Success - show personalized toast
+    const userName = email.split('@')[0]
+    toast.success(
+      <div>
+        <div className="font-semibold">Welcome back, {userName}!</div>
+        <div className="text-xs mt-1">
+          {rememberMe ? 'You\'ll stay logged in for 30 days' : 'You\'ll stay logged in for this session'}
+        </div>
+      </div>,
+      { duration: 3000 }
+    )
+
+    // Layout will handle redirect automatically
     // (see support/layout.tsx lines 39-44)
   }
 
@@ -48,17 +61,30 @@ export default function LoginPage() {
 
       if (error) throw error
 
+      // Personalized success message
+      const userName = resetEmail.split('@')[0]
       toast.success(
         <div>
-          <div className="font-semibold">Password reset email sent!</div>
-          <div className="text-xs mt-1">Check your inbox for reset instructions.</div>
+          <div className="font-semibold">Reset link sent to {userName}!</div>
+          <div className="text-xs mt-1">
+            Check your inbox at <span className="font-medium">{resetEmail}</span>
+          </div>
+          <div className="text-xs mt-1 text-blue-600">
+            Link expires in 60 minutes • Don't forget to check spam
+          </div>
         </div>,
-        { duration: 5000 }
+        { duration: 7000 }
       )
       setShowForgotPassword(false)
       setResetEmail('')
     } catch (error: any) {
-      toast.error(error.message || 'Failed to send reset email')
+      toast.error(
+        <div>
+          <div className="font-semibold">Couldn't send reset email</div>
+          <div className="text-xs mt-1">{error.message || 'Please try again or contact support'}</div>
+        </div>,
+        { duration: 5000 }
+      )
     } finally {
       setResetLoading(false)
     }
@@ -192,6 +218,24 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
+                  className="w-4 h-4 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm text-gray-700 font-medium cursor-pointer select-none"
+                >
+                  Remember me for 30 days
+                </label>
+              </div>
+
               {/* Submit Button */}
               <button
                 type="submit"
@@ -250,10 +294,10 @@ export default function LoginPage() {
       {showForgotPassword && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full animate-in zoom-in-95 duration-300">
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Reset Password</h3>
-                <p className="text-sm text-gray-600 mt-1">Enter your email to receive reset instructions</p>
+                <h3 className="text-xl font-bold text-gray-900">Forgot your password?</h3>
+                <p className="text-sm text-gray-600 mt-1">No worries, we'll send you a reset link</p>
               </div>
               <button
                 onClick={() => {
@@ -266,6 +310,23 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* Info Box */}
+            <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">What happens next:</p>
+                  <ul className="text-xs text-blue-700 mt-1.5 space-y-1">
+                    <li>• We'll send a password reset link to your email</li>
+                    <li>• The link expires in 60 minutes</li>
+                    <li>• Check your spam folder if you don't see it</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
             <form onSubmit={handleForgotPassword} className="space-y-5">

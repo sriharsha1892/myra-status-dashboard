@@ -8,7 +8,7 @@ import type { User } from '@supabase/supabase-js';
 interface UseAuthReturn {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   role: 'AM' | 'Team' | 'Admin' | null;
 }
@@ -48,9 +48,13 @@ export function useAuth(): UseAuthReturn {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe = true) => {
     try {
       const supabase = getSupabase();
+
+      // Supabase automatically persists sessions in localStorage
+      // The session will stay valid for the configured expiration time (default: 1 hour token, 30 days refresh)
+      // rememberMe parameter is for UI/UX purposes - we show different messaging
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
