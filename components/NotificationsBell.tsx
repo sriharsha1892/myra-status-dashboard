@@ -181,40 +181,39 @@ export default function NotificationsBell() {
         )}
       </button>
 
-      {/* Dropdown Panel - Responsive and properly positioned */}
+      {/* Dropdown Panel - Compact dropdown positioned near bell */}
       {showDropdown && (
         <>
-          {/* Backdrop overlay for emphasis */}
-          <div className="fixed inset-0 bg-black/10 z-40 backdrop-blur-sm" onClick={() => setShowDropdown(false)} />
+          {/* Subtle backdrop for mobile only */}
+          <div className="md:hidden fixed inset-0 bg-black/5 z-40" onClick={() => setShowDropdown(false)} />
 
-          <div className="fixed md:absolute right-2 md:right-0 top-20 md:top-auto md:mt-3 w-[calc(100vw-1rem)] md:w-[540px] lg:w-[600px] max-w-2xl bg-white rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-top-2 duration-200 border border-slate-300">
-            {/* Header - Cleaner and more prominent */}
-            <div className="px-4 md:px-6 lg:px-8 py-4 md:py-5 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                  <div className="p-2 md:p-2.5 bg-white/20 rounded-xl backdrop-blur-sm flex-shrink-0">
-                    <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="absolute right-0 mt-2 w-96 max-h-[600px] bg-white rounded-xl shadow-xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-top-2 duration-200 border border-slate-200">
+            {/* Header - Compact */}
+            <div className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="text-base md:text-lg font-bold text-white truncate">Notifications</h3>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Notifications</h3>
                     {unreadCount > 0 && (
-                      <p className="text-xs md:text-sm text-blue-100 font-medium">{unreadCount} new</p>
+                      <p className="text-xs text-blue-100 font-medium">{unreadCount} new</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                  {/* Settings Button */}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       setShowDropdown(false);
                       setShowPreferences(true);
                     }}
-                    className="p-2 md:p-2.5 text-white hover:bg-white/20 rounded-lg transition-all"
+                    className="p-2 text-white hover:bg-white/20 rounded-lg transition-all"
                     title="Settings"
                   >
-                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -222,29 +221,27 @@ export default function NotificationsBell() {
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}
-                      className="px-2 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-blue-600 bg-white hover:bg-blue-50 font-semibold rounded-lg transition-all shadow-md hover:shadow-lg"
+                      className="px-3 py-1.5 text-xs text-blue-600 bg-white hover:bg-blue-50 font-semibold rounded-lg transition-all"
                     >
-                      <span className="hidden sm:inline">Mark all read</span>
-                      <span className="sm:hidden">Read all</span>
+                      Mark all read
                     </button>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Notifications List - Responsive height */}
-            <div className="overflow-y-auto max-h-[60vh] md:max-h-[70vh] min-h-[250px]">
+            {/* Notifications List - Compact */}
+            <div className="overflow-y-auto max-h-[400px]">
               {loading ? (
-                <div className="p-16 text-center">
-                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                  <p className="text-base text-slate-700 font-semibold">Loading notifications...</p>
-                  <p className="text-sm text-slate-500 mt-1">Please wait a moment</p>
+                <div className="p-8 text-center">
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-sm text-slate-700 font-semibold">Loading notifications...</p>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="p-20 text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg
-                      className="w-12 h-12 text-blue-500"
+                      className="w-8 h-8 text-blue-500"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -257,8 +254,8 @@ export default function NotificationsBell() {
                       />
                     </svg>
                   </div>
-                  <p className="text-lg font-bold text-slate-900 mb-2">All Clear!</p>
-                  <p className="text-base text-slate-600">You have no notifications at this time</p>
+                  <p className="text-base font-bold text-slate-900 mb-1">All Clear!</p>
+                  <p className="text-sm text-slate-600">You have no notifications at this time</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-200">
@@ -266,20 +263,20 @@ export default function NotificationsBell() {
                     <button
                       key={notification.notification_id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`w-full px-4 md:px-6 lg:px-8 py-4 md:py-5 lg:py-6 text-left transition-all duration-200 ${
+                      className={`w-full px-4 py-3 text-left transition-all duration-200 ${
                         !notification.read
                           ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-600'
                           : 'bg-white hover:bg-slate-50 border-l-4 border-transparent'
                       }`}
                     >
-                      <div className="flex items-start gap-3 md:gap-4 lg:gap-5">
-                        {/* Enhanced icon indicator */}
-                        <div className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shadow-md ${
+                      <div className="flex items-start gap-3">
+                        {/* Icon indicator */}
+                        <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
                           !notification.read
                             ? 'bg-gradient-to-br from-blue-500 to-blue-600'
                             : 'bg-gradient-to-br from-slate-300 to-slate-400'
                         }`}>
-                          <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                           </svg>
                         </div>
