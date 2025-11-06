@@ -66,20 +66,20 @@ type RoadmapItem = {
 
 type ViewMode = 'list' | 'board' | 'timeline';
 
-// Linear-inspired color palette
+// Premium status pill system
 const COLORS = {
   status: {
-    suggested: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', dot: 'bg-purple-500' },
-    planned: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500' },
-    in_progress: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
-    completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-    cancelled: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600', dot: 'bg-slate-400' },
+    suggested: { bg: 'bg-[#eff6ff]', border: 'border-[#dbeafe]', text: 'text-[#2563eb]', dot: 'bg-[#3b82f6]' },
+    planned: { bg: 'bg-[#eff6ff]', border: 'border-[#dbeafe]', text: 'text-[#2563eb]', dot: 'bg-[#3b82f6]' },
+    in_progress: { bg: 'bg-[#fef3c7]', border: 'border-[#fed7aa]', text: 'text-[#d97706]', dot: 'bg-[#f59e0b]' },
+    completed: { bg: 'bg-[#f0fdf4]', border: 'border-[#bbf7d0]', text: 'text-[#16a34a]', dot: 'bg-[#10b981]' },
+    cancelled: { bg: 'bg-[#f8fafc]', border: 'border-[#e2e8f0]', text: 'text-[#64748b]', dot: 'bg-[#94a3b8]' },
   },
   priority: {
-    critical: { text: 'text-red-600', bg: 'bg-red-50', icon: 'text-red-500' },
-    high: { text: 'text-orange-600', bg: 'bg-orange-50', icon: 'text-orange-500' },
-    medium: { text: 'text-yellow-600', bg: 'bg-yellow-50', icon: 'text-yellow-500' },
-    low: { text: 'text-slate-500', bg: 'bg-slate-50', icon: 'text-slate-400' },
+    critical: { text: 'text-[#dc2626]', bg: 'bg-[#fee2e2]', icon: 'text-[#ef4444]', border: 'border-[#fecaca]' },
+    high: { text: 'text-[#d97706]', bg: 'bg-[#fef3c7]', icon: 'text-[#f59e0b]', border: 'border-[#fed7aa]' },
+    medium: { text: 'text-[#ca8a04]', bg: 'bg-[#fef9c3]', icon: 'text-[#eab308]', border: 'border-[#fde68a]' },
+    low: { text: 'text-[#64748b]', bg: 'bg-[#f1f5f9]', icon: 'text-[#94a3b8]', border: 'border-[#e2e8f0]' },
   },
 };
 
@@ -240,130 +240,160 @@ export default function WorldClassRoadmapPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-          <span className="text-sm text-slate-600 font-medium">Loading roadmap...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" strokeWidth={1.5} />
+          </div>
+          <span className="text-sm text-slate-600 font-medium tracking-[-0.01em]">Loading roadmap...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* WORLD-CLASS HEADER - Linear-inspired */}
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* Premium Header - Clean & Purposeful */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
-        <div className="max-w-[1600px] mx-auto px-8 py-5">
+        <div className="max-w-[1600px] mx-auto px-8 py-6">
           {/* Title & Actions */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                <TrendingUp className="w-5 h-5 text-white" strokeWidth={1.5} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Product Roadmap</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Plan, track, and ship game-changing features</p>
+                <h1 className="text-[22px] leading-[28px] font-semibold text-slate-900 tracking-[-0.02em]">Product Roadmap</h1>
+                <p className="text-sm text-slate-600 mt-1 tracking-[-0.01em]">Plan, track, and ship with confidence</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push('/support/admin/roadmap-import')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all duration-150"
               >
-                <Upload className="w-4 h-4" />
+                <Upload className="w-4 h-4" strokeWidth={1.5} />
                 Import
               </button>
               <button
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-150"
               >
-                <Plus className="w-4 h-4" strokeWidth={2.5} />
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
                 New Item
-                <kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-blue-700 rounded">⌘K</kbd>
+                <kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-blue-700 bg-opacity-50 rounded">⌘K</kbd>
               </button>
             </div>
           </div>
 
-          {/* Executive Insights Bar */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            {/* Total Progress */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Progress</span>
-                <Target className="w-4 h-4 text-blue-500" />
+          {/* Executive Insights Bar - Floating Glass Cards */}
+          <div className="grid grid-cols-4 gap-8 mb-8">
+            {/* Total Progress - with circular progress */}
+            <div className="relative bg-white rounded-xl p-6 border border-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-200">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs font-medium text-slate-600 uppercase tracking-wide" style={{letterSpacing: '-0.01em'}}>Progress</span>
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{analytics.completionRate}%</span>
-                <span className="text-sm text-slate-600">of {analytics.total} items</span>
-              </div>
-              <div className="mt-3 h-2 bg-blue-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
-                  style={{ width: `${analytics.completionRate}%` }}
-                />
+              <div className="flex items-center gap-6">
+                {/* Circular Progress Ring */}
+                <div className="relative w-16 h-16">
+                  <svg className="transform -rotate-90 w-16 h-16">
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="#e5e7eb"
+                      strokeWidth="2"
+                      fill="none"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - analytics.completionRate / 100)}`}
+                      strokeLinecap="round"
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-slate-900" style={{letterSpacing: '-0.02em'}}>{analytics.completionRate}%</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[32px] leading-[40px] font-semibold text-slate-900 tracking-[-0.02em]">{analytics.completed}</div>
+                  <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">of {analytics.total} shipped</div>
+                </div>
               </div>
             </div>
 
             {/* In Progress */}
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">In Progress</span>
-                <Zap className="w-4 h-4 text-amber-500" />
+            <div className="relative bg-white rounded-xl p-6 border border-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-200">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs font-medium text-slate-600 uppercase tracking-wide" style={{letterSpacing: '-0.01em'}}>In Progress</span>
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-amber-600" strokeWidth={1.5} />
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{analytics.inProgress}</span>
-                <span className="text-sm text-slate-600">active</span>
+              <div className="text-[32px] leading-[40px] font-semibold text-slate-900 tracking-[-0.02em] mb-2">{analytics.inProgress}</div>
+              <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">active items</div>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="text-xs text-slate-600 tracking-[-0.01em]">{analytics.planned} planned • {analytics.suggested} ideas</div>
               </div>
-              <p className="text-xs text-amber-700 mt-2 font-medium">
-                {analytics.planned} planned • {analytics.suggested} ideas
-              </p>
             </div>
 
             {/* Timeline Health */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Timeline</span>
-                <Clock className="w-4 h-4 text-emerald-500" />
+            <div className="relative bg-white rounded-xl p-6 border border-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-200">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs font-medium text-slate-600 uppercase tracking-wide" style={{letterSpacing: '-0.01em'}}>Timeline</span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-emerald-600" strokeWidth={1.5} />
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{analytics.dueSoon}</span>
-                <span className="text-sm text-slate-600">due soon</span>
-              </div>
+              <div className="text-[32px] leading-[40px] font-semibold text-slate-900 tracking-[-0.02em] mb-2">{analytics.dueSoon}</div>
+              <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">due within 14 days</div>
               {analytics.overdue > 0 && (
-                <p className="text-xs text-red-600 mt-2 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {analytics.overdue} overdue
-                </p>
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-1.5 text-xs text-red-600 font-medium">
+                    <AlertCircle className="w-3 h-3" strokeWidth={2} />
+                    {analytics.overdue} overdue
+                  </div>
+                </div>
               )}
             </div>
 
             {/* Completed */}
-            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Completed</span>
-                <CheckCircle2 className="w-4 h-4 text-slate-500" />
+            <div className="relative bg-white rounded-xl p-6 border border-slate-200 shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-200">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-xs font-medium text-slate-600 uppercase tracking-wide" style={{letterSpacing: '-0.01em'}}>Velocity</span>
+                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-slate-600" strokeWidth={1.5} />
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900">{analytics.completed}</span>
-                <span className="text-sm text-slate-600">shipped</span>
+              <div className="text-[32px] leading-[40px] font-semibold text-slate-900 tracking-[-0.02em] mb-2">{analytics.completed}</div>
+              <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">shipped this cycle</div>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="text-xs text-emerald-600 font-medium tracking-[-0.01em]">On track</div>
               </div>
-              <p className="text-xs text-slate-600 mt-2">
-                Keep shipping! 🚀
-              </p>
             </div>
           </div>
 
-          {/* Search & Filters */}
+          {/* Search & Filters - Refined */}
           <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="flex-1 max-w-md relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <div className="flex-1 max-w-lg relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
               <input
                 type="text"
                 placeholder="Search roadmap..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
               />
             </div>
 
@@ -371,7 +401,7 @@ export default function WorldClassRoadmapPage() {
             <select
               value={selectedGoal}
               onChange={(e) => setSelectedGoal(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
             >
               <option value="all">All Goals</option>
               {uniqueGoals.map(goal => (
@@ -383,7 +413,7 @@ export default function WorldClassRoadmapPage() {
             <select
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
             >
               <option value="all">All Areas</option>
               {uniqueAreas.map(area => (
@@ -392,12 +422,12 @@ export default function WorldClassRoadmapPage() {
             </select>
 
             {/* Group By */}
-            <div className="flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg bg-white">
-              <LayoutGrid className="w-4 h-4 text-slate-500" />
+            <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg bg-white">
+              <LayoutGrid className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value as any)}
-                className="text-sm focus:outline-none bg-transparent"
+                className="text-sm focus:outline-none bg-transparent tracking-[-0.01em]"
               >
                 <option value="none">No grouping</option>
                 <option value="goal">Group by Goal</option>
@@ -406,63 +436,63 @@ export default function WorldClassRoadmapPage() {
               </select>
             </div>
 
-            {/* View Mode */}
+            {/* View Mode - Refined Segmented Control */}
             <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-all ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   viewMode === 'list'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <List className="w-4 h-4" />
+                <List className="w-4 h-4" strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setViewMode('board')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-all ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   viewMode === 'board'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setViewMode('timeline')}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-all ${
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   viewMode === 'timeline'
                     ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CONTENT AREA */}
-      <div className="max-w-[1600px] mx-auto px-8 py-6">
-        {/* List View */}
+      {/* CONTENT AREA - 32px spacing system */}
+      <div className="max-w-[1600px] mx-auto px-8 py-8">
+        {/* List View - Premium Floating Cards */}
         {viewMode === 'list' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {Object.entries(groupedItems).map(([groupName, items]) => (
-              <div key={groupName} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                {/* Group Header */}
+              <div key={groupName}>
+                {/* Group Header - with left border accent */}
                 {groupBy !== 'none' && (
                   <button
                     onClick={() => toggleGroup(groupName)}
-                    className="w-full px-6 py-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center gap-3 mb-4 group"
                   >
-                    <div className="flex items-center gap-3">
-                      {expandedGroups.has(groupName) ? (
-                        <ChevronDown className="w-5 h-5 text-slate-500" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-slate-500" />
-                      )}
-                      <h3 className="text-base font-semibold text-slate-900">{groupName}</h3>
+                    {expandedGroups.has(groupName) ? (
+                      <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
+                    )}
+                    <div className="flex-1 flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-lg border-l-[3px] border-blue-600">
+                      <h3 className="text-[15px] leading-[22px] font-medium text-[#111827] tracking-[-0.01em]">{groupName}</h3>
                       <span className="px-2 py-0.5 text-xs font-medium text-slate-600 bg-slate-200 rounded-full">
                         {items.length}
                       </span>
@@ -470,79 +500,84 @@ export default function WorldClassRoadmapPage() {
                   </button>
                 )}
 
-                {/* Items */}
+                {/* Items - Floating Panels */}
                 {(groupBy === 'none' || expandedGroups.has(groupName)) && (
-                  <div className="divide-y divide-slate-100">
+                  <div className="space-y-3">
                     {items.map((item, index) => (
                       <div
                         key={item.id}
-                        className="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                        className="bg-white rounded-xl border border-[#f1f5f9] p-4 hover:border-slate-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-150 cursor-pointer group active:scale-[0.98]"
                       >
                         <div className="flex items-start gap-4">
                           {/* Priority Indicator */}
-                          <div className={`mt-1 w-1 h-1 rounded-full ${COLORS.priority[item.priority].icon}`} />
+                          <div className="mt-1.5">
+                            {item.priority === 'critical' && <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />}
+                            {item.priority === 'high' && <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />}
+                            {item.priority === 'medium' && <div className="w-1.5 h-1.5 rounded-full bg-[#eab308]" />}
+                            {item.priority === 'low' && <div className="w-1.5 h-1.5 rounded-full bg-[#94a3b8]" />}
+                          </div>
 
                           {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start justify-between gap-4 mb-3">
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                                <h4 className="text-[15px] leading-[22px] font-medium text-[#111827] group-hover:text-blue-600 transition-colors duration-150 tracking-[-0.01em]">
                                   {item.title}
                                 </h4>
                                 {item.description && (
-                                  <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                                  <p className="text-[13px] leading-[20px] text-[#6b7280] mt-2 line-clamp-2 tracking-[-0.01em]">
                                     {item.description}
                                   </p>
                                 )}
-
-                                {/* Metadata */}
-                                <div className="flex items-center gap-3 mt-2">
-                                  {/* Status */}
-                                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-md ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${COLORS.status[item.status].dot}`} />
-                                    {item.status === 'in_progress' ? 'In Progress' :
-                                     item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                  </span>
-
-                                  {/* Priority */}
-                                  {item.priority !== 'low' && (
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].text}`}>
-                                      <Flag className="w-3 h-3" />
-                                      {item.priority}
-                                    </span>
-                                  )}
-
-                                  {/* Version */}
-                                  {item.version_planned && (
-                                    <span className="text-xs text-slate-500 font-medium">
-                                      {item.version_planned}
-                                    </span>
-                                  )}
-
-                                  {/* Assignees */}
-                                  {item.assigned_to && (
-                                    <span className="inline-flex items-center gap-1 text-xs text-slate-600">
-                                      <User className="w-3 h-3" />
-                                      {item.assigned_to}
-                                    </span>
-                                  )}
-
-                                  {/* Target Date */}
-                                  {item.target_date && (
-                                    <span className="inline-flex items-center gap-1 text-xs text-slate-600">
-                                      <Calendar className="w-3 h-3" />
-                                      {format(parseISO(item.target_date), 'MMM d, yyyy')}
-                                    </span>
-                                  )}
-                                </div>
                               </div>
 
-                              {/* Quick Actions (visible on hover) */}
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors">
-                                  <ArrowRight className="w-4 h-4" />
+                              {/* Quick Actions */}
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150">
+                                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                                 </button>
                               </div>
+                            </div>
+
+                            {/* Metadata Pills */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Status Pill */}
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md border ${COLORS.status[item.status].bg} ${COLORS.status[item.status].border} ${COLORS.status[item.status].text}`} style={{letterSpacing: '-0.01em'}}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${COLORS.status[item.status].dot}`} />
+                                {item.status === 'in_progress' ? 'In Progress' :
+                                 item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                              </span>
+
+                              {/* Priority Pill */}
+                              {item.priority !== 'low' && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].border} ${COLORS.priority[item.priority].text}`} style={{letterSpacing: '-0.01em'}}>
+                                  <Flag className="w-3 h-3" strokeWidth={1.5} />
+                                  {item.priority}
+                                </span>
+                              )}
+
+                              {/* Version */}
+                              {item.version_planned && (
+                                <span className="px-2 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-md" style={{letterSpacing: '-0.01em'}}>
+                                  {item.version_planned}
+                                </span>
+                              )}
+
+                              {/* Assignee */}
+                              {item.assigned_to && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-600 bg-slate-50 rounded-md border border-slate-200" style={{letterSpacing: '-0.01em'}}>
+                                  <User className="w-3 h-3" strokeWidth={1.5} />
+                                  {item.assigned_to}
+                                </span>
+                              )}
+
+                              {/* Target Date */}
+                              {item.target_date && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-600 bg-slate-50 rounded-md border border-slate-200" style={{letterSpacing: '-0.01em'}}>
+                                  <Calendar className="w-3 h-3" strokeWidth={1.5} />
+                                  {format(parseISO(item.target_date), 'MMM d, yyyy')}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
