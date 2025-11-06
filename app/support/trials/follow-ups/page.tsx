@@ -17,7 +17,6 @@ export default function FollowUpsPage() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {

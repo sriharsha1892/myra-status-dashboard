@@ -36,8 +36,6 @@ export default function DemosPage() {
   });
   const [scheduling, setScheduling] = useState(false);
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -52,6 +50,7 @@ export default function DemosPage() {
   }, [user]);
 
   const fetchDemos = async () => {
+    const supabase = createClient();
     setLoading(true);
     try {
       const { data: demosData, error: demosError } = await supabase
@@ -87,6 +86,7 @@ export default function DemosPage() {
   };
 
   const fetchOrganizations = async () => {
+    const supabase = createClient();
     try {
       const { data, error } = await supabase
         .from('trial_organizations')
@@ -101,6 +101,7 @@ export default function DemosPage() {
   };
 
   const handleScheduleDemo = async (e: React.FormEvent) => {
+    const supabase = createClient();
     e.preventDefault();
     setScheduling(true);
 

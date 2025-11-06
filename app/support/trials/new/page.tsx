@@ -36,7 +36,6 @@ const DESIGNATION_SUGGESTIONS = ['CEO', 'Director', 'VP', 'Manager', 'Analyst', 
 export default function CreateOrganizationPage() {
   const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
   const [accountManagers, setAccountManagers] = useState<User[]>([]);

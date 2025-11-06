@@ -65,7 +65,6 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.userId as string;
 
-  const supabase = createClient();
   const [user, setUser] = useState<PlatformUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingStage, setEditingStage] = useState(false);

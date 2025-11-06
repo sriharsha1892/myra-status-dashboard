@@ -46,7 +46,6 @@ export default function TrialOrganizationsPage() {
   const [onlyUpdateMissingDates, setOnlyUpdateMissingDates] = useState(false);
   const [bulkStage, setBulkStage] = useState<string>('');
 
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && !user) {

@@ -46,7 +46,6 @@ const MEETING_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function MeetingsPage() {
-  const supabase = createClient();
   const [meetings, setMeetings] = useState<MeetingNote[]>([]);
   const [filteredMeetings, setFilteredMeetings] = useState<MeetingNote[]>([]);
   const [loading, setLoading] = useState(true);

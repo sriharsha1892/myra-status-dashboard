@@ -38,8 +38,6 @@ export default function UsersPage() {
   const [inviteRole, setInviteRole] = useState('AM');
   const [inviting, setInviting] = useState(false);
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');

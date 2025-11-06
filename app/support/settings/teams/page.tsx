@@ -29,7 +29,6 @@ export default function TeamsIntegrationPage() {
   const [config, setConfig] = useState<TeamsConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
     if (!authLoading && (!user || (role?.toLowerCase() !== 'admin' && role !== 'Team'))) {

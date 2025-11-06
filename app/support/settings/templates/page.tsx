@@ -77,8 +77,6 @@ export default function TemplatesPage() {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof TemplateFormData, string>>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');

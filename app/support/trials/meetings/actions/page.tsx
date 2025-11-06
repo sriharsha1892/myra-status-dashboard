@@ -34,7 +34,6 @@ interface ActionItemWithContext extends ActionItem {
 }
 
 export default function ActionItemsPage() {
-  const supabase = createClient();
   const [meetings, setMeetings] = useState<MeetingWithActions[]>([]);
   const [actionItems, setActionItems] = useState<ActionItemWithContext[]>([]);
   const [filteredItems, setFilteredItems] = useState<ActionItemWithContext[]>([]);

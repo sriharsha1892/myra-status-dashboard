@@ -61,8 +61,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -89,6 +87,7 @@ export default function DashboardPage() {
   });
 
   const fetchTickets = async () => {
+    const supabase = createClient();
     setLoading(true);
     try {
       // For AMs: Get their org IDs first, then filter tickets
@@ -133,6 +132,7 @@ export default function DashboardPage() {
   };
 
   const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    const supabase = createClient();
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket) return;
 
@@ -178,6 +178,7 @@ export default function DashboardPage() {
   };
 
   const handlePriorityChange = async (ticketId: string, newPriority: string) => {
+    const supabase = createClient();
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket) return;
 
@@ -185,7 +186,7 @@ export default function DashboardPage() {
     setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, priority: newPriority } : t)));
 
     try {
-      const { error } = await supabase
+      const { error} = await supabase
         // -ignore - Supabase typing issue with dynamic columns
 
         .from('tickets')
@@ -209,6 +210,7 @@ export default function DashboardPage() {
   };
 
   const handleAssigneeChange = async (ticketId: string, newAssigneeId: string | null) => {
+    const supabase = createClient();
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket) return;
 

@@ -42,8 +42,6 @@ export default function UsersPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');

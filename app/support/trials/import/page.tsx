@@ -35,7 +35,6 @@ type Step = 1 | 2 | 3;
 
 export default function ImportWizardPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [file, setFile] = useState<File | null>(null);
@@ -138,6 +137,7 @@ export default function ImportWizardPage() {
 
   // Step 2: Validate with Smart Suggestions
   const validateData = async (rows: ParsedRow[]) => {
+    const supabase = createClient();
     const issues: ValidationIssue[] = [];
 
     // Fetch existing organizations for fuzzy matching
@@ -242,11 +242,12 @@ export default function ImportWizardPage() {
 
   // Step 3: Execute Import
   const handleImport = async () => {
+    const supabase = createClient();
     setImporting(true);
     let successful = 0;
     let skipped = 0;
 
-    try {
+    try{
       // Group rows by organization
       const orgGroups = new Map<string, ParsedRow[]>();
 

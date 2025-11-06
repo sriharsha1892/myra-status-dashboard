@@ -29,8 +29,6 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const });
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
