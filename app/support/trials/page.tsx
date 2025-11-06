@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -28,6 +29,9 @@ export default function TrialOrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
+
+  // Debounce search query for better performance (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Bulk operations state
   const [selectedOrgIds, setSelectedOrgIds] = useState<Set<string>>(new Set());
@@ -62,7 +66,7 @@ export default function TrialOrganizationsPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [organizations, searchQuery, stageFilter]);
+  }, [organizations, debouncedSearchQuery, stageFilter]);
 
   // Update trial end date when start date changes
   useEffect(() => {
@@ -137,13 +141,13 @@ export default function TrialOrganizationsPage() {
   const applyFilters = () => {
     let filtered = [...organizations];
 
-    // Search filter
-    if (searchQuery) {
+    // Search filter (using debounced query)
+    if (debouncedSearchQuery) {
       filtered = filtered.filter(
         (org) =>
-          org.org_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.account_manager?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.org_domain?.toLowerCase().includes(searchQuery.toLowerCase())
+          org.org_name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          org.account_manager?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          org.org_domain?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
     }
 

@@ -12,7 +12,9 @@ import {
   LogOut,
   Map,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Menu,
+  X
 } from 'lucide-react';
 import NotificationsBell from '@/components/NotificationsBell';
 
@@ -25,6 +27,7 @@ export default function SupportLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -65,7 +68,26 @@ export default function SupportLayout({
   if (!user) {
     return (
       <>
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            success: {
+              duration: 2500,
+              style: {
+                background: '#10b981',
+                color: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#ef4444',
+                color: '#fff',
+              },
+            },
+          }}
+        />
         {children}
       </>
     );
@@ -74,10 +96,50 @@ export default function SupportLayout({
   // Show authenticated pages with sidebar
   return (
     <div className="flex h-screen bg-slate-50">
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          success: {
+            duration: 2500,
+            style: {
+              background: '#10b981',
+              color: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+            },
+          },
+        }}
+      />
+
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
+      >
+        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
       {/* Modern Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      <aside className={`
+        w-64 bg-white border-r border-slate-200 flex flex-col
+        fixed lg:relative inset-y-0 left-0 z-40
+        transform transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         {/* Logo Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-3">
@@ -107,7 +169,10 @@ export default function SupportLayout({
         <nav className="flex-1 px-3 py-4 flex flex-col overflow-y-auto">
           <div className="space-y-1">
             <button
-              onClick={() => router.push('/support/dashboard')}
+              onClick={() => {
+                router.push('/support/dashboard');
+                setMobileMenuOpen(false);
+              }}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/dashboard'
                   ? 'text-slate-900 bg-slate-900/5'
@@ -119,7 +184,10 @@ export default function SupportLayout({
             </button>
 
             <button
-              onClick={() => router.push('/support/trials')}
+              onClick={() => {
+                router.push('/support/trials');
+                setMobileMenuOpen(false);
+              }}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname?.startsWith('/support/trials')
                   ? 'text-slate-900 bg-slate-900/5'
@@ -131,7 +199,10 @@ export default function SupportLayout({
             </button>
 
             <button
-              onClick={() => router.push('/support/tickets')}
+              onClick={() => {
+                router.push('/support/tickets');
+                setMobileMenuOpen(false);
+              }}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname?.startsWith('/support/tickets')
                   ? 'text-slate-900 bg-slate-900/5'
@@ -143,7 +214,10 @@ export default function SupportLayout({
             </button>
 
             <button
-              onClick={() => router.push('/support/reports')}
+              onClick={() => {
+                router.push('/support/reports');
+                setMobileMenuOpen(false);
+              }}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/reports'
                   ? 'text-slate-900 bg-slate-900/5'
@@ -155,7 +229,10 @@ export default function SupportLayout({
             </button>
 
             <button
-              onClick={() => router.push('/support/users')}
+              onClick={() => {
+                router.push('/support/users');
+                setMobileMenuOpen(false);
+              }}
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/users'
                   ? 'text-slate-900 bg-slate-900/5'
@@ -169,7 +246,10 @@ export default function SupportLayout({
             {/* Roadmap - Admin only */}
             {role?.toLowerCase() === 'admin' && (
               <button
-                onClick={() => router.push('/support/admin/roadmap')}
+                onClick={() => {
+                  router.push('/support/admin/roadmap');
+                  setMobileMenuOpen(false);
+                }}
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                   pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap')
                     ? 'text-slate-900 bg-slate-900/5'
@@ -225,7 +305,11 @@ export default function SupportLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto lg:ml-0">
+        {/* Mobile header spacer */}
+        <div className="lg:hidden h-16" />
+        {children}
+      </main>
     </div>
   );
 }

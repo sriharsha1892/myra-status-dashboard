@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirm } from '@/hooks/useConfirm';
 import { createClient } from '@/lib/supabase/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,6 +25,7 @@ const ROLES = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Pro
 export default function UsersPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
   const router = useRouter();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +33,9 @@ export default function UsersPage() {
   const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
   const [signupLink, setSignupLink] = useState('');
   const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const });
+
+  // Debounce search query for better performance (300ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const supabase = createClient();
 
@@ -73,8 +79,8 @@ export default function UsersPage() {
   };
 
   const filteredUsers = users.filter((u) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
       return (
         u.name.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query) ||
@@ -161,7 +167,15 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    const userToDelete = users.find(u => u.id === userId);
+    const confirmed = await confirm({
+      title: 'Delete User',
+      message: `Are you sure you want to delete ${userToDelete?.name || 'this user'}? This action cannot be undone.`,
+      confirmText: 'Delete User',
+      variant: 'danger',
+    });
+
+    if (!confirmed) return;
 
     try {
       const response = await fetch('/api/admin/users', {
@@ -175,7 +189,7 @@ export default function UsersPage() {
       }
 
       setUsers(users.filter((u) => u.id !== userId));
-      toast.success('User deleted');
+      toast.success('User deleted successfully');
     } catch (error: any) {
       toast.error('Failed to delete user');
     }
@@ -587,6 +601,9 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      {ConfirmDialogComponent}
     </div>
   );
 }

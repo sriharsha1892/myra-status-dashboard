@@ -30,7 +30,7 @@ function getSupabaseAdmin() {
 }
 
 // Helper function to verify admin access
-async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: string }> {
+async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: string; error?: string }> {
   try {
     // Use the proper server client that handles cookies automatically
     const supabase = await createServerClient();
@@ -38,26 +38,42 @@ async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: stri
     // Get the current user from the session
     const { data: { user }, error } = await supabase.auth.getUser();
 
+    console.log('🔐 Admin verification:', {
+      hasUser: !!user,
+      error: error?.message,
+      userId: user?.id,
+      role: user?.user_metadata?.role,
+      metadata: user?.user_metadata
+    });
+
     if (error || !user) {
-      return { authorized: false };
+      return { authorized: false, error: error?.message || 'No user found' };
     }
 
     // Check if user has Admin role (case-insensitive)
     const role = user.user_metadata?.role;
     if (!role) {
-      return { authorized: false };
+      return { authorized: false, error: 'No role found in user metadata' };
     }
 
     const lowerRole = role.toLowerCase();
     const isAdmin = lowerRole === 'admin' || lowerRole === 'sales admin' || lowerRole === 'research admin';
+
+    console.log('🔐 Role check:', {
+      originalRole: role,
+      lowerRole,
+      isAdmin,
+      checkedAgainst: ['admin', 'sales admin', 'research admin']
+    });
+
     if (!isAdmin) {
-      return { authorized: false };
+      return { authorized: false, error: `Role "${role}" does not have admin permissions` };
     }
 
     return { authorized: true, userId: user.id };
   } catch (error) {
     console.error('Error verifying admin access:', error);
-    return { authorized: false };
+    return { authorized: false, error: 'Exception during verification' };
   }
 }
 
@@ -109,10 +125,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized, userId: adminUserId } = await verifyAdminAccess();
+    const { authorized, userId: adminUserId, error: authError } = await verifyAdminAccess();
     if (!authorized) {
+      console.error('❌ Admin access denied:', authError);
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: `Unauthorized - Admin access required. ${authError || ''}` },
         { status: 403 }
       );
     }
