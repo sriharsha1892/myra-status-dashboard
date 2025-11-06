@@ -11,7 +11,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import {
   FileText, Clock, CheckCircle2, AlertTriangle, Search, Plus, TrendingUp,
   TrendingDown, Building2, Users, Rocket, Target, Zap, Star, Award,
-  ArrowRight, Activity, Bot, Sparkles, Brain, ChevronRight
+  ArrowRight, Activity, Bot, Sparkles, Brain, ChevronRight, Calendar
 } from 'lucide-react';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
