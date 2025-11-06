@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import AddRoadmapItemModal from './AddRoadmapItemModal';
+import RoadmapDetailPanel from './roadmap/RoadmapDetailPanel';
 
 interface RoadmapItem {
   id: string;
@@ -43,6 +44,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -184,7 +186,11 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
             const priorityConfig = PRIORITY_CONFIG[item.priority];
 
             return (
-              <div key={item.id} className={`rounded-lg border-2 p-4 ${getStatusColor(item.status)}`}>
+              <div
+                key={item.id}
+                className={`rounded-lg border-2 p-4 ${getStatusColor(item.status)} cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01]`}
+                onClick={() => setSelectedItemId(item.id)}
+              >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1">
@@ -238,6 +244,15 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSuccess={fetchRoadmapItems}
+      />
+
+      {/* Detail Panel */}
+      <RoadmapDetailPanel
+        itemId={selectedItemId || ''}
+        orgId={orgId}
+        isOpen={!!selectedItemId}
+        onClose={() => setSelectedItemId(null)}
+        onUpdate={fetchRoadmapItems}
       />
     </div>
   );
