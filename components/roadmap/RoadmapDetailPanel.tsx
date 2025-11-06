@@ -6,19 +6,22 @@ import { X, Calendar, Flag, User, Clock, Edit2, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import DependencyManager from './DependencyManager';
 
 interface RoadmapItem {
   id: string;
   org_id: string;
   title: string;
-  description?: string;
+  description: string | null;
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  target_date?: string;
-  estimated_completion_date?: string;
-  created_by?: string;
+  target_date: string | null;
+  estimated_completion_date: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
+  blocked_by_ids: string[] | null;
+  blocks_ids: string[] | null;
 }
 
 interface RoadmapDetailPanelProps {
@@ -27,6 +30,7 @@ interface RoadmapDetailPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate?: () => void;
+  allItems: RoadmapItem[];
 }
 
 const STATUS_OPTIONS = [
@@ -49,6 +53,7 @@ export default function RoadmapDetailPanel({
   isOpen,
   onClose,
   onUpdate,
+  allItems,
 }: RoadmapDetailPanelProps) {
   const [item, setItem] = useState<RoadmapItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -341,6 +346,21 @@ export default function RoadmapDetailPanel({
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                       />
                     </div>
+                  </div>
+
+                  {/* Dependencies */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Dependencies</h4>
+                    <DependencyManager
+                      itemId={itemId}
+                      orgId={orgId}
+                      currentItem={item}
+                      allItems={allItems}
+                      onUpdate={() => {
+                        fetchItem();
+                        onUpdate?.();
+                      }}
+                    />
                   </div>
 
                   {/* Metadata */}
