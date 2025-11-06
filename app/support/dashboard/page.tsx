@@ -1,4 +1,3 @@
-// -nocheck
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,17 +6,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
-import toast, { Toaster } from 'react-hot-toast';
 import {
-  FileText, Clock, CheckCircle2, AlertTriangle, Search, Plus, TrendingUp,
-  TrendingDown, Building2, Users, Rocket, Target, Zap, Star, Award,
-  ArrowRight, Activity, Bot, Sparkles, Brain, ChevronRight, Calendar
+  FileText, AlertTriangle, TrendingUp, Building2, Zap,
+  Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
 } from 'lucide-react';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
-export default function DashboardPage() {
-  const { user, loading: authLoading, signOut, role } = useAuth();
+export default function EnterpriseCommandCenter() {
+  const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +37,6 @@ export default function DashboardPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Optimized: Removed unused fetchRecentActivity() call
       await Promise.all([
         fetchTickets(),
         fetchOrganizations(),
@@ -105,603 +101,380 @@ export default function DashboardPage() {
 
   const fetchUpcomingDemos = async () => {
     try {
-      const today = new Date().toISOString();
-
-      const { data, error} = await supabase
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
         .from('meeting_notes')
         .select(`
           *,
-          trial_organizations (
-            org_id,
-            org_name,
-            org_domain,
-            account_manager_id
-          )
+          trial_organizations(org_name)
         `)
         .eq('meeting_type', 'demo')
         .gte('meeting_date', today)
         .order('meeting_date', { ascending: true })
-        .limit(10);
+        .limit(5);
 
       if (error) throw error;
       setUpcomingDemos(data || []);
     } catch (error: any) {
-      console.error('Error fetching upcoming demos:', error);
+      console.error('Error fetching demos:', error);
     }
   };
 
-  if (authLoading || !user) {
-    return null;
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-[#1a1d23] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[#6b7280] tracking-tight">Loading command center...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Calculate smart metrics
-  const totalTickets = tickets.length;
-  const openTickets = tickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length;
-  const criticalTickets = tickets.filter((t) => t.priority === 'Critical' && !['Resolved', 'Closed'].includes(t.status)).length;
-  const myTickets = tickets.filter((t) => t.assigned_to === user?.id).length;
-
-  const activeTrials = organizations.filter((org) =>
-    org.org_lifecycle_stage === 'trial_active'
-  ).length;
-
-  const hotLeads = organizations.filter((org) =>
-    org.engagement_score > 75 && org.org_lifecycle_stage === 'trial_active'
-  ).length;
-
-  const atRiskTrials = organizations.filter((org) =>
-    org.engagement_score < 30 && org.org_lifecycle_stage === 'trial_active'
-  ).length;
-
-  // Ending soon trials (within 7 days)
-  const endingSoonTrials = organizations.filter((org) => {
-    if (!org.trial_end_date || org.org_lifecycle_stage !== 'trial_active') return false;
-    const daysLeft = differenceInDays(new Date(org.trial_end_date), new Date());
-    return daysLeft > 0 && daysLeft <= 7;
+  // Calculations
+  const activeTrials = organizations.filter(o => o.org_lifecycle_stage === 'trial_active').length;
+  const criticalTickets = tickets.filter(t => t.priority === 'critical' && t.status !== 'resolved').length;
+  const openTickets = tickets.filter(t => t.status !== 'resolved').length;
+  const atRiskTrials = organizations.filter(o => {
+    if (!o.trial_end_date) return false;
+    const daysLeft = differenceInDays(new Date(o.trial_end_date), new Date());
+    return daysLeft <= 7 && daysLeft >= 0 && o.org_lifecycle_stage === 'trial_active';
   }).length;
 
-  // Get greeting based on time
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+  const userName = user?.email?.split('@')[0] || 'there';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  // Get personalized message based on role and data
-  const getPersonalizedMessage = () => {
-    if (criticalTickets > 0) {
-      return `You have ${criticalTickets} critical ${criticalTickets === 1 ? 'ticket' : 'tickets'} that need attention 🔥`;
-    }
-    if (endingSoonTrials > 0) {
-      return `${endingSoonTrials} trials ending soon - time to close deals! ⏰`;
-    }
-    if (hotLeads > 0) {
-      return `${hotLeads} hot ${hotLeads === 1 ? 'lead' : 'leads'} ready to convert 🚀`;
-    }
-    if (openTickets === 0 && activeTrials === 0) {
-      return "Everything's under control. Time to build something new! 🎯";
-    }
-    if (openTickets === 0) {
-      return "Inbox zero achieved. You're a legend! 🏆";
-    }
-    return `${openTickets} tickets in progress. Keep compounding! 💪`;
-  };
-
-  // Naval-style wisdom for empty states
-  const getEmptyStateWisdom = () => {
-    const wisdom = [
-      "Specific knowledge is found by pursuing your curiosity. Start with a ticket.",
-      "Leverage comes from code, capital, and people. Create your first org.",
-      "Play long-term games with long-term people. Build your pipeline.",
-      "Reading is faster than listening. Writing is faster than speaking. Watch less, do more.",
-    ];
-    return wisdom[Math.floor(Math.random() * wisdom.length)];
-  };
+  const recentActivity = tickets
+    .filter(t => t.status !== 'resolved')
+    .slice(0, 5)
+    .map(t => ({
+      id: t.ticket_id,
+      title: t.title,
+      priority: t.priority,
+      status: t.status,
+      created: t.created_at,
+    }));
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-[#1a1d23]">
+      {/* Hero Section with Glass Morphism */}
       <div className="relative overflow-hidden">
-        {/* Gradient background with glassmorphism */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/5 to-pink-600/10" />
-        <div className="absolute inset-0 backdrop-blur-3xl" style={{ maskImage: 'linear-gradient(to bottom, transparent, black)' }} />
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6]/5 via-transparent to-[#10b981]/5" />
 
-        <div className="relative px-8 pt-12 pb-16">
-          <div className="max-w-7xl mx-auto">
-            {/* Greeting & Smart Insight */}
-            <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-2">
-                {getGreeting()}, {user?.email?.split('@')[0] || 'there'}
-              </h1>
-              <p className="text-sm text-slate-600 flex items-center gap-2">
-                <Brain className="w-4 h-4 text-purple-500" />
-                {getPersonalizedMessage()}
-              </p>
-            </div>
+        <div className="relative max-w-[1400px] mx-auto px-8 py-12">
+          {/* Greeting Section */}
+          <div className="mb-12">
+            <h1 className="text-[32px] leading-[40px] font-medium text-[#fafbfc] tracking-[-0.025em] mb-2">
+              {greeting}, {userName}
+            </h1>
+            <p className="text-[14px] leading-[20px] text-[#6b7280] tracking-[-0.01em]">
+              Command center · {format(new Date(), 'EEEE, MMMM d, yyyy')} · {format(new Date(), 'h:mm a')}
+            </p>
+          </div>
 
-            {/* Key Metrics - Glassmorphism Cards */}
-            <div className="grid grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-              {/* Active Trials */}
-              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                   onClick={() => router.push('/support/trials')}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30">
-                    <Rocket className="w-6 h-6" strokeWidth={2} />
-                  </div>
-                  {activeTrials > 0 && (
-                    <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-50 rounded-full">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                      <span className="text-xs font-bold text-purple-600">Live</span>
-                    </div>
-                  )}
+          {/* Primary Metrics Grid - Floating Glass Cards */}
+          <div className="grid grid-cols-4 gap-6 mb-12">
+            {/* Active Trials Card */}
+            <button
+              onClick={() => router.push('/support/trials')}
+              className="group relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6 hover:bg-white/[0.12] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(59,130,246,0.16)] text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="relative flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-[#3b82f6]" strokeWidth={1.5} />
                 </div>
-                <p className="text-2xl font-bold text-slate-900 mb-1">{activeTrials}</p>
-                <p className="text-xs font-medium text-slate-600 mb-2">Active Trials</p>
-                {hotLeads > 0 && (
-                  <p className="text-xs text-purple-600 font-medium flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    {hotLeads} hot leads
-                  </p>
+                <ChevronRight className="w-4 h-4 text-[#6b7280] group-hover:text-[#3b82f6] group-hover:translate-x-1 transition-all duration-300" strokeWidth={1.5} />
+              </div>
+
+              <div className="relative">
+                <div className="text-[11px] leading-[16px] text-[#6b7280] tracking-[-0.01em] mb-1 uppercase font-medium">Active Trials</div>
+                <div className="text-[32px] leading-[40px] font-medium text-[#fafbfc] tracking-[-0.025em]">{activeTrials}</div>
+              </div>
+            </button>
+
+            {/* Critical Tickets Card */}
+            <button
+              onClick={() => router.push('/support/tickets?priority=critical')}
+              className="group relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6 hover:bg-white/[0.12] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(245,158,11,0.16)] text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#f59e0b]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="relative flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-[#f59e0b]" strokeWidth={1.5} />
+                </div>
+                {criticalTickets > 0 && (
+                  <div className="w-2 h-2 bg-[#f59e0b] rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
                 )}
               </div>
 
-              {/* Critical Tickets */}
-              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                   onClick={() => router.push('/support/tickets?priority=Critical')}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30">
-                    <AlertTriangle className="w-6 h-6" strokeWidth={2} />
-                  </div>
-                  {criticalTickets > 0 && (
-                    <div className="flex items-center gap-1 px-2.5 py-1 bg-rose-50 rounded-full animate-pulse">
-                      <Zap className="w-3.5 h-3.5 text-rose-600" />
-                      <span className="text-xs font-bold text-rose-600">Urgent</span>
-                    </div>
-                  )}
+              <div className="relative">
+                <div className="text-[11px] leading-[16px] text-[#6b7280] tracking-[-0.01em] mb-1 uppercase font-medium">Critical</div>
+                <div className="text-[32px] leading-[40px] font-medium text-[#fafbfc] tracking-[-0.025em]">{criticalTickets}</div>
+              </div>
+            </button>
+
+            {/* Open Tickets Card */}
+            <button
+              onClick={() => router.push('/support/tickets')}
+              className="group relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6 hover:bg-white/[0.12] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(59,130,246,0.16)] text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6]/10 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="relative flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-[#3b82f6]" strokeWidth={1.5} />
                 </div>
-                <p className="text-2xl font-bold text-slate-900 mb-1">{criticalTickets}</p>
-                <p className="text-xs font-medium text-slate-600">Critical Tickets</p>
-                {criticalTickets === 0 && (
-                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    All clear!
-                  </p>
+                <ChevronRight className="w-4 h-4 text-[#6b7280] group-hover:text-[#3b82f6] group-hover:translate-x-1 transition-all duration-300" strokeWidth={1.5} />
+              </div>
+
+              <div className="relative">
+                <div className="text-[11px] leading-[16px] text-[#6b7280] tracking-[-0.01em] mb-1 uppercase font-medium">Open Tickets</div>
+                <div className="text-[32px] leading-[40px] font-medium text-[#fafbfc] tracking-[-0.025em]">{openTickets}</div>
+              </div>
+            </button>
+
+            {/* At Risk Trials Card */}
+            <div className="relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-[#f59e0b]" strokeWidth={1.5} />
+                </div>
+                {atRiskTrials > 0 && (
+                  <div className="px-2 py-0.5 bg-[#f59e0b]/10 border border-[#f59e0b]/20 rounded-md">
+                    <span className="text-[10px] leading-[14px] text-[#f59e0b] font-medium tracking-[-0.01em]">7D</span>
+                  </div>
                 )}
               </div>
 
-              {/* Open Tickets */}
-              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                   onClick={() => router.push('/support/tickets')}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30">
-                    <Clock className="w-6 h-6" strokeWidth={2} />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-slate-900 mb-1">{openTickets}</p>
-                <p className="text-xs font-medium text-slate-600 mb-2">Open Tickets</p>
-                {myTickets > 0 && (
-                  <p className="text-xs text-amber-600 font-medium">
-                    {myTickets} assigned to you
-                  </p>
-                )}
-              </div>
-
-              {/* At Risk Trials */}
-              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                   onClick={() => router.push('/support/trials')}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30">
-                    <Target className="w-6 h-6" strokeWidth={2} />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-slate-900 mb-1">{atRiskTrials}</p>
-                <p className="text-xs font-medium text-slate-600 mb-2">At Risk</p>
-                {endingSoonTrials > 0 && (
-                  <p className="text-xs text-orange-600 font-medium flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {endingSoonTrials} ending soon
-                  </p>
-                )}
+              <div>
+                <div className="text-[11px] leading-[16px] text-[#6b7280] tracking-[-0.01em] mb-1 uppercase font-medium">Ending Soon</div>
+                <div className="text-[32px] leading-[40px] font-medium text-[#fafbfc] tracking-[-0.025em]">{atRiskTrials}</div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content Grid */}
-      <div className="px-8 py-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-3 gap-6">
-          {/* Left Column - Recent Activity Feed */}
-          <div className="col-span-2 space-y-6">
-            {/* Recent Tickets */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-200">
-              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-blue-600" />
-                  <h2 className="text-sm font-bold text-slate-900">Recent Activity</h2>
-                </div>
-                <button
-                  onClick={() => router.push('/support/tickets')}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 group"
-                >
-                  View All
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-
-              {tickets.length === 0 ? (
-                <div className="px-6 py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Bot className="w-8 h-8 text-slate-400" />
+          {/* Two-Column Layout */}
+          <div className="grid grid-cols-12 gap-6">
+            {/* Left Column - Activity Feed */}
+            <div className="col-span-8 space-y-6">
+              {/* Recent Activity */}
+              <div className="relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-[#3b82f6]" strokeWidth={1.5} />
+                    </div>
+                    <h2 className="text-[14px] leading-[20px] font-medium text-[#fafbfc] tracking-[-0.01em]">Recent Activity</h2>
                   </div>
-                  <h3 className="text-base font-semibold text-slate-900 mb-2">No tickets yet</h3>
-                  <p className="text-sm text-slate-600 mb-1">{getEmptyStateWisdom()}</p>
                   <button
-                    onClick={() => router.push('/support/submit')}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    onClick={() => router.push('/support/tickets')}
+                    className="text-[12px] leading-[16px] text-[#6b7280] hover:text-[#3b82f6] font-medium transition-colors duration-200 flex items-center gap-1"
                   >
-                    <Plus className="w-4 h-4" />
-                    Create First Ticket
+                    View all
+                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
                   </button>
                 </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {tickets.slice(0, 6).map((ticket, index) => (
-                    <div
-                      key={ticket.id}
-                      className="px-6 py-4 hover:bg-slate-50/50 transition-colors cursor-pointer group"
-                      onClick={() => router.push(`/support/tickets/${ticket.id}`)}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Priority indicator */}
-                        <div className={`w-1.5 h-1.5 rounded-full mt-2 ${
-                          ticket.priority === 'Critical' ? 'bg-rose-500 animate-pulse' :
-                          ticket.priority === 'High' ? 'bg-orange-500' :
-                          ticket.priority === 'Medium' ? 'bg-amber-500' :
-                          'bg-slate-300'
-                        }`} />
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                              {ticket.ticket_number}
-                            </span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                              ticket.status === 'Open' ? 'bg-blue-100 text-blue-700' :
-                              ticket.status === 'In Progress' ? 'bg-amber-100 text-amber-700' :
-                              ticket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
-                              'bg-slate-100 text-slate-700'
-                            }`}>
-                              {ticket.status}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-700 line-clamp-1 mb-1">
-                            {ticket.description}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            <span>{ticket.organization}</span>
-                            <span>•</span>
-                            <span>{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}</span>
-                          </div>
-                        </div>
-
-                        <ArrowRight className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                      </div>
+                {recentActivity.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
+                      <Sparkles className="w-6 h-6 text-[#6b7280]" strokeWidth={1.5} />
                     </div>
-                  ))}
+                    <p className="text-[13px] leading-[18px] text-[#6b7280]">All clear. No active tickets.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentActivity.map((activity, idx) => (
+                      <button
+                        key={activity.id}
+                        onClick={() => router.push(`/support/tickets/${activity.id}`)}
+                        className="group w-full text-left px-4 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200"
+                        style={{ animationDelay: `${idx * 50}ms` }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {activity.priority === 'critical' && (
+                                <div className="w-1.5 h-1.5 bg-[#f59e0b] rounded-full animate-pulse" />
+                              )}
+                              <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium truncate group-hover:text-[#3b82f6] transition-colors duration-200">
+                                {activity.title}
+                              </p>
+                            </div>
+                            <p className="text-[11px] leading-[16px] text-[#6b7280]">
+                              {formatDistanceToNow(new Date(activity.created), { addSuffix: true })}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[#6b7280] group-hover:text-[#3b82f6] group-hover:translate-x-1 transition-all duration-200 flex-shrink-0" strokeWidth={1.5} />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-[#3b82f6]" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="text-[14px] leading-[20px] font-medium text-[#fafbfc] tracking-[-0.01em]">Quick Actions</h2>
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => router.push('/support/trials')}
+                    className="group relative bg-white/[0.04] hover:bg-white/[0.08] rounded-xl p-4 border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 text-left"
+                  >
+                    <Building2 className="w-5 h-5 text-[#3b82f6] mb-2" strokeWidth={1.5} />
+                    <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-0.5">Trial Organizations</p>
+                    <p className="text-[11px] leading-[16px] text-[#6b7280]">Manage active trials</p>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/support/tickets')}
+                    className="group relative bg-white/[0.04] hover:bg-white/[0.08] rounded-xl p-4 border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 text-left"
+                  >
+                    <FileText className="w-5 h-5 text-[#3b82f6] mb-2" strokeWidth={1.5} />
+                    <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-0.5">Support Tickets</p>
+                    <p className="text-[11px] leading-[16px] text-[#6b7280]">View all tickets</p>
+                  </button>
+
+                  <button
+                    onClick={() => router.push('/support/reports')}
+                    className="group relative bg-white/[0.04] hover:bg-white/[0.08] rounded-xl p-4 border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 text-left"
+                  >
+                    <TrendingUp className="w-5 h-5 text-[#3b82f6] mb-2" strokeWidth={1.5} />
+                    <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-0.5">Analytics</p>
+                    <p className="text-[11px] leading-[16px] text-[#6b7280]">Performance insights</p>
+                  </button>
+
+                  {role?.toLowerCase() === 'admin' && (
+                    <button
+                      onClick={() => router.push('/support/admin/roadmap')}
+                      className="group relative bg-white/[0.04] hover:bg-white/[0.08] rounded-xl p-4 border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 text-left"
+                    >
+                      <Target className="w-5 h-5 text-[#3b82f6] mb-2" strokeWidth={1.5} />
+                      <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-0.5">Roadmap</p>
+                      <p className="text-[11px] leading-[16px] text-[#6b7280]">Product planning</p>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Recent Organizations */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-300">
-              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-purple-600" />
-                  <h2 className="text-sm font-bold text-slate-900">Trial Organizations</h2>
-                </div>
-                <button
-                  onClick={() => router.push('/support/trials')}
-                  className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 group"
-                >
-                  View All
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-
-              {organizations.length === 0 ? (
-                <div className="px-6 py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-                    <Building2 className="w-8 h-8 text-purple-400" />
+            {/* Right Column - Upcoming Demos & Insights */}
+            <div className="col-span-4 space-y-6">
+              {/* Upcoming Demos */}
+              {role?.toLowerCase() === 'admin' && upcomingDemos.length > 0 && (
+                <div className="relative bg-white/[0.08] backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+                      <Calendar className="w-4 h-4 text-[#3b82f6]" strokeWidth={1.5} />
+                    </div>
+                    <h2 className="text-[14px] leading-[20px] font-medium text-[#fafbfc] tracking-[-0.01em]">Upcoming Demos</h2>
                   </div>
-                  <h3 className="text-base font-semibold text-slate-900 mb-2">No organizations yet</h3>
-                  <p className="text-sm text-slate-600 mb-1">Build your portfolio. Start compounding relationships.</p>
-                  <button
-                    onClick={() => router.push('/support/trials/new')}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create First Organization
-                  </button>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {organizations.slice(0, 5).map((org, index) => (
-                    <div
-                      key={org.org_id}
-                      className="px-6 py-4 hover:bg-slate-50/50 transition-colors cursor-pointer group"
-                      onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Organization logo/avatar */}
-                        <div className="w-12 h-12 rounded-xl border-2 border-slate-200 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 flex-shrink-0">
-                          <span className="text-sm font-bold text-slate-700">
-                            {org.org_name.split(' ').map((word: string) => word[0]).join('').toUpperCase().substring(0, 2)}
-                          </span>
-                        </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 group-hover:text-purple-600 transition-colors truncate">
-                            {org.org_name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                              org.org_lifecycle_stage === 'trial_active' ? 'bg-emerald-100 text-emerald-700' :
-                              org.org_lifecycle_stage === 'prospect' ? 'bg-blue-100 text-blue-700' :
-                              org.org_lifecycle_stage === 'converted' ? 'bg-purple-100 text-purple-700' :
-                              'bg-slate-100 text-slate-700'
-                            }`}>
-                              {org.org_lifecycle_stage?.replace('_', ' ')}
-                            </span>
-                            {org.engagement_score && (
-                              <span className={`text-xs font-medium ${
-                                org.engagement_score >= 75 ? 'text-emerald-600' :
-                                org.engagement_score >= 50 ? 'text-amber-600' :
-                                'text-rose-600'
-                              }`}>
-                                {org.engagement_score}% engaged
+                  <div className="space-y-3">
+                    {upcomingDemos.slice(0, 4).map((demo, idx) => {
+                      const demoDate = new Date(demo.meeting_date);
+                      const isToday = format(demoDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                      const isTomorrow = differenceInDays(demoDate, new Date()) === 1;
+
+                      return (
+                        <button
+                          key={demo.meeting_id}
+                          onClick={() => router.push(`/support/trials/${demo.org_id}`)}
+                          className="group w-full text-left p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium group-hover:text-[#3b82f6] transition-colors duration-200">
+                              {(demo.trial_organizations as any)?.org_name || 'Unknown Org'}
+                            </p>
+                            {isToday && (
+                              <span className="px-2 py-0.5 bg-[#3b82f6]/10 border border-[#3b82f6]/20 rounded text-[10px] leading-[14px] text-[#3b82f6] font-medium">
+                                TODAY
+                              </span>
+                            )}
+                            {isTomorrow && (
+                              <span className="px-2 py-0.5 bg-[#f59e0b]/10 border border-[#f59e0b]/20 rounded text-[10px] leading-[14px] text-[#f59e0b] font-medium">
+                                TMR
                               </span>
                             )}
                           </div>
-                        </div>
-
-                        <ArrowRight className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </div>
-                  ))}
+                          <p className="text-[11px] leading-[16px] text-[#6b7280]">
+                            {format(demoDate, 'MMM d, yyyy')} · {demo.conducted_by}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Right Column - Quick Actions & Insights */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-200">
-              <div className="px-6 py-4 border-b border-slate-200">
-                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  Quick Actions
-                </h2>
-              </div>
-              <div className="p-4 space-y-2">
-                <button
-                  onClick={() => router.push('/support/submit')}
-                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl transition-all group"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
-                    <Plus className="w-5 h-5" strokeWidth={2} />
+              {/* AI Insights */}
+              <div className="relative bg-gradient-to-br from-[#7c3aed]/10 via-white/[0.08] to-[#ec4899]/10 backdrop-blur-xl rounded-2xl border border-white/[0.12] p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-[#7c3aed]" strokeWidth={1.5} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">New Ticket</p>
-                    <p className="text-xs text-slate-600">Report an issue</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-
-                <button
-                  onClick={() => router.push('/support/trials/new')}
-                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-xl transition-all group"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-md">
-                    <Building2 className="w-5 h-5" strokeWidth={2} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">New Organization</p>
-                    <p className="text-xs text-slate-600">Add trial org</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-
-                <button
-                  onClick={() => router.push('/support/reports')}
-                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl transition-all group"
-                >
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center text-white shadow-md">
-                    <Activity className="w-5 h-5" strokeWidth={2} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">View Reports</p>
-                    <p className="text-xs text-slate-600">Analytics & insights</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-
-                {/* Bulk Activity - Admin Only */}
-                {role?.toLowerCase() === 'admin' && (
-                  <button
-                    onClick={() => router.push('/support/admin/bulk-activity')}
-                    className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 rounded-xl transition-all group"
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center text-white shadow-md">
-                      <Calendar className="w-5 h-5" strokeWidth={2} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-900">Bulk Activity Entry</p>
-                      <p className="text-xs text-slate-600">Add historical notes</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Upcoming Demos Card - Admin Only */}
-            {role?.toLowerCase() === 'admin' && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-250">
-                <div className="px-6 py-4 border-b border-slate-200">
-                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-blue-600" />
-                    Upcoming Demos
-                  </h2>
+                  <h2 className="text-[14px] leading-[20px] font-medium text-[#fafbfc] tracking-[-0.01em]">Insights</h2>
                 </div>
-                <div className="p-4">
-                  {upcomingDemos.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-sm text-slate-500">No upcoming demos scheduled</p>
-                      <p className="text-xs text-slate-400 mt-1">Schedule demos from trial org pages</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                      {upcomingDemos.map((demo: any) => {
-                        const demoDate = new Date(demo.meeting_date);
-                        const daysUntil = differenceInDays(demoDate, new Date());
-                        const isToday = daysUntil === 0;
-                        const isTomorrow = daysUntil === 1;
 
-                        return (
-                          <div
-                            key={demo.id}
-                            className="p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
-                            onClick={() => router.push(`/support/trials/${demo.org_id}`)}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="text-sm font-semibold text-slate-900 truncate">
-                                    {demo.trial_organizations?.org_name || 'Unknown Org'}
-                                  </h4>
-                                  {isToday && (
-                                    <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
-                                      TODAY
-                                    </span>
-                                  )}
-                                  {isTomorrow && (
-                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
-                                      TOMORROW
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-slate-600">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{format(demoDate, 'MMM d, yyyy • h:mm a')}</span>
-                                </div>
-                                {demo.conducted_by && (
-                                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                                    <Users className="w-3 h-3" />
-                                    <span>By: {demo.conducted_by}</span>
-                                  </div>
-                                )}
-                                {demo.attendees && (
-                                  <p className="text-xs text-slate-500 mt-1 truncate">
-                                    Attendees: {demo.attendees}
-                                  </p>
-                                )}
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                            </div>
-                          </div>
-                        );
-                      })}
+                <div className="space-y-3">
+                  {criticalTickets > 0 && (
+                    <button
+                      onClick={() => router.push('/support/tickets?priority=critical')}
+                      className="w-full text-left p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 group"
+                    >
+                      <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-1 group-hover:text-[#f59e0b] transition-colors duration-200">
+                        {criticalTickets} critical {criticalTickets === 1 ? 'issue' : 'issues'} need attention
+                      </p>
+                      <p className="text-[11px] leading-[16px] text-[#6b7280]">Review critical tickets →</p>
+                    </button>
+                  )}
+
+                  {atRiskTrials > 0 && (
+                    <button
+                      onClick={() => router.push('/support/trials')}
+                      className="w-full text-left p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 group"
+                    >
+                      <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-1 group-hover:text-[#f59e0b] transition-colors duration-200">
+                        {atRiskTrials} {atRiskTrials === 1 ? 'trial ends' : 'trials end'} within 7 days
+                      </p>
+                      <p className="text-[11px] leading-[16px] text-[#6b7280]">Check trial status →</p>
+                    </button>
+                  )}
+
+                  {activeTrials > 0 && (
+                    <button
+                      onClick={() => router.push('/support/trials')}
+                      className="w-full text-left p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 group"
+                    >
+                      <p className="text-[13px] leading-[18px] text-[#fafbfc] font-medium mb-1 group-hover:text-[#10b981] transition-colors duration-200">
+                        {activeTrials} active {activeTrials === 1 ? 'trial' : 'trials'} in progress
+                      </p>
+                      <p className="text-[11px] leading-[16px] text-[#6b7280]">View all trials →</p>
+                    </button>
+                  )}
+
+                  {criticalTickets === 0 && atRiskTrials === 0 && activeTrials === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-[13px] leading-[18px] text-[#6b7280]">All systems nominal</p>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Smart Recommendations Card */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border-2 border-emerald-400 animate-in fade-in slide-in-from-right duration-700 delay-300">
-              <div className="p-6">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg">
-                    <Brain className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold mb-1 text-slate-900">Smart Recommendations</h3>
-                    <p className="text-xs text-slate-600">AI-powered insights from your data</p>
-                  </div>
-                </div>
-
-                {criticalTickets > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-700">
-                      You have <span className="font-bold text-red-600">{criticalTickets} critical tickets</span> that need immediate attention.
-                    </p>
-                    <button
-                      onClick={() => router.push('/support/tickets?priority=Critical')}
-                      className="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
-                    >
-                      View Critical Tickets →
-                    </button>
-                  </div>
-                ) : hotLeads > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-700">
-                      <span className="font-bold text-emerald-600">{hotLeads} organizations</span> are highly engaged and ready to convert. Strike while the iron is hot!
-                    </p>
-                    <button
-                      onClick={() => router.push('/support/trials')}
-                      className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
-                    >
-                      View Hot Leads →
-                    </button>
-                  </div>
-                ) : endingSoonTrials > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-700">
-                      <span className="font-bold text-amber-600">{endingSoonTrials} trials</span> are ending within 7 days. Perfect time to follow up!
-                    </p>
-                    <button
-                      onClick={() => router.push('/support/trials')}
-                      className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
-                    >
-                      View Ending Trials →
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-700">
-                      Everything looks good! Your team is {openTickets === 0 ? 'at inbox zero' : 'making solid progress'}. Keep compounding those wins.
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
-                      <Star className="w-4 h-4 fill-current" />
-                      <span className="font-medium">You're doing great work!</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Fun Naval Quote Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-6 animate-in fade-in slide-in-from-right duration-700 delay-400">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-slate-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-700 italic mb-2">
-                    "{getEmptyStateWisdom()}"
-                  </p>
-                  <p className="text-xs text-slate-500 font-medium">— Naval Ravikant</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
