@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,8 +42,6 @@ export default function AdminRoadmapPage() {
     due_date: '',
   });
 
-  const supabase = createClient();
-
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
@@ -57,6 +57,7 @@ export default function AdminRoadmapPage() {
   const fetchRoadmapItems = async () => {
     setLoading(true);
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('org_product_roadmap')
         .select('*')
@@ -80,6 +81,7 @@ export default function AdminRoadmapPage() {
     }
 
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from('product_roadmap')
         .insert([{
@@ -110,6 +112,7 @@ export default function AdminRoadmapPage() {
     if (!confirm('Are you sure you want to delete this roadmap item?')) return;
 
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from('product_roadmap')
         .delete()
@@ -127,6 +130,7 @@ export default function AdminRoadmapPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
+      const supabase = createClient();
       const { error } = await supabase
         .from('product_roadmap')
         .update({ status })
