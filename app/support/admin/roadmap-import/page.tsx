@@ -267,7 +267,7 @@ export default function RoadmapImportPage() {
 
       try {
         const { data: existingItem } = await supabase
-          .from('roadmap_items')
+          .from('org_product_roadmap')
           .select('id')
           .eq('title', row.title)
           .maybeSingle();
@@ -295,7 +295,7 @@ export default function RoadmapImportPage() {
         if (existingItem) {
           // Update existing
           const { error } = await supabase
-            .from('roadmap_items')
+            .from('org_product_roadmap')
             .update({ ...itemData, updated_at: new Date().toISOString() })
             .eq('id', existingItem.id);
 
@@ -303,7 +303,7 @@ export default function RoadmapImportPage() {
         } else {
           // Insert new
           const { error } = await supabase
-            .from('roadmap_items')
+            .from('org_product_roadmap')
             .insert(itemData);
 
           if (error) throw error;
