@@ -622,63 +622,63 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Smart Insights Card */}
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-300">
-              <div className="p-6 text-white">
+            {/* Smart Recommendations Card */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border-2 border-emerald-400 animate-in fade-in slide-in-from-right duration-700 delay-300">
+              <div className="p-6">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                    <Brain className="w-5 h-5" />
+                  <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg">
+                    <Brain className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold mb-1">AI Insights</h3>
-                    <p className="text-xs text-indigo-100">Based on your data</p>
+                    <h3 className="text-sm font-bold mb-1 text-slate-900">Smart Recommendations</h3>
+                    <p className="text-xs text-slate-600">AI-powered insights from your data</p>
                   </div>
                 </div>
 
                 {criticalTickets > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-sm">
-                      You have <span className="font-bold">{criticalTickets} critical tickets</span> that need immediate attention.
+                    <p className="text-sm text-slate-700">
+                      You have <span className="font-bold text-red-600">{criticalTickets} critical tickets</span> that need immediate attention.
                     </p>
                     <button
                       onClick={() => router.push('/support/tickets?priority=Critical')}
-                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
                     >
-                      View Critical Tickets
+                      View Critical Tickets →
                     </button>
                   </div>
                 ) : hotLeads > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-sm">
-                      <span className="font-bold">{hotLeads} organizations</span> are highly engaged and ready to convert. Strike while the iron is hot!
+                    <p className="text-sm text-slate-700">
+                      <span className="font-bold text-emerald-600">{hotLeads} organizations</span> are highly engaged and ready to convert. Strike while the iron is hot!
                     </p>
                     <button
                       onClick={() => router.push('/support/trials')}
-                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
                     >
-                      View Hot Leads
+                      View Hot Leads →
                     </button>
                   </div>
                 ) : endingSoonTrials > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-sm">
-                      <span className="font-bold">{endingSoonTrials} trials</span> are ending within 7 days. Perfect time to follow up!
+                    <p className="text-sm text-slate-700">
+                      <span className="font-bold text-amber-600">{endingSoonTrials} trials</span> are ending within 7 days. Perfect time to follow up!
                     </p>
                     <button
                       onClick={() => router.push('/support/trials')}
-                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                      className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
                     >
-                      View Ending Trials
+                      View Ending Trials →
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm">
+                    <p className="text-sm text-slate-700">
                       Everything looks good! Your team is {openTickets === 0 ? 'at inbox zero' : 'making solid progress'}. Keep compounding those wins.
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-indigo-100">
+                    <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
                       <Star className="w-4 h-4 fill-current" />
-                      <span>You're doing great work!</span>
+                      <span className="font-medium">You're doing great work!</span>
                     </div>
                   </div>
                 )}

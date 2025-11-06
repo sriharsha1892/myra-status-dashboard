@@ -120,7 +120,22 @@ export default function SupportLayout({
             },
           },
         }}
-      />
+      >
+        {(t) => (
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div className="flex-1 min-w-0">
+              {t.message}
+            </div>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="flex-shrink-0 p-1 hover:bg-white/20 rounded transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </Toaster>
 
       {/* Mobile Menu Button */}
       <button
@@ -165,8 +180,8 @@ export default function SupportLayout({
         transform transition-transform duration-300 ease-in-out
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Logo Header */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
+        {/* Logo Header with Notification Bell */}
+        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
               <svg
@@ -201,6 +216,10 @@ export default function SupportLayout({
             <span className="text-base font-semibold text-slate-900">
               myRA AI
             </span>
+          </div>
+          {/* Notification Bell integrated in sidebar */}
+          <div className="flex items-center">
+            <NotificationsBell />
           </div>
         </div>
 
@@ -349,11 +368,6 @@ export default function SupportLayout({
         <div className="lg:hidden h-16" />
         {children}
       </main>
-
-      {/* Notification Bell - Fixed Top Right */}
-      <div className="fixed top-4 right-6 z-50">
-        <NotificationsBell />
-      </div>
     </div>
   );
 }
