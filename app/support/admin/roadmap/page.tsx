@@ -24,6 +24,7 @@ import {
   Edit3,
   GripVertical,
   TrendingUp,
+  Upload,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -431,18 +432,27 @@ export default function AdminRoadmapPage() {
             </h1>
             <p className="text-base text-blue-100 mt-2 font-medium">Plan, track, and ship game-changing features</p>
           </div>
-          <button
-            onClick={() => {
-              setEditingItem(null);
-              resetForm();
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 h-11 px-5 bg-white hover:bg-blue-50 text-blue-600 text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
-          >
-            <Plus className="w-5 h-5" strokeWidth={2.5} />
-            New Item
-            <span className="ml-1 px-2 py-0.5 bg-blue-100 rounded-md text-xs font-mono">⌘K</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/support/admin/roadmap-import')}
+              className="flex items-center gap-2 h-11 px-5 bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white text-sm font-bold rounded-xl transition-all hover:scale-105"
+            >
+              <Upload className="w-5 h-5" strokeWidth={2.5} />
+              Import
+            </button>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                resetForm();
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-2 h-11 px-5 bg-white hover:bg-blue-50 text-blue-600 text-sm font-bold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
+              New Item
+              <span className="ml-1 px-2 py-0.5 bg-blue-100 rounded-md text-xs font-mono">⌘K</span>
+            </button>
+          </div>
         </div>
 
         {/* Controls - Enhanced Design */}
