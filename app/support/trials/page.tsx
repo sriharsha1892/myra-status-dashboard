@@ -652,14 +652,12 @@ export default function TrialOrganizationsPage() {
                                     {org.org_name}
                                   </p>
                                 )}
-                                {org.org_domain && (
-                                  <p
-                                    className="text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline"
-                                    onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                                  >
-                                    {org.org_domain}
-                                  </p>
-                                )}
+                                <p
+                                  className="text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline"
+                                  onClick={() => router.push(`/support/trials/${org.org_id}`)}
+                                >
+                                  {org.org_domain || 'N/A'}
+                                </p>
                               </div>
                             </td>
                             <td className="px-6 py-4">
