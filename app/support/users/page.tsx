@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { showUserCreatedToast, showUserDeletedToast, showUserUpdatedToast } from '@/utils/navalToasts';
 
 interface User {
   id: string;
@@ -108,7 +109,7 @@ export default function UsersPage() {
         throw new Error('Failed to update role');
       }
 
-      toast.success(`Role updated to ${newRole}`);
+      showUserUpdatedToast(user.name, { customMessage: `${user.name}'s role updated to ${newRole}` });
     } catch (error: any) {
       setUsers(users.map((u) => (u.id === userId ? { ...u, role: oldRole } : u)));
       toast.error('Failed to update role');
@@ -153,9 +154,13 @@ export default function UsersPage() {
       setSignupLink(data.signupUrl);
       setShowSignupLinkModal(true);
       setShowAddModal(false);
-      setNewUser({ email: '', name: '', role: 'Team' });
 
-      toast.success('Signup link generated! Share it with the user.');
+      showUserCreatedToast(newUser.name, {
+        customMessage: `${newUser.name} invited! Share the signup link.`,
+        customQuote: 'Play long-term games with long-term people'
+      });
+
+      setNewUser({ email: '', name: '', role: 'Team' });
     } catch (error: any) {
       toast.error(error.message || 'Failed to create signup link');
     }
@@ -189,7 +194,7 @@ export default function UsersPage() {
       }
 
       setUsers(users.filter((u) => u.id !== userId));
-      toast.success('User deleted successfully');
+      showUserDeletedToast(userToDelete?.name || 'User');
     } catch (error: any) {
       toast.error('Failed to delete user');
     }

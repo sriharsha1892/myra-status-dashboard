@@ -11,6 +11,7 @@ import { format, differenceInDays, addDays } from 'date-fns';
 import Papa from 'papaparse';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { showTrialUpdatedToast, showBulkActionToast, showExportSuccessToast } from '@/utils/navalToasts';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
@@ -209,7 +210,7 @@ export default function TrialOrganizationsPage() {
 
       if (error) throw error;
 
-      toast.success(`Updated ${selectedOrgIds.size} organizations`);
+      showBulkActionToast('Assigned account manager to', selectedOrgIds.size);
       setShowBulkAccountManagerModal(false);
       setBulkAccountManager('');
       setSelectedOrgIds(new Set());
@@ -255,7 +256,7 @@ export default function TrialOrganizationsPage() {
 
       if (error) throw error;
 
-      toast.success(`Updated ${orgsToUpdate.length} organizations`);
+      showBulkActionToast('Updated trial dates for', orgsToUpdate.length);
       setShowBulkTrialDatesModal(false);
       setBulkTrialStartDate('');
       setBulkTrialEndDate('');
@@ -286,7 +287,7 @@ export default function TrialOrganizationsPage() {
 
       if (error) throw error;
 
-      toast.success(`Updated ${selectedOrgIds.size} organizations`);
+      showBulkActionToast('Changed stage for', selectedOrgIds.size);
       setShowBulkStageModal(false);
       setBulkStage('');
       setSelectedOrgIds(new Set());
@@ -327,7 +328,7 @@ export default function TrialOrganizationsPage() {
     link.click();
     document.body.removeChild(link);
 
-    toast.success(`Exported ${selectedOrgs.length} organizations`);
+    showExportSuccessToast({ customMessage: `Exported ${selectedOrgs.length} trial organizations` });
   };
 
   // Calculate metrics
