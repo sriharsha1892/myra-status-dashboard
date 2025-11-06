@@ -475,105 +475,124 @@ export default function WorldClassRoadmapPage() {
 
       {/* CONTENT AREA - 32px spacing system */}
       <div className="max-w-[1600px] mx-auto px-8 py-8">
-        {/* List View - Premium Floating Cards */}
+        {/* List View - Organic Crystal Formations */}
         {viewMode === 'list' && (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {Object.entries(groupedItems).map(([groupName, items]) => (
-              <div key={groupName}>
-                {/* Group Header - with left border accent */}
+              <div key={groupName} className="relative">
+                {/* Group Header - Organic Flow */}
                 {groupBy !== 'none' && (
                   <button
                     onClick={() => toggleGroup(groupName)}
-                    className="w-full flex items-center gap-3 mb-4 group"
+                    className="w-full flex items-center gap-3 mb-6 group"
                   >
                     {expandedGroups.has(groupName) ? (
                       <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
                     ) : (
                       <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
                     )}
-                    <div className="flex-1 flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-lg border-l-[3px] border-blue-600">
+                    <div className="flex-1 flex items-center gap-3 py-3 px-5 bg-gradient-to-r from-slate-50/80 to-transparent rounded-2xl backdrop-blur-sm">
                       <h3 className="text-[15px] leading-[22px] font-medium text-[#111827] tracking-[-0.01em]">{groupName}</h3>
-                      <span className="px-2 py-0.5 text-xs font-medium text-slate-600 bg-slate-200 rounded-full">
+                      <span className="px-2.5 py-0.5 text-xs font-medium text-slate-600 bg-white/60 backdrop-blur-sm rounded-full shadow-sm">
                         {items.length}
                       </span>
                     </div>
                   </button>
                 )}
 
-                {/* Items - Floating Panels */}
+                {/* Items - Crystalline Nodes */}
                 {(groupBy === 'none' || expandedGroups.has(groupName)) && (
-                  <div className="space-y-3">
+                  <div className="space-y-4 relative">
+                    {/* Subtle connecting line */}
+                    <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
+
                     {items.map((item, index) => (
                       <div
                         key={item.id}
-                        className="bg-white rounded-xl border border-[#f1f5f9] p-4 hover:border-slate-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-150 cursor-pointer group active:scale-[0.98]"
+                        className="relative ml-6 bg-white/80 backdrop-blur-xl rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_16px_32px_rgba(0,0,0,0.04)] transition-all duration-300 cursor-pointer group hover:scale-[1.01] active:scale-[0.99]"
+                        style={{
+                          transformOrigin: 'left center',
+                        }}
                       >
-                        <div className="flex items-start gap-4">
-                          {/* Priority Indicator */}
-                          <div className="mt-1.5">
-                            {item.priority === 'critical' && <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />}
-                            {item.priority === 'high' && <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />}
-                            {item.priority === 'medium' && <div className="w-1.5 h-1.5 rounded-full bg-[#eab308]" />}
-                            {item.priority === 'low' && <div className="w-1.5 h-1.5 rounded-full bg-[#94a3b8]" />}
+                        {/* Organic edge glow on hover */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:via-transparent group-hover:to-purple-500/5 transition-all duration-300 pointer-events-none" />
+
+                        {/* Node connector */}
+                        <div className="absolute left-[-24px] top-1/2 w-6 h-px bg-gradient-to-r from-slate-200 to-transparent" />
+                        <div className="flex items-start gap-4 relative z-10">
+                          {/* Priority Indicator - Light Orb */}
+                          <div className="mt-1.5 relative">
+                            {item.priority === 'critical' && (
+                              <div className="w-2 h-2 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
+                            )}
+                            {item.priority === 'high' && (
+                              <div className="w-2 h-2 rounded-full bg-[#f59e0b] shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
+                            )}
+                            {item.priority === 'medium' && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#eab308]/70" />
+                            )}
+                            {item.priority === 'low' && (
+                              <div className="w-1 h-1 rounded-full bg-[#cbd5e1]" />
+                            )}
                           </div>
 
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 mb-3">
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-[15px] leading-[22px] font-medium text-[#111827] group-hover:text-blue-600 transition-colors duration-150 tracking-[-0.01em]">
+                                <h4 className="text-[15px] leading-[22px] font-medium text-[#0f172a] group-hover:text-[#2563eb] transition-all duration-300 tracking-[-0.01em]">
                                   {item.title}
                                 </h4>
                                 {item.description && (
-                                  <p className="text-[13px] leading-[20px] text-[#6b7280] mt-2 line-clamp-2 tracking-[-0.01em]">
+                                  <p className="text-[13px] leading-[20px] text-[#64748b] mt-2 line-clamp-2 tracking-[-0.01em] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     {item.description}
                                   </p>
                                 )}
                               </div>
 
-                              {/* Quick Actions */}
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-150">
+                              {/* Quick Actions - Progressive Reveal */}
+                              <div className="opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
+                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all duration-200 backdrop-blur-sm">
                                   <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                                 </button>
                               </div>
                             </div>
 
-                            {/* Metadata Pills */}
+                            {/* Metadata - Translucent Pills */}
                             <div className="flex items-center gap-2 flex-wrap">
-                              {/* Status Pill */}
-                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md border ${COLORS.status[item.status].bg} ${COLORS.status[item.status].border} ${COLORS.status[item.status].text}`} style={{letterSpacing: '-0.01em'}}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${COLORS.status[item.status].dot}`} />
+                              {/* Status - Light Temperature */}
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full backdrop-blur-md ${COLORS.status[item.status].bg} ${COLORS.status[item.status].border} border ${COLORS.status[item.status].text} shadow-sm`} style={{letterSpacing: '-0.01em'}}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${COLORS.status[item.status].dot} ${item.status === 'in_progress' ? 'animate-pulse' : ''}`} />
                                 {item.status === 'in_progress' ? 'In Progress' :
                                  item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                               </span>
 
-                              {/* Priority Pill */}
+                              {/* Priority - Only if not low */}
                               {item.priority !== 'low' && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].border} ${COLORS.priority[item.priority].text}`} style={{letterSpacing: '-0.01em'}}>
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full backdrop-blur-md border ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].border} ${COLORS.priority[item.priority].text} shadow-sm`} style={{letterSpacing: '-0.01em'}}>
                                   <Flag className="w-3 h-3" strokeWidth={1.5} />
                                   {item.priority}
                                 </span>
                               )}
 
-                              {/* Version */}
+                              {/* Version - Soft Treatment */}
                               {item.version_planned && (
-                                <span className="px-2 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-md" style={{letterSpacing: '-0.01em'}}>
+                                <span className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
                                   {item.version_planned}
                                 </span>
                               )}
 
-                              {/* Assignee */}
+                              {/* Assignee - Organic */}
                               {item.assigned_to && (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-600 bg-slate-50 rounded-md border border-slate-200" style={{letterSpacing: '-0.01em'}}>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
                                   <User className="w-3 h-3" strokeWidth={1.5} />
                                   {item.assigned_to}
                                 </span>
                               )}
 
-                              {/* Target Date */}
+                              {/* Target Date - Soft Glow */}
                               {item.target_date && (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-600 bg-slate-50 rounded-md border border-slate-200" style={{letterSpacing: '-0.01em'}}>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
                                   <Calendar className="w-3 h-3" strokeWidth={1.5} />
                                   {format(parseISO(item.target_date), 'MMM d, yyyy')}
                                 </span>
