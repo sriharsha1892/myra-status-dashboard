@@ -177,7 +177,6 @@ export default function SupportLayout({
               myRA AI
             </span>
           </div>
-          <NotificationsBell />
         </div>
 
         {/* Navigation */}
@@ -325,6 +324,11 @@ export default function SupportLayout({
         <div className="lg:hidden h-16" />
         {children}
       </main>
+
+      {/* Notification Bell - Fixed Top Right */}
+      <div className="fixed top-4 right-6 z-50">
+        <NotificationsBell />
+      </div>
     </div>
   );
 }
