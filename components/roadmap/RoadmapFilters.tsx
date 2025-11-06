@@ -1,7 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, X, Calendar, AlertCircle } from 'lucide-react';
+import { Search, Filter, X, Calendar, AlertCircle, Tag, Flag } from 'lucide-react';
+
+interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface Milestone {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface RoadmapFiltersProps {
   searchQuery: string;
@@ -10,11 +22,17 @@ interface RoadmapFiltersProps {
   onStatusChange: (statuses: string[]) => void;
   selectedPriorities: string[];
   onPriorityChange: (priorities: string[]) => void;
+  selectedLabelIds: string[];
+  onLabelIdsChange: (labelIds: string[]) => void;
+  selectedMilestoneIds: string[];
+  onMilestoneIdsChange: (milestoneIds: string[]) => void;
   dateRange: { start: string | null; end: string | null };
   onDateRangeChange: (range: { start: string | null; end: string | null }) => void;
   showBlockedOnly: boolean;
   onShowBlockedOnlyChange: (value: boolean) => void;
   onClearFilters: () => void;
+  labels: Label[];
+  milestones: Milestone[];
 }
 
 const STATUS_OPTIONS = [
@@ -38,17 +56,25 @@ export default function RoadmapFilters({
   onStatusChange,
   selectedPriorities,
   onPriorityChange,
+  selectedLabelIds,
+  onLabelIdsChange,
+  selectedMilestoneIds,
+  onMilestoneIdsChange,
   dateRange,
   onDateRangeChange,
   showBlockedOnly,
   onShowBlockedOnlyChange,
   onClearFilters,
+  labels,
+  milestones,
 }: RoadmapFiltersProps) {
   const [showFilters, setShowFilters] = useState(false);
 
   const hasActiveFilters =
     selectedStatuses.length > 0 ||
     selectedPriorities.length > 0 ||
+    selectedLabelIds.length > 0 ||
+    selectedMilestoneIds.length > 0 ||
     dateRange.start ||
     dateRange.end ||
     showBlockedOnly ||
@@ -67,6 +93,22 @@ export default function RoadmapFilters({
       onPriorityChange(selectedPriorities.filter((p) => p !== priority));
     } else {
       onPriorityChange([...selectedPriorities, priority]);
+    }
+  };
+
+  const toggleLabel = (labelId: string) => {
+    if (selectedLabelIds.includes(labelId)) {
+      onLabelIdsChange(selectedLabelIds.filter((id) => id !== labelId));
+    } else {
+      onLabelIdsChange([...selectedLabelIds, labelId]);
+    }
+  };
+
+  const toggleMilestone = (milestoneId: string) => {
+    if (selectedMilestoneIds.includes(milestoneId)) {
+      onMilestoneIdsChange(selectedMilestoneIds.filter((id) => id !== milestoneId));
+    } else {
+      onMilestoneIdsChange([...selectedMilestoneIds, milestoneId]);
     }
   };
 
@@ -173,6 +215,67 @@ export default function RoadmapFilters({
               ))}
             </div>
           </div>
+
+          {/* Labels Filter */}
+          {labels.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Tag className="w-4 h-4 inline mr-1" />
+                Labels
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {labels.map((label) => (
+                  <button
+                    key={label.id}
+                    onClick={() => toggleLabel(label.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      selectedLabelIds.includes(label.id)
+                        ? 'text-white ring-2 ring-offset-1'
+                        : 'border border-gray-300'
+                    }`}
+                    style={{
+                      backgroundColor: selectedLabelIds.includes(label.id) ? label.color : `${label.color}20`,
+                      color: selectedLabelIds.includes(label.id) ? 'white' : undefined,
+                      ringColor: selectedLabelIds.includes(label.id) ? label.color : undefined,
+                    }}
+                  >
+                    {label.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Milestones Filter */}
+          {milestones.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Flag className="w-4 h-4 inline mr-1" />
+                Milestones
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {milestones.map((milestone) => (
+                  <button
+                    key={milestone.id}
+                    onClick={() => toggleMilestone(milestone.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
+                      selectedMilestoneIds.includes(milestone.id)
+                        ? 'text-white ring-2 ring-offset-1'
+                        : 'border border-gray-300'
+                    }`}
+                    style={{
+                      backgroundColor: selectedMilestoneIds.includes(milestone.id) ? milestone.color : `${milestone.color}20`,
+                      color: selectedMilestoneIds.includes(milestone.id) ? 'white' : undefined,
+                      ringColor: selectedMilestoneIds.includes(milestone.id) ? milestone.color : undefined,
+                    }}
+                  >
+                    <Flag className="w-3 h-3" />
+                    {milestone.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Date Range Filter */}
           <div>

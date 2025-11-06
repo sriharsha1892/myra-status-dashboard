@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import DependencyManager from './DependencyManager';
+import LabelManager from './LabelManager';
+import MilestoneManager from './MilestoneManager';
 
 interface RoadmapItem {
   id: string;
@@ -22,6 +24,20 @@ interface RoadmapItem {
   updated_at: string;
   blocked_by_ids: string[] | null;
   blocks_ids: string[] | null;
+  label_ids: string[] | null;
+  milestone_id: string | null;
+}
+
+interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface Milestone {
+  id: string;
+  name: string;
+  color: string;
 }
 
 interface RoadmapDetailPanelProps {
@@ -31,6 +47,8 @@ interface RoadmapDetailPanelProps {
   onClose: () => void;
   onUpdate?: () => void;
   allItems: RoadmapItem[];
+  labels: Label[];
+  milestones: Milestone[];
 }
 
 const STATUS_OPTIONS = [
@@ -54,6 +72,8 @@ export default function RoadmapDetailPanel({
   onClose,
   onUpdate,
   allItems,
+  labels,
+  milestones,
 }: RoadmapDetailPanelProps) {
   const [item, setItem] = useState<RoadmapItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -346,6 +366,29 @@ export default function RoadmapDetailPanel({
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                       />
                     </div>
+                  </div>
+
+                  {/* Labels */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <LabelManager
+                      orgId={orgId}
+                      selectedLabelIds={item.label_ids || []}
+                      onLabelsChange={async (labelIds) => {
+                        await updateField('label_ids', labelIds.length > 0 ? labelIds : null);
+                      }}
+                    />
+                  </div>
+
+                  {/* Milestone */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <MilestoneManager
+                      orgId={orgId}
+                      selectedMilestoneId={item.milestone_id}
+                      onMilestoneChange={async (milestoneId) => {
+                        await updateField('milestone_id', milestoneId);
+                      }}
+                      showProgress={false}
+                    />
                   </div>
 
                   {/* Dependencies */}

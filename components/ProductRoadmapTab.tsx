@@ -4,12 +4,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar } from 'lucide-react';
 import AddRoadmapItemModal from './AddRoadmapItemModal';
 import RoadmapDetailPanel from './roadmap/RoadmapDetailPanel';
 import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
 import RoadmapFilters from './roadmap/RoadmapFilters';
 import RoadmapAnalytics from './roadmap/RoadmapAnalytics';
+import CalendarView from './roadmap/CalendarView';
 
 interface RoadmapItem {
   id: string;
@@ -26,6 +27,26 @@ interface RoadmapItem {
   linked_features: string[] | null;
   blocked_by_ids: string[] | null;
   blocks_ids: string[] | null;
+  label_ids: string[] | null;
+  milestone_id: string | null;
+}
+
+interface Label {
+  id: string;
+  org_id: string;
+  name: string;
+  color: string;
+  description: string | null;
+}
+
+interface Milestone {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  target_date: string | null;
+  status: 'active' | 'completed' | 'cancelled';
+  color: string;
 }
 
 interface ProductRoadmapTabProps {
@@ -46,10 +67,12 @@ const PRIORITY_CONFIG: { [key: string]: { icon: string; color: string; label: st
   critical: { icon: '🚨', color: 'red', label: 'Critical' },
 };
 
-type ViewMode = 'cards' | 'kanban' | 'analytics';
+type ViewMode = 'cards' | 'kanban' | 'analytics' | 'calendar';
 
 export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [items, setItems] = useState<RoadmapItem[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -59,6 +82,8 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
+  const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
     start: null,
     end: null,
@@ -68,23 +93,44 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchRoadmapItems();
+    fetchAll();
   }, [orgId]);
 
-  const fetchRoadmapItems = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch items
+      const { data: itemsData, error: itemsError } = await supabase
         .from('org_product_roadmap')
         .select('*')
         .eq('org_id', orgId)
         .order('target_date', { ascending: true, nullsFirst: false });
 
-      if (error) throw error;
-      setItems(data || []);
+      if (itemsError) throw itemsError;
+      setItems(itemsData || []);
+
+      // Fetch labels
+      const { data: labelsData, error: labelsError } = await supabase
+        .from('roadmap_labels')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('name');
+
+      if (labelsError) throw labelsError;
+      setLabels(labelsData || []);
+
+      // Fetch milestones
+      const { data: milestonesData, error: milestonesError } = await supabase
+        .from('roadmap_milestones')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('target_date', { ascending: true, nullsFirst: false });
+
+      if (milestonesError) throw milestonesError;
+      setMilestones(milestonesData || []);
     } catch (error: any) {
-      console.error('Error fetching roadmap:', error);
-      toast.error('Failed to load roadmap');
+      console.error('Error fetching roadmap data:', error);
+      toast.error('Failed to load roadmap data');
     } finally {
       setLoading(false);
     }
@@ -125,6 +171,21 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       });
     }
 
+    // Label filter
+    if (selectedLabelIds.length > 0) {
+      filtered = filtered.filter((item) => {
+        if (!item.label_ids || item.label_ids.length === 0) return false;
+        return selectedLabelIds.some(labelId => item.label_ids?.includes(labelId));
+      });
+    }
+
+    // Milestone filter
+    if (selectedMilestoneIds.length > 0) {
+      filtered = filtered.filter((item) => {
+        return item.milestone_id && selectedMilestoneIds.includes(item.milestone_id);
+      });
+    }
+
     // Blocked only filter
     if (showBlockedOnly) {
       filtered = filtered.filter((item) => {
@@ -136,12 +197,14 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
     }
 
     return filtered;
-  }, [items, searchQuery, selectedStatuses, selectedPriorities, dateRange, showBlockedOnly]);
+  }, [items, searchQuery, selectedStatuses, selectedPriorities, selectedLabelIds, selectedMilestoneIds, dateRange, showBlockedOnly]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedStatuses([]);
     setSelectedPriorities([]);
+    setSelectedLabelIds([]);
+    setSelectedMilestoneIds([]);
     setDateRange({ start: null, end: null });
     setShowBlockedOnly(false);
   };
@@ -238,6 +301,17 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
             </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </button>
           </div>
 
           {/* Add Button */}
@@ -252,7 +326,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       </div>
 
       {/* Filters */}
-      {viewMode !== 'analytics' && (
+      {viewMode !== 'analytics' && viewMode !== 'calendar' && (
         <RoadmapFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -260,23 +334,38 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           onStatusChange={setSelectedStatuses}
           selectedPriorities={selectedPriorities}
           onPriorityChange={setSelectedPriorities}
+          selectedLabelIds={selectedLabelIds}
+          onLabelIdsChange={setSelectedLabelIds}
+          selectedMilestoneIds={selectedMilestoneIds}
+          onMilestoneIdsChange={setSelectedMilestoneIds}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
           showBlockedOnly={showBlockedOnly}
           onShowBlockedOnlyChange={setShowBlockedOnly}
           onClearFilters={clearFilters}
+          labels={labels}
+          milestones={milestones}
         />
       )}
 
       {/* Content */}
       {viewMode === 'analytics' ? (
         <RoadmapAnalytics items={items} />
+      ) : viewMode === 'calendar' ? (
+        <CalendarView
+          orgId={orgId}
+          items={filteredItems}
+          labels={labels}
+          milestones={milestones}
+          onItemClick={setSelectedItemId}
+          onUpdate={fetchAll}
+        />
       ) : viewMode === 'kanban' ? (
         <RoadmapKanbanView
           orgId={orgId}
           items={filteredItems}
           onItemClick={setSelectedItemId}
-          onUpdate={fetchRoadmapItems}
+          onUpdate={fetchAll}
         />
       ) : (
         /* Cards View */
@@ -366,7 +455,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         orgId={orgId}
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSuccess={fetchRoadmapItems}
+        onSuccess={fetchAll}
       />
 
       {/* Detail Panel */}
@@ -375,8 +464,10 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         orgId={orgId}
         isOpen={!!selectedItemId}
         onClose={() => setSelectedItemId(null)}
-        onUpdate={fetchRoadmapItems}
+        onUpdate={fetchAll}
         allItems={items}
+        labels={labels}
+        milestones={milestones}
       />
     </div>
   );
