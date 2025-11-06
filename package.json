@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "smart-import": "tsx scripts/smart-import.ts",
-    "batch-import": "tsx scripts/batch-import.ts"
+    "batch-import": "tsx scripts/batch-import.ts",
+    "check-orgs": "tsx scripts/check-and-cleanup-orgs.ts",
+    "cleanup-recent-orgs": "tsx scripts/check-and-cleanup-orgs.ts cleanup"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
