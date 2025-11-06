@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import AtRiskCustomers from '@/components/support/AtRiskCustomers';
 import QuickInsights from '@/components/support/QuickInsights';
-import AINewsFeed from '@/components/support/AINewsFeed';
+import SmartRecommendations from '@/components/support/SmartRecommendations';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -428,8 +428,8 @@ export default function EnterpriseCommandCenter() {
                 </div>
               )}
 
-              {/* AI & LLM News Feed - Immaculate glass morphism design */}
-              <AINewsFeed />
+              {/* Smart Recommendations - AI-powered contextual insights */}
+              <SmartRecommendations userId={user?.id} role={role} />
 
               {/* Insights */}
               <div className="relative bg-gradient-to-br from-purple-50 via-white to-pink-50 rounded-xl border border-slate-200 p-6">
