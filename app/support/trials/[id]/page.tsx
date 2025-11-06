@@ -82,6 +82,7 @@ export default function OrganizationDetailPage() {
 
   const fetchOrganizationData = async () => {
     setLoading(true);
+    const supabase = createClient();
     try {
       // Fetch organization
       const { data: org, error: orgError } = await supabase
@@ -199,6 +200,7 @@ export default function OrganizationDetailPage() {
   };
 
   const handleSaveOrganization = async () => {
+    const supabase = createClient();
     try {
       // Only update editable fields, exclude immutable fields like org_id, created_at
       const updatePayload: any = {
@@ -279,6 +281,7 @@ export default function OrganizationDetailPage() {
   };
 
   const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
+    const supabase = createClient();
     try {
       const { error } = await supabase
         // -ignore - Supabase typing issue with dynamic columns
@@ -321,6 +324,7 @@ export default function OrganizationDetailPage() {
 
   const handleBulkDeleteUsers = async () => {
     setBulkProcessing(true);
+    const supabase = createClient();
     const userCountToDelete = selectedUserIds.size;
     const userIdsArray = Array.from(selectedUserIds);
 
@@ -367,6 +371,7 @@ export default function OrganizationDetailPage() {
 
   const handleBulkMarkPrimary = async () => {
     setBulkProcessing(true);
+    const supabase = createClient();
     try {
       if (!bulkPrimaryUserId) {
         toast.error('Please select a user to mark as primary');
@@ -414,6 +419,7 @@ export default function OrganizationDetailPage() {
 
   const handleBulkChangeStatus = async () => {
     setBulkProcessing(true);
+    const supabase = createClient();
     try {
       if (!bulkUserStatus) {
         toast.error('Please select a status');
