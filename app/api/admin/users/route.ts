@@ -2,17 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-// Create Supabase Admin client with service role key
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+// Create Supabase Admin client with service role key (lazy initialization)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
 
 // Helper function to verify admin access
 async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: boolean; userId?: string }> {
@@ -48,6 +50,7 @@ async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: bo
     }
 
     // Verify the user using admin API
+    const supabaseAdmin = getSupabaseAdmin();
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(accessToken);
 
     if (error || !user) {
@@ -80,6 +83,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all users using admin API
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
 
     if (error) {
@@ -144,6 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Invite user using admin API (sends email invitation)
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: {
         name,
@@ -211,6 +216,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update user metadata using admin API
+    const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       {
@@ -275,6 +281,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete user using admin API
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
