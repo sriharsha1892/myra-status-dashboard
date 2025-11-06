@@ -226,11 +226,11 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto">
             {/* Greeting & Smart Insight */}
             <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-2">
                 {getGreeting()}, {user?.email?.split('@')[0] || 'there'}
               </h1>
-              <p className="text-lg text-slate-600 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-500" />
+              <p className="text-sm text-slate-600 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-500" />
                 {getPersonalizedMessage()}
               </p>
             </div>
@@ -251,8 +251,8 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{activeTrials}</p>
-                <p className="text-sm font-medium text-slate-600 mb-2">Active Trials</p>
+                <p className="text-2xl font-bold text-slate-900 mb-1">{activeTrials}</p>
+                <p className="text-xs font-medium text-slate-600 mb-2">Active Trials</p>
                 {hotLeads > 0 && (
                   <p className="text-xs text-purple-600 font-medium flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
@@ -275,8 +275,8 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{criticalTickets}</p>
-                <p className="text-sm font-medium text-slate-600">Critical Tickets</p>
+                <p className="text-2xl font-bold text-slate-900 mb-1">{criticalTickets}</p>
+                <p className="text-xs font-medium text-slate-600">Critical Tickets</p>
                 {criticalTickets === 0 && (
                   <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
@@ -293,8 +293,8 @@ export default function DashboardPage() {
                     <Clock className="w-6 h-6" strokeWidth={2} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{openTickets}</p>
-                <p className="text-sm font-medium text-slate-600 mb-2">Open Tickets</p>
+                <p className="text-2xl font-bold text-slate-900 mb-1">{openTickets}</p>
+                <p className="text-xs font-medium text-slate-600 mb-2">Open Tickets</p>
                 {myTickets > 0 && (
                   <p className="text-xs text-amber-600 font-medium">
                     {myTickets} assigned to you
@@ -310,8 +310,8 @@ export default function DashboardPage() {
                     <Target className="w-6 h-6" strokeWidth={2} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-slate-900 mb-1">{atRiskTrials}</p>
-                <p className="text-sm font-medium text-slate-600 mb-2">At Risk</p>
+                <p className="text-2xl font-bold text-slate-900 mb-1">{atRiskTrials}</p>
+                <p className="text-xs font-medium text-slate-600 mb-2">At Risk</p>
                 {endingSoonTrials > 0 && (
                   <p className="text-xs text-orange-600 font-medium flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -333,8 +333,8 @@ export default function DashboardPage() {
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-200">
               <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-blue-600" />
-                  <h2 className="text-base font-bold text-slate-900">Recent Activity</h2>
+                  <Activity className="w-4 h-4 text-blue-600" />
+                  <h2 className="text-sm font-bold text-slate-900">Recent Activity</h2>
                 </div>
                 <button
                   onClick={() => router.push('/support/tickets')}
@@ -350,7 +350,7 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                     <Bot className="w-8 h-8 text-slate-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No tickets yet</h3>
+                  <h3 className="text-base font-semibold text-slate-900 mb-2">No tickets yet</h3>
                   <p className="text-sm text-slate-600 mb-1">{getEmptyStateWisdom()}</p>
                   <button
                     onClick={() => router.push('/support/submit')}
@@ -414,8 +414,8 @@ export default function DashboardPage() {
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-300">
               <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-base font-bold text-slate-900">Trial Organizations</h2>
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                  <h2 className="text-sm font-bold text-slate-900">Trial Organizations</h2>
                 </div>
                 <button
                   onClick={() => router.push('/support/trials')}
@@ -431,7 +431,7 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
                     <Building2 className="w-8 h-8 text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No organizations yet</h3>
+                  <h3 className="text-base font-semibold text-slate-900 mb-2">No organizations yet</h3>
                   <p className="text-sm text-slate-600 mb-1">Build your portfolio. Start compounding relationships.</p>
                   <button
                     onClick={() => router.push('/support/trials/new')}
@@ -497,8 +497,8 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-200">
               <div className="px-6 py-4 border-b border-slate-200">
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-amber-500" />
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" />
                   Quick Actions
                 </h2>
               </div>
@@ -568,8 +568,8 @@ export default function DashboardPage() {
             {role?.toLowerCase() === 'admin' && (
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-250">
                 <div className="px-6 py-4 border-b border-slate-200">
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-blue-600" />
                     Upcoming Demos
                   </h2>
                 </div>
@@ -646,7 +646,7 @@ export default function DashboardPage() {
                     <Brain className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold mb-1">AI Insights</h3>
+                    <h3 className="text-sm font-bold mb-1">AI Insights</h3>
                     <p className="text-xs text-indigo-100">Based on your data</p>
                   </div>
                 </div>
