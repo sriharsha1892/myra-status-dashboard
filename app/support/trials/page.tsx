@@ -201,8 +201,8 @@ export default function TrialOrganizationsPage() {
         return;
       }
 
-      // Update account_manager field (account_manager_id doesn't exist in DB schema)
-      const managerDisplayName = `${selectedManager.full_name || selectedManager.email} (${selectedManager.email})`;
+      // Update account_manager field - just name, no email
+      const managerDisplayName = selectedManager.full_name || selectedManager.email;
 
       console.log(`💾 Bulk updating ${selectedOrgIds.size} organizations with account manager:`, managerDisplayName);
 
