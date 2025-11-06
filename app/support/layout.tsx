@@ -143,19 +143,34 @@ export default function SupportLayout({
         {/* Logo Header */}
         <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
               <svg
-                className="w-5 h-5 text-white"
+                className="w-6 h-6 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
+                {/* Modern Neural Network / AI Brain Logo */}
+                {/* Central node */}
+                <circle cx="12" cy="12" r="2" fill="currentColor" opacity="1"/>
+
+                {/* Outer orbital nodes */}
+                <circle cx="12" cy="6" r="1.5" fill="currentColor" opacity="0.9"/>
+                <circle cx="18" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
+                <circle cx="12" cy="18" r="1.5" fill="currentColor" opacity="0.9"/>
+                <circle cx="6" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
+
+                {/* Connection lines with gradient effect */}
+                <path d="M12 10 L12 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                <path d="M13.5 11.5 L16.5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                <path d="M12 14 L12 16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+                <path d="M10.5 12.5 L7.5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+
+                {/* Diagonal connections for neural network feel */}
+                <path d="M13 10.5 L16.5 8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
+                <path d="M13 13.5 L16.5 16" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
+                <path d="M11 13.5 L7.5 16" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
+                <path d="M11 10.5 L7.5 8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
               </svg>
             </div>
             <span className="text-base font-semibold text-slate-900">
