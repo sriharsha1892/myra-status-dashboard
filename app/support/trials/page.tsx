@@ -43,10 +43,6 @@ export default function TrialOrganizationsPage() {
   const [showQuickEditPanel, setShowQuickEditPanel] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
-  // Inline editing state
-  const [editingCell, setEditingCell] = useState<{orgId: string, field: string} | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-
   // Bulk operation form states
   const [bulkAccountManager, setBulkAccountManager] = useState('');
   const [bulkAccountManagerOther, setBulkAccountManagerOther] = useState('');
@@ -337,72 +333,6 @@ export default function TrialOrganizationsPage() {
     showExportSuccessToast({ customMessage: `Exported ${selectedOrgs.length} trial organizations` });
   };
 
-  // Inline editing functions
-  const handleStartEdit = (orgId: string, field: string, currentValue: any) => {
-    setEditingCell({ orgId, field });
-    setEditValue(currentValue?.toString() || '');
-  };
-
-  const handleInlineSave = async (orgId: string, field: string, value: any) => {
-    try {
-      const updateData: any = {
-        [field]: value,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('trial_organizations')
-        .update(updateData)
-        .eq('org_id', orgId);
-
-      if (error) throw error;
-
-      // Update local state
-      setOrganizations(organizations.map(org =>
-        org.org_id === orgId ? { ...org, [field]: value } : org
-      ));
-
-      const org = organizations.find(o => o.org_id === orgId);
-      showTrialUpdatedToast(org?.org_name || 'Organization');
-      setEditingCell(null);
-    } catch (error: any) {
-      console.error('Inline save error:', error);
-      toast.error('Failed to save changes');
-    }
-  };
-
-  // Fill down - copy value to all selected orgs
-  const handleFillDown = async (field: string, value: any) => {
-    if (selectedOrgIds.size === 0) {
-      toast.error('Please select organizations first');
-      return;
-    }
-
-    setBulkProcessing(true);
-    try {
-      const updateData: any = {
-        [field]: value,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('trial_organizations')
-        .update(updateData)
-        .in('org_id', Array.from(selectedOrgIds));
-
-      if (error) throw error;
-
-      await fetchOrganizations();
-      showBulkActionToast(`Filled ${field} for`, selectedOrgIds.size);
-      setSelectedOrgIds(new Set());
-    } catch (error: any) {
-      console.error('Fill down error:', error);
-      toast.error('Failed to fill down values');
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
   // Calculate metrics
   const activeTrials = organizations.filter((org) => org.org_lifecycle_stage === 'trial_active').length;
   const hotLeads = organizations.filter((org) => org.engagement_score > 75).length;
@@ -628,30 +558,9 @@ export default function TrialOrganizationsPage() {
                             </td>
                             <td className="px-6 py-4">
                               <div>
-                                {editingCell?.orgId === org.org_id && editingCell?.field === 'org_name' ? (
-                                  <input
-                                    type="text"
-                                    value={editValue}
-                                    onChange={(e) => setEditValue(e.target.value)}
-                                    onBlur={() => handleInlineSave(org.org_id, 'org_name', editValue)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleInlineSave(org.org_id, 'org_name', editValue);
-                                      if (e.key === 'Escape') setEditingCell(null);
-                                    }}
-                                    autoFocus
-                                    className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                  />
-                                ) : (
-                                  <p
-                                    className="text-sm font-semibold text-gray-900 cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStartEdit(org.org_id, 'org_name', org.org_name);
-                                    }}
-                                  >
-                                    {org.org_name}
-                                  </p>
-                                )}
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {org.org_name}
+                                </p>
                                 <p
                                   className="text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline"
                                   onClick={() => router.push(`/support/trials/${org.org_id}`)}
@@ -661,35 +570,9 @@ export default function TrialOrganizationsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              {editingCell?.orgId === org.org_id && editingCell?.field === 'org_lifecycle_stage' ? (
-                                <select
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleInlineSave(org.org_id, 'org_lifecycle_stage', editValue)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleInlineSave(org.org_id, 'org_lifecycle_stage', editValue);
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                  autoFocus
-                                  className="px-2.5 py-1 text-xs font-medium border-2 border-blue-500 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                >
-                                  <option value="prospect">Prospect</option>
-                                  <option value="demo_scheduled">Demo Scheduled</option>
-                                  <option value="trial_active">Trial Active</option>
-                                  <option value="converted">Converted</option>
-                                  <option value="churned">Churned</option>
-                                </select>
-                              ) : (
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all ${getStageColor(org.org_lifecycle_stage)}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartEdit(org.org_id, 'org_lifecycle_stage', org.org_lifecycle_stage);
-                                  }}
-                                >
-                                  {formatStage(org.org_lifecycle_stage)}
-                                </span>
-                              )}
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(org.org_lifecycle_stage)}`}>
+                                {formatStage(org.org_lifecycle_stage)}
+                              </span>
                             </td>
                             <td
                               className="px-6 py-4 cursor-pointer"
@@ -700,84 +583,19 @@ export default function TrialOrganizationsPage() {
                               </p>
                             </td>
                             <td className="px-6 py-4">
-                              {editingCell?.orgId === org.org_id && editingCell?.field === 'engagement_score' ? (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleInlineSave(org.org_id, 'engagement_score', parseInt(editValue) || 0)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleInlineSave(org.org_id, 'engagement_score', parseInt(editValue) || 0);
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                  autoFocus
-                                  className="w-16 px-2 py-1 text-xs font-bold text-center border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                />
-                              ) : (
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all ${getEngagementColor(org.engagement_score)}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartEdit(org.org_id, 'engagement_score', org.engagement_score);
-                                  }}
-                                >
-                                  {org.engagement_score}%
-                                </span>
-                              )}
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${getEngagementColor(org.engagement_score)}`}>
+                                {org.engagement_score}%
+                              </span>
                             </td>
                             <td className="px-6 py-4">
-                              {editingCell?.orgId === org.org_id && editingCell?.field === 'trial_end_date' ? (
-                                <input
-                                  type="date"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleInlineSave(org.org_id, 'trial_end_date', editValue)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleInlineSave(org.org_id, 'trial_end_date', editValue);
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                  autoFocus
-                                  className="px-2 py-1 text-sm border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                />
-                              ) : (
-                                <p
-                                  className="text-sm text-gray-900 cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartEdit(org.org_id, 'trial_end_date', org.trial_end_date ? format(new Date(org.trial_end_date), 'yyyy-MM-dd') : '');
-                                  }}
-                                >
-                                  {org.trial_end_date ? `${getDaysLeft(org.trial_end_date)} days` : '-'}
-                                </p>
-                              )}
+                              <p className="text-sm text-gray-900">
+                                {org.trial_end_date ? `${getDaysLeft(org.trial_end_date)} days` : '-'}
+                              </p>
                             </td>
                             <td className="px-6 py-4">
-                              {editingCell?.orgId === org.org_id && editingCell?.field === 'account_manager' ? (
-                                <input
-                                  type="text"
-                                  value={editValue}
-                                  onChange={(e) => setEditValue(e.target.value)}
-                                  onBlur={() => handleInlineSave(org.org_id, 'account_manager', editValue)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleInlineSave(org.org_id, 'account_manager', editValue);
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                  autoFocus
-                                  className="w-full px-2 py-1 text-sm text-gray-900 border-2 border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                />
-                              ) : (
-                                <p
-                                  className="text-sm text-gray-900 cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStartEdit(org.org_id, 'account_manager', org.account_manager || '');
-                                  }}
-                                >
-                                  {org.account_manager || '-'}
-                                </p>
-                              )}
+                              <p className="text-sm text-gray-900">
+                                {org.account_manager || '-'}
+                              </p>
                             </td>
                           </tr>
                         ))
