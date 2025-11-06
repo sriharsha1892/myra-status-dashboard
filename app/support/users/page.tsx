@@ -27,6 +27,8 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
+  const [signupLink, setSignupLink] = useState('');
   const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const });
 
   const supabase = createClient();
@@ -136,16 +138,26 @@ export default function UsersPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to invite user');
+        throw new Error(data.error || 'Failed to create signup link');
       }
 
-      await fetchUsers();
+      const data = await response.json();
+
+      // Show the signup link in a modal
+      setSignupLink(data.signupUrl);
+      setShowSignupLinkModal(true);
       setShowAddModal(false);
       setNewUser({ email: '', name: '', role: 'Team' });
-      toast.success('Invitation sent successfully! User will receive an email to set their password.');
+
+      toast.success('Signup link generated! Share it with the user.');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to invite user');
+      toast.error(error.message || 'Failed to create signup link');
     }
+  };
+
+  const handleCopySignupLink = () => {
+    navigator.clipboard.writeText(signupLink);
+    toast.success('Signup link copied to clipboard!');
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -496,6 +508,80 @@ export default function UsersPage() {
                 className="flex-1 h-11 bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl transition-all"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Link Modal */}
+      {showSignupLinkModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-[scaleIn_0.3s_ease-out]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Signup Link Generated</h3>
+                  <p className="text-sm text-gray-600">Share this link with the user</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSignupLinkModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">How it works</p>
+                  <p className="text-sm text-blue-700">
+                    Copy this link and share it with the user (via email, Slack, etc.). When they click it, they'll set their password and be automatically logged in. The link expires in 7 days.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-900">Signup Link</label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={signupLink}
+                  readOnly
+                  className="flex-1 h-12 px-4 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 font-mono focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <button
+                  onClick={handleCopySignupLink}
+                  className="h-12 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowSignupLinkModal(false)}
+                className="flex-1 h-11 bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl transition-all"
+              >
+                Done
               </button>
             </div>
           </div>
