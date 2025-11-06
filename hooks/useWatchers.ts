@@ -3,7 +3,7 @@
  * Manages ticket watchers and watch status
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -12,7 +12,15 @@ export function useWatchers(ticketId: string) {
   const [watcherCount, setWatcherCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const supabase = createClient();
+
+  // Lazy initialize Supabase client
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const getSupabase = () => {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createClient();
+    }
+    return supabaseRef.current;
+  };
 
   // Fetch initial watch status
   useEffect(() => {
@@ -29,6 +37,7 @@ export function useWatchers(ticketId: string) {
 
     try {
       setLoading(true);
+      const supabase = getSupabase();
 
       // Check if current user is watching
       const { data: watchData } = await supabase
@@ -56,6 +65,7 @@ export function useWatchers(ticketId: string) {
 
   const watch = async () => {
     if (!user) throw new Error('User not authenticated');
+    const supabase = getSupabase();
 
     const { error } = await supabase
       .from('ticket_watchers')
@@ -72,6 +82,7 @@ export function useWatchers(ticketId: string) {
 
   const unwatch = async () => {
     if (!user) throw new Error('User not authenticated');
+    const supabase = getSupabase();
 
     const { error } = await supabase
       .from('ticket_watchers')

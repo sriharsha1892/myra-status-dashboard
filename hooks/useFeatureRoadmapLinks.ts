@@ -3,6 +3,7 @@
  * Manages links between feature requests and roadmap items
  */
 
+import { useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface LinkOptions {
@@ -12,13 +13,21 @@ interface LinkOptions {
 }
 
 export function useFeatureRoadmapLinks(orgId: string) {
-  const supabase = createClient();
+  // Lazy initialize Supabase client
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const getSupabase = () => {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createClient();
+    }
+    return supabaseRef.current;
+  };
 
   const linkFeatureToRoadmap = async ({
     featureId,
     roadmapId,
     linkType
   }: LinkOptions) => {
+    const supabase = getSupabase();
     // Check if link already exists
     const { data: existingLink } = await supabase
       .from('feature_roadmap_links')
@@ -54,6 +63,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
   };
 
   const unlinkFeatureFromRoadmap = async (featureId: string, roadmapId: string) => {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('feature_roadmap_links')
       .delete()
@@ -64,6 +74,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
   };
 
   const getLinksForFeature = async (featureId: string) => {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('feature_roadmap_links')
       .select(`
@@ -77,6 +88,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
   };
 
   const getLinksForRoadmapItem = async (roadmapId: string) => {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from('feature_roadmap_links')
       .select(`
