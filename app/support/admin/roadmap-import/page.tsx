@@ -272,24 +272,21 @@ export default function RoadmapImportPage() {
           .eq('title', row.title)
           .maybeSingle();
 
+        // Only include fields that exist in org_product_roadmap schema
         const itemData = {
           title: row.title,
           description: row.description || null,
           status: row.status,
           priority: row.priority,
-          source_type: row.source_type || 'admin',
-          owner: row.owner || null,
-          due_date: row.due_date || null,
-          version: row.version || null,
-          category: row.category || null,
-          notes: row.notes || null,
+          target_date: row.due_date || null,  // Map due_date to target_date
+          created_by: user.email,
+          org_id: null,  // NULL for general company roadmap items
           proposer: row.proposer || null,
           goal: row.goal || null,
           area: row.area || null,
           rationale: row.rationale || null,
           version_planned: row.version_planned || null,
           assigned_to: row.assigned_to || null,
-          created_by: user.email,
         };
 
         if (existingItem) {
