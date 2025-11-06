@@ -1,9 +1,9 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@source "**/*.{js,ts,jsx,tsx}";
-
-@theme {
-  /* Custom myRA colors */
+/* Custom myRA colors (configured in tailwind.config.js) */
+:root {
   --color-myra-primary: #6366f1;
   --color-myra-secondary: #8b5cf6;
   --color-myra-accent: #a78bfa;
