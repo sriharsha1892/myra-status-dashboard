@@ -22,7 +22,6 @@ export default function DashboardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [upcomingDemos, setUpcomingDemos] = useState<any[]>([]);
 
   const supabase = createClient();
@@ -41,10 +40,10 @@ export default function DashboardPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
+      // Optimized: Removed unused fetchRecentActivity() call
       await Promise.all([
         fetchTickets(),
         fetchOrganizations(),
-        fetchRecentActivity(),
         fetchUpcomingDemos(),
       ]);
     } finally {
@@ -101,21 +100,6 @@ export default function DashboardPage() {
       setOrganizations(data || []);
     } catch (error: any) {
       console.error('Error fetching organizations:', error);
-    }
-  };
-
-  const fetchRecentActivity = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('ticket_activities')
-        .select('*, tickets(ticket_number, organization)')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setRecentActivity(data || []);
-    } catch (error: any) {
-      console.error('Error fetching recent activity:', error);
     }
   };
 

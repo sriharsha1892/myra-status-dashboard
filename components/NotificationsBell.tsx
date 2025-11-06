@@ -42,8 +42,8 @@ export default function NotificationsBell() {
     fetchNotifications();
     fetchUserEmail();
 
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll for new notifications every 60 seconds (reduced from 30s for better performance)
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
 
