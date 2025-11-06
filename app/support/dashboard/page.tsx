@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [upcomingDemos, setUpcomingDemos] = useState<any[]>([]);
 
   const supabase = createClient();
 
@@ -44,6 +45,7 @@ export default function DashboardPage() {
         fetchTickets(),
         fetchOrganizations(),
         fetchRecentActivity(),
+        fetchUpcomingDemos(),
       ]);
     } finally {
       setLoading(false);
@@ -114,6 +116,33 @@ export default function DashboardPage() {
       setRecentActivity(data || []);
     } catch (error: any) {
       console.error('Error fetching recent activity:', error);
+    }
+  };
+
+  const fetchUpcomingDemos = async () => {
+    try {
+      const today = new Date().toISOString();
+
+      const { data, error} = await supabase
+        .from('meeting_notes')
+        .select(`
+          *,
+          trial_organizations (
+            org_id,
+            org_name,
+            org_domain,
+            account_manager_id
+          )
+        `)
+        .eq('meeting_type', 'demo')
+        .gte('meeting_date', today)
+        .order('meeting_date', { ascending: true })
+        .limit(10);
+
+      if (error) throw error;
+      setUpcomingDemos(data || []);
+    } catch (error: any) {
+      console.error('Error fetching upcoming demos:', error);
     }
   };
 
@@ -517,6 +546,80 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+
+            {/* Upcoming Demos Card - Admin Only */}
+            {role?.toLowerCase() === 'admin' && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-250">
+                <div className="px-6 py-4 border-b border-slate-200">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-600" />
+                    Upcoming Demos
+                  </h2>
+                </div>
+                <div className="p-4">
+                  {upcomingDemos.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-sm text-slate-500">No upcoming demos scheduled</p>
+                      <p className="text-xs text-slate-400 mt-1">Schedule demos from trial org pages</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                      {upcomingDemos.map((demo: any) => {
+                        const demoDate = new Date(demo.meeting_date);
+                        const daysUntil = differenceInDays(demoDate, new Date());
+                        const isToday = daysUntil === 0;
+                        const isTomorrow = daysUntil === 1;
+
+                        return (
+                          <div
+                            key={demo.id}
+                            className="p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                            onClick={() => router.push(`/support/trials/${demo.org_id}`)}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-sm font-semibold text-slate-900 truncate">
+                                    {demo.trial_organizations?.org_name || 'Unknown Org'}
+                                  </h4>
+                                  {isToday && (
+                                    <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full animate-pulse">
+                                      TODAY
+                                    </span>
+                                  )}
+                                  {isTomorrow && (
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
+                                      TOMORROW
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{format(demoDate, 'MMM d, yyyy • h:mm a')}</span>
+                                </div>
+                                {demo.conducted_by && (
+                                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                    <Users className="w-3 h-3" />
+                                    <span>By: {demo.conducted_by}</span>
+                                  </div>
+                                )}
+                                {demo.attendees && (
+                                  <p className="text-xs text-slate-500 mt-1 truncate">
+                                    Attendees: {demo.attendees}
+                                  </p>
+                                )}
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Smart Insights Card */}
             <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-300">
