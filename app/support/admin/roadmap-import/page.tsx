@@ -158,10 +158,30 @@ export default function RoadmapImportPage() {
 
           // Normalize status
           if (mappedField === 'status') {
-            const normalized = value?.toString().toLowerCase().replace(/[_\s]/g, '_');
-            if (STATUSES.includes(normalized)) {
-              value = normalized;
-            } else {
+            const normalized = value?.toString().toLowerCase().trim();
+
+            // Map common variations
+            const statusMap: { [key: string]: string } = {
+              'done': 'completed',
+              'complete': 'completed',
+              'finished': 'completed',
+              'closed': 'completed',
+              'in progress': 'in_progress',
+              'in-progress': 'in_progress',
+              'active': 'in_progress',
+              'working': 'in_progress',
+              'todo': 'planned',
+              'backlog': 'planned',
+              'new': 'planned',
+              'canceled': 'cancelled',
+              'suggested': 'suggested',
+              'idea': 'suggested',
+            };
+
+            value = statusMap[normalized] || normalized.replace(/[_\s-]/g, '_');
+
+            // Fallback if still not valid
+            if (!STATUSES.includes(value as any)) {
               value = 'planned';
             }
           }
@@ -291,8 +311,20 @@ export default function RoadmapImportPage() {
 
         successCount++;
       } catch (error: any) {
-        console.error('Import error for row:', row, error);
+        console.error('Import error for row:', row.title, error);
+        console.error('Full error details:', error.message, error.details, error.hint);
         failedCount++;
+
+        // Show detailed error for first failure
+        if (failedCount === 1) {
+          toast.error(
+            <div>
+              <div className="font-semibold">Import error on "{row.title}"</div>
+              <div className="text-xs mt-1">{error.message || error.toString()}</div>
+            </div>,
+            { duration: 8000 }
+          );
+        }
       }
     }
 
@@ -316,8 +348,8 @@ export default function RoadmapImportPage() {
       {
         title: 'Example Feature',
         description: 'Detailed description of the feature',
-        status: 'planned',
-        priority: 'medium',
+        status: 'planned',  // Options: planned, in_progress, completed, cancelled, suggested (or use: Done, Planned, In Progress, etc.)
+        priority: 'medium',  // Options: low, medium, high, critical
         category: 'UI/UX',
         goal: 'Improve user experience',
         area: 'Dashboard',
@@ -327,6 +359,21 @@ export default function RoadmapImportPage() {
         assigned_to: 'Dev Team',
         due_date: '2025-12-31',
         notes: 'Additional notes',
+      },
+      {
+        title: 'Another Feature Example',
+        description: 'Second example showing Done status',
+        status: 'Done',  // Will be converted to 'completed'
+        priority: 'High',  // Will be converted to 'high'
+        category: 'Backend',
+        goal: 'Performance',
+        area: 'API',
+        rationale: 'System optimization',
+        proposer: 'Dev Team',
+        version_planned: 'v2.0',
+        assigned_to: 'Backend Team',
+        due_date: '2025-06-30',
+        notes: 'Shows alternative status/priority formats',
       },
     ];
 
