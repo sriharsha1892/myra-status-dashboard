@@ -228,7 +228,7 @@ export default function UsersPage() {
     <div>
       <main className="flex-1 overflow-y-auto">
         {/* Modern Header */}
-        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 px-8 py-4 shadow-sm sticky top-0 z-10">
+        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 px-8 py-4 shadow-sm sticky top-0 z-[60]">
           <Breadcrumbs items={[
             { label: 'Dashboard', href: '/support/dashboard' },
             { label: 'User Management' }
