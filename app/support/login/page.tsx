@@ -6,16 +6,16 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-// Witty, contextual login messages
+// Engaging, motivating login messages
 const LOGIN_QUOTES = [
-  "Time to turn tickets into triumphs ✨",
-  "Your dashboard misses you 🎯",
-  "Let's make support legendary today 🚀",
-  "Ready to delight some customers? 💪",
-  "The trials await your magic touch 🔮",
-  "Coffee ready? Let's crush it ☕",
-  "Support never sleeps... but you should 😴",
-  "Another day, another delighted customer 🌟"
+  "Time to turn insights into impact",
+  "Your data-driven decisions await",
+  "Let's make strategic moves today",
+  "Ready to unlock enterprise intelligence?",
+  "The trials are calling your expertise",
+  "Another day to build something remarkable",
+  "Your dashboard: where strategy meets execution",
+  "Let's transform complexity into clarity"
 ]
 
 export default function LoginPage() {
@@ -283,7 +283,7 @@ export default function LoginPage() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span>Secured with 🔒 and good intentions</span>
+                <span>Protected by enterprise-grade security and rock-solid infrastructure</span>
               </p>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function LoginPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Forgot your password?</h3>
-                <p className="text-sm text-gray-600 mt-1">Happens to the best of us 🧠 We'll send you a reset link</p>
+                <p className="text-sm text-gray-600 mt-1">Happens to the best strategists. We'll send you a reset link</p>
               </div>
               <button
                 onClick={() => {
