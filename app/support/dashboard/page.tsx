@@ -6,106 +6,23 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
-import InlineStatusSelect from '@/components/support/inline/InlineStatusSelect';
-import InlinePrioritySelect from '@/components/support/inline/InlinePrioritySelect';
-import InlineAssigneeSelect from '@/components/support/inline/InlineAssigneeSelect';
-import { FileText, Clock, CheckCircle2, AlertTriangle, Search, Plus, TrendingUp, TrendingDown, Building2, Users, Rocket, Target } from 'lucide-react';
-import { SkeletonCard, SkeletonTable } from '@/components/Skeleton';
+import {
+  FileText, Clock, CheckCircle2, AlertTriangle, Search, Plus, TrendingUp,
+  TrendingDown, Building2, Users, Rocket, Target, Zap, Star, Award,
+  ArrowRight, Activity, Bot, Sparkles, Brain, ChevronRight
+} from 'lucide-react';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
-
-interface StatCardProps {
-  title: string;
-  value: number;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
-  icon: React.ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple';
-  subtitle?: string;
-}
-
-function StatCard({ title, value, trend, icon, variant = 'default', subtitle }: StatCardProps) {
-  // Asana-style color schemes - clean and minimal
-  const variantStyles = {
-    default: {
-      iconBg: 'bg-slate-50',
-      iconColor: 'text-slate-700',
-      accentColor: 'text-slate-900',
-    },
-    success: {
-      iconBg: 'bg-emerald-50',
-      iconColor: 'text-emerald-600',
-      accentColor: 'text-emerald-900',
-    },
-    warning: {
-      iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-600',
-      accentColor: 'text-amber-900',
-    },
-    danger: {
-      iconBg: 'bg-rose-50',
-      iconColor: 'text-rose-600',
-      accentColor: 'text-rose-900',
-    },
-    info: {
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      accentColor: 'text-blue-900',
-    },
-    purple: {
-      iconBg: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-      accentColor: 'text-purple-900',
-    },
-  };
-
-  const styles = variantStyles[variant];
-
-  return (
-    <div className="relative bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 group">
-      {/* Content */}
-      <div className="flex items-start justify-between mb-4">
-        <div className={`${styles.iconBg} p-2.5 rounded-lg ${styles.iconColor}`}>
-          {icon}
-        </div>
-        {trend && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md">
-            {trend.isPositive ? (
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2} />
-            ) : (
-              <TrendingDown className="w-3.5 h-3.5 text-rose-600" strokeWidth={2} />
-            )}
-            <span className={`text-xs font-medium ${trend.isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-              {trend.value}%
-            </span>
-          </div>
-        )}
-      </div>
-      <div>
-        <p className={`text-3xl font-semibold ${styles.accentColor} mb-1.5 tracking-tight`}>{value.toLocaleString()}</p>
-        <p className="text-sm font-medium text-slate-600">{title}</p>
-        {subtitle && (
-          <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function DashboardPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Organizations state - moved to top to avoid conditional hook calls
   const [organizations, setOrganizations] = useState<any[]>([]);
-  const [orgLoading, setOrgLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   const supabase = createClient();
 
@@ -115,36 +32,26 @@ export default function DashboardPage() {
       return;
     }
 
-    // Fetch tickets as soon as user is authenticated
-    if (user && !authLoading && (role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin')) {
-      fetchTickets();
+    if (user && !authLoading) {
+      fetchAllData();
     }
   }, [user, authLoading, role, router]);
 
-  // Fetch organizations
-  useEffect(() => {
-    if (user && !authLoading) {
-      fetchOrganizations();
-    }
-  }, [user, authLoading, role]);
-
-  const filteredTickets = tickets.filter((ticket) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        ticket.ticket_number.toLowerCase().includes(query) ||
-        ticket.organization.toLowerCase().includes(query) ||
-        ticket.user_name.toLowerCase().includes(query) ||
-        ticket.description.toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
-
-  const fetchTickets = async () => {
+  const fetchAllData = async () => {
     setLoading(true);
     try {
-      // For AMs: Get their org IDs first, then filter tickets
+      await Promise.all([
+        fetchTickets(),
+        fetchOrganizations(),
+        fetchRecentActivity(),
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTickets = async () => {
+    try {
       if (role?.toLowerCase() === 'account_manager') {
         const { data: userOrgs } = await supabase
           .from('trial_organizations')
@@ -152,10 +59,8 @@ export default function DashboardPage() {
           .eq('account_manager_id', user?.id);
 
         const orgIds = (userOrgs || []).map((org: any) => org.org_id);
-
         if (orgIds.length === 0) {
           setTickets([]);
-          setLoading(false);
           return;
         }
 
@@ -168,7 +73,6 @@ export default function DashboardPage() {
         if (error) throw error;
         setTickets(data || []);
       } else {
-        // Admin/Product: Show all tickets
         const { data, error } = await supabase
           .from('tickets')
           .select('*')
@@ -179,167 +83,13 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Error fetching tickets:', error);
-      toast.error('Failed to load tickets');
-    } finally {
-      setLoading(false);
     }
   };
-
-  const handleStatusChange = async (ticketId: string, newStatus: string) => {
-    const ticket = tickets.find((t) => t.id === ticketId);
-    if (!ticket) return;
-
-    const oldStatus = ticket.status;
-    setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t)));
-
-    try {
-      const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('tickets')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-          resolved_at: newStatus === 'Resolved' ? new Date().toISOString() : null,
-        })
-        .eq('id', ticketId);
-
-      if (error) throw error;
-
-      await supabase.from('ticket_activities')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .insert({
-          ticket_id: ticketId,
-          user_id: user?.id || null,
-          activity_type: 'status_changed',
-        old_value: oldStatus,
-        new_value: newStatus,
-      });
-
-      toast.success(`Status updated to ${newStatus}`);
-    } catch (error: any) {
-      console.error('Error updating status:', error);
-      setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, status: oldStatus } : t)));
-      toast.error('Failed to update status');
-      throw error;
-    }
-  };
-
-  const handlePriorityChange = async (ticketId: string, newPriority: string) => {
-    const ticket = tickets.find((t) => t.id === ticketId);
-    if (!ticket) return;
-
-    const oldPriority = ticket.priority;
-    setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, priority: newPriority } : t)));
-
-    try {
-      const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('tickets')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({
-          priority: newPriority,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', ticketId);
-
-      if (error) throw error;
-      toast.success(`Priority updated to ${newPriority}`);
-    } catch (error: any) {
-      console.error('Error updating priority:', error);
-      setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, priority: oldPriority } : t)));
-      toast.error('Failed to update priority');
-      throw error;
-    }
-  };
-
-  const handleAssigneeChange = async (ticketId: string, newAssigneeId: string | null) => {
-    const ticket = tickets.find((t) => t.id === ticketId);
-    if (!ticket) return;
-
-    const oldAssigneeId = ticket.assigned_to;
-    setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, assigned_to: newAssigneeId } : t)));
-
-    try {
-      const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('tickets')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({
-          assigned_to: newAssigneeId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', ticketId);
-
-      if (error) throw error;
-
-      await supabase.from('ticket_activities')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .insert({
-          ticket_id: ticketId,
-          user_id: user?.id || null,
-          activity_type: 'assigned',
-          old_value: oldAssigneeId,
-          new_value: newAssigneeId,
-        });
-
-      if (newAssigneeId && user?.id) {
-        await supabase.from('notifications')
-          // @ts-ignore - Supabase typing issue with dynamic columns
-          // -ignore - Supabase typing issue with dynamic columns
-
-          .insert({
-            user_id: newAssigneeId,
-            ticket_id: ticketId,
-            type: 'assigned',
-            message: `You have been assigned to ticket ${ticket.ticket_number}`,
-          });
-      }
-
-      toast.success(newAssigneeId ? 'Assignee updated' : 'Ticket unassigned');
-    } catch (error: any) {
-      console.error('Error updating assignee:', error);
-      setTickets(tickets.map((t) => (t.id === ticketId ? { ...t, assigned_to: oldAssigneeId } : t)));
-      toast.error('Failed to update assignee');
-      throw error;
-    }
-  };
-
-  // Don't render anything while auth is loading - let layout handle it
-  if (authLoading || !user) {
-    return null;
-  }
-
-  if (role?.toLowerCase() !== 'team' && role?.toLowerCase() !== 'admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Access Denied</h2>
-          <p className="text-sm text-slate-600">You don't have permission to view this page.</p>
-        </div>
-      </div>
-    );
-  }
 
   const fetchOrganizations = async () => {
-    setOrgLoading(true);
     try {
-      let query = supabase.from('trial_organizations').select('*');
+      let query = supabase.from('trial_organizations').select('*').order('created_at', { ascending: false });
 
-      // Role-based filtering
       if (role?.toLowerCase() === 'account_manager') {
         query = query.eq('account_manager_id', user?.id);
       }
@@ -349,436 +99,505 @@ export default function DashboardPage() {
       setOrganizations(data || []);
     } catch (error: any) {
       console.error('Error fetching organizations:', error);
-      toast.error('Failed to load organizations');
-    } finally {
-      setOrgLoading(false);
     }
   };
 
-  // Calculate stats
+  const fetchRecentActivity = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ticket_activities')
+        .select('*, tickets(ticket_number, organization)')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setRecentActivity(data || []);
+    } catch (error: any) {
+      console.error('Error fetching recent activity:', error);
+    }
+  };
+
+  if (authLoading || !user) {
+    return null;
+  }
+
+  // Calculate smart metrics
   const totalTickets = tickets.length;
   const openTickets = tickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length;
-  const resolvedTickets = tickets.filter((t) => t.status === 'Resolved').length;
-  const criticalTickets = tickets.filter((t) => t.priority === 'Critical').length;
+  const criticalTickets = tickets.filter((t) => t.priority === 'Critical' && !['Resolved', 'Closed'].includes(t.status)).length;
+  const myTickets = tickets.filter((t) => t.assigned_to === user?.id).length;
 
-  // Organization stats
-  const totalOrgs = organizations.length;
   const activeTrials = organizations.filter((org) =>
-    org.trial_status === 'active' || org.trial_status === 'requested'
+    org.org_lifecycle_stage === 'trial_active'
   ).length;
-  const prospectOrgs = organizations.filter((org) =>
-    org.org_lifecycle_stage === 'prospect'
+
+  const hotLeads = organizations.filter((org) =>
+    org.engagement_score > 75 && org.org_lifecycle_stage === 'trial_active'
   ).length;
-  const customerOrgs = organizations.filter((org) =>
-    org.org_lifecycle_stage === 'customer'
+
+  const atRiskTrials = organizations.filter((org) =>
+    org.engagement_score < 30 && org.org_lifecycle_stage === 'trial_active'
   ).length;
+
+  // Ending soon trials (within 7 days)
+  const endingSoonTrials = organizations.filter((org) => {
+    if (!org.trial_end_date || org.org_lifecycle_stage !== 'trial_active') return false;
+    const daysLeft = differenceInDays(new Date(org.trial_end_date), new Date());
+    return daysLeft > 0 && daysLeft <= 7;
+  }).length;
+
+  // Get greeting based on time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  // Get personalized message based on role and data
+  const getPersonalizedMessage = () => {
+    if (criticalTickets > 0) {
+      return `You have ${criticalTickets} critical ${criticalTickets === 1 ? 'ticket' : 'tickets'} that need attention 🔥`;
+    }
+    if (endingSoonTrials > 0) {
+      return `${endingSoonTrials} trials ending soon - time to close deals! ⏰`;
+    }
+    if (hotLeads > 0) {
+      return `${hotLeads} hot ${hotLeads === 1 ? 'lead' : 'leads'} ready to convert 🚀`;
+    }
+    if (openTickets === 0 && activeTrials === 0) {
+      return "Everything's under control. Time to build something new! 🎯";
+    }
+    if (openTickets === 0) {
+      return "Inbox zero achieved. You're a legend! 🏆";
+    }
+    return `${openTickets} tickets in progress. Keep compounding! 💪`;
+  };
+
+  // Naval-style wisdom for empty states
+  const getEmptyStateWisdom = () => {
+    const wisdom = [
+      "Specific knowledge is found by pursuing your curiosity. Start with a ticket.",
+      "Leverage comes from code, capital, and people. Create your first org.",
+      "Play long-term games with long-term people. Build your pipeline.",
+      "Reading is faster than listening. Writing is faster than speaking. Watch less, do more.",
+    ];
+    return wisdom[Math.floor(Math.random() * wisdom.length)];
+  };
 
   return (
-    <main className="flex-1 flex flex-col overflow-hidden bg-slate-50">
-        {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-              <p className="text-sm text-slate-600 mt-1">Welcome back, {user?.email?.split('@')[0]}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={2} />
-                <input
-                  type="text"
-                  placeholder="Search tickets, organizations, users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-96 h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                />
-              </div>
-              <button
-                onClick={() => router.push('/support/submit')}
-                className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" strokeWidth={2} />
-                New Ticket
-              </button>
-            </div>
-          </div>
-        </header>
+    <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Gradient background with glassmorphism */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/5 to-pink-600/10" />
+        <div className="absolute inset-0 backdrop-blur-3xl" style={{ maskImage: 'linear-gradient(to bottom, transparent, black)' }} />
 
-        <div className="flex-1 overflow-y-auto p-8">
-          {loading || orgLoading ? (
-            <>
-              {/* Skeleton for metric cards */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </div>
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-                <SkeletonCard />
-              </div>
-              {/* Skeleton for table */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200">
-                  <div className="h-4 w-32 bg-slate-200 rounded animate-pulse"></div>
+        <div className="relative px-8 pt-12 pb-16">
+          <div className="max-w-7xl mx-auto">
+            {/* Greeting & Smart Insight */}
+            <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-2">
+                {getGreeting()}, {user?.email?.split('@')[0] || 'there'}
+              </h1>
+              <p className="text-lg text-slate-600 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-500" />
+                {getPersonalizedMessage()}
+              </p>
+            </div>
+
+            {/* Key Metrics - Glassmorphism Cards */}
+            <div className="grid grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+              {/* Active Trials */}
+              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                   onClick={() => router.push('/support/trials')}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30">
+                    <Rocket className="w-6 h-6" strokeWidth={2} />
+                  </div>
+                  {activeTrials > 0 && (
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-50 rounded-full">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <span className="text-xs font-bold text-purple-600">Live</span>
+                    </div>
+                  )}
                 </div>
-                <SkeletonTable rows={8} />
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Key Metrics - Focused view */}
-              <div className="grid grid-cols-4 gap-4 mb-5">
-                <StatCard
-                  title="Active Trials"
-                  value={activeTrials}
-                  icon={<Rocket className="w-5 h-5" strokeWidth={2} />}
-                  variant="purple"
-                  subtitle="Currently running"
-                />
-                <StatCard
-                  title="Open Tickets"
-                  value={openTickets}
-                  icon={<Clock className="w-5 h-5" strokeWidth={2} />}
-                  variant="warning"
-                  subtitle="Needs attention"
-                />
-                <StatCard
-                  title="Critical Tickets"
-                  value={criticalTickets}
-                  icon={<AlertTriangle className="w-5 h-5" strokeWidth={2} />}
-                  variant="danger"
-                  subtitle="High priority"
-                />
-                {/* Show different 4th card based on context */}
-                {criticalTickets > 0 || openTickets > 10 ? (
-                  <StatCard
-                    title="Resolved This Week"
-                    value={resolvedTickets}
-                    icon={<CheckCircle2 className="w-5 h-5" strokeWidth={2} />}
-                    variant="success"
-                    subtitle="Completed issues"
-                  />
-                ) : (
-                  <StatCard
-                    title={role?.toLowerCase() === 'account_manager' ? "My Organizations" : "Total Organizations"}
-                    value={totalOrgs}
-                    icon={<Building2 className="w-5 h-5" strokeWidth={2} />}
-                    variant="info"
-                    subtitle="Across all stages"
-                  />
+                <p className="text-3xl font-bold text-slate-900 mb-1">{activeTrials}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Active Trials</p>
+                {hotLeads > 0 && (
+                  <p className="text-xs text-purple-600 font-medium flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    {hotLeads} hot leads
+                  </p>
                 )}
               </div>
 
-              {/* Tickets Table */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                {/* Table Header */}
-                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                  <h2 className="text-sm font-medium text-slate-700 uppercase tracking-wide">Recent Tickets</h2>
-                  {filteredTickets.length > 7 && (
-                    <button
-                      onClick={() => router.push('/support/tickets')}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                    >
-                      View All ({filteredTickets.length})
-                    </button>
+              {/* Critical Tickets */}
+              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                   onClick={() => router.push('/support/tickets?priority=Critical')}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30">
+                    <AlertTriangle className="w-6 h-6" strokeWidth={2} />
+                  </div>
+                  {criticalTickets > 0 && (
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-rose-50 rounded-full animate-pulse">
+                      <Zap className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-xs font-bold text-rose-600">Urgent</span>
+                    </div>
                   )}
                 </div>
-
-                {filteredTickets.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="text-center max-w-md">
-                  <h3 className="text-base font-semibold text-slate-900 mb-2">
-                    {searchQuery ? 'No tickets found' : 'No tickets yet'}
-                  </h3>
-                  <p className="text-sm text-slate-600 mb-6">
-                    {searchQuery
-                      ? 'Try adjusting your search terms.'
-                      : 'Get started by creating your first support ticket.'}
+                <p className="text-3xl font-bold text-slate-900 mb-1">{criticalTickets}</p>
+                <p className="text-sm font-medium text-slate-600">Critical Tickets</p>
+                {criticalTickets === 0 && (
+                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    All clear!
                   </p>
-                  {!searchQuery && (
-                    <button
-                      onClick={() => router.push('/support/submit')}
-                      className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" strokeWidth={2} />
-                      Create First Ticket
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Ticket
-                      </th>
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Organization
-                      </th>
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Status
-                      </th>
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Priority
-                      </th>
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Assignee
-                      </th>
-                      <th className="h-12 px-6 text-left text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Updated
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTickets.slice(0, 7).map((ticket, index) => (
-                      <tr
-                        key={ticket.id}
-                        className="border-t border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
-                      >
-                        <td
-                          className="py-4 px-6"
-                          onClick={() => router.push(`/support/tickets/${ticket.id}`)}
-                        >
-                          <div className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors">
-                            {ticket.ticket_number}
-                          </div>
-                          <div className="text-sm text-slate-600 mt-0.5 truncate max-w-xs" title={ticket.description}>
-                            {ticket.description}
-                          </div>
-                        </td>
-                        <td
-                          className="py-4 px-6"
-                          onClick={() => router.push(`/support/tickets/${ticket.id}`)}
-                        >
-                          <div className="text-sm text-slate-900">{ticket.organization}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <InlineStatusSelect
-                            value={ticket.status}
-                            ticketId={ticket.id}
-                            onChange={handleStatusChange}
-                          />
-                        </td>
-                        <td className="py-4 px-6">
-                          <InlinePrioritySelect
-                            value={ticket.priority}
-                            ticketId={ticket.id}
-                            onChange={handlePriorityChange}
-                          />
-                        </td>
-                        <td className="py-4 px-6">
-                          <InlineAssigneeSelect
-                            value={ticket.assigned_to}
-                            ticketId={ticket.id}
-                            onChange={handleAssigneeChange}
-                          />
-                        </td>
-                        <td
-                          className="py-4 px-6 text-sm text-slate-600"
-                          onClick={() => router.push(`/support/tickets/${ticket.id}`)}
-                        >
-                          {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                )}
               </div>
 
-              {/* Charts Section */}
-              <div className="grid grid-cols-2 gap-6 mt-6">
-                {/* Ticket Status Chart */}
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-6">Tickets by Status</h3>
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Open', count: tickets.filter(t => t.status === 'Open').length, color: 'bg-blue-500' },
-                      { label: 'In Progress', count: tickets.filter(t => t.status === 'In Progress').length, color: 'bg-yellow-500' },
-                      { label: 'Resolved', count: tickets.filter(t => t.status === 'Resolved').length, color: 'bg-green-500' },
-                      { label: 'Closed', count: tickets.filter(t => t.status === 'Closed').length, color: 'bg-slate-400' },
-                    ].map((status) => {
-                      const percentage = totalTickets > 0 ? (status.count / totalTickets) * 100 : 0;
-                      return (
-                        <div key={status.label}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-700">{status.label}</span>
-                            <span className="text-sm font-bold text-slate-900">{status.count}</span>
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className={`h-2.5 rounded-full ${status.color} transition-all duration-500`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })}
+              {/* Open Tickets */}
+              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                   onClick={() => router.push('/support/tickets')}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30">
+                    <Clock className="w-6 h-6" strokeWidth={2} />
                   </div>
                 </div>
-
-                {/* Organizations by Lifecycle Stage */}
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-6">Organizations by Stage</h3>
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Prospect', count: prospectOrgs, color: 'bg-purple-500' },
-                      { label: 'Trial Active', count: activeTrials, color: 'bg-blue-500' },
-                      { label: 'Customer', count: customerOrgs, color: 'bg-green-500' },
-                    ].map((stage) => {
-                      const percentage = totalOrgs > 0 ? (stage.count / totalOrgs) * 100 : 0;
-                      return (
-                        <div key={stage.label}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-700">{stage.label}</span>
-                            <span className="text-sm font-bold text-slate-900">{stage.count}</span>
-                          </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className={`h-2.5 rounded-full ${stage.color} transition-all duration-500`}
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-1">{openTickets}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Open Tickets</p>
+                {myTickets > 0 && (
+                  <p className="text-xs text-amber-600 font-medium">
+                    {myTickets} assigned to you
+                  </p>
+                )}
               </div>
 
-              {/* Quick Actions & Recent Activity Section */}
-              <div className="grid grid-cols-3 gap-6 mt-6">
-                {/* Quick Actions */}
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">Quick Actions</h3>
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => router.push('/support/trials/new')}
-                      className="w-full flex items-center gap-3 p-3 text-left bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
-                    >
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                        <Building2 className="w-5 h-5 text-blue-600" strokeWidth={2} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">New Organization</p>
-                        <p className="text-xs text-slate-500">Create trial org</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => router.push('/support/submit')}
-                      className="w-full flex items-center gap-3 p-3 text-left bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
-                    >
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                        <Plus className="w-5 h-5 text-green-600" strokeWidth={2} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">New Ticket</p>
-                        <p className="text-xs text-slate-500">Create support ticket</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => router.push('/support/trials')}
-                      className="w-full flex items-center gap-3 p-3 text-left bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group"
-                    >
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                        <FileText className="w-5 h-5 text-purple-600" strokeWidth={2} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">View All Orgs</p>
-                        <p className="text-xs text-slate-500">Browse organizations</p>
-                      </div>
-                    </button>
+              {/* At Risk Trials */}
+              <div className="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-2xl p-6 hover:bg-white/80 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                   onClick={() => router.push('/support/trials')}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30">
+                    <Target className="w-6 h-6" strokeWidth={2} />
                   </div>
                 </div>
-
-                {/* Recent Organizations */}
-                <div className="col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Recent Organizations</h3>
-                    <button
-                      onClick={() => router.push('/support/trials')}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      View All →
-                    </button>
-                  </div>
-                  {organizations.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" strokeWidth={1.5} />
-                      <p className="text-sm text-slate-600">No organizations yet</p>
-                      <button
-                        onClick={() => router.push('/support/trials/new')}
-                        className="mt-3 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Create your first organization →
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {organizations.slice(0, 5).map((org) => (
-                        <button
-                          key={org.org_id}
-                          onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-slate-50 rounded-lg transition-colors group"
-                        >
-                          {org.logo_url ? (
-                            <img
-                              src={org.logo_url}
-                              alt={org.org_name}
-                              className="w-10 h-10 rounded-lg object-cover border border-slate-200"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg border-2 border-slate-200 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                              <span className="text-xs font-bold text-slate-600">
-                                {org.org_name.split(' ').map((word: string) => word[0]).join('').toUpperCase().substring(0, 2)}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                              {org.org_name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                org.trial_status === 'active'
-                                  ? 'bg-green-100 text-green-700'
-                                  : org.trial_status === 'requested'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-slate-100 text-slate-600'
-                              }`}>
-                                {org.trial_status || 'Unknown'}
-                              </span>
-                              {org.domain && (
-                                <span className="text-xs text-slate-500">
-                                  {org.domain}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            {formatDistanceToNow(new Date(org.created_at), { addSuffix: true })}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-1">{atRiskTrials}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">At Risk</p>
+                {endingSoonTrials > 0 && (
+                  <p className="text-xs text-orange-600 font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {endingSoonTrials} ending soon
+                  </p>
+                )}
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="px-8 py-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-3 gap-6">
+          {/* Left Column - Recent Activity Feed */}
+          <div className="col-span-2 space-y-6">
+            {/* Recent Tickets */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-200">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-base font-bold text-slate-900">Recent Activity</h2>
+                </div>
+                <button
+                  onClick={() => router.push('/support/tickets')}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 group"
+                >
+                  View All
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+              {tickets.length === 0 ? (
+                <div className="px-6 py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Bot className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No tickets yet</h3>
+                  <p className="text-sm text-slate-600 mb-1">{getEmptyStateWisdom()}</p>
+                  <button
+                    onClick={() => router.push('/support/submit')}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create First Ticket
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {tickets.slice(0, 6).map((ticket, index) => (
+                    <div
+                      key={ticket.id}
+                      className="px-6 py-4 hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                      onClick={() => router.push(`/support/tickets/${ticket.id}`)}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Priority indicator */}
+                        <div className={`w-1.5 h-1.5 rounded-full mt-2 ${
+                          ticket.priority === 'Critical' ? 'bg-rose-500 animate-pulse' :
+                          ticket.priority === 'High' ? 'bg-orange-500' :
+                          ticket.priority === 'Medium' ? 'bg-amber-500' :
+                          'bg-slate-300'
+                        }`} />
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {ticket.ticket_number}
+                            </span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              ticket.status === 'Open' ? 'bg-blue-100 text-blue-700' :
+                              ticket.status === 'In Progress' ? 'bg-amber-100 text-amber-700' :
+                              ticket.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-700 line-clamp-1 mb-1">
+                            {ticket.description}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span>{ticket.organization}</span>
+                            <span>•</span>
+                            <span>{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}</span>
+                          </div>
+                        </div>
+
+                        <ArrowRight className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Organizations */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-left duration-700 delay-300">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-purple-600" />
+                  <h2 className="text-base font-bold text-slate-900">Trial Organizations</h2>
+                </div>
+                <button
+                  onClick={() => router.push('/support/trials')}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 group"
+                >
+                  View All
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+              {organizations.length === 0 ? (
+                <div className="px-6 py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
+                    <Building2 className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No organizations yet</h3>
+                  <p className="text-sm text-slate-600 mb-1">Build your portfolio. Start compounding relationships.</p>
+                  <button
+                    onClick={() => router.push('/support/trials/new')}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create First Organization
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {organizations.slice(0, 5).map((org, index) => (
+                    <div
+                      key={org.org_id}
+                      className="px-6 py-4 hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                      onClick={() => router.push(`/support/trials/${org.org_id}`)}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Organization logo/avatar */}
+                        <div className="w-12 h-12 rounded-xl border-2 border-slate-200 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 flex-shrink-0">
+                          <span className="text-sm font-bold text-slate-700">
+                            {org.org_name.split(' ').map((word: string) => word[0]).join('').toUpperCase().substring(0, 2)}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 group-hover:text-purple-600 transition-colors truncate">
+                            {org.org_name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              org.org_lifecycle_stage === 'trial_active' ? 'bg-emerald-100 text-emerald-700' :
+                              org.org_lifecycle_stage === 'prospect' ? 'bg-blue-100 text-blue-700' :
+                              org.org_lifecycle_stage === 'converted' ? 'bg-purple-100 text-purple-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {org.org_lifecycle_stage?.replace('_', ' ')}
+                            </span>
+                            {org.engagement_score && (
+                              <span className={`text-xs font-medium ${
+                                org.engagement_score >= 75 ? 'text-emerald-600' :
+                                org.engagement_score >= 50 ? 'text-amber-600' :
+                                'text-rose-600'
+                              }`}>
+                                {org.engagement_score}% engaged
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <ArrowRight className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - Quick Actions & Insights */}
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-200">
+              <div className="px-6 py-4 border-b border-slate-200">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-500" />
+                  Quick Actions
+                </h2>
+              </div>
+              <div className="p-4 space-y-2">
+                <button
+                  onClick={() => router.push('/support/submit')}
+                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl transition-all group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <Plus className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900">New Ticket</p>
+                    <p className="text-xs text-slate-600">Report an issue</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <button
+                  onClick={() => router.push('/support/trials/new')}
+                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-xl transition-all group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <Building2 className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900">New Organization</p>
+                    <p className="text-xs text-slate-600">Add trial org</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <button
+                  onClick={() => router.push('/support/reports')}
+                  className="w-full flex items-center gap-3 p-3 text-left bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl transition-all group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                    <Activity className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900">View Reports</p>
+                    <p className="text-xs text-slate-600">Analytics & insights</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
+
+            {/* Smart Insights Card */}
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-right duration-700 delay-300">
+              <div className="p-6 text-white">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold mb-1">AI Insights</h3>
+                    <p className="text-xs text-indigo-100">Based on your data</p>
+                  </div>
+                </div>
+
+                {criticalTickets > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      You have <span className="font-bold">{criticalTickets} critical tickets</span> that need immediate attention.
+                    </p>
+                    <button
+                      onClick={() => router.push('/support/tickets?priority=Critical')}
+                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                    >
+                      View Critical Tickets
+                    </button>
+                  </div>
+                ) : hotLeads > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      <span className="font-bold">{hotLeads} organizations</span> are highly engaged and ready to convert. Strike while the iron is hot!
+                    </p>
+                    <button
+                      onClick={() => router.push('/support/trials')}
+                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                    >
+                      View Hot Leads
+                    </button>
+                  </div>
+                ) : endingSoonTrials > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      <span className="font-bold">{endingSoonTrials} trials</span> are ending within 7 days. Perfect time to follow up!
+                    </p>
+                    <button
+                      onClick={() => router.push('/support/trials')}
+                      className="w-full px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-lg transition-colors shadow-lg"
+                    >
+                      View Ending Trials
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      Everything looks good! Your team is {openTickets === 0 ? 'at inbox zero' : 'making solid progress'}. Keep compounding those wins.
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-indigo-100">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span>You're doing great work!</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Fun Naval Quote Card */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg p-6 animate-in fade-in slide-in-from-right duration-700 delay-400">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-slate-100 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-700 italic mb-2">
+                    "{getEmptyStateWisdom()}"
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium">— Naval Ravikant</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
