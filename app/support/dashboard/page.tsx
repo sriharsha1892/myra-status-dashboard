@@ -12,6 +12,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import InlineStatusSelect from '@/components/support/inline/InlineStatusSelect';
 import InlinePrioritySelect from '@/components/support/inline/InlinePrioritySelect';
 import InlineAssigneeSelect from '@/components/support/inline/InlineAssigneeSelect';
+import AtRiskCustomers from '@/components/support/AtRiskCustomers';
 import { FileText, Clock, CheckCircle2, AlertTriangle, Search, Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { SkeletonCard, SkeletonTable } from '@/components/Skeleton';
 
@@ -366,6 +367,11 @@ export default function DashboardPage() {
                   value={criticalTickets}
                   icon={<AlertTriangle className="w-5 h-5" strokeWidth={2} />}
                 />
+              </div>
+
+              {/* At-Risk Customers Section */}
+              <div className="mb-6">
+                <AtRiskCustomers />
               </div>
 
               {/* Tickets Table */}
