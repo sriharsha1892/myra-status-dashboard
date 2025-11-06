@@ -137,30 +137,6 @@ export default function SupportLayout({
         )}
       </Toaster>
 
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors"
-      >
-        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
-
-      {/* Mobile Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
       {/* Hamburger Button - Mobile Only */}
       <button
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -173,6 +149,14 @@ export default function SupportLayout({
         )}
       </button>
 
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Modern Sidebar */}
       <aside className={`
         w-64 bg-white border-r border-slate-200 flex flex-col
@@ -180,8 +164,8 @@ export default function SupportLayout({
         transform transition-transform duration-300 ease-in-out
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Logo Header with Notification Bell */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200 bg-white">
+        {/* Logo Header */}
+        <div className="h-16 px-5 flex items-center border-b border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
               <svg
@@ -216,10 +200,6 @@ export default function SupportLayout({
             <span className="text-base font-semibold text-slate-900">
               myRA AI
             </span>
-          </div>
-          {/* Notification Bell integrated in sidebar */}
-          <div className="flex items-center">
-            <NotificationsBell />
           </div>
         </div>
 
@@ -363,9 +343,15 @@ export default function SupportLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto lg:ml-0">
+      <main className="flex-1 overflow-y-auto lg:ml-0 relative">
         {/* Mobile header spacer */}
         <div className="lg:hidden h-16" />
+
+        {/* Notification Bell - Fixed top-right corner */}
+        <div className="fixed top-4 right-6 z-50">
+          <NotificationsBell />
+        </div>
+
         {children}
       </main>
     </div>
