@@ -105,7 +105,7 @@ export default function OrganizationDetailPage() {
       try {
         console.log('🔍 Fetching account managers from API...');
         const response = await fetch('/api/admin/users');
-        console.log('📡 API Response Status:', response.status);
+        console.log('📡 API Response Status for account managers:', response.status);
 
         if (response.ok) {
           const data = await response.json();
