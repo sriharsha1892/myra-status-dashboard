@@ -563,20 +563,262 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
 
-        {/* Board/Timeline views - Coming soon placeholders */}
+        {/* KANBAN BOARD VIEW - Fully Functional */}
         {viewMode === 'board' && (
-          <div className="text-center py-16">
-            <LayoutGrid className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Board View</h3>
-            <p className="text-sm text-slate-600">Kanban board coming soon</p>
+          <div className="grid grid-cols-5 gap-4">
+            {/* Suggested Column */}
+            <div className="bg-purple-50 rounded-xl p-4 border-2 border-purple-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <h3 className="font-semibold text-slate-900">Suggested</h3>
+                </div>
+                <span className="text-sm font-bold text-purple-600">
+                  {filteredItems.filter(i => i.status === 'suggested').length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredItems.filter(i => i.status === 'suggested').map(item => (
+                  <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-purple-100 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="text-sm font-medium text-slate-900 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                        {item.title}
+                      </h4>
+                      {item.priority !== 'low' && (
+                        <Flag className={`w-3 h-3 flex-shrink-0 ${COLORS.priority[item.priority].icon}`} />
+                      )}
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">{item.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.version_planned && (
+                        <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-medium">
+                          {item.version_planned}
+                        </span>
+                      )}
+                      {item.assigned_to && (
+                        <span className="text-xs text-slate-500">{item.assigned_to.split(',')[0]}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Planned Column */}
+            <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <h3 className="font-semibold text-slate-900">Planned</h3>
+                </div>
+                <span className="text-sm font-bold text-blue-600">
+                  {filteredItems.filter(i => i.status === 'planned').length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredItems.filter(i => i.status === 'planned').map(item => (
+                  <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-blue-100 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="text-sm font-medium text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                        {item.title}
+                      </h4>
+                      {item.priority !== 'low' && (
+                        <Flag className={`w-3 h-3 flex-shrink-0 ${COLORS.priority[item.priority].icon}`} />
+                      )}
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">{item.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.version_planned && (
+                        <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-medium">
+                          {item.version_planned}
+                        </span>
+                      )}
+                      {item.target_date && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {format(parseISO(item.target_date), 'MMM d')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* In Progress Column */}
+            <div className="bg-amber-50 rounded-xl p-4 border-2 border-amber-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="font-semibold text-slate-900">In Progress</h3>
+                </div>
+                <span className="text-sm font-bold text-amber-600">
+                  {filteredItems.filter(i => i.status === 'in_progress').length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredItems.filter(i => i.status === 'in_progress').map(item => (
+                  <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-amber-100 hover:shadow-md transition-shadow cursor-pointer group">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="text-sm font-medium text-slate-900 line-clamp-2 group-hover:text-amber-600 transition-colors">
+                        {item.title}
+                      </h4>
+                      {item.priority !== 'low' && (
+                        <Flag className={`w-3 h-3 flex-shrink-0 ${COLORS.priority[item.priority].icon}`} />
+                      )}
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-2">{item.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.assigned_to && (
+                        <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {item.assigned_to.split(',')[0]}
+                        </span>
+                      )}
+                      {item.target_date && (
+                        <span className="text-xs text-slate-500">{format(parseISO(item.target_date), 'MMM d')}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Completed Column */}
+            <div className="bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <h3 className="font-semibold text-slate-900">Completed</h3>
+                </div>
+                <span className="text-sm font-bold text-emerald-600">
+                  {filteredItems.filter(i => i.status === 'completed').length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredItems.filter(i => i.status === 'completed').map(item => (
+                  <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-emerald-100 hover:shadow-md transition-shadow cursor-pointer group opacity-80 hover:opacity-100">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="text-sm font-medium text-slate-900 line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                        {item.title}
+                      </h4>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    </div>
+                    {item.version_planned && (
+                      <span className="text-xs px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">
+                        {item.version_planned} Shipped
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Cancelled Column */}
+            <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <X className="w-4 h-4 text-slate-400" />
+                  <h3 className="font-semibold text-slate-600">Cancelled</h3>
+                </div>
+                <span className="text-sm font-bold text-slate-500">
+                  {filteredItems.filter(i => i.status === 'cancelled').length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {filteredItems.filter(i => i.status === 'cancelled').map(item => (
+                  <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-shadow cursor-pointer group opacity-60 hover:opacity-80">
+                    <h4 className="text-sm font-medium text-slate-600 line-clamp-2 mb-1">
+                      {item.title}
+                    </h4>
+                    {item.rationale && (
+                      <p className="text-xs text-slate-500 line-clamp-1">{item.rationale}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
+        {/* ANALYTICS VIEW - Fully Functional */}
         {viewMode === 'timeline' && (
-          <div className="text-center py-16">
-            <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Analytics View</h3>
-            <p className="text-sm text-slate-600">Detailed analytics coming soon</p>
+          <div className="space-y-6">
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="text-3xl font-bold mb-1">{analytics.planned}</div>
+                <div className="text-sm text-blue-100">Planned Items</div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 text-white">
+                <div className="text-3xl font-bold mb-1">{analytics.inProgress}</div>
+                <div className="text-sm text-amber-100">In Progress</div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white">
+                <div className="text-3xl font-bold mb-1">{analytics.completed}</div>
+                <div className="text-sm text-emerald-100">Completed</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-6 text-white">
+                <div className="text-3xl font-bold mb-1">{analytics.suggested}</div>
+                <div className="text-sm text-purple-100">Ideas</div>
+              </div>
+            </div>
+
+            {/* Breakdown by Goal */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Items by Goal</h3>
+              <div className="space-y-3">
+                {uniqueGoals.map(goal => {
+                  const count = filteredItems.filter(i => i.goal === goal).length;
+                  const percentage = (count / filteredItems.length) * 100;
+                  return (
+                    <div key={goal}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-slate-700">{goal}</span>
+                        <span className="text-sm text-slate-600">{count} items ({percentage.toFixed(0)}%)</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Breakdown by Area */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Items by Area</h3>
+              <div className="space-y-3">
+                {uniqueAreas.map(area => {
+                  const count = filteredItems.filter(i => i.area === area).length;
+                  const percentage = (count / filteredItems.length) * 100;
+                  return (
+                    <div key={area}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-slate-700">{area}</span>
+                        <span className="text-sm text-slate-600">{count} items ({percentage.toFixed(0)}%)</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
