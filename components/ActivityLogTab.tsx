@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import MentionTextEditor from '@/components/MentionTextEditor';
 
 interface ActivityLogTabProps {
   orgId: string;
@@ -71,15 +72,8 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
   // Form state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedTrialUser, setSelectedTrialUser] = useState<string>('');
-  const [noteText, setNoteText] = useState('');
   const [selectedRoadmap, setSelectedRoadmap] = useState<string>('');
-  const [mentions, setMentions] = useState<string[]>([]);
-
-  // @mention autocomplete state
-  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
-  const [mentionSearchQuery, setMentionSearchQuery] = useState('');
-  const [mentionCursorPosition, setMentionCursorPosition] = useState(0);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [editorKey, setEditorKey] = useState(0); // Key to reset editor after submit
 
   // Filter state
   const [filterCategory, setFilterCategory] = useState<string>('');
@@ -166,9 +160,14 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!selectedCategory || !noteText.trim()) {
-      toast.error('Please select a category and enter note text');
+  const handleSubmit = async (noteContent: string, mentionedUserIds: string[]) => {
+    if (!selectedCategory) {
+      toast.error('Please select a category');
+      return;
+    }
+
+    if (!noteContent || noteContent === '<p></p>') {
+      toast.error('Please enter note text');
       return;
     }
 
@@ -181,9 +180,9 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
           org_id: orgId,
           trial_user_id: selectedTrialUser || null,
           note_category: selectedCategory,
-          note_text: noteText,
+          note_text: noteContent, // Now HTML content
           linked_roadmap_id: selectedRoadmap || null,
-          mentions: mentions,
+          mentions: mentionedUserIds, // User IDs from editor
         }),
       });
 
@@ -197,9 +196,8 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
       // Reset form
       setSelectedCategory('');
       setSelectedTrialUser('');
-      setNoteText('');
       setSelectedRoadmap('');
-      setMentions([]);
+      setEditorKey(prev => prev + 1); // Reset editor by changing key
 
       // Refresh notes
       fetchData();
@@ -211,52 +209,6 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
     }
   };
 
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    const cursorPos = e.target.selectionStart;
-    setNoteText(text);
-
-    // Check if user typed '@' to trigger mention dropdown
-    const textBeforeCursor = text.substring(0, cursorPos);
-    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
-
-    if (lastAtSymbol !== -1) {
-      const textAfterAt = textBeforeCursor.substring(lastAtSymbol + 1);
-      // Only show dropdown if there's no space after @
-      if (!textAfterAt.includes(' ')) {
-        setMentionSearchQuery(textAfterAt.toLowerCase());
-        setMentionCursorPosition(lastAtSymbol);
-        setShowMentionDropdown(true);
-      } else {
-        setShowMentionDropdown(false);
-      }
-    } else {
-      setShowMentionDropdown(false);
-    }
-  };
-
-  const handleMentionSelect = (email: string) => {
-    // Insert mention into text
-    const beforeMention = noteText.substring(0, mentionCursorPosition);
-    const afterMention = noteText.substring(textareaRef.current?.selectionStart || noteText.length);
-    const newText = `${beforeMention}@${email} ${afterMention}`;
-
-    setNoteText(newText);
-
-    // Add to mentions array if not already there
-    if (!mentions.includes(email)) {
-      setMentions([...mentions, email]);
-    }
-
-    setShowMentionDropdown(false);
-    textareaRef.current?.focus();
-  };
-
-  const filteredMentionUsers = internalUsers.filter(
-    (u) =>
-      u.name.toLowerCase().includes(mentionSearchQuery) ||
-      u.email.toLowerCase().includes(mentionSearchQuery)
-  );
 
   const filteredNotes = notes.filter((note) => {
     if (filterCategory && note.note_category !== filterCategory) return false;
@@ -319,35 +271,6 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
           </select>
         </div>
 
-        {/* Note Text with @mentions */}
-        <div className="mb-4 relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Note *</label>
-          <textarea
-            ref={textareaRef}
-            value={noteText}
-            onChange={handleTextareaChange}
-            rows={4}
-            placeholder="Type your note here... Use @ to mention team members"
-            className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-
-          {/* @mention dropdown */}
-          {showMentionDropdown && filteredMentionUsers.length > 0 && (
-            <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              {filteredMentionUsers.slice(0, 5).map((user) => (
-                <button
-                  key={user.email}
-                  onClick={() => handleMentionSelect(user.email)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors"
-                >
-                  <div className="font-medium text-gray-900">{user.name}</div>
-                  <div className="text-xs text-gray-500">{user.email}</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Roadmap Link */}
         {roadmapItems.length > 0 && (
           <div className="mb-4">
@@ -367,15 +290,17 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
           </div>
         )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !selectedCategory || !noteText.trim()}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            {submitting ? 'Logging...' : 'Log Activity'}
-          </button>
+        {/* Note Text with Rich Text Editor */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Note *</label>
+          <MentionTextEditor
+            key={editorKey}
+            placeholder="Type your activity note here... Use @ to mention team members"
+            onSubmit={handleSubmit}
+            submitButtonText={submitting ? 'Logging...' : 'Log Activity'}
+            minHeight="120px"
+            showToolbar={true}
+          />
         </div>
       </div>
 
@@ -503,7 +428,10 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
                         </div>
                       )}
 
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{note.note_text}</p>
+                      <div
+                        className="text-sm text-gray-800 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: note.note_text }}
+                      />
 
                       {note.roadmap_items && (
                         <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-xs">
