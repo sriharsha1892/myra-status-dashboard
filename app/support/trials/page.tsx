@@ -11,6 +11,7 @@ import { format, differenceInDays, addDays } from 'date-fns';
 import Papa from 'papaparse';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import NavalLoadingBar from '@/components/NavalLoadingBar';
 import { showTrialUpdatedToast, showBulkActionToast, showExportSuccessToast } from '@/utils/navalToasts';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
@@ -39,7 +40,12 @@ export default function TrialOrganizationsPage() {
   const [showBulkAccountManagerModal, setShowBulkAccountManagerModal] = useState(false);
   const [showBulkTrialDatesModal, setShowBulkTrialDatesModal] = useState(false);
   const [showBulkStageModal, setShowBulkStageModal] = useState(false);
+  const [showQuickEditPanel, setShowQuickEditPanel] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{orgId: string, field: string} | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
 
   // Bulk operation form states
   const [bulkAccountManager, setBulkAccountManager] = useState('');
@@ -331,6 +337,72 @@ export default function TrialOrganizationsPage() {
     showExportSuccessToast({ customMessage: `Exported ${selectedOrgs.length} trial organizations` });
   };
 
+  // Inline editing functions
+  const handleStartEdit = (orgId: string, field: string, currentValue: any) => {
+    setEditingCell({ orgId, field });
+    setEditValue(currentValue?.toString() || '');
+  };
+
+  const handleInlineSave = async (orgId: string, field: string, value: any) => {
+    try {
+      const updateData: any = {
+        [field]: value,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('trial_organizations')
+        .update(updateData)
+        .eq('org_id', orgId);
+
+      if (error) throw error;
+
+      // Update local state
+      setOrganizations(organizations.map(org =>
+        org.org_id === orgId ? { ...org, [field]: value } : org
+      ));
+
+      const org = organizations.find(o => o.org_id === orgId);
+      showTrialUpdatedToast(org?.org_name || 'Organization');
+      setEditingCell(null);
+    } catch (error: any) {
+      console.error('Inline save error:', error);
+      toast.error('Failed to save changes');
+    }
+  };
+
+  // Fill down - copy value to all selected orgs
+  const handleFillDown = async (field: string, value: any) => {
+    if (selectedOrgIds.size === 0) {
+      toast.error('Please select organizations first');
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const updateData: any = {
+        [field]: value,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('trial_organizations')
+        .update(updateData)
+        .in('org_id', Array.from(selectedOrgIds));
+
+      if (error) throw error;
+
+      await fetchOrganizations();
+      showBulkActionToast(`Filled ${field} for`, selectedOrgIds.size);
+      setSelectedOrgIds(new Set());
+    } catch (error: any) {
+      console.error('Fill down error:', error);
+      toast.error('Failed to fill down values');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   // Calculate metrics
   const activeTrials = organizations.filter((org) => org.org_lifecycle_stage === 'trial_active').length;
   const hotLeads = organizations.filter((org) => org.engagement_score > 75).length;
@@ -382,6 +454,9 @@ export default function TrialOrganizationsPage() {
 
   return (
     <div>
+      {/* Naval Loading Bar */}
+      <NavalLoadingBar isLoading={loading || bulkProcessing} context="trials" />
+
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 px-8 py-4 shadow-sm sticky top-0 z-10">
@@ -404,15 +479,17 @@ export default function TrialOrganizationsPage() {
               </svg>
               <span>+ New Trial Org</span>
             </button>
-            <button
-              onClick={() => router.push('/support/trials/import')}
-              className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 hover:text-blue-600 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-200 hover:border-blue-300 active:scale-[0.98]"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span>Import Data</span>
-            </button>
+            {selectedOrgIds.size > 0 && (
+              <button
+                onClick={() => setShowQuickEditPanel(true)}
+                className="flex items-center gap-2 h-9 px-4 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Quick Edit ({selectedOrgIds.size})</span>
+              </button>
+            )}
             </div>
           </div>
         </header>
@@ -863,6 +940,111 @@ export default function TrialOrganizationsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Edit Panel - Slide in from right */}
+      {showQuickEditPanel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            onClick={() => setShowQuickEditPanel(false)}
+          />
+
+          {/* Sliding Panel */}
+          <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-md">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Quick Edit</h3>
+                  <p className="text-xs text-gray-600">{selectedOrgIds.size} organizations selected</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowQuickEditPanel(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Tip:</strong> Changes will be applied to all {selectedOrgIds.size} selected organizations
+                </p>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900">Bulk Actions</h4>
+
+                <button
+                  onClick={() => setShowBulkAccountManagerModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Assign Account Manager</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setShowBulkTrialDatesModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Update Trial Dates</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setShowBulkStageModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Change Stage</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={handleExportCSV}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Export to CSV</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+              <button
+                onClick={() => {
+                  setSelectedOrgIds(new Set());
+                  setShowQuickEditPanel(false);
+                }}
+                className="w-full h-10 px-4 bg-white hover:bg-gray-100 text-gray-700 text-sm font-medium rounded-lg transition-all border border-gray-300"
+              >
+                Clear Selection & Close
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Create Organization Modal */}
