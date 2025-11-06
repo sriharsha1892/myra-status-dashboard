@@ -26,8 +26,8 @@ export default function LoginPage() {
       return
     }
 
-    // Success - navigate to support trials
-    router.push('/support/trials')
+    // Success - layout will handle redirect automatically
+    // (see support/layout.tsx lines 39-44)
   }
 
   return (
