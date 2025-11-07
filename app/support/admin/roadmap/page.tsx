@@ -43,6 +43,9 @@ import {
   ArrowUp,
   ArrowRight,
 } from 'lucide-react';
+import VelocityDashboard from '@/components/roadmap/VelocityDashboard';
+import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
+import TimeLoggingModal from '@/components/roadmap/TimeLoggingModal';
 
 // Types
 type RoadmapItem = {
@@ -62,6 +65,12 @@ type RoadmapItem = {
   version_planned?: string;
   assigned_to?: string;
   org_id?: string;
+  // Time tracking fields
+  estimated_hours?: number;
+  actual_hours?: number;
+  progress_percentage?: number;
+  last_activity_at?: string;
+  days_since_activity?: number;
 };
 
 type ViewMode = 'list' | 'board' | 'timeline';
@@ -98,6 +107,10 @@ export default function WorldClassRoadmapPage() {
   const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('goal');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  // Time logging modal state
+  const [timeLogModalOpen, setTimeLogModalOpen] = useState(false);
+  const [selectedItemForTimeLog, setSelectedItemForTimeLog] = useState<RoadmapItem | null>(null);
+
   const supabase = createClient();
 
   // Fetch data
@@ -113,8 +126,9 @@ export default function WorldClassRoadmapPage() {
 
   const fetchRoadmapItems = async () => {
     try {
+      // Use productivity_metrics view for time tracking data
       const { data, error } = await supabase
-        .from('org_product_roadmap')
+        .from('roadmap_productivity_metrics')
         .select('*')
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
@@ -473,6 +487,11 @@ export default function WorldClassRoadmapPage() {
         </div>
       </div>
 
+      {/* Velocity Dashboard - Team Productivity Metrics */}
+      <div className="max-w-[1600px] mx-auto px-8 pt-6">
+        <VelocityDashboard />
+      </div>
+
       {/* CONTENT AREA - 32px spacing system */}
       <div className="max-w-[1600px] mx-auto px-8 py-8">
         {/* List View - Organic Crystal Formations */}
@@ -500,106 +519,27 @@ export default function WorldClassRoadmapPage() {
                   </button>
                 )}
 
-                {/* Items - Crystalline Nodes */}
+                {/* Items - Enhanced Cards with Time Tracking */}
                 {(groupBy === 'none' || expandedGroups.has(groupName)) && (
                   <div className="space-y-4 relative">
                     {/* Subtle connecting line */}
                     <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
 
-                    {items.map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="relative ml-6 bg-white/80 backdrop-blur-xl rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_16px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_16px_32px_rgba(0,0,0,0.04)] transition-all duration-300 cursor-pointer group hover:scale-[1.01] active:scale-[0.99]"
-                        style={{
-                          transformOrigin: 'left center',
-                        }}
-                      >
-                        {/* Organic edge glow on hover */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 via-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:via-transparent group-hover:to-purple-500/5 transition-all duration-300 pointer-events-none" />
-
+                    {items.map((item) => (
+                      <div key={item.id} className="relative ml-6">
                         {/* Node connector */}
                         <div className="absolute left-[-24px] top-1/2 w-6 h-px bg-gradient-to-r from-slate-200 to-transparent" />
-                        <div className="flex items-start gap-4 relative z-10">
-                          {/* Priority Indicator - Light Orb */}
-                          <div className="mt-1.5 relative">
-                            {item.priority === 'critical' && (
-                              <div className="w-2 h-2 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
-                            )}
-                            {item.priority === 'high' && (
-                              <div className="w-2 h-2 rounded-full bg-[#f59e0b] shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
-                            )}
-                            {item.priority === 'medium' && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-[#eab308]/70" />
-                            )}
-                            {item.priority === 'low' && (
-                              <div className="w-1 h-1 rounded-full bg-[#cbd5e1]" />
-                            )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-[15px] leading-[22px] font-medium text-[#0f172a] group-hover:text-[#2563eb] transition-all duration-300 tracking-[-0.01em]">
-                                  {item.title}
-                                </h4>
-                                {item.description && (
-                                  <p className="text-[13px] leading-[20px] text-[#64748b] mt-2 line-clamp-2 tracking-[-0.01em] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    {item.description}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Quick Actions - Progressive Reveal */}
-                              <div className="opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200">
-                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all duration-200 backdrop-blur-sm">
-                                  <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Metadata - Translucent Pills */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {/* Status - Light Temperature */}
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full backdrop-blur-md ${COLORS.status[item.status].bg} ${COLORS.status[item.status].border} border ${COLORS.status[item.status].text} shadow-sm`} style={{letterSpacing: '-0.01em'}}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${COLORS.status[item.status].dot} ${item.status === 'in_progress' ? 'animate-pulse' : ''}`} />
-                                {item.status === 'in_progress' ? 'In Progress' :
-                                 item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                              </span>
-
-                              {/* Priority - Only if not low */}
-                              {item.priority !== 'low' && (
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full backdrop-blur-md border ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].border} ${COLORS.priority[item.priority].text} shadow-sm`} style={{letterSpacing: '-0.01em'}}>
-                                  <Flag className="w-3 h-3" strokeWidth={1.5} />
-                                  {item.priority}
-                                </span>
-                              )}
-
-                              {/* Version - Soft Treatment */}
-                              {item.version_planned && (
-                                <span className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
-                                  {item.version_planned}
-                                </span>
-                              )}
-
-                              {/* Assignee - Organic */}
-                              {item.assigned_to && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
-                                  <User className="w-3 h-3" strokeWidth={1.5} />
-                                  {item.assigned_to}
-                                </span>
-                              )}
-
-                              {/* Target Date - Soft Glow */}
-                              {item.target_date && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white/60 backdrop-blur-sm rounded-full shadow-sm border border-slate-200/50" style={{letterSpacing: '-0.01em'}}>
-                                  <Calendar className="w-3 h-3" strokeWidth={1.5} />
-                                  {format(parseISO(item.target_date), 'MMM d, yyyy')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        <EnhancedRoadmapCard
+                          item={item}
+                          onLogTime={() => {
+                            setSelectedItemForTimeLog(item);
+                            setTimeLogModalOpen(true);
+                          }}
+                          onClick={() => {
+                            // TODO: Navigate to detail view or open detail panel
+                            console.log('Navigate to detail view for:', item.id);
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -876,6 +816,22 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
       </div>
+
+      {/* Time Logging Modal */}
+      {timeLogModalOpen && selectedItemForTimeLog && (
+        <TimeLoggingModal
+          itemId={selectedItemForTimeLog.id}
+          itemTitle={selectedItemForTimeLog.title}
+          currentUserId={user?.id}
+          onClose={() => {
+            setTimeLogModalOpen(false);
+            setSelectedItemForTimeLog(null);
+          }}
+          onSuccess={() => {
+            fetchRoadmapItems(); // Refresh data to show updated hours
+          }}
+        />
+      )}
     </div>
   );
 }
