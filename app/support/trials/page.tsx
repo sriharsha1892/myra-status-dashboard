@@ -400,6 +400,18 @@ export default function TrialOrganizationsPage() {
               <p className="text-xs text-gray-500 mt-0.5">Manage and track trial organizations</p>
             </div>
           <div className="flex items-center gap-3">
+            {role?.toLowerCase() === 'admin' && (
+              <button
+                onClick={() => router.push('/support/admin/trial-orgs-import')}
+                className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+                title="Bulk import trial organizations from Excel/CSV"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Import</span>
+              </button>
+            )}
             <button
               onClick={() => router.push('/support/trials/new')}
               className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"

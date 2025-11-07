@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
       const regularResult = await adminClient
         .from('signup_tokens')
         .select('*')
-        .is('used_at', null)
+        .eq('used', false)
         .gt('expires_at', new Date().toISOString());
 
       pendingTokens = regularResult.data;
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
       tokens: pendingTokens?.map(t => ({
         email: t.email,
         expires: t.expires_at,
-        used: t.used_at,
+        used: t.used,
         isExpired: t.expires_at ? new Date(t.expires_at) <= new Date() : 'no date'
       }))
     });

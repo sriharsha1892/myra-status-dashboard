@@ -411,17 +411,23 @@ export default function UsersPage() {
                           </div>
                         </td>
                         <td className="h-16 px-6">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value as any)}
-                            className="text-sm font-medium px-3 py-1.5 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                          >
-                            {ROLES.map((role) => (
-                              <option key={role} value={role}>
-                                {role}
-                              </option>
-                            ))}
-                          </select>
+                          {u.status === 'Pending' ? (
+                            <span className="text-sm font-medium text-gray-400 px-3 py-1.5">
+                              {u.role}
+                            </span>
+                          ) : (
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleRoleChange(u.id, e.target.value as any)}
+                              className="text-sm font-medium px-3 py-1.5 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            >
+                              {ROLES.map((role) => (
+                                <option key={role} value={role}>
+                                  {role}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </td>
                         <td className="h-16 px-6">
                           <span
@@ -451,15 +457,19 @@ export default function UsersPage() {
                           {u.last_sign_in_at ? formatDistanceToNow(new Date(u.last_sign_in_at), { addSuffix: true }) : 'Never'}
                         </td>
                         <td className="h-16 px-6">
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
-                          </button>
+                          {u.status === 'Pending' ? (
+                            <span className="text-xs text-gray-400">Awaiting signup</span>
+                          ) : (
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
