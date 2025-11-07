@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import TodosWidget from '@/components/support/TodosWidget';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
+import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -166,6 +167,9 @@ export default function EnterpriseCommandCenter() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-emerald-50/50" />
 
         <div className="relative max-w-7xl mx-auto px-6 py-8">
+          {/* Announcements Bulletin */}
+          <AnnouncementsBulletin role={role} />
+
           {/* Greeting Section */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mb-1">
