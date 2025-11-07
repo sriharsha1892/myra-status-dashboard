@@ -548,11 +548,10 @@ function StatusPageContent() {
 
           {/* Team Content */}
           {(() => {
-            const teamStatus = internalStatuses.find(s => s.organization === 'prodgain');
             return (
               <>
-                {/* Team Status Update */}
-                {teamStatus && (
+                {/* Team Status Update - Commented out to show only Service Advisory */}
+                {false && (
                   <div style={{ marginBottom: '16px' }}>
                   {(() => {
                     const getStatusConfig = (s: string) => {
