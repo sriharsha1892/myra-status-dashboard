@@ -682,6 +682,8 @@ export default function TrialOrganizationsPage() {
                     );
                   })}
                 </div>
+              )}
+            </>
           )}
         </div>
       </main>
