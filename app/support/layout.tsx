@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import {
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import NotificationsBell from '@/components/NotificationsBell';
+import FeedbackWidget from '@/components/support/FeedbackWidget';
 
 export default function SupportLayout({
   children,
@@ -170,9 +172,9 @@ export default function SupportLayout({
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 flex flex-col overflow-y-auto">
           <div className="space-y-1">
-            <button
-              onClick={() => router.push('/support/dashboard')}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
+            <Link
+              href="/support/dashboard"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname === '/support/dashboard'
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -180,11 +182,11 @@ export default function SupportLayout({
             >
               <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Dashboard</span>
-            </button>
+            </Link>
 
-            <button
-              onClick={() => router.push('/support/trials')}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
+            <Link
+              href="/support/trials"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname?.startsWith('/support/trials')
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -192,11 +194,11 @@ export default function SupportLayout({
             >
               <Building2 className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/trials') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Trial Orgs</span>
-            </button>
+            </Link>
 
-            <button
-              onClick={() => router.push('/support/reports')}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
+            <Link
+              href="/support/reports"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname === '/support/reports'
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -204,25 +206,28 @@ export default function SupportLayout({
             >
               <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Reports</span>
-            </button>
+            </Link>
 
-            <button
-              onClick={() => router.push('/support/users')}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
-                pathname === '/support/users'
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
-              <span>Users</span>
-            </button>
+            {/* Users - Admin only */}
+            {role?.toLowerCase() === 'admin' && (
+              <Link
+                href="/support/users"
+                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  pathname === '/support/users'
+                    ? 'text-slate-900 bg-slate-900/5'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+                <span>Users</span>
+              </Link>
+            )}
 
             {/* Roadmap - Admin only */}
             {role?.toLowerCase() === 'admin' && (
-              <button
-                onClick={() => router.push('/support/admin/roadmap')}
-                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
+              <Link
+                href="/support/admin/roadmap"
+                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap')
                     ? 'text-slate-900 bg-slate-900/5'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -230,7 +235,7 @@ export default function SupportLayout({
               >
                 <Map className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
                 <span>Roadmap</span>
-              </button>
+              </Link>
             )}
           </div>
 
@@ -266,6 +271,9 @@ export default function SupportLayout({
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto lg:ml-0">{children}</main>
+
+      {/* Feedback Widget - Always visible for all logged-in users */}
+      <FeedbackWidget userId={user?.id} />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function ReportsPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user && (role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin')) {
+    if (user && (role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'account_manager')) {
       fetchTickets();
     }
   }, [user, role]);

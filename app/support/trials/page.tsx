@@ -522,100 +522,166 @@ export default function TrialOrganizationsPage() {
                 </select>
               </div>
 
-              {/* Organizations Table */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50/80 border-b border-gray-200">
-                      <tr>
-                        <th className="text-left px-6 py-3 w-12">
+              {/* Organizations Card Grid - Modern & Engaging */}
+              {filteredOrgs.length === 0 ? (
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No organizations found</h3>
+                  <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredOrgs.map((org) => {
+                    const daysLeft = org.trial_end_date ? differenceInDays(new Date(org.trial_end_date), new Date()) : null;
+                    const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
+                    const isExpired = daysLeft !== null && daysLeft < 0;
+
+                    return (
+                      <div
+                        key={org.org_id}
+                        className="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all duration-200 overflow-hidden"
+                      >
+                        {/* Selection Checkbox - Top Left */}
+                        <div className="absolute top-3 left-3 z-10">
                           <input
                             type="checkbox"
-                            checked={selectedOrgIds.size === filteredOrgs.length && filteredOrgs.length > 0}
-                            onChange={handleSelectAll}
+                            checked={selectedOrgIds.has(org.org_id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleSelectOrg(org.org_id);
+                            }}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                           />
-                        </th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Organization</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Stage</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Users</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Engagement</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Days Left</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Account Manager</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredOrgs.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">
-                            No organizations found
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredOrgs.map((org) => (
-                          <tr
-                            key={org.org_id}
-                            className="hover:bg-blue-50/50 transition-colors"
-                          >
-                            <td className="px-6 py-4">
-                              <input
-                                type="checkbox"
-                                checked={selectedOrgIds.has(org.org_id)}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectOrg(org.org_id);
-                                }}
-                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                              />
-                            </td>
-                            <td className="px-6 py-4">
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {org.org_name}
-                                </p>
-                                <p
-                                  className="text-xs text-gray-500 mt-0.5 cursor-pointer hover:underline"
-                                  onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                                >
-                                  {org.org_domain || 'N/A'}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(org.org_lifecycle_stage)}`}>
-                                {formatStage(org.org_lifecycle_stage)}
+                        </div>
+
+                        {/* Card Header with gradient */}
+                        <div className="relative h-20 bg-gradient-to-br from-blue-500 to-indigo-600 p-4">
+                          <div className="absolute -bottom-8 left-4">
+                            <div className="w-16 h-16 bg-white rounded-xl shadow-lg border-4 border-white flex items-center justify-center">
+                              <span className="text-2xl font-bold text-blue-600">
+                                {org.org_name.charAt(0).toUpperCase()}
                               </span>
-                            </td>
-                            <td
-                              className="px-6 py-4 cursor-pointer"
-                              onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                            >
-                              <p className="text-sm text-gray-900">
-                                {org.active_users}/{org.user_count} active
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${getEngagementColor(org.engagement_score)}`}>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="pt-10 p-4 space-y-3">
+                          {/* Organization Name & Domain */}
+                          <div>
+                            <h3 className="text-base font-bold text-gray-900 mb-1 truncate">
+                              {org.org_name}
+                            </h3>
+                            <p className="text-xs text-gray-500 truncate">
+                              {org.org_domain || 'No domain'}
+                            </p>
+                          </div>
+
+                          {/* Stage Badge */}
+                          <div>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(org.org_lifecycle_stage)}`}>
+                              {formatStage(org.org_lifecycle_stage)}
+                            </span>
+                          </div>
+
+                          {/* Engagement Score with Progress Bar */}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-gray-600">Engagement</span>
+                              <span className={`text-xs font-bold ${
+                                org.engagement_score >= 75 ? 'text-green-600' :
+                                org.engagement_score >= 50 ? 'text-blue-600' :
+                                org.engagement_score >= 30 ? 'text-amber-600' :
+                                'text-red-600'
+                              }`}>
                                 {org.engagement_score}%
                               </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-gray-900">
-                                {org.trial_end_date ? `${getDaysLeft(org.trial_end_date)} days` : '-'}
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-gray-900">
-                                {org.account_manager || '-'}
-                              </p>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  org.engagement_score >= 75 ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                                  org.engagement_score >= 50 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                                  org.engagement_score >= 30 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                                  'bg-gradient-to-r from-red-500 to-red-600'
+                                }`}
+                                style={{ width: `${org.engagement_score}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Users Count */}
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span className="text-sm text-gray-700">
+                              <span className="font-semibold text-gray-900">{org.active_users}</span> / {org.user_count} active
+                            </span>
+                          </div>
+
+                          {/* Days Left */}
+                          {daysLeft !== null && (
+                            <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                              isExpired ? 'bg-red-50' :
+                              isExpiringSoon ? 'bg-amber-50' :
+                              'bg-gray-50'
+                            }`}>
+                              <svg className={`w-4 h-4 ${
+                                isExpired ? 'text-red-600' :
+                                isExpiringSoon ? 'text-amber-600' :
+                                'text-gray-400'
+                              }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className={`text-xs font-medium ${
+                                isExpired ? 'text-red-700' :
+                                isExpiringSoon ? 'text-amber-700' :
+                                'text-gray-700'
+                              }`}>
+                                {isExpired ? 'Expired' :
+                                 isExpiringSoon ? `${daysLeft} days left ⚠️` :
+                                 `${daysLeft} days left`}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Account Manager */}
+                          {org.account_manager_id && (
+                            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg className="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <span className="text-xs text-gray-600 truncate">
+                                {accountManagers.find(am => am.user_id === org.account_manager_id)?.full_name || 'Assigned'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Card Footer - Action Buttons */}
+                        <div className="border-t border-gray-100 p-3 bg-gray-50 flex gap-2">
+                          <button
+                            onClick={() => router.push(`/support/trials/${org.org_id}`)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
             </>
           )}
         </div>
