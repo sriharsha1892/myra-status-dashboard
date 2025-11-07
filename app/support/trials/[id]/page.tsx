@@ -38,7 +38,7 @@ const DOMAIN_OPTIONS = [
 ];
 
 export default function OrganizationDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
   const params = useParams();
   const orgId = params.id as string;
@@ -92,9 +92,10 @@ export default function OrganizationDetailPage() {
 
   const fetchOrganizationData = async () => {
     setLoading(true);
+    const supabase = createClient();
     try {
       // Fetch organization
-      const { data: org, error: orgError } = await supabase
+      const { data: org, error: orgError} = await supabase
         .from('trial_organizations')
         .select('*')
         .eq('org_id', orgId)
@@ -177,6 +178,7 @@ export default function OrganizationDetailPage() {
   };
 
   const handleSaveOrganization = async () => {
+    const supabase = createClient();
     try {
       const { error } = await supabase
         // -ignore - Supabase typing issue with dynamic columns
