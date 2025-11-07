@@ -5,9 +5,9 @@
 
 ---
 
-## ✅ All 12 Users Created Successfully
+## ✅ All 13 Users Created Successfully
 
-### Account Managers (7 users)
+### Account Managers (8 users)
 
 #### 1. Krati Agarwal
 - **Email:** krati@mordorintelligence.com
@@ -39,11 +39,12 @@
 - **Role:** Account Manager
 - **Access:** See only assigned trial organizations
 
-#### 6. Satish Boini
+#### 6. Satish Boini ✅ ACTIVE
 - **Email:** satish.boini@mordorintelligence.com
-- **Password:** `Satish@2025!`
+- **Password:** `Satish123!`
 - **Role:** Account Manager
 - **Access:** See only assigned trial organizations
+- **Status:** ✅ Can login now
 
 #### 7. Nikita
 - **Email:** nikita@mordorintelligence.com
@@ -51,35 +52,42 @@
 - **Role:** Account Manager
 - **Access:** See only assigned trial organizations
 
+#### 8. Sudeshana Jain ✅ ACTIVE
+- **Email:** sudeshana@mordorintelligence.com
+- **Password:** `Sudeshana123!`
+- **Role:** Account Manager
+- **Access:** See only assigned trial organizations
+- **Status:** ✅ Can login now
+
 ---
 
 ### Admins (5 users)
 
-#### 8. Aditya Pisupati
+#### 9. Aditya Pisupati
 - **Email:** adi@mordorintelligence.com
 - **Password:** `Aditya@2025!`
 - **Role:** Admin
 - **Access:** Full platform access
 
-#### 9. Abin Zacharia
+#### 10. Abin Zacharia
 - **Email:** abin.zacharia@mordorintelligence.com
 - **Password:** `Abin@2025!`
 - **Role:** Admin
 - **Access:** Full platform access
 
-#### 10. Sai Teja
+#### 11. Sai Teja
 - **Email:** sai.teja@mordorintelligence.com
 - **Password:** `SaiTeja@2025!`
 - **Role:** Admin
 - **Access:** Full platform access
 
-#### 11. Vivek Sikaria
+#### 12. Vivek Sikaria
 - **Email:** vivek.sikaria@mordorintelligence.com
 - **Password:** `Vivek@2025!`
 - **Role:** Admin
 - **Access:** Full platform access
 
-#### 12. Reddy
+#### 13. Reddy
 - **Email:** reddy@mordorintelligence.com
 - **Password:** `Reddy@2025!`
 - **Role:** Admin
