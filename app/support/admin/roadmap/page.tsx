@@ -20,7 +20,6 @@ import toast from 'react-hot-toast';
 import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
 import {
   LayoutGrid,
-  List,
   BarChart3,
   Plus,
   Search,
@@ -76,7 +75,7 @@ type RoadmapItem = {
   days_since_activity?: number;
 };
 
-type ViewMode = 'list' | 'board' | 'timeline' | 'table';
+type ViewMode = 'board' | 'table';
 
 // Premium status pill system
 const COLORS = {
@@ -102,7 +101,7 @@ export default function WorldClassRoadmapPage() {
   // State
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [selectedArea, setSelectedArea] = useState<string>('all');
@@ -542,16 +541,6 @@ export default function WorldClassRoadmapPage() {
             {/* View Mode - Refined Segmented Control */}
             <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
               <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                  viewMode === 'list'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <List className="w-4 h-4" strokeWidth={1.5} />
-              </button>
-              <button
                 onClick={() => setViewMode('table')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   viewMode === 'table'
@@ -572,83 +561,13 @@ export default function WorldClassRoadmapPage() {
               >
                 <LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
               </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                  viewMode === 'timeline'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CONTENT AREA - 32px spacing system */}
+      {/* CONTENT AREA - Professional spacing */}
       <div className="max-w-[1600px] mx-auto px-8 py-8">
-        {/* List View - Organic Crystal Formations */}
-        {viewMode === 'list' && (
-          <div className="space-y-10">
-            {Object.entries(groupedItems).map(([groupName, items]) => (
-              <div key={groupName} className="relative">
-                {/* Group Header - Organic Flow */}
-                {groupBy !== 'none' && (
-                  <button
-                    onClick={() => toggleGroup(groupName)}
-                    className="w-full flex items-center gap-3 mb-6 group"
-                  >
-                    {expandedGroups.has(groupName) ? (
-                      <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-all duration-200" strokeWidth={1.5} />
-                    )}
-                    <div className="flex-1 flex items-center gap-3 py-3 px-5 bg-gradient-to-r from-slate-50/80 to-transparent rounded-2xl backdrop-blur-sm">
-                      <h3 className="text-[15px] leading-[22px] font-medium text-[#111827] tracking-[-0.01em]">{groupName}</h3>
-                      <span className="px-2.5 py-0.5 text-xs font-medium text-slate-600 bg-white/60 backdrop-blur-sm rounded-full shadow-sm">
-                        {items.length}
-                      </span>
-                    </div>
-                  </button>
-                )}
-
-                {/* Items - Enhanced Cards with Time Tracking */}
-                {(groupBy === 'none' || expandedGroups.has(groupName)) && (
-                  <div className="space-y-4 relative">
-                    {/* Subtle connecting line */}
-                    <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
-
-                    {items.map((item) => (
-                      <div key={item.id} className="relative ml-6">
-                        {/* Node connector */}
-                        <div className="absolute left-[-24px] top-1/2 w-6 h-px bg-gradient-to-r from-slate-200 to-transparent" />
-                        <EnhancedRoadmapCard
-                          item={item}
-                          onClick={() => {
-                            // TODO: Navigate to detail view or open detail panel
-                            console.log('Navigate to detail view for:', item.id);
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {filteredItems.length === 0 && (
-              <div className="text-center py-16">
-                <Target className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Nothing on the roadmap? 🤔</h3>
-                <p className="text-sm text-slate-600 mb-3">Either you shipped everything or your filters are too strict</p>
-                <p className="text-xs text-slate-500 italic">"The best way to predict the future is to invent it." — Alan Kay</p>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* TABLE VIEW - Excel-like Inline Editing */}
         {viewMode === 'table' && (
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">

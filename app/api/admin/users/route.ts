@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
+// Disable caching for this route - we need live pending user data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper to create Supabase Admin client at runtime
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -78,7 +82,7 @@ async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: stri
 }
 
 // GET - List all users (including pending signups)
-// Cache-busting: v2.1 - Force fresh deployment with pending users fix
+// CRITICAL: Disable all caching - we need live pending user data
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
@@ -139,7 +143,19 @@ export async function GET(request: NextRequest) {
       users.push(...pendingUsers);
     }
 
-    return NextResponse.json({ users });
+    // Return with aggressive no-cache headers to prevent Vercel caching
+    return NextResponse.json(
+      { users },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'CDN-Cache-Control': 'no-store',
+          'Vercel-CDN-Cache-Control': 'no-store',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error in GET /api/admin/users:', error);
     return NextResponse.json(
