@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import NotificationsBell from '@/components/NotificationsBell';
+import RecentItems from '@/components/ui/RecentItems';
 
 export default function SupportLayout({
   children,
@@ -274,6 +275,9 @@ export default function SupportLayout({
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto lg:ml-0">{children}</main>
+
+      {/* Recent Items Floating Button + Sidebar */}
+      <RecentItems />
     </div>
   );
 }
