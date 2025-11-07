@@ -124,11 +124,25 @@ export default function EnterpriseCommandCenter() {
   };
 
   if (authLoading || loading) {
+    const loadingQuotes = [
+      { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+      { text: "Seek wealth, not money or status.", author: "Naval Ravikant" },
+      { text: "The future is going to be weird.", author: "Elon Musk" },
+      { text: "Build something 100 people love, not something 1 million people kind of like.", author: "Peter Thiel" },
+      { text: "Move fast with stable infrastructure.", author: "Steve Jobs" },
+      { text: "Compound your advantages.", author: "Naval Ravikant" },
+    ];
+    const randomQuote = loadingQuotes[Math.floor(Math.random() * loadingQuotes.length)];
+
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center">
           <div className="w-12 h-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-slate-600 tracking-tight">Loading dashboard...</p>
+          <div className="mt-4 px-6 py-3 bg-white rounded-lg border border-slate-200">
+            <p className="text-xs text-slate-900 font-medium mb-1">"{randomQuote.text}"</p>
+            <p className="text-[10px] text-slate-500">— {randomQuote.author}</p>
+          </div>
         </div>
       </div>
     );
@@ -465,8 +479,9 @@ export default function EnterpriseCommandCenter() {
                   )}
 
                   {criticalTickets === 0 && atRiskTrials === 0 && activeTrials === 0 && (
-                    <div className="text-center py-3">
-                      <p className="text-xs text-slate-600">All systems nominal</p>
+                    <div className="text-center py-4">
+                      <p className="text-xs text-slate-900 font-medium mb-1">🎉 All systems nominal</p>
+                      <p className="text-[10px] text-slate-500 italic">"Compounding works. Keep going."</p>
                     </div>
                   )}
                 </div>

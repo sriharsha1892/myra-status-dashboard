@@ -254,13 +254,27 @@ export default function WorldClassRoadmapPage() {
   };
 
   if (authLoading || loading) {
+    const loadingQuotes = [
+      { text: "The best part is no part.", author: "Elon Musk" },
+      { text: "Specific knowledge is found by pursuing your genuine curiosity.", author: "Naval Ravikant" },
+      { text: "Real artists ship.", author: "Steve Jobs" },
+      { text: "Competition is for losers.", author: "Peter Thiel" },
+      { text: "Make something people want.", author: "Steve Jobs" },
+      { text: "Play long-term games with long-term people.", author: "Naval Ravikant" },
+    ];
+    const randomQuote = loadingQuotes[Math.floor(Math.random() * loadingQuotes.length)];
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center">
           <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-blue-600" strokeWidth={1.5} />
           </div>
           <span className="text-sm text-slate-600 font-medium tracking-[-0.01em]">Loading roadmap...</span>
+          <div className="mt-2 px-6 py-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <p className="text-xs text-slate-900 font-medium mb-1">"{randomQuote.text}"</p>
+            <p className="text-[10px] text-slate-500">— {randomQuote.author}</p>
+          </div>
         </div>
       </div>
     );
@@ -542,8 +556,9 @@ export default function WorldClassRoadmapPage() {
             {filteredItems.length === 0 && (
               <div className="text-center py-16">
                 <Target className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">No items found</h3>
-                <p className="text-sm text-slate-600">Try adjusting your filters or search query</p>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Nothing on the roadmap? 🤔</h3>
+                <p className="text-sm text-slate-600 mb-3">Either you shipped everything or your filters are too strict</p>
+                <p className="text-xs text-slate-500 italic">"The best way to predict the future is to invent it." — Alan Kay</p>
               </div>
             )}
           </div>
