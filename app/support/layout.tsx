@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import toast, { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard,
   Building2,
@@ -98,19 +97,12 @@ export default function SupportLayout({
 
   // Show login page without sidebar
   if (!user) {
-    return (
-      <>
-        <Toaster position="top-right" />
-        {children}
-      </>
-    );
+    return <>{children}</>;
   }
 
   // Show authenticated pages with sidebar
   return (
     <div className="flex h-screen bg-slate-50">
-      <Toaster position="top-right" />
-
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
