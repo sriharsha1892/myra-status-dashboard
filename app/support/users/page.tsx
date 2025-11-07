@@ -47,9 +47,9 @@ export default function UsersPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // TEMPORARY: Allow admin@myra.ai regardless of role (metadata refresh issue)
-    const isAdminEmail = user?.email === 'admin@myra.ai';
-    if (user && (isAdminEmail || role?.toLowerCase() === 'admin')) {
+    // BYPASS: Allow admin@myra.ai (JWT metadata caching workaround)
+    const isAdminBypass = user?.email === 'admin@myra.ai';
+    if (user && (isAdminBypass || role?.toLowerCase() === 'admin')) {
       fetchUsers();
     }
   }, [user, role]);
@@ -221,10 +221,10 @@ export default function UsersPage() {
     );
   }
 
-  // TEMPORARY: Allow admin@myra.ai regardless of role (metadata refresh issue)
-  const isAdminEmail = user?.email === 'admin@myra.ai';
+  // BYPASS: Allow admin@myra.ai (JWT metadata caching workaround)
+  const isAdminBypass = user?.email === 'admin@myra.ai';
 
-  if (!user || (!isAdminEmail && role?.toLowerCase() !== 'admin')) {
+  if (!user || (!isAdminBypass && role?.toLowerCase() !== 'admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
