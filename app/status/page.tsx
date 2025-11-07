@@ -471,6 +471,81 @@ function StatusPageContent() {
             </p>
           </div>
 
+          {/* Service Advisory Notice */}
+          <div style={{ marginBottom: '16px' }}>
+            <div
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '2px solid rgba(245, 158, 11, 0.4)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                {/* Icon */}
+                <div
+                  style={{
+                    fontSize: '24px',
+                    lineHeight: '1',
+                    flexShrink: 0,
+                  }}
+                >
+                  ⚠️
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                      Service Advisory
+                    </h3>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '9px',
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        background: '#f59e0b',
+                        color: '#ffffff',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Important Notice
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'rgba(255, 255, 255, 0.85)',
+                      margin: '0 0 8px 0',
+                      lineHeight: '1.5',
+                    }}
+                  >
+                    We are currently experiencing intermittent service disruptions from several of our upstream infrastructure providers.
+                    Our team is actively monitoring the situation and working with our partners to restore full operational capacity.
+                    During this period, you may encounter delayed response times or temporary service interruptions. We appreciate your patience
+                    and will provide updates as the situation evolves.
+                  </p>
+                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span>Posted: {new Date().toLocaleString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'GMT'
+                    })} GMT</span>
+                    <span>•</span>
+                    <span>By: myRA AI Operations Team</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Team Content */}
           {(() => {
             const teamStatus = internalStatuses.find(s => s.organization === 'prodgain');
