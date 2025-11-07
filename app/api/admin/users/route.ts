@@ -121,11 +121,17 @@ export async function GET(request: NextRequest) {
 
     // Also fetch pending signup tokens that haven't been used yet
     console.log('🔍 API DEBUG: Fetching pending tokens from signup_tokens table...');
-    const { data: pendingTokens, error: tokensError } = await adminClient
-      .from('signup_tokens')
-      .select('*')
-      .is('used_at', null) // Only get unused tokens
-      .gt('expires_at', new Date().toISOString()); // Only get non-expired tokens
+
+    // Try raw SQL query to bypass any potential Supabase.js issues
+    const { data: pendingTokens, error: tokensError } = await adminClient.rpc('get_pending_tokens').catch(async () => {
+      // Fallback to regular query if RPC doesn't exist
+      console.log('🔍 API DEBUG: RPC not found, using regular query...');
+      return await adminClient
+        .from('signup_tokens')
+        .select('*')
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString());
+    });
 
     console.log('🔍 API DEBUG: Pending tokens query result:', {
       success: !tokensError,
