@@ -114,6 +114,8 @@ export default function WorldClassRoadmapPage() {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
 
+  // Users state for assignment dropdown
+  const [users, setUsers] = useState<Array<{ id: string; email: string; name: string; role: string; status: string }>>([]);
 
   const supabase = createClient();
 
@@ -125,6 +127,7 @@ export default function WorldClassRoadmapPage() {
     }
     if (user && !authLoading) {
       fetchRoadmapItems();
+      fetchUsers();
     }
   }, [user, authLoading, router]);
 
@@ -152,6 +155,20 @@ export default function WorldClassRoadmapPage() {
       toast.error('Failed to load roadmap');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users');
+      const data = await response.json();
+
+      if (data.users) {
+        setUsers(data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      // Don't show toast error - this is not critical
     }
   };
 
@@ -920,11 +937,10 @@ export default function WorldClassRoadmapPage() {
                           )}
                         </td>
 
-                        {/* Assigned To - Text input */}
+                        {/* Assigned To - User dropdown */}
                         <td className="px-4 py-3">
                           {editingCell?.id === item.id && editingCell?.field === 'assigned_to' ? (
-                            <input
-                              type="text"
+                            <select
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={() => handleSaveEdit(item.id, 'assigned_to')}
@@ -933,14 +949,28 @@ export default function WorldClassRoadmapPage() {
                                 if (e.key === 'Escape') handleCancelEdit();
                               }}
                               autoFocus
-                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">Unassigned</option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.email}>
+                                  {user.name} ({user.role})
+                                  {user.status === 'Pending' ? ' - Pending' : ''}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <button
                               onClick={() => handleStartEdit(item.id, 'assigned_to', item.assigned_to)}
                               className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
                             >
-                              {item.assigned_to || '-'}
+                              {item.assigned_to ? (
+                                // Try to find matching user for better display
+                                (() => {
+                                  const matchedUser = users.find(u => u.email === item.assigned_to);
+                                  return matchedUser ? `${matchedUser.name} (${matchedUser.role})` : item.assigned_to;
+                                })()
+                              ) : '-'}
                             </button>
                           )}
                         </td>

@@ -78,6 +78,7 @@ async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: stri
 }
 
 // GET - List all users (including pending signups)
+// Cache-busting: v2.1 - Force fresh deployment with pending users fix
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access

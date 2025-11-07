@@ -186,7 +186,9 @@ export default function EnterpriseCommandCenter() {
 
         <div className="relative max-w-7xl mx-auto px-6 py-8">
           {/* Announcements Bulletin */}
-          <AnnouncementsBulletin role={role} />
+          <div className="mb-8">
+            <AnnouncementsBulletin role={role} />
+          </div>
 
           {/* Greeting Section */}
           <div className="mb-8">
@@ -199,7 +201,7 @@ export default function EnterpriseCommandCenter() {
           </div>
 
           {/* Primary Metrics Grid - 6-Column Compact Layout - ALWAYS SHOW ALL CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
             {/* Active Trials Card */}
             <button
               onClick={() => router.push('/support/trials')}
