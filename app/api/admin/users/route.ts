@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Force cache bypass for user list
     const adminClient = getSupabaseAdmin();
 
     // Get all users using admin API
