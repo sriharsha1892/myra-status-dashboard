@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 interface TrialUser {
   user_id: string;
-  full_name: string;
+  name: string;
 }
 
 interface AddSupportQueryModalProps {
@@ -58,9 +58,9 @@ export default function AddSupportQueryModal({
     try {
       const { data, error } = await supabase
         .from('trial_users')
-        .select('user_id, full_name')
+        .select('user_id, name')
         .eq('org_id', orgId)
-        .order('full_name');
+        .order('name');
 
       if (error) throw error;
       setTrialUsers(data || []);
@@ -88,8 +88,13 @@ export default function AddSupportQueryModal({
     setLoading(true);
     try {
       // Get current user info from auth
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      const userId_created = authUser?.id || 'unknown';
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authUser) {
+        toast.error('You must be logged in to create a support query');
+        setLoading(false);
+        return;
+      }
 
       const { error } = await supabase.from('trial_support_queries').insert({
         org_id: orgId,
@@ -98,7 +103,7 @@ export default function AddSupportQueryModal({
         title: title,
         description: description || null,
         status: 'open',
-        created_by: userId_created,
+        created_by: authUser.id,
         created_by_role: 'account_manager', // Will be set based on actual user role
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -253,7 +258,7 @@ export default function AddSupportQueryModal({
                 </option>
                 {trialUsers.map((user) => (
                   <option key={user.user_id} value={user.user_id}>
-                    {user.full_name}
+                    {user.name}
                   </option>
                 ))}
               </select>

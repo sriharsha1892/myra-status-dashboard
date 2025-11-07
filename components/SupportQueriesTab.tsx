@@ -25,7 +25,7 @@ interface SupportQuery {
 
 interface TrialUser {
   user_id: string;
-  full_name: string;
+  name: string;
 }
 
 interface SupportQueriesTabProps {
@@ -72,7 +72,7 @@ export default function SupportQueriesTab({ orgId }: SupportQueriesTabProps) {
       // Fetch trial users for reference
       const { data: usersData, error: usersError } = await supabase
         .from('trial_users')
-        .select('user_id, full_name')
+        .select('user_id, name')
         .eq('org_id', orgId);
 
       if (usersError) throw usersError;
