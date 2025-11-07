@@ -10,6 +10,8 @@ import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
 } from 'lucide-react';
+import TodosWidget from '@/components/support/TodosWidget';
+import FeedbackWidget from '@/components/support/FeedbackWidget';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -261,6 +263,8 @@ export default function EnterpriseCommandCenter() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Activity Feed */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Todos Widget */}
+              <TodosWidget userId={user?.id} />
               {/* Recent Activity */}
               <div className="relative bg-white rounded-xl border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-5">
@@ -474,6 +478,9 @@ export default function EnterpriseCommandCenter() {
           </div>
         </div>
       </div>
+
+      {/* Feedback Widget - Floating */}
+      <FeedbackWidget userId={user?.id} />
     </div>
   );
 }

@@ -178,13 +178,13 @@ export default function NotificationsBell() {
         )}
       </button>
 
-      {/* Dropdown Panel - Slides out to the right of sidebar with transparency */}
+      {/* Dropdown Panel - Compact dropdown positioned above bell */}
       {showDropdown && (
         <>
           {/* Transparent backdrop */}
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[45]" onClick={() => setShowDropdown(false)} />
+          <div className="fixed inset-0 bg-black/10 z-[45]" onClick={() => setShowDropdown(false)} />
 
-          <div className="fixed left-64 top-0 bottom-0 w-[420px] bg-white/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-left-2 duration-300 border-r border-slate-200">
+          <div className="absolute left-0 bottom-full mb-2 w-[380px] max-h-[500px] bg-white rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col border border-slate-200">
             {/* Header - Compact */}
             <div className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
               <div className="flex items-center justify-between">

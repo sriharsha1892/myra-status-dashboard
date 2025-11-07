@@ -292,9 +292,7 @@ export default function SupportLayout({
           {/* Bottom Actions */}
           <div className="mt-auto pt-4 border-t border-slate-200 space-y-1">
             {/* Notifications */}
-            <div className="px-3 mb-2">
-              <NotificationsBell />
-            </div>
+            <NotificationsBell />
 
             {/* Link to Public Status Page */}
             <a
