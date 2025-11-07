@@ -23,12 +23,13 @@ interface User {
 }
 
 const DOMAIN_OPTIONS = [
-  { value: 'TMT', label: 'TMT - Technology, Media & Telecommunications' },
-  { value: 'NEO', label: 'NEO - New Economy' },
-  { value: 'AF&B', label: 'AF&B - Agriculture, Food & Beverages' },
-  { value: 'E&C', label: 'E&C - Engineering & Construction' },
-  { value: 'HC', label: 'HC - Healthcare' },
-  { value: 'AAD', label: 'AAD - Architecture, Art & Design' },
+  { value: 'AAD', label: 'AAD' },
+  { value: 'AF&B', label: 'AF&B' },
+  { value: 'E&C', label: 'E&C' },
+  { value: 'HC', label: 'HC' },
+  { value: 'NEO', label: 'NEO' },
+  { value: 'TMT', label: 'TMT' },
+  { value: 'Unassigned', label: 'Unassigned' },
 ];
 
 const DESIGNATION_SUGGESTIONS = ['CEO', 'Director', 'VP', 'Manager', 'Analyst', 'Consultant'];

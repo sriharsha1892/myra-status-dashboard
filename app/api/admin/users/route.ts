@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Invite new user
+// POST - Create new user with password (simplified for small teams)
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
@@ -128,12 +128,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, name, role } = body;
+    const { email, password, name, role } = body;
 
     // Validate input
-    if (!email || !name || !role) {
+    if (!email || !password || !name || !role) {
       return NextResponse.json(
-        { error: 'Email, name, and role are required' },
+        { error: 'Email, password, name, and role are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters' },
         { status: 400 }
       );
     }
@@ -147,26 +155,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Invite user using admin API (sends email invitation)
+    // Create user directly with password using admin API
+    // This bypasses email confirmation - perfect for small teams (max 25 users)
     const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email (no email required)
+      user_metadata: {
         name,
         role,
       },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/support/login`,
     });
 
     if (error) {
-      console.error('Error inviting user:', error);
+      console.error('Error creating user:', error);
       return NextResponse.json(
-        { error: error.message || 'Failed to invite user' },
+        { error: error.message || 'Failed to create user' },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       success: true,
+      message: 'User created successfully. Share the login credentials with them.',
       user: {
         id: data.user.id,
         email: data.user.email,

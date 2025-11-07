@@ -27,6 +27,16 @@ type MeetingNote = Database['public']['Tables']['meeting_notes']['Row'];
 
 type TabType = 'overview' | 'users' | 'queries' | 'deals' | 'activity' | 'demos' | 'meetings' | 'features' | 'followups' | 'activitylog';
 
+const DOMAIN_OPTIONS = [
+  { value: 'AAD', label: 'AAD' },
+  { value: 'AF&B', label: 'AF&B' },
+  { value: 'E&C', label: 'E&C' },
+  { value: 'HC', label: 'HC' },
+  { value: 'NEO', label: 'NEO' },
+  { value: 'TMT', label: 'TMT' },
+  { value: 'Unassigned', label: 'Unassigned' },
+];
+
 export default function OrganizationDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -659,12 +669,18 @@ export default function OrganizationDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
-                  <input
-                    type="text"
+                  <select
                     value={editedOrg.org_domain || ''}
                     onChange={(e) => setEditedOrg({ ...editedOrg, org_domain: e.target.value })}
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select domain...</option>
+                    {DOMAIN_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>

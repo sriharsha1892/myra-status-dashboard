@@ -38,6 +38,7 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    name: '',
     role: 'Team',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -92,6 +93,7 @@ export default function UsersPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
+          name: formData.name,
           role: formData.role,
         }),
       });
@@ -101,9 +103,10 @@ export default function UsersPage() {
         throw new Error(error.error || 'Failed to create user');
       }
 
-      toast.success('User created successfully');
+      const data = await response.json();
+      toast.success(data.message || 'User created successfully');
       setShowAddModal(false);
-      setFormData({ email: '', password: '', role: 'Team' });
+      setFormData({ email: '', password: '', name: '', role: 'Team' });
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -307,12 +310,20 @@ export default function UsersPage() {
         isOpen={showAddModal}
         onClose={() => {
           setShowAddModal(false);
-          setFormData({ email: '', password: '', role: 'Team' });
+          setFormData({ email: '', password: '', name: '', role: 'Team' });
         }}
         title="Add New User"
         size="md"
       >
         <form onSubmit={handleAddUser} className="space-y-4">
+          {/* Info Banner */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Simple Setup:</strong> User will be created immediately with the password you set.
+              Share the login credentials directly with them (no email required).
+            </p>
+          </div>
+
           <Input
             label="Email"
             type="email"
@@ -324,13 +335,24 @@ export default function UsersPage() {
           />
 
           <Input
-            label="Password"
+            label="Name"
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Full name"
+            required
+            fullWidth
+          />
+
+          <Input
+            label="Temporary Password"
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             placeholder="Minimum 6 characters"
             required
             fullWidth
+            helperText="You'll share this password with the user directly"
           />
 
           <Select
@@ -349,7 +371,7 @@ export default function UsersPage() {
               size="md"
               onClick={() => {
                 setShowAddModal(false);
-                setFormData({ email: '', password: '', role: 'Team' });
+                setFormData({ email: '', password: '', name: '', role: 'Team' });
               }}
               disabled={submitting}
             >
