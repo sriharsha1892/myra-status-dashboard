@@ -178,13 +178,13 @@ export default function NotificationsBell() {
         )}
       </button>
 
-      {/* Dropdown Panel - Compact dropdown positioned above bell */}
+      {/* Slide-out Panel - Fixed position from right side */}
       {showDropdown && (
         <>
-          {/* Transparent backdrop */}
-          <div className="fixed inset-0 bg-black/10 z-[45]" onClick={() => setShowDropdown(false)} />
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/20 z-[45]" onClick={() => setShowDropdown(false)} />
 
-          <div className="absolute left-0 bottom-full mb-2 w-[280px] max-h-[450px] bg-white rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col border border-slate-200">
+          <div className="fixed right-0 top-0 bottom-0 w-[320px] bg-white shadow-2xl z-50 overflow-hidden flex flex-col border-l border-slate-200">
             {/* Minimal Top Border - No Header */}
             <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
 
@@ -218,8 +218,8 @@ export default function NotificationsBell() {
               </div>
             </div>
 
-            {/* Notifications List - Ultra Compact */}
-            <div className="overflow-y-auto max-h-[380px]">
+            {/* Notifications List - Full height scrollable */}
+            <div className="overflow-y-auto flex-1">
               {loading ? (
                 <div className="p-4 text-center">
                   <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>

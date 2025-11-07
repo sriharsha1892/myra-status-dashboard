@@ -6,16 +6,16 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-// Builder-inspired login messages with humor
+// Strategic quotes from tech leaders
 const LOGIN_QUOTES = [
-  "Time to ship something awesome",
-  "Let's turn trials into wins today",
-  "Ready to make users fall in love?",
-  "Another day to build the future",
-  "Your playground awaits, let's create",
-  "Debug mode: OFF. Build mode: ON",
-  "Ship fast, iterate faster",
-  "Let's make something people actually want"
+  { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+  { text: "Seek wealth, not money or status.", author: "Naval Ravikant" },
+  { text: "The future is going to be weird.", author: "Elon Musk" },
+  { text: "Competition is for losers.", author: "Peter Thiel" },
+  { text: "Real artists ship.", author: "Steve Jobs" },
+  { text: "Play long-term games with long-term people.", author: "Naval Ravikant" },
+  { text: "Make something people want.", author: "Steve Jobs" },
+  { text: "The best part is no part.", author: "Elon Musk" },
 ]
 
 export default function LoginPage() {
@@ -147,7 +147,8 @@ export default function LoginPage() {
           <div className="relative z-10">
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Welcome back</h2>
-              <p className="text-sm text-gray-600 mt-2">{loginQuote}</p>
+              <p className="text-sm text-gray-700 mt-2 italic">"{loginQuote.text}"</p>
+              <p className="text-xs text-gray-500 mt-1">— {loginQuote.author}</p>
             </div>
 
             {/* Error Alert */}

@@ -199,7 +199,7 @@ export default function WorldClassRoadmapPage() {
     };
   }, [filteredItems]);
 
-  // Grouping - NO UNCATEGORIZED ITEMS
+  // Grouping - Show all items, group properly or show as "Other"
   const groupedItems = useMemo(() => {
     if (groupBy === 'none') {
       return { 'All Items': filteredItems };
@@ -208,22 +208,19 @@ export default function WorldClassRoadmapPage() {
     const groups: Record<string, RoadmapItem[]> = {};
 
     filteredItems.forEach(item => {
-      let key: string | null = null;
+      let key = 'Other'; // Default fallback instead of hiding
 
-      if (groupBy === 'goal' && item.goal) {
-        key = item.goal;
-      } else if (groupBy === 'area' && item.area) {
-        key = item.area;
+      if (groupBy === 'goal') {
+        key = item.goal || 'Other';
+      } else if (groupBy === 'area') {
+        key = item.area || 'Other';
       } else if (groupBy === 'status') {
-        // Status always has a value, no uncategorized needed
+        // Status always has a value
         key = item.status === 'in_progress' ? 'In Progress' :
               item.status === 'completed' ? 'Completed' :
               item.status === 'planned' ? 'Planned' :
               item.status === 'suggested' ? 'Suggested' : 'Cancelled';
       }
-
-      // Skip items without proper categorization (no "Uncategorized" group)
-      if (!key) return;
 
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
