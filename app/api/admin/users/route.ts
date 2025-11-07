@@ -122,16 +122,29 @@ export async function GET(request: NextRequest) {
     // Also fetch pending signup tokens that haven't been used yet
     console.log('🔍 API DEBUG: Fetching pending tokens from signup_tokens table...');
 
-    // Try raw SQL query to bypass any potential Supabase.js issues
-    const { data: pendingTokens, error: tokensError } = await adminClient.rpc('get_pending_tokens').catch(async () => {
-      // Fallback to regular query if RPC doesn't exist
-      console.log('🔍 API DEBUG: RPC not found, using regular query...');
-      return await adminClient
+    // Try RPC function first, fallback to regular query
+    let pendingTokens: any[] | null = null;
+    let tokensError: any = null;
+
+    try {
+      console.log('🔍 API DEBUG: Trying RPC function...');
+      const rpcResult = await adminClient.rpc('get_pending_tokens');
+      pendingTokens = rpcResult.data;
+      tokensError = rpcResult.error;
+      console.log('🔍 API DEBUG: RPC result:', { success: !tokensError, count: pendingTokens?.length });
+    } catch (rpcError) {
+      console.log('🔍 API DEBUG: RPC failed, using regular query...', rpcError);
+      // Fallback to regular query
+      const regularResult = await adminClient
         .from('signup_tokens')
         .select('*')
         .is('used_at', null)
         .gt('expires_at', new Date().toISOString());
-    });
+
+      pendingTokens = regularResult.data;
+      tokensError = regularResult.error;
+      console.log('🔍 API DEBUG: Regular query result:', { success: !tokensError, count: pendingTokens?.length });
+    }
 
     console.log('🔍 API DEBUG: Pending tokens query result:', {
       success: !tokensError,
@@ -182,10 +195,18 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
-    console.error('Error in GET /api/admin/users:', error);
+  } catch (error: any) {
+    console.error('❌ CRITICAL ERROR in GET /api/admin/users:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: error?.message || 'Unknown error',
+      },
       { status: 500 }
     );
   }
