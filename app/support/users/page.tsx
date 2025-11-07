@@ -16,7 +16,7 @@ interface User {
   email: string;
   name: string;
   role: 'Admin' | 'Sales Admin' | 'Research Admin' | 'Account Manager' | 'Product' | 'Prodgain User' | 'Team';
-  status: 'Active' | 'Invited';
+  status: 'Active' | 'Invited' | 'Pending';
   created_at: string;
   last_sign_in_at: string | null;
 }

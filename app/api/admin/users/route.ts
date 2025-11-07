@@ -77,7 +77,7 @@ async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: stri
   }
 }
 
-// GET - List all users
+// GET - List all users (including pending signups)
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
@@ -89,8 +89,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const adminClient = getSupabaseAdmin();
+
     // Get all users using admin API
-    const { data, error} = await getSupabaseAdmin().auth.admin.listUsers();
+    const { data, error} = await adminClient.auth.admin.listUsers();
 
     if (error) {
       console.error('Error fetching users:', error);
@@ -100,7 +102,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Return users with their metadata
+    // Get existing users from Supabase Auth
     const users = data.users.map(user => ({
       id: user.id,
       email: user.email,
@@ -110,6 +112,30 @@ export async function GET(request: NextRequest) {
       created_at: user.created_at,
       last_sign_in_at: user.last_sign_in_at,
     }));
+
+    // Also fetch pending signup tokens that haven't been used yet
+    const { data: pendingTokens, error: tokensError } = await adminClient
+      .from('signup_tokens')
+      .select('*')
+      .is('used_at', null) // Only get unused tokens
+      .gt('expires_at', new Date().toISOString()); // Only get non-expired tokens
+
+    if (!tokensError && pendingTokens) {
+      // Add pending signups to the list
+      const pendingUsers = pendingTokens
+        .filter(token => !users.some(u => u.email === token.email)) // Don't duplicate if already signed up
+        .map(token => ({
+          id: `pending-${token.token}`,
+          email: token.email || 'Unknown',
+          name: token.email?.split('@')[0] || 'Pending User',
+          role: token.user_role || 'Team',
+          status: 'Pending' as const,
+          created_at: token.created_at,
+          last_sign_in_at: null,
+        }));
+
+      users.push(...pendingUsers);
+    }
 
     return NextResponse.json({ users });
   } catch (error) {
