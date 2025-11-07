@@ -10,7 +10,7 @@ import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
 import PlatformUsersTab from '@/components/PlatformUsersTab';
-import TrialUsersTab from '@/components/TrialUsersTab';
+// import OrgUsersTab from '@/components/OrgUsersTab'; // REMOVED: Broken component - queries non-existent managed_org_ids column
 import SupportQueriesTab from '@/components/SupportQueriesTab';
 import EngagementTimelineTab from '@/components/EngagementTimelineTab';
 import DealTrackingTab from '@/components/DealTrackingTab';
@@ -27,8 +27,18 @@ type MeetingNote = Database['public']['Tables']['meeting_notes']['Row'];
 
 type TabType = 'overview' | 'users' | 'queries' | 'deals' | 'activity' | 'demos' | 'meetings' | 'features' | 'followups' | 'activitylog';
 
+const DOMAIN_OPTIONS = [
+  { value: 'AAD', label: 'AAD' },
+  { value: 'AF&B', label: 'AF&B' },
+  { value: 'E&C', label: 'E&C' },
+  { value: 'HC', label: 'HC' },
+  { value: 'NEO', label: 'NEO' },
+  { value: 'TMT', label: 'TMT' },
+  { value: 'Unassigned', label: 'Unassigned' },
+];
+
 export default function OrganizationDetailPage() {
-  const { user, loading: authLoading, role } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const orgId = params.id as string;
@@ -39,7 +49,6 @@ export default function OrganizationDetailPage() {
   const [demos, setDemos] = useState<DemoEvent[]>([]);
   const [meetings, setMeetings] = useState<MeetingNote[]>([]);
   const [accountManagers, setAccountManagers] = useState<any[]>([]);
-  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -83,7 +92,6 @@ export default function OrganizationDetailPage() {
 
   const fetchOrganizationData = async () => {
     setLoading(true);
-    const supabase = createClient();
     try {
       // Fetch organization
       const { data: org, error: orgError } = await supabase
@@ -103,65 +111,17 @@ export default function OrganizationDetailPage() {
         return;
       }
 
-      // Fetch account managers from API (users are stored in Supabase Auth, not a database table)
-      try {
-        console.log('🔍 Fetching account managers from API...');
-        const response = await fetch('/api/admin/users');
-        console.log('📡 API Response Status for account managers:', response.status);
+      // Fetch account managers (from users table)
+      const { data: managersData, error: managersError } = await supabase
+        .from('users')
+        .select('id as user_id, email, full_name')
+        .order('full_name', { ascending: true });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📦 API Response Data:', data);
-          const users = data.users || [];
-          console.log(`👥 Total users from API: ${users.length}`, users);
-
-          // Filter for admins and account managers
-          const managers = users
-            .filter((u: any) => {
-              const role = u.role?.toLowerCase() || '';
-              console.log(`Checking user ${u.email}: role="${role}"`);
-              return role === 'admin' || role === 'account manager';
-            })
-            .map((u: any) => ({
-              user_id: u.id,
-              email: u.email,
-              full_name: u.name,
-            }))
-            .sort((a: any, b: any) => (a.full_name || '').localeCompare(b.full_name || ''));
-
-          console.log(`✅ Found ${managers.length} account managers:`, managers);
-
-          if (managers.length === 0) {
-            toast.error('No account managers found. Please ensure users have "Admin" or "Account Manager" roles.');
-          }
-
-          setAccountManagers(managers);
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Failed to fetch account managers from API:', response.status, errorText);
-          toast.error(`Failed to load account managers: ${response.status}`);
-          setAccountManagers([]);
-        }
-      } catch (error) {
-        console.error('💥 Error fetching account managers:', error);
-        toast.error('Error loading account managers. Check console for details.');
+      if (!managersError && managersData) {
+        setAccountManagers(managersData);
+      } else {
+        // Fallback to empty list if users table doesn't work
         setAccountManagers([]);
-      }
-
-      // Fetch unique domains for dropdown
-      try {
-        const { data: allOrgs, error: domainsError } = await supabase
-          .from('trial_organizations')
-          .select('org_domain')
-          .not('org_domain', 'is', null)
-          .order('org_domain');
-
-        if (!domainsError && allOrgs) {
-          const uniqueDomains = Array.from(new Set(allOrgs.map(o => o.org_domain).filter(Boolean)));
-          setAvailableDomains(uniqueDomains);
-        }
-      } catch (error) {
-        console.error('Error fetching domains:', error);
       }
 
       // Fetch users
@@ -217,40 +177,24 @@ export default function OrganizationDetailPage() {
   };
 
   const handleSaveOrganization = async () => {
-    const supabase = createClient();
     try {
-      // Only update editable fields, exclude immutable fields like org_id, created_at
-      const updatePayload: any = {
-        org_name: editedOrg.org_name,
-        org_domain: editedOrg.org_domain,
-        account_manager: editedOrg.account_manager,
-        org_lifecycle_stage: editedOrg.org_lifecycle_stage,
-        trial_start_date: editedOrg.trial_start_date,
-        trial_end_date: editedOrg.trial_end_date,
-        engagement_score: editedOrg.engagement_score,
-        last_activity_date: editedOrg.last_activity_date,
-        comments: editedOrg.comments,
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log('💾 Saving organization with payload:', updatePayload);
-
       const { error } = await supabase
+        // -ignore - Supabase typing issue with dynamic columns
+
         .from('trial_organizations')
-        .update(updatePayload)
+        // @ts-ignore - Supabase typing issue with dynamic columns
+        // -ignore - Supabase typing issue with dynamic columns
+
+        .update(editedOrg)
         .eq('org_id', orgId);
 
-      if (error) {
-        console.error('❌ Database error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('✅ Organization saved successfully');
       toast.success('Organization updated successfully');
       setOrganization({ ...organization!, ...editedOrg });
     } catch (error: any) {
-      console.error('💥 Error updating organization:', error);
-      toast.error(`Failed to update organization: ${error.message || 'Unknown error'}`);
+      console.error('Error updating organization:', error);
+      toast.error('Failed to update organization');
     }
   };
 
@@ -298,7 +242,6 @@ export default function OrganizationDetailPage() {
   };
 
   const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
-    const supabase = createClient();
     try {
       const { error } = await supabase
         // -ignore - Supabase typing issue with dynamic columns
@@ -341,7 +284,6 @@ export default function OrganizationDetailPage() {
 
   const handleBulkDeleteUsers = async () => {
     setBulkProcessing(true);
-    const supabase = createClient();
     const userCountToDelete = selectedUserIds.size;
     const userIdsArray = Array.from(selectedUserIds);
 
@@ -388,7 +330,6 @@ export default function OrganizationDetailPage() {
 
   const handleBulkMarkPrimary = async () => {
     setBulkProcessing(true);
-    const supabase = createClient();
     try {
       if (!bulkPrimaryUserId) {
         toast.error('Please select a user to mark as primary');
@@ -436,7 +377,6 @@ export default function OrganizationDetailPage() {
 
   const handleBulkChangeStatus = async () => {
     setBulkProcessing(true);
-    const supabase = createClient();
     try {
       if (!bulkUserStatus) {
         toast.error('Please select a status');
@@ -588,7 +528,8 @@ export default function OrganizationDetailPage() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
             </button>
-            <button
+            {/* REMOVED: Broken Users tab - OrgUsersTab queries non-existent managed_org_ids column */}
+            {/* <button
               onClick={() => setActiveTab('users')}
               className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
                 activeTab === 'users'
@@ -596,11 +537,11 @@ export default function OrganizationDetailPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Trial Users ({users.length})
+              Users ({users.length})
               {activeTab === 'users' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
               )}
-            </button>
+            </button> */}
             <button
               onClick={() => setActiveTab('queries')}
               className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
@@ -734,47 +675,26 @@ export default function OrganizationDetailPage() {
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select domain...</option>
-                    {availableDomains.map((domain) => (
-                      <option key={domain} value={domain}>
-                        {domain}
+                    {DOMAIN_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
                       </option>
                     ))}
-                    <option value="__custom__">+ Add new domain...</option>
                   </select>
-                  {editedOrg.org_domain === '__custom__' && (
-                    <input
-                      type="text"
-                      placeholder="Enter new domain (e.g., example.com)"
-                      value=""
-                      onChange={(e) => setEditedOrg({ ...editedOrg, org_domain: e.target.value })}
-                      className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
-                      autoFocus
-                    />
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
                   <select
                     value={editedOrg.account_manager || ''}
-                    onChange={(e) => {
-                      const managerName = e.target.value;
-                      console.log('🔄 Account manager changed to:', managerName);
-                      setEditedOrg({
-                        ...editedOrg,
-                        account_manager: managerName || null
-                      });
-                    }}
+                    onChange={(e) => setEditedOrg({ ...editedOrg, account_manager: e.target.value })}
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select account manager...</option>
-                    {accountManagers.map((manager) => {
-                      const displayName = `${manager.full_name} (${manager.email})`;
-                      return (
-                        <option key={manager.user_id} value={displayName}>
-                          {displayName}
-                        </option>
-                      );
-                    })}
+                    {accountManagers.map((manager) => (
+                      <option key={manager.user_id} value={manager.full_name}>
+                        {manager.full_name} ({manager.email})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -831,12 +751,12 @@ export default function OrganizationDetailPage() {
           </div>
         )}
 
-        {/* Trial Users Tab */}
-        {activeTab === 'users' && (
+        {/* REMOVED: Broken Users Tab - OrgUsersTab queries non-existent managed_org_ids column */}
+        {/* {activeTab === 'users' && (
           <div className="space-y-6">
-            <TrialUsersTab orgId={orgId} users={users} onRefresh={fetchOrganizationData} />
+            <OrgUsersTab orgId={orgId} />
           </div>
-        )}
+        )} */}
 
         {/* Support Queries Tab */}
         {activeTab === 'queries' && (

@@ -1,29 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
-// Disable caching for this route - we need live pending user data
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-// Helper to create Supabase Admin client at runtime
+// Create Supabase Admin client with service role key (lazy initialization)
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
-    console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
-    throw new Error('Server configuration error: Missing Supabase URL');
-  }
-
-  if (!serviceRoleKey) {
-    console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
-    throw new Error('Server configuration error: Missing Supabase service role key');
-  }
-
   return createClient(
-    supabaseUrl,
-    serviceRoleKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       auth: {
         autoRefreshToken: false,
@@ -34,59 +17,64 @@ function getSupabaseAdmin() {
 }
 
 // Helper function to verify admin access
-async function verifyAdminAccess(): Promise<{ authorized: boolean; userId?: string; error?: string }> {
+async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: boolean; userId?: string }> {
   try {
-    // Use the proper server client that handles cookies automatically
-    const supabase = await createServerClient();
+    // Get the authorization header or cookie
+    const authHeader = request.headers.get('authorization');
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
 
-    // Get the current user from the session
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Find Supabase auth token from cookies
+    let accessToken = '';
 
-    console.log('🔐 Admin verification:', {
-      hasUser: !!user,
-      error: error?.message,
-      userId: user?.id,
-      role: user?.user_metadata?.role,
-      metadata: user?.user_metadata
-    });
+    if (authHeader) {
+      accessToken = authHeader.replace('Bearer ', '');
+    } else {
+      // Try to find auth token in cookies
+      const authCookie = allCookies.find(cookie =>
+        cookie.name.includes('sb-') && cookie.name.includes('auth-token')
+      );
+
+      if (authCookie) {
+        try {
+          const cookieValue = JSON.parse(authCookie.value);
+          accessToken = cookieValue.access_token || cookieValue[0];
+        } catch {
+          accessToken = authCookie.value;
+        }
+      }
+    }
+
+    if (!accessToken) {
+      return { authorized: false };
+    }
+
+    // Verify the user using admin API
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(accessToken);
 
     if (error || !user) {
-      return { authorized: false, error: error?.message || 'No user found' };
+      return { authorized: false };
     }
 
-    // Check if user has Admin role (case-insensitive)
+    // Check if user has Admin role
     const role = user.user_metadata?.role;
-    if (!role) {
-      return { authorized: false, error: 'No role found in user metadata' };
-    }
-
-    const lowerRole = role.toLowerCase();
-    const isAdmin = lowerRole === 'admin' || lowerRole === 'sales admin' || lowerRole === 'research admin';
-
-    console.log('🔐 Role check:', {
-      originalRole: role,
-      lowerRole,
-      isAdmin,
-      checkedAgainst: ['admin', 'sales admin', 'research admin']
-    });
-
-    if (!isAdmin) {
-      return { authorized: false, error: `Role "${role}" does not have admin permissions` };
+    if (role !== 'Admin') {
+      return { authorized: false };
     }
 
     return { authorized: true, userId: user.id };
   } catch (error) {
     console.error('Error verifying admin access:', error);
-    return { authorized: false, error: 'Exception during verification' };
+    return { authorized: false };
   }
 }
 
-// GET - List all users (including pending signups)
-// CRITICAL: Disable all caching - we need live pending user data
+// GET - List all users
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess();
+    const { authorized } = await verifyAdminAccess(request);
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -94,11 +82,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Force cache bypass for user list
-    const adminClient = getSupabaseAdmin();
-
     // Get all users using admin API
-    const { data, error} = await adminClient.auth.admin.listUsers();
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
 
     if (error) {
       console.error('Error fetching users:', error);
@@ -108,7 +94,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get existing users from Supabase Auth
+    // Return users with their metadata
     const users = data.users.map(user => ({
       id: user.id,
       email: user.email,
@@ -119,178 +105,86 @@ export async function GET(request: NextRequest) {
       last_sign_in_at: user.last_sign_in_at,
     }));
 
-    // Also fetch pending signup tokens that haven't been used yet
-    console.log('🔍 Fetching pending signup tokens...');
-
-    // Direct query - no RPC function (was causing errors)
-    const { data: pendingTokens, error: tokensError } = await adminClient
-      .from('signup_tokens')
-      .select('*')
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString());
-
-    console.log('🔍 API DEBUG: Pending tokens query result:', {
-      success: !tokensError,
-      error: tokensError?.message,
-      tokenCount: pendingTokens?.length || 0,
-      currentTime: new Date().toISOString(),
-      tokens: pendingTokens?.map(t => ({
-        email: t.email,
-        expires: t.expires_at,
-        used: t.used,
-        isExpired: t.expires_at ? new Date(t.expires_at) <= new Date() : 'no date'
-      }))
-    });
-
-    if (tokensError) {
-      console.error('❌ API DEBUG: Error fetching pending tokens:', tokensError);
-      console.error('❌ Full error:', JSON.stringify(tokensError, null, 2));
-    }
-
-    if (pendingTokens && pendingTokens.length > 0) {
-      console.log('🔍 API DEBUG: Processing', pendingTokens.length, 'pending tokens...');
-      // Add pending signups to the list
-      const pendingUsers = pendingTokens
-        .filter(token => {
-          const isDuplicate = users.some(u => u.email === token.email);
-          console.log('🔍 Token', token.email, '- duplicate?', isDuplicate);
-          return !isDuplicate;
-        })
-        .map(token => ({
-          id: `pending-${token.token}`,
-          email: token.email || 'Unknown',
-          name: token.email?.split('@')[0] || 'Pending User',
-          role: token.user_role || 'Team',
-          status: 'Pending' as const,
-          created_at: token.created_at,
-          last_sign_in_at: null,
-        }));
-
-      console.log('🔍 API DEBUG: Filtered to', pendingUsers.length, 'pending users (deduplicated)');
-      users.push(...pendingUsers);
-    } else {
-      console.log('⚠️ API DEBUG: NO pending tokens found! Query returned empty or null.');
-    }
-
-    // DEBUG: Log what we're returning
-    console.log('🔍 API DEBUG: Returning', users.length, 'total users');
-    console.log('🔍 API DEBUG: Active users:', users.filter(u => u.status === 'Active').length);
-    console.log('🔍 API DEBUG: Pending users:', users.filter(u => u.status === 'Pending').length);
-    console.log('🔍 API DEBUG: User list:', users.map(u => ({ email: u.email, status: u.status })));
-
-    // Return with aggressive no-cache headers to prevent Vercel caching
+    return NextResponse.json({ users });
+  } catch (error) {
+    console.error('Error in GET /api/admin/users:', error);
     return NextResponse.json(
-      { users },
-      {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'CDN-Cache-Control': 'no-store',
-          'Vercel-CDN-Cache-Control': 'no-store',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      }
-    );
-  } catch (error: any) {
-    console.error('❌ CRITICAL ERROR in GET /api/admin/users:', error);
-    console.error('Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
-    });
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error?.message || 'Unknown error',
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-// POST - Create signup link for new user
+// POST - Create new user with password (simplified for small teams)
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized, userId: adminUserId, error: authError } = await verifyAdminAccess();
+    const { authorized } = await verifyAdminAccess(request);
     if (!authorized) {
-      console.error('❌ Admin access denied:', authError);
       return NextResponse.json(
-        { error: `Unauthorized - Admin access required. ${authError || ''}` },
+        { error: 'Unauthorized - Admin access required' },
         { status: 403 }
       );
     }
 
     const body = await request.json();
-    const { email, name, role } = body;
+    const { email, password, name, role } = body;
 
     // Validate input
-    if (!email || !name || !role) {
+    if (!email || !password || !name || !role) {
       return NextResponse.json(
-        { error: 'Email, name, and role are required' },
+        { error: 'Email, password, name, and role are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters' },
         { status: 400 }
       );
     }
 
     // Validate role
-    const validRoles = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team', 'AM'];
+    const validRoles = ['Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { error: 'Invalid role' },
+        { error: 'Invalid role. Must be Admin, Account Manager, Product, Prodgain User, or Team' },
         { status: 400 }
       );
     }
 
-    const adminClient = getSupabaseAdmin();
+    // Create user directly with password using admin API
+    // This bypasses email confirmation - perfect for small teams (max 25 users)
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email (no email required)
+      user_metadata: {
+        name,
+        role,
+      },
+    });
 
-    // Check if user already exists
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-    const userExists = existingUsers.users.some(u => u.email === email);
-
-    if (userExists) {
+    if (error) {
+      console.error('Error creating user:', error);
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: error.message || 'Failed to create user' },
         { status: 400 }
       );
     }
-
-    // Generate unique token
-    const token = crypto.randomUUID();
-
-    // Token expires in 7 days
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    // Store signup token in database
-    const { error: tokenError } = await adminClient
-      .from('signup_tokens')
-      .insert({
-        token,
-        email,
-        user_role: role,
-        expires_at: expiresAt.toISOString(),
-        created_by: adminUserId,
-      });
-
-    if (tokenError) {
-      console.error('Error creating signup token:', tokenError);
-      return NextResponse.json(
-        { error: 'Failed to generate signup link' },
-        { status: 500 }
-      );
-    }
-
-    // Generate signup URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const signupUrl = `${baseUrl}/support/signup?token=${token}`;
 
     return NextResponse.json({
       success: true,
-      signupUrl,
-      email,
-      name,
-      role,
-      expiresAt: expiresAt.toISOString(),
+      message: 'User created successfully. Share the login credentials with them.',
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name,
+        role,
+      },
     });
   } catch (error) {
     console.error('Error in POST /api/admin/users:', error);
@@ -301,11 +195,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH - Update user (email, name, or role)
+// PATCH - Update user role
 export async function PATCH(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized } = await verifyAdminAccess();
+    const { authorized } = await verifyAdminAccess(request);
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -314,51 +208,32 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, role, email, name } = body;
+    const { userId, role } = body;
 
-    // Validate user ID
-    if (!userId) {
+    // Validate input
+    if (!userId || !role) {
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { error: 'User ID and role are required' },
         { status: 400 }
       );
     }
 
-    // Prepare update payload
-    const updatePayload: any = {};
-    const metadataUpdates: any = {};
-
-    // Handle role update
-    if (role) {
-      const validRoles = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team', 'AM'];
-      if (!validRoles.includes(role)) {
-        return NextResponse.json(
-          { error: 'Invalid role' },
-          { status: 400 }
-        );
-      }
-      metadataUpdates.role = role;
+    // Validate role
+    const validRoles = ['Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role. Must be Admin, Account Manager, Product, Prodgain User, or Team' },
+        { status: 400 }
+      );
     }
 
-    // Handle name update
-    if (name !== undefined) {
-      metadataUpdates.name = name;
-    }
-
-    // Handle email update
-    if (email) {
-      updatePayload.email = email;
-    }
-
-    // Add metadata updates if any
-    if (Object.keys(metadataUpdates).length > 0) {
-      updatePayload.user_metadata = metadataUpdates;
-    }
-
-    // Update user using admin API
-    const { data, error } = await getSupabaseAdmin().auth.admin.updateUserById(
+    // Update user metadata using admin API
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
-      updatePayload
+      {
+        user_metadata: { role },
+      }
     );
 
     if (error) {
@@ -374,7 +249,6 @@ export async function PATCH(request: NextRequest) {
       user: {
         id: data.user.id,
         email: data.user.email,
-        name: data.user.user_metadata?.name,
         role: data.user.user_metadata?.role,
       },
     });
@@ -391,7 +265,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Verify admin access
-    const { authorized, userId: adminUserId } = await verifyAdminAccess();
+    const { authorized, userId: adminUserId } = await verifyAdminAccess(request);
     if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
@@ -419,7 +293,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete user using admin API
-    const { error } = await getSupabaseAdmin().auth.admin.deleteUser(userId);
+    const supabaseAdmin = getSupabaseAdmin();
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
       console.error('Error deleting user:', error);

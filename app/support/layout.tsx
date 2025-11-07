@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -12,12 +11,10 @@ import {
   Users2,
   LogOut,
   Map,
-  FileText,
-  ExternalLink,
   Menu,
   X
 } from 'lucide-react';
-import NotificationsBell from '@/components/NotificationsBell'; // Floating widget - renders globally
+import NotificationsBell from '@/components/NotificationsBell';
 
 export default function SupportLayout({
   children,
@@ -55,8 +52,24 @@ export default function SupportLayout({
   // Show loading state while checking auth
   if (!mounted || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-500">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30 animate-pulse">
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="12" cy="12" r="2" fill="currentColor" opacity="1"/>
+              <circle cx="12" cy="6" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="18" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="12" cy="18" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="6" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
+            </svg>
+          </div>
+          <p className="text-sm text-slate-600 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -64,8 +77,21 @@ export default function SupportLayout({
   // Show loading state if authenticated but still on login page (during redirect)
   if (user && pathname === '/support/login') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-500">Signing in...</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <svg
+              className="w-6 h-6 text-white animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <p className="text-sm text-slate-600 font-medium">Signing in...</p>
+        </div>
       </div>
     );
   }
@@ -74,26 +100,7 @@ export default function SupportLayout({
   if (!user) {
     return (
       <>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            success: {
-              duration: 2500,
-              style: {
-                background: '#10b981',
-                color: '#fff',
-              },
-            },
-            error: {
-              duration: 4000,
-              style: {
-                background: '#ef4444',
-                color: '#fff',
-              },
-            },
-          }}
-        />
+        <Toaster position="top-right" />
         {children}
       </>
     );
@@ -102,71 +109,34 @@ export default function SupportLayout({
   // Show authenticated pages with sidebar
   return (
     <div className="flex h-screen bg-slate-50">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          success: {
-            duration: 2500,
-            style: {
-              background: '#10b981',
-              color: '#fff',
-            },
-          },
-          error: {
-            duration: 4000,
-            style: {
-              background: '#ef4444',
-              color: '#fff',
-            },
-          },
-        }}
-      >
-        {(t) => (
-          <div className="flex items-center justify-between gap-3 min-w-0">
-            <div className="flex-1 min-w-0">
-              {t.message}
-            </div>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="flex-shrink-0 p-1 hover:bg-white/20 rounded transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </Toaster>
+      <Toaster position="top-right" />
 
-      {/* Hamburger Button - Mobile Only */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="fixed top-4 left-4 z-[70] lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all duration-150 active:scale-95"
-      >
-        {mobileMenuOpen ? (
-          <X className="w-5 h-5" strokeWidth={1.5} />
-        ) : (
-          <Menu className="w-5 h-5" strokeWidth={1.5} />
-        )}
-      </button>
-
-      {/* Mobile Overlay */}
+      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[50]"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
+      {/* Hamburger Button - Mobile Only */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+      >
+        {mobileMenuOpen ? (
+          <X className="w-5 h-5" strokeWidth={2} />
+        ) : (
+          <Menu className="w-5 h-5" strokeWidth={2} />
+        )}
+      </button>
+
       {/* Modern Sidebar */}
-      <aside className={`
-        w-64 bg-white border-r border-slate-200 flex flex-col
-        fixed lg:relative inset-y-0 left-0 z-[60]
-        transform transition-transform duration-200 ease-out
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      <aside className={`w-64 bg-white border-r border-slate-200 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Logo Header */}
-        <div className="h-16 px-5 flex items-center border-b border-slate-200 bg-white">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
               <svg
@@ -202,112 +172,83 @@ export default function SupportLayout({
               myRA AI
             </span>
           </div>
+          <NotificationsBell />
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 flex flex-col overflow-y-auto">
           <div className="space-y-1">
-            <Link
-              href="/support/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
+            <button
+              onClick={() => router.push('/support/dashboard')}
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/dashboard'
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
+              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Dashboard</span>
-            </Link>
+            </button>
 
-            <Link
-              href="/support/trials"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
+            <button
+              onClick={() => router.push('/support/trials')}
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname?.startsWith('/support/trials')
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <Building2 className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/trials') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
+              <Building2 className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/trials') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Trial Orgs</span>
-            </Link>
+            </button>
 
-            <Link
-              href="/support/tickets"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
-                pathname?.startsWith('/support/tickets')
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <FileText className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/tickets') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
-              <span>Tickets</span>
-            </Link>
-
-            <Link
-              href="/support/reports"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
+            <button
+              onClick={() => router.push('/support/reports')}
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/reports'
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
+              <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Reports</span>
-            </Link>
+            </button>
 
-            <Link
-              href="/support/users"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
+            <button
+              onClick={() => router.push('/support/users')}
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                 pathname === '/support/users'
                   ? 'text-slate-900 bg-slate-900/5'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
+              <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Users</span>
-            </Link>
+            </button>
 
             {/* Roadmap - Admin only */}
             {role?.toLowerCase() === 'admin' && (
-              <Link
-                href="/support/admin/roadmap"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
+              <button
+                onClick={() => router.push('/support/admin/roadmap')}
+                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
                   pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap')
                     ? 'text-slate-900 bg-slate-900/5'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                <Map className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={1.5} />
+                <Map className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
                 <span>Roadmap</span>
-              </Link>
+              </button>
             )}
           </div>
 
-          {/* Bottom Actions */}
-          <div className="mt-auto pt-4 border-t border-slate-200 space-y-1">
-            {/* Link to Public Status Page */}
-            <a
-              href="/status"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full text-slate-600 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
-            >
-              <ExternalLink className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-              <span>Public Status</span>
-            </a>
-
-            {/* Sign Out Button */}
+          {/* Sign Out Button - Prominent placement */}
+          <div className="mt-auto pt-4 border-t border-slate-200">
             <button
               onClick={() => signOut()}
-              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full text-slate-600 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full text-slate-600 hover:text-red-600 hover:bg-red-50"
             >
-              <LogOut className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+              <LogOut className="w-5 h-5 shrink-0" strokeWidth={2} />
               <span>Sign Out</span>
             </button>
           </div>
@@ -332,15 +273,7 @@ export default function SupportLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto lg:ml-0 relative">
-        {/* Mobile header spacer */}
-        <div className="lg:hidden h-16" />
-
-        {children}
-      </main>
-
-      {/* Floating Draggable Notification Widget - Renders globally for all authenticated pages */}
-      <NotificationsBell />
+      <main className="flex-1 overflow-y-auto lg:ml-0">{children}</main>
     </div>
   );
 }

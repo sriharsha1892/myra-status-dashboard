@@ -16,17 +16,13 @@ import toast, { Toaster } from 'react-hot-toast';
 interface User {
   id: string;
   email: string;
-  name: string;
   role: string;
-  status: string;
   created_at: string;
   last_sign_in_at: string | null;
 }
 
 const ROLES = [
   { value: 'Admin', label: 'Admin' },
-  { value: 'Sales Admin', label: 'Sales Admin' },
-  { value: 'Research Admin', label: 'Research Admin' },
   { value: 'Team', label: 'Team' },
   { value: 'AM', label: 'Account Manager' },
 ];
@@ -37,13 +33,12 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
-  const [editingField, setEditingField] = useState<{ userId: string; field: string } | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: '',
-    name: '',
     password: '',
+    name: '',
     role: 'Team',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -51,14 +46,14 @@ export default function UsersPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
-    } else if (!authLoading && role?.toLowerCase() !== 'admin' && role?.toLowerCase() !== 'sales admin' && role?.toLowerCase() !== 'research admin') {
+    } else if (!authLoading && role !== 'Admin') {
       router.push('/support/dashboard');
       toast.error('Admin access required');
     }
   }, [user, authLoading, role, router]);
 
   useEffect(() => {
-    if (user && (role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'sales admin' || role?.toLowerCase() === 'research admin')) {
+    if (user && role?.toLowerCase() === 'admin') {
       fetchUsers();
     }
   }, [user, role]);
@@ -66,6 +61,8 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      // Fetch all users from auth.users via admin API
+      // API returns users with roles from user_metadata
       const response = await fetch('/api/admin/users', {
         method: 'GET',
       });
@@ -89,13 +86,14 @@ export default function UsersPage() {
     setSubmitting(true);
 
     try {
+      // Create user via API route
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          name: formData.name,
           password: formData.password,
+          name: formData.name,
           role: formData.role,
         }),
       });
@@ -105,9 +103,10 @@ export default function UsersPage() {
         throw new Error(error.error || 'Failed to create user');
       }
 
-      toast.success('User created successfully');
+      const data = await response.json();
+      toast.success(data.message || 'User created successfully');
       setShowAddModal(false);
-      setFormData({ email: '', name: '', password: '', role: 'Team' });
+      setFormData({ email: '', password: '', name: '', role: 'Team' });
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -117,29 +116,17 @@ export default function UsersPage() {
     }
   };
 
-  const startEditing = (userId: string, field: string, currentValue: string) => {
-    setEditingField({ userId, field });
-    setEditValue(currentValue);
-  };
-
-  const cancelEditing = () => {
-    setEditingField(null);
-    setEditValue('');
-  };
-
-  const saveEdit = async (userId: string, field: string) => {
-    if (!editValue) {
-      toast.error('Value cannot be empty');
-      return;
-    }
+  const handleUpdateRole = async () => {
+    if (!selectedUser) return;
+    setSubmitting(true);
 
     try {
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
-          [field]: editValue,
+          userId: selectedUser.id,
+          role: formData.role,
         }),
       });
 
@@ -148,13 +135,15 @@ export default function UsersPage() {
         throw new Error(error.error || 'Failed to update user');
       }
 
-      toast.success(`User ${field} updated`);
-      setEditingField(null);
-      setEditValue('');
+      toast.success('User role updated');
+      setShowEditModal(false);
+      setSelectedUser(null);
       fetchUsers();
     } catch (error: any) {
       console.error('Error updating user:', error);
       toast.error(error.message || 'Failed to update user');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -183,7 +172,7 @@ export default function UsersPage() {
     }
   };
 
-  if (authLoading || (user && role?.toLowerCase() !== 'admin' && role?.toLowerCase() !== 'sales admin' && role?.toLowerCase() !== 'research admin')) {
+  if (authLoading || (user && role !== 'Admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600 dark:text-gray-400">Loading...</div>
@@ -204,7 +193,7 @@ export default function UsersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4 sm:gap-8">
             <h1 className="text-base font-semibold text-gray-900 dark:text-white">
-              User Management <span className="text-xs text-gray-500">({ROLES.length} roles available)</span>
+              User Management
             </h1>
             <nav className="flex items-center gap-1">
               <button
@@ -219,9 +208,6 @@ export default function UsersPage() {
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setShowPermissionsModal(true)}>
-              Manage Permissions
-            </Button>
             <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
               Add User
             </Button>
@@ -233,8 +219,8 @@ export default function UsersPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Users Table with Inline Editing */}
-        <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
+        {/* Users Table */}
+        <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-sm text-gray-500 dark:text-gray-400">
               Loading users...
@@ -246,180 +232,69 @@ export default function UsersPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                <thead className="border-b border-gray-200 dark:border-gray-800">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Email
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Role
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Created
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Last Sign In
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-[#161b22] divide-y divide-gray-200 dark:divide-gray-800">
+                <tbody>
                   {users.map((u) => (
                     <tr
                       key={u.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-150"
+                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200"
                     >
-                      {/* Email - Editable */}
                       <td className="px-4 py-3">
-                        {editingField?.userId === u.id && editingField?.field === 'email' ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="email"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') saveEdit(u.id, 'email');
-                                if (e.key === 'Escape') cancelEditing();
-                              }}
-                              className="px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                              autoFocus
-                            />
-                            <button onClick={() => saveEdit(u.id, 'email')} className="text-green-600 hover:text-green-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                            <button onClick={cancelEditing} className="text-red-600 hover:text-red-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => startEditing(u.id, 'email', u.email)}
-                            className="text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
-                          >
-                            {u.email}
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-900 dark:text-white">{u.email}</div>
                       </td>
-
-                      {/* Name - Editable */}
                       <td className="px-4 py-3">
-                        {editingField?.userId === u.id && editingField?.field === 'name' ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') saveEdit(u.id, 'name');
-                                if (e.key === 'Escape') cancelEditing();
-                              }}
-                              className="px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                              autoFocus
-                            />
-                            <button onClick={() => saveEdit(u.id, 'name')} className="text-green-600 hover:text-green-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                            <button onClick={cancelEditing} className="text-red-600 hover:text-red-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => startEditing(u.id, 'name', u.name)}
-                            className="text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded"
-                          >
-                            {u.name}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Role - Editable with dropdown */}
-                      <td className="px-4 py-3">
-                        {editingField?.userId === u.id && editingField?.field === 'role' ? (
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') saveEdit(u.id, 'role');
-                                if (e.key === 'Escape') cancelEditing();
-                              }}
-                              className="px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                              autoFocus
-                            >
-                              {ROLES.map(r => (
-                                <option key={r.value} value={r.value}>{r.label}</option>
-                              ))}
-                            </select>
-                            <button onClick={() => saveEdit(u.id, 'role')} className="text-green-600 hover:text-green-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                            <button onClick={cancelEditing} className="text-red-600 hover:text-red-700">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : (
-                          <span
-                            onClick={() => startEditing(u.id, 'role', u.role)}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                          >
-                            {u.role}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          u.status === 'Active'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                        }`}>
-                          {u.status}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+                          {u.role}
                         </span>
                       </td>
-
-                      {/* Created */}
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {format(new Date(u.created_at), 'MMM d, yyyy')}
                       </td>
-
-                      {/* Last Sign In */}
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {u.last_sign_in_at
                           ? format(new Date(u.last_sign_in_at), 'MMM d, yyyy')
                           : 'Never'}
                       </td>
-
-                      {/* Actions */}
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          disabled={u.id === user.id}
-                          className="text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setFormData({ ...formData, role: u.role });
+                              setShowEditModal(true);
+                            }}
+                          >
+                            Edit Role
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUser(u.id)}
+                            disabled={u.id === user.id}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -435,12 +310,20 @@ export default function UsersPage() {
         isOpen={showAddModal}
         onClose={() => {
           setShowAddModal(false);
-          setFormData({ email: '', name: '', password: '', role: 'Team' });
+          setFormData({ email: '', password: '', name: '', role: 'Team' });
         }}
         title="Add New User"
         size="md"
       >
         <form onSubmit={handleAddUser} className="space-y-4">
+          {/* Info Banner */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Simple Setup:</strong> User will be created immediately with the password you set.
+              Share the login credentials directly with them (no email required).
+            </p>
+          </div>
+
           <Input
             label="Email"
             type="email"
@@ -456,19 +339,20 @@ export default function UsersPage() {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Full Name"
+            placeholder="Full name"
             required
             fullWidth
           />
 
           <Input
-            label="Password"
+            label="Temporary Password"
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             placeholder="Minimum 6 characters"
             required
             fullWidth
+            helperText="You'll share this password with the user directly"
           />
 
           <Select
@@ -487,7 +371,7 @@ export default function UsersPage() {
               size="md"
               onClick={() => {
                 setShowAddModal(false);
-                setFormData({ email: '', name: '', password: '', role: 'Team' });
+                setFormData({ email: '', password: '', name: '', role: 'Team' });
               }}
               disabled={submitting}
             >
@@ -506,27 +390,56 @@ export default function UsersPage() {
         </form>
       </Modal>
 
-      {/* Permissions Management Modal - Placeholder for now */}
+      {/* Edit Role Modal */}
       <Modal
-        isOpen={showPermissionsModal}
-        onClose={() => setShowPermissionsModal(false)}
-        title="Manage Role Permissions"
-        size="lg"
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        title="Edit User Role"
+        size="md"
       >
-        <div className="space-y-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Configure permissions for each role. This feature allows you to customize what each role can access and modify.
-          </p>
-
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>Note:</strong> Currently, Sales Admin and Research Admin have the same permissions as Admin. You can customize these permissions through this interface.
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Email</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {selectedUser?.email}
             </p>
           </div>
 
-          {/* Permissions grid will be built in next iteration */}
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            Permissions management UI coming soon...
+          <Select
+            label="Role"
+            value={formData.role}
+            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            options={ROLES}
+            required
+            fullWidth
+          />
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              onClick={() => {
+                setShowEditModal(false);
+                setSelectedUser(null);
+              }}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              loading={submitting}
+              disabled={submitting}
+              onClick={handleUpdateRole}
+            >
+              Update Role
+            </Button>
           </div>
         </div>
       </Modal>
