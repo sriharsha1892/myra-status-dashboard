@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
+import PersonalImpactWidget from '@/components/support/PersonalImpactWidget';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -454,8 +455,11 @@ export default function EnterpriseCommandCenter() {
               </div>
             </div>
 
-            {/* Right Column - Todos, Upcoming Demos & Insights - Compact */}
+            {/* Right Column - Impact, Todos, Demos & Insights */}
             <div className="lg:col-span-1 space-y-4">
+              {/* Personal Impact & Activity Feed - Always visible */}
+              <PersonalImpactWidget userId={user?.id} role={role} />
+
               {/* Todos Widget - Always visible */}
               <TodosWidget userId={user?.id} />
 
