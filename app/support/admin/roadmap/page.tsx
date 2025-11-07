@@ -64,6 +64,10 @@ type RoadmapItem = {
   version_planned?: string;
   assigned_to?: string;
   org_id?: string;
+  // Agent and environment fields
+  agent_name?: string;
+  agent_url?: string;
+  environment?: 'staging' | 'production' | null;
   // Time tracking fields
   estimated_hours?: number;
   actual_hours?: number;
@@ -103,7 +107,7 @@ export default function WorldClassRoadmapPage() {
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('goal');
+  const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('none'); // Changed default from 'goal' to 'none'
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Inline editing state for table view
@@ -177,12 +181,14 @@ export default function WorldClassRoadmapPage() {
   // Analytics
   const analytics = useMemo(() => {
     const total = filteredItems.length;
+    // Shipped = completed AND environment is 'production'
+    const shipped = filteredItems.filter(i => i.status === 'completed' && i.environment === 'production').length;
     const completed = filteredItems.filter(i => i.status === 'completed').length;
     const inProgress = filteredItems.filter(i => i.status === 'in_progress').length;
     const planned = filteredItems.filter(i => i.status === 'planned').length;
     const suggested = filteredItems.filter(i => i.status === 'suggested').length;
 
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const completionRate = total > 0 ? Math.round((shipped / total) * 100) : 0; // Changed to use 'shipped' instead of 'completed'
 
     // Timeline health
     const withDates = filteredItems.filter(i => i.target_date && i.status !== 'completed');
@@ -194,11 +200,12 @@ export default function WorldClassRoadmapPage() {
 
     return {
       total,
-      completed,
+      shipped, // NEW: Only production items
+      completed, // All completed (staging + production)
       inProgress,
       planned,
       suggested,
-      completionRate,
+      completionRate, // Now based on shipped, not completed
       overdue,
       dueSoon,
     };
@@ -635,9 +642,12 @@ export default function WorldClassRoadmapPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Title</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Priority</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Version</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Environment</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Agent Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Agent URL</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Goal</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Area</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Proposer</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Target Date</th>
                   </tr>
@@ -645,7 +655,7 @@ export default function WorldClassRoadmapPage() {
                 <tbody className="divide-y divide-slate-200">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center">
+                      <td colSpan={11} className="px-4 py-12 text-center">
                         <p className="text-sm text-slate-500">No items to display</p>
                       </td>
                     </tr>
@@ -736,6 +746,130 @@ export default function WorldClassRoadmapPage() {
                           )}
                         </td>
 
+                        {/* Version Planned - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'version_planned' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'version_planned')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'version_planned');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              placeholder="e.g., v1.2.0"
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'version_planned', item.version_planned)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.version_planned || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Environment - Select dropdown */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'environment' ? (
+                            <select
+                              value={editValue || ''}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'environment')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'environment');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Not Set</option>
+                              <option value="staging">Staging</option>
+                              <option value="production">Production</option>
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'environment', item.environment)}
+                              className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${
+                                item.environment === 'production'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : item.environment === 'staging'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'text-slate-500'
+                              } hover:opacity-80 transition-opacity`}
+                            >
+                              {item.environment ? item.environment.charAt(0).toUpperCase() + item.environment.slice(1) : '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Agent Name - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'agent_name' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'agent_name')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'agent_name');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              placeholder="Agent name"
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'agent_name', item.agent_name)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.agent_name || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Agent URL - Text input with link */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'agent_url' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'agent_url')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'agent_url');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              placeholder="https://..."
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            item.agent_url ? (
+                              <a
+                                href={item.agent_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Link
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => handleStartEdit(item.id, 'agent_url', item.agent_url)}
+                                className="w-full text-left text-xs text-slate-500 hover:text-blue-600 transition-colors"
+                              >
+                                -
+                              </button>
+                            )
+                          )}
+                        </td>
+
                         {/* Goal - Text input */}
                         <td className="px-4 py-3">
                           {editingCell?.id === item.id && editingCell?.field === 'goal' ? (
@@ -782,31 +916,6 @@ export default function WorldClassRoadmapPage() {
                               className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
                             >
                               {item.area || '-'}
-                            </button>
-                          )}
-                        </td>
-
-                        {/* Proposer - Text input */}
-                        <td className="px-4 py-3">
-                          {editingCell?.id === item.id && editingCell?.field === 'proposer' ? (
-                            <input
-                              type="text"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => handleSaveEdit(item.id, 'proposer')}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveEdit(item.id, 'proposer');
-                                if (e.key === 'Escape') handleCancelEdit();
-                              }}
-                              autoFocus
-                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          ) : (
-                            <button
-                              onClick={() => handleStartEdit(item.id, 'proposer', item.proposer)}
-                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
-                            >
-                              {item.proposer || '-'}
                             </button>
                           )}
                         </td>
