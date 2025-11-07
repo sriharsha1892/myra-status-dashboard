@@ -150,18 +150,29 @@ export async function GET(request: NextRequest) {
       success: !tokensError,
       error: tokensError?.message,
       tokenCount: pendingTokens?.length || 0,
-      tokens: pendingTokens
+      currentTime: new Date().toISOString(),
+      tokens: pendingTokens?.map(t => ({
+        email: t.email,
+        expires: t.expires_at,
+        used: t.used_at,
+        isExpired: t.expires_at ? new Date(t.expires_at) <= new Date() : 'no date'
+      }))
     });
 
     if (tokensError) {
       console.error('❌ API DEBUG: Error fetching pending tokens:', tokensError);
+      console.error('❌ Full error:', JSON.stringify(tokensError, null, 2));
     }
 
-    if (!tokensError && pendingTokens) {
+    if (pendingTokens && pendingTokens.length > 0) {
       console.log('🔍 API DEBUG: Processing', pendingTokens.length, 'pending tokens...');
       // Add pending signups to the list
       const pendingUsers = pendingTokens
-        .filter(token => !users.some(u => u.email === token.email)) // Don't duplicate if already signed up
+        .filter(token => {
+          const isDuplicate = users.some(u => u.email === token.email);
+          console.log('🔍 Token', token.email, '- duplicate?', isDuplicate);
+          return !isDuplicate;
+        })
         .map(token => ({
           id: `pending-${token.token}`,
           email: token.email || 'Unknown',
@@ -174,6 +185,8 @@ export async function GET(request: NextRequest) {
 
       console.log('🔍 API DEBUG: Filtered to', pendingUsers.length, 'pending users (deduplicated)');
       users.push(...pendingUsers);
+    } else {
+      console.log('⚠️ API DEBUG: NO pending tokens found! Query returned empty or null.');
     }
 
     // DEBUG: Log what we're returning
