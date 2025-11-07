@@ -112,16 +112,17 @@ export default function OrganizationDetailPage() {
         return;
       }
 
-      // Fetch account managers (from users table)
-      const { data: managersData, error: managersError } = await supabase
-        .from('users')
-        .select('id as user_id, email, full_name')
-        .order('full_name', { ascending: true });
-
-      if (!managersError && managersData) {
-        setAccountManagers(managersData);
-      } else {
-        // Fallback to empty list if users table doesn't work
+      // Fetch account managers from API (Supabase Auth users)
+      try {
+        const managersResponse = await fetch('/api/account-managers');
+        if (managersResponse.ok) {
+          const managersData = await managersResponse.json();
+          setAccountManagers(managersData.managers || []);
+        } else {
+          setAccountManagers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching account managers:', error);
         setAccountManagers([]);
       }
 
