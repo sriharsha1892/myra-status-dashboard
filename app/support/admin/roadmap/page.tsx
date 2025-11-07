@@ -42,6 +42,7 @@ import {
   AlertCircle,
   ArrowUp,
   ArrowRight,
+  Table,
 } from 'lucide-react';
 import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
 
@@ -71,7 +72,7 @@ type RoadmapItem = {
   days_since_activity?: number;
 };
 
-type ViewMode = 'list' | 'board' | 'timeline';
+type ViewMode = 'list' | 'board' | 'timeline' | 'table';
 
 // Premium status pill system
 const COLORS = {
@@ -104,6 +105,10 @@ export default function WorldClassRoadmapPage() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('goal');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Inline editing state for table view
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
 
 
   const supabase = createClient();
@@ -248,6 +253,54 @@ export default function WorldClassRoadmapPage() {
       newExpanded.add(group);
     }
     setExpandedGroups(newExpanded);
+  };
+
+  // Inline editing functions for table view
+  const handleStartEdit = (id: string, field: string, currentValue: any) => {
+    setEditingCell({ id, field });
+    setEditValue(currentValue || '');
+  };
+
+  const handleSaveEdit = async (id: string, field: string) => {
+    try {
+      const updates: any = {};
+
+      // Convert value based on field type
+      if (field === 'estimated_hours' || field === 'actual_hours' || field === 'progress_percentage') {
+        updates[field] = editValue ? parseFloat(editValue) : null;
+      } else if (field === 'target_date') {
+        updates[field] = editValue ? new Date(editValue).toISOString() : null;
+      } else {
+        updates[field] = editValue || null;
+      }
+
+      // Update in database
+      const { error } = await supabase
+        .from('roadmap')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRoadmapItems(prev =>
+        prev.map(item =>
+          item.id === id ? { ...item, ...updates } : item
+        )
+      );
+
+      toast.success('Updated successfully');
+      setEditingCell(null);
+      setEditValue('');
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Failed to update');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
   };
 
   if (authLoading || loading) {
@@ -475,6 +528,17 @@ export default function WorldClassRoadmapPage() {
                 <List className="w-4 h-4" strokeWidth={1.5} />
               </button>
               <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
+                  viewMode === 'table'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Excel-like table view"
+              >
+                <Table className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+              <button
                 onClick={() => setViewMode('board')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   viewMode === 'board'
@@ -558,6 +622,257 @@ export default function WorldClassRoadmapPage() {
                 <p className="text-xs text-slate-500 italic">"The best way to predict the future is to invent it." — Alan Kay</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TABLE VIEW - Excel-like Inline Editing */}
+        {viewMode === 'table' && (
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Title</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Priority</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Goal</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Area</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Proposer</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Target Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-12 text-center">
+                        <p className="text-sm text-slate-500">No items to display</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredItems.map((item, idx) => (
+                      <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                        {/* Title - Click to edit */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'title' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'title')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'title');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'title', item.title)}
+                              className="w-full text-left text-sm text-slate-900 font-medium hover:text-blue-600 transition-colors"
+                            >
+                              {item.title}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Status - Select dropdown */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'status' ? (
+                            <select
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'status')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'status');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="suggested">Suggested</option>
+                              <option value="planned">Planned</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'status', item.status)}
+                              className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text} hover:opacity-80 transition-opacity`}
+                            >
+                              {item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Priority - Select dropdown */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'priority' ? (
+                            <select
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'priority')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'priority');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="low">Low</option>
+                              <option value="medium">Medium</option>
+                              <option value="high">High</option>
+                              <option value="critical">Critical</option>
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'priority', item.priority)}
+                              className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${COLORS.priority[item.priority].bg} ${COLORS.priority[item.priority].text} hover:opacity-80 transition-opacity`}
+                            >
+                              {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Goal - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'goal' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'goal')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'goal');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'goal', item.goal)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.goal || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Area - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'area' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'area')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'area');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'area', item.area)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.area || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Proposer - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'proposer' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'proposer')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'proposer');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'proposer', item.proposer)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.proposer || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Assigned To - Text input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'assigned_to' ? (
+                            <input
+                              type="text"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'assigned_to')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'assigned_to');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'assigned_to', item.assigned_to)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.assigned_to || '-'}
+                            </button>
+                          )}
+                        </td>
+
+                        {/* Target Date - Date input */}
+                        <td className="px-4 py-3">
+                          {editingCell?.id === item.id && editingCell?.field === 'target_date' ? (
+                            <input
+                              type="date"
+                              value={editValue ? format(new Date(editValue), 'yyyy-MM-dd') : ''}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={() => handleSaveEdit(item.id, 'target_date')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveEdit(item.id, 'target_date');
+                                if (e.key === 'Escape') handleCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => handleStartEdit(item.id, 'target_date', item.target_date)}
+                              className="w-full text-left text-xs text-slate-600 hover:text-blue-600 transition-colors"
+                            >
+                              {item.target_date ? format(new Date(item.target_date), 'MMM d, yyyy') : '-'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Helper text */}
+            <div className="border-t border-slate-200 px-4 py-3 bg-slate-50">
+              <p className="text-xs text-slate-600">
+                💡 <span className="font-medium">Click any cell to edit</span> · Press Enter to save · Press Escape to cancel
+              </p>
+            </div>
           </div>
         )}
 
