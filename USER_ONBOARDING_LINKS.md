@@ -21,7 +21,7 @@
 - **Role:** Account Manager
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=ae678f49-c56b-4b0e-9b0b-7705e5048bca
+  https://myra-status-dashboard.vercel.app/support/signup?token=ae678f49-c56b-4b0e-9b0b-7705e5048bca
   ```
 - **What they'll see after login:**
   - Only trial organizations where they are assigned as Account Manager
@@ -36,7 +36,7 @@
 - **Role:** Account Manager
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=ef6acad4-e4fa-4d2a-86b7-45e98b28f546
+  https://myra-status-dashboard.vercel.app/support/signup?token=ef6acad4-e4fa-4d2a-86b7-45e98b28f546
   ```
 - **What they'll see after login:**
   - Only trial organizations where they are assigned as Account Manager
@@ -51,7 +51,7 @@
 - **Role:** Account Manager
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=2dce62ad-cb44-4441-8253-e5c561df1743
+  https://myra-status-dashboard.vercel.app/support/signup?token=2dce62ad-cb44-4441-8253-e5c561df1743
   ```
 - **What they'll see after login:**
   - Only trial organizations where they are assigned as Account Manager
@@ -66,7 +66,7 @@
 - **Role:** Account Manager
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=d04772c0-56cc-482e-8560-721641313e4c
+  https://myra-status-dashboard.vercel.app/support/signup?token=d04772c0-56cc-482e-8560-721641313e4c
   ```
 - **What they'll see after login:**
   - Only trial organizations where they are assigned as Account Manager
@@ -81,7 +81,7 @@
 - **Role:** Account Manager
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=fb78600a-adca-4114-a3ec-3847eb1dcf2c
+  https://myra-status-dashboard.vercel.app/support/signup?token=fb78600a-adca-4114-a3ec-3847eb1dcf2c
   ```
 - **What they'll see after login:**
   - Only trial organizations where they are assigned as Account Manager
@@ -96,7 +96,7 @@
 - **Role:** Admin
 - **Signup Link:**
   ```
-  http://localhost:3000/support/signup?token=0c3e9dea-d6f0-4010-9940-73a079a5d9c2
+  https://myra-status-dashboard.vercel.app/support/signup?token=0c3e9dea-d6f0-4010-9940-73a079a5d9c2
   ```
 - **What they'll see after login:**
   - **ALL trial organizations** across all Account Managers
