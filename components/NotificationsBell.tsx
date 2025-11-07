@@ -148,25 +148,21 @@ export default function NotificationsBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Button - Compact and professional */}
+      {/* Bell Button - Sidebar style */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className={`relative p-2 rounded-lg transition-all duration-200 ${
+        className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-150 w-full cursor-pointer ${
           unreadCount > 0
-            ? 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg'
-            : 'bg-white/80 hover:bg-white backdrop-blur-sm border border-slate-200 hover:border-slate-300'
-        } group`}
+            ? 'text-slate-900 bg-blue-50 hover:bg-blue-100'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+        }`}
       >
         <svg
-          className={`w-4 h-4 transition-all duration-200 ${
-            unreadCount > 0
-              ? 'text-white'
-              : 'text-slate-700 group-hover:text-slate-900'
-          }`}
+          className={`w-5 h-5 shrink-0 ${unreadCount > 0 ? 'text-blue-600' : 'text-slate-400'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth={2}
+          strokeWidth={1.5}
         >
           <path
             strokeLinecap="round"
@@ -174,20 +170,21 @@ export default function NotificationsBell() {
             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
           />
         </svg>
+        <span>Notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-bold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-full ring-2 ring-white shadow-md">
+          <span className="ml-auto flex items-center justify-center min-w-[20px] h-[20px] text-[10px] font-bold text-white bg-blue-600 rounded-full shadow-sm">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown Panel - Compact dropdown positioned near bell */}
+      {/* Dropdown Panel - Slides out to the right of sidebar with transparency */}
       {showDropdown && (
         <>
-          {/* Subtle backdrop for mobile only */}
-          <div className="md:hidden fixed inset-0 bg-black/5 z-40" onClick={() => setShowDropdown(false)} />
+          {/* Transparent backdrop */}
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[45]" onClick={() => setShowDropdown(false)} />
 
-          <div className="absolute right-0 mt-2 w-96 max-h-[600px] bg-white rounded-xl shadow-xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-top-2 duration-200 border border-slate-200">
+          <div className="fixed left-64 top-0 bottom-0 w-[420px] bg-white/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden flex flex-col animate-in slide-in-from-left-2 duration-300 border-r border-slate-200">
             {/* Header - Compact */}
             <div className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
               <div className="flex items-center justify-between">

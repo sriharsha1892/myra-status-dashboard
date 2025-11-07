@@ -521,7 +521,7 @@ export default function WorldClassRoadmapPage() {
 
                 {/* Items - Enhanced Cards with Time Tracking */}
                 {(groupBy === 'none' || expandedGroups.has(groupName)) && (
-                  <div className="space-y-2 relative">
+                  <div className="space-y-4 relative">
                     {/* Subtle connecting line */}
                     <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
 

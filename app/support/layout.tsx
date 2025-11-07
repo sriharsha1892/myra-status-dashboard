@@ -291,6 +291,11 @@ export default function SupportLayout({
 
           {/* Bottom Actions */}
           <div className="mt-auto pt-4 border-t border-slate-200 space-y-1">
+            {/* Notifications */}
+            <div className="px-3 mb-2">
+              <NotificationsBell />
+            </div>
+
             {/* Link to Public Status Page */}
             <a
               href="/status"
@@ -335,11 +340,6 @@ export default function SupportLayout({
       <main className="flex-1 overflow-y-auto lg:ml-0 relative">
         {/* Mobile header spacer */}
         <div className="lg:hidden h-16" />
-
-        {/* Notification Bell - Fixed top-right corner */}
-        <div className="fixed top-4 right-6 z-40">
-          <NotificationsBell />
-        </div>
 
         {children}
       </main>
