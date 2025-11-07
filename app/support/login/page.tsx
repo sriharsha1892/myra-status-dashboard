@@ -68,22 +68,27 @@ export default function LoginPage() {
     setResetLoading(true)
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/support/login?reset=true`,
+      // Notify admin instead of sending email to user
+      const response = await fetch('/api/forgot-password-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail }),
       })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('Failed to send notification')
+      }
 
-      // Personalized success message
+      // Success message
       const userName = resetEmail.split('@')[0]
       toast.success(
         <div>
-          <div className="font-semibold">Reset link sent to {userName}!</div>
+          <div className="font-semibold">Request submitted successfully!</div>
           <div className="text-xs mt-1">
-            Check your inbox at <span className="font-medium">{resetEmail}</span>
+            Support team has been notified for <span className="font-medium">{resetEmail}</span>
           </div>
           <div className="text-xs mt-1 text-blue-600">
-            Link expires in 60 minutes • Don't forget to check spam
+            You'll receive a new password via email shortly
           </div>
         </div>,
         { duration: 7000 }
@@ -93,7 +98,7 @@ export default function LoginPage() {
     } catch (error: any) {
       toast.error(
         <div>
-          <div className="font-semibold">Couldn't send reset email</div>
+          <div className="font-semibold">Couldn't submit request</div>
           <div className="text-xs mt-1">{error.message || 'Please try again or contact support'}</div>
         </div>,
         { duration: 5000 }
