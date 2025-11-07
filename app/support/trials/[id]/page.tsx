@@ -1,31 +1,48 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
-import { format } from 'date-fns';
-import PlatformUsersTab from '@/components/PlatformUsersTab';
-// import OrgUsersTab from '@/components/OrgUsersTab'; // REMOVED: Broken component - queries non-existent managed_org_ids column
-import SupportQueriesTab from '@/components/SupportQueriesTab';
-import EngagementTimelineTab from '@/components/EngagementTimelineTab';
-import DealTrackingTab from '@/components/DealTrackingTab';
-import DeleteOrganizationModal from '@/components/DeleteOrganizationModal';
-import FeatureRequestsTab from '@/components/FeatureRequestsTab';
-import FollowupSchedulingTab from '@/components/FollowupSchedulingTab';
-import ActivityLogTab from '@/components/ActivityLogTab';
+import { differenceInDays, format } from 'date-fns';
+import {
+  Building2,
+  Users,
+  FileText,
+  Edit3,
+  X,
+  Plus,
+  ExternalLink,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Trash2,
+} from 'lucide-react';
 
-type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
-type TrialUser = Database['public']['Tables']['trial_users']['Row'];
-type Activity = Database['public']['Tables']['user_activity_log']['Row'];
-type DemoEvent = Database['public']['Tables']['demo_events']['Row'];
-type MeetingNote = Database['public']['Tables']['meeting_notes']['Row'];
+import LoadingState from '@/components/LoadingState';
+import Avatar, { AvatarGroup } from '@/components/Avatar';
+import ActivityFeed from '@/components/support/ActivityFeed';
 
-type TabType = 'overview' | 'users' | 'queries' | 'deals' | 'activity' | 'demos' | 'meetings' | 'features' | 'followups' | 'activitylog';
+type TabType = 'activity' | 'users' | 'details';
+
+const LIFECYCLE_STAGES = [
+  { value: 'prospect', label: 'Prospect', color: 'text-gray-600 bg-gray-100' },
+  { value: 'trial_pending', label: 'Trial Pending', color: 'text-blue-600 bg-blue-100' },
+  { value: 'trial_active', label: 'Trial Active', color: 'text-green-600 bg-green-100' },
+  { value: 'trial_expired', label: 'Trial Expired', color: 'text-amber-600 bg-amber-100' },
+  { value: 'customer', label: 'Customer', color: 'text-purple-600 bg-purple-100' },
+  { value: 'lost', label: 'Lost', color: 'text-red-600 bg-red-100' },
+];
+
+const USER_STAGES = [
+  { value: 'invited', label: 'Invited' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
 
 const DOMAIN_OPTIONS = [
   { value: 'AAD', label: 'AAD' },
@@ -37,67 +54,61 @@ const DOMAIN_OPTIONS = [
   { value: 'Unassigned', label: 'Unassigned' },
 ];
 
-export default function OrganizationDetailPage() {
-  const { user, loading: authLoading, role } = useAuth();
+export default function TrialOrgPage() {
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const orgId = params.id as string;
+  const supabase = createClient();
 
-  const [organization, setOrganization] = useState<TrialOrg | null>(null);
-  const [users, setUsers] = useState<TrialUser[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [demos, setDemos] = useState<DemoEvent[]>([]);
-  const [meetings, setMeetings] = useState<MeetingNote[]>([]);
-  const [accountManagers, setAccountManagers] = useState<any[]>([]);
+  // State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [showActivityModal, setShowActivityModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('activity');
+  const [organization, setOrganization] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [accountManagers, setAccountManagers] = useState<any[]>([]);
 
-  // Bulk operations state for users
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
-  const [showBulkMarkPrimaryModal, setShowBulkMarkPrimaryModal] = useState(false);
-  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
-  const [bulkUserStatus, setBulkUserStatus] = useState('');
-  const [bulkPrimaryUserId, setBulkPrimaryUserId] = useState('');
-  const [bulkProcessing, setBulkProcessing] = useState(false);
+  // Modal states
+  const [showEditOrgModal, setShowEditOrgModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddActivityModal, setShowAddActivityModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
 
   // Form states
-  const [editedOrg, setEditedOrg] = useState<Partial<TrialOrg>>({});
-  const [newUser, setNewUser] = useState({
+  const [orgForm, setOrgForm] = useState<any>({});
+  const [userForm, setUserForm] = useState({
     name: '',
     email: '',
     role: '',
-    phone: '',
-    current_stage: 'invited' as string,
+    current_stage: 'invited',
+    freshsales_url: '',
   });
-  const [editingUser, setEditingUser] = useState<TrialUser | null>(null);
-  const [newActivity, setNewActivity] = useState({
-    user_id: '',
-    activity_type: 'login' as 'login' | 'query_executed' | 'report_generated' | 'feature_used',
+  const [activityForm, setActivityForm] = useState({
+    type: 'meeting' as 'meeting' | 'note',
+    title: '',
+    content: '',
   });
 
+  // Auth check
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
     }
   }, [user, authLoading, router]);
 
+  // Fetch data
   useEffect(() => {
     if (user && orgId) {
-      fetchOrganizationData();
+      fetchData();
     }
   }, [user, orgId]);
 
-  const fetchOrganizationData = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const supabase = createClient();
     try {
       // Fetch organization
-      const { data: org, error: orgError} = await supabase
+      const { data: org, error: orgError } = await supabase
         .from('trial_organizations')
         .select('*')
         .eq('org_id', orgId)
@@ -105,115 +116,99 @@ export default function OrganizationDetailPage() {
 
       if (orgError) throw orgError;
       setOrganization(org);
-      setEditedOrg(org);
-
-      // Permission check: AMs can only access their own orgs
-      if (role?.toLowerCase() === 'account_manager' && org.account_manager_id !== user?.id) {
-        toast.error('You do not have permission to access this organization');
-        router.push('/support/trials');
-        return;
-      }
-
-      // Fetch account managers from API (Supabase Auth users)
-      try {
-        const managersResponse = await fetch('/api/account-managers');
-        if (managersResponse.ok) {
-          const managersData = await managersResponse.json();
-          setAccountManagers(managersData.managers || []);
-        } else {
-          setAccountManagers([]);
-        }
-      } catch (error) {
-        console.error('Error fetching account managers:', error);
-        setAccountManagers([]);
-      }
+      setOrgForm(org);
 
       // Fetch users
-      const { data: usersData, error: usersError } = await supabase
+      const { data: usersData } = await supabase
         .from('trial_users')
         .select('*')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
 
-      if (usersError) throw usersError;
       setUsers(usersData || []);
 
-      // Fetch activities
-      const { data: activitiesData, error: activitiesError } = await supabase
-        .from('user_activity_log')
-        .select('*')
-        .eq('org_id', orgId)
-        .order('activity_timestamp', { ascending: false })
-        .limit(50);
-
-      if (activitiesError) throw activitiesError;
-      setActivities(activitiesData || []);
-
-      // Fetch demos
-      const { data: demosData, error: demosError } = await supabase
-        .from('demo_events')
-        .select('*')
-        .eq('org_id', orgId)
-        .order('demo_date', { ascending: false });
-
-      if (demosError) throw demosError;
-      setDemos(demosData || []);
-
-      // Fetch meetings
-      const { data: meetingsData, error: meetingsError } = await supabase
+      // Fetch activities (mock for now - combine meetings, tickets, notes)
+      const { data: meetings } = await supabase
         .from('meeting_notes')
         .select('*')
         .eq('org_id', orgId)
         .order('meeting_date', { ascending: false });
 
-      if (meetingsError) {
-        console.log('Meetings table may not exist yet:', meetingsError);
-        // Don't throw error if table doesn't exist - it needs to be created in Supabase
-      } else {
-        setMeetings(meetingsData || []);
-      }
+      const { data: tickets } = await supabase
+        .from('trial_support_queries')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+
+      // Transform to unified activity format
+      const meetingActivities = (meetings || []).map((m: any) => ({
+        id: m.meeting_id,
+        type: 'meeting',
+        title: `Meeting with ${m.conducted_by || 'team'}`,
+        content: m.notes,
+        created_at: m.meeting_date,
+        created_by_name: m.conducted_by,
+      }));
+
+      const ticketActivities = (tickets || []).map((t: any) => ({
+        id: t.query_id,
+        type: 'ticket',
+        title: t.query_text || 'Support ticket',
+        content: t.comments,
+        created_at: t.created_at,
+        priority: t.priority,
+        status: t.status,
+      }));
+
+      const allActivities = [...meetingActivities, ...ticketActivities]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setActivities(allActivities);
+
+      // Fetch account managers
+      const { data: managers } = await supabase
+        .from('users')
+        .select('user_id, username, email')
+        .in('role', ['Admin', 'Account Manager']);
+
+      setAccountManagers(managers || []);
+
     } catch (error: any) {
-      console.error('Error fetching organization data:', error);
+      console.error('Error fetching data:', error);
       toast.error('Failed to load organization data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveOrganization = async () => {
-    const supabase = createClient();
+  const handleUpdateOrg = async () => {
     try {
       const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
         .from('trial_organizations')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update(editedOrg)
+        .update(orgForm)
         .eq('org_id', orgId);
 
       if (error) throw error;
 
+      setOrganization(orgForm);
+      setShowEditOrgModal(false);
       toast.success('Organization updated successfully');
-      setOrganization({ ...organization!, ...editedOrg });
     } catch (error: any) {
-      console.error('Error updating organization:', error);
+      console.error('Error updating org:', error);
       toast.error('Failed to update organization');
     }
   };
 
   const handleAddUser = async () => {
-    const supabase = createClient();
+    if (!userForm.name || !userForm.email) {
+      toast.error('Name and email are required');
+      return;
+    }
+
     try {
-      // @ts-ignore - Supabase typing issue with dynamic columns
       const { error } = await supabase.from('trial_users').insert({
         org_id: orgId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-        current_stage: newUser.current_stage,
+        ...userForm,
         account_manager: organization?.account_manager || '',
       });
 
@@ -221,8 +216,8 @@ export default function OrganizationDetailPage() {
 
       toast.success('User added successfully');
       setShowAddUserModal(false);
-      setNewUser({ name: '', email: '', role: '', phone: '', current_stage: 'invited' });
-      fetchOrganizationData();
+      setUserForm({ name: '', email: '', role: '', current_stage: 'invited', freshsales_url: '' });
+      fetchData();
     } catch (error: any) {
       console.error('Error adding user:', error);
       toast.error('Failed to add user');
@@ -231,17 +226,16 @@ export default function OrganizationDetailPage() {
 
   const handleUpdateUser = async () => {
     if (!editingUser) return;
-    const supabase = createClient();
+
     try {
-      // @ts-ignore - Supabase typing issue with dynamic columns
       const { error } = await supabase
         .from('trial_users')
         .update({
           name: editingUser.name,
           email: editingUser.email,
           role: editingUser.role,
-          phone: editingUser.phone,
           current_stage: editingUser.current_stage,
+          freshsales_url: editingUser.freshsales_url,
         })
         .eq('user_id', editingUser.user_id);
 
@@ -249,7 +243,7 @@ export default function OrganizationDetailPage() {
 
       toast.success('User updated successfully');
       setEditingUser(null);
-      fetchOrganizationData();
+      fetchData();
     } catch (error: any) {
       console.error('Error updating user:', error);
       toast.error('Failed to update user');
@@ -258,7 +252,7 @@ export default function OrganizationDetailPage() {
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-    const supabase = createClient();
+
     try {
       const { error } = await supabase
         .from('trial_users')
@@ -268,1484 +262,650 @@ export default function OrganizationDetailPage() {
       if (error) throw error;
 
       toast.success('User deleted successfully');
-      fetchOrganizationData();
+      fetchData();
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');
     }
   };
 
-  const handleLogActivity = async () => {
-    const supabase = createClient();
-    try {
-      // @ts-ignore - Supabase typing issue with dynamic columns
-      const { error } = await supabase.from('user_activity_log').insert({
-        org_id: orgId,
-        user_id: newActivity.user_id,
-        activity_type: newActivity.activity_type,
-      });
-
-      if (error) throw error;
-
-      toast.success('Activity logged successfully');
-      setShowActivityModal(false);
-      setNewActivity({ user_id: '', activity_type: 'login' });
-      fetchOrganizationData();
-    } catch (error: any) {
-      console.error('Error logging activity:', error);
-      toast.error('Failed to log activity');
+  const handleAddActivity = async () => {
+    if (!activityForm.title) {
+      toast.error('Title is required');
+      return;
     }
-  };
-
-  const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('trial_users')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({ user_status: newStatus })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      toast.success('User status updated');
-      fetchOrganizationData();
-    } catch (error: any) {
-      console.error('Error updating user status:', error);
-      toast.error('Failed to update user status');
-    }
-  };
-
-  // Bulk operations handlers
-  const handleSelectAllUsers = () => {
-    if (selectedUserIds.size === users.length) {
-      setSelectedUserIds(new Set());
-    } else {
-      setSelectedUserIds(new Set(users.map((u) => u.user_id)));
-    }
-  };
-
-  const handleSelectUser = (userId: string) => {
-    const newSelected = new Set(selectedUserIds);
-    if (newSelected.has(userId)) {
-      newSelected.delete(userId);
-    } else {
-      newSelected.add(userId);
-    }
-    setSelectedUserIds(newSelected);
-  };
-
-  const handleBulkDeleteUsers = async () => {
-    setBulkProcessing(true);
-    const userCountToDelete = selectedUserIds.size;
-    const userIdsArray = Array.from(selectedUserIds);
 
     try {
-      console.log(`Attempting to delete ${userCountToDelete} users:`, userIdsArray);
-      console.log('User IDs to delete:', userIdsArray);
-
-      const deleteQuery = supabase
-        .from('trial_users')
-        .delete()
-        .in('user_id', userIdsArray);
-
-      console.log('Delete query constructed');
-
-      const { data, error, count } = await deleteQuery;
-
-      console.log('Delete response:', { data, error, count });
-
-      if (error) {
-        console.error('❌ Supabase delete error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
+      if (activityForm.type === 'meeting') {
+        const { error } = await supabase.from('meeting_notes').insert({
+          org_id: orgId,
+          meeting_date: new Date().toISOString(),
+          notes: activityForm.content,
+          conducted_by: user?.email?.split('@')[0] || 'Unknown',
         });
-        throw new Error(`Deletion failed: ${error.message}`);
+        if (error) throw error;
       }
 
-      console.log(`✅ Successfully deleted ${count} users from database`);
-
-      toast.success(`Deleted ${userCountToDelete} user${userCountToDelete !== 1 ? 's' : ''}`);
-      setShowBulkDeleteModal(false);
-      setSelectedUserIds(new Set());
-
-      // Refresh the org data to reflect changes
-      await fetchOrganizationData();
+      toast.success(`${activityForm.type === 'meeting' ? 'Meeting' : 'Note'} added successfully`);
+      setShowAddActivityModal(false);
+      setActivityForm({ type: 'meeting', title: '', content: '' });
+      fetchData();
     } catch (error: any) {
-      console.error('❌ Error deleting users:', error);
-      toast.error(error?.message || 'Failed to delete users');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error adding activity:', error);
+      toast.error('Failed to add activity');
     }
   };
 
-  const handleBulkMarkPrimary = async () => {
-    setBulkProcessing(true);
-    try {
-      if (!bulkPrimaryUserId) {
-        toast.error('Please select a user to mark as primary');
-        return;
-      }
+  if (authLoading || loading) {
+    return <LoadingState message="Loading trial organization..." />;
+  }
 
-      // First, unset all primary contacts in this org
-      const { error: unsetError } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('trial_users')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({ is_primary_contact: false })
-        .eq('org_id', orgId);
-
-      if (unsetError) throw unsetError;
-
-      // Then set the selected user as primary
-      const { error: setPrimaryError } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('trial_users')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({ is_primary_contact: true })
-        .eq('user_id', bulkPrimaryUserId);
-
-      if (setPrimaryError) throw setPrimaryError;
-
-      toast.success('Primary contact updated');
-      setShowBulkMarkPrimaryModal(false);
-      setBulkPrimaryUserId('');
-      setSelectedUserIds(new Set());
-      await fetchOrganizationData();
-    } catch (error: any) {
-      console.error('Error updating primary contact:', error);
-      toast.error('Failed to update primary contact');
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const handleBulkChangeStatus = async () => {
-    setBulkProcessing(true);
-    try {
-      if (!bulkUserStatus) {
-        toast.error('Please select a status');
-        return;
-      }
-
-      const { error } = await supabase
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .from('trial_users')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        // -ignore - Supabase typing issue with dynamic columns
-
-        .update({ user_status: bulkUserStatus as any })
-        .in('user_id', Array.from(selectedUserIds));
-
-      if (error) throw error;
-
-      toast.success(`Updated ${selectedUserIds.size} user${selectedUserIds.size !== 1 ? 's' : ''}`);
-      setShowBulkStatusModal(false);
-      setBulkUserStatus('');
-      setSelectedUserIds(new Set());
-      await fetchOrganizationData();
-    } catch (error: any) {
-      console.error('Error updating user status:', error);
-      toast.error('Failed to update user status');
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  if (authLoading || loading || !organization) {
+  if (!organization) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-        <div className="text-sm text-gray-500">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <p className="text-lg font-semibold text-gray-900">Organization not found</p>
+          <button
+            onClick={() => router.push('/support/trials')}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Back to Trials
+          </button>
+        </div>
       </div>
     );
   }
 
-  const formatStage = (stage: string) => {
-    return stage.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
-
-  const getUserByUserId = (userId: string) => {
-    return users.find((u) => u.user_id === userId);
-  };
-
-  const selectedUsers = users.filter((u) => selectedUserIds.has(u.user_id));
-  const hasPrimaryInSelection = selectedUsers.some((u) => u.is_primary_contact);
-  const hasChampionInSelection = selectedUsers.some((u) => u.is_champion);
+  const daysLeft = differenceInDays(new Date(organization.trial_end_date), new Date());
+  const activeUsers = users.filter(u => u.current_stage === 'active').length;
+  const lifecycleStage = LIFECYCLE_STAGES.find(s => s.value === organization.org_lifecycle_stage);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Toaster
         position="top-right"
         toastOptions={{
           duration: 3000,
-          style: {
-            maxWidth: '500px',
-          },
-          success: {
-            duration: 3000,
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            duration: 4000,
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
+          style: { maxWidth: '500px' },
+          success: { duration: 3000 },
+          error: { duration: 4000 },
         }}
       />
 
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/support/trials')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              {/* Logo */}
-              {organization.logo_url ? (
-                <img
-                  src={organization.logo_url}
-                  alt={`${organization.org_name} logo`}
-                  className="w-12 h-12 object-contain rounded-lg border border-gray-200"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-lg border-2 border-gray-200 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                  <span className="text-lg font-bold text-gray-600">
-                    {organization.org_name.split(' ').map((word) => word[0]).join('').toUpperCase().substring(0, 2)}
-                  </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Glassmorphism Header */}
+        <div className="mb-8 p-8 rounded-3xl backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl relative overflow-hidden">
+          {/* Background gradient animation */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 animate-pulse" />
+
+          <div className="relative z-10">
+            {/* Top row */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Avatar name={organization.org_name} size="xl" type="org" />
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{organization.org_name}</h1>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`px-3 py-1 rounded-lg text-sm font-medium ${lifecycleStage?.color}`}>
+                      {lifecycleStage?.label}
+                    </span>
+                    <span className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-700">
+                      {organization.org_domain}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      AM: <span className="font-medium">{organization.account_manager}</span>
+                    </span>
+                  </div>
                 </div>
-              )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-gray-900">{organization.org_name}</h1>
-                  {organization.org_url && (
-                    <a
-                      href={organization.org_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 transition-colors"
-                      title="Visit website"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-sm text-gray-500">{organization.org_domain || 'No domain'}</p>
-                  {organization.domain && (
-                    <>
-                      <span className="text-gray-300">•</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                        {organization.domain}
-                      </span>
-                    </>
-                  )}
-                </div>
-                {organization.description && (
-                  <p className="text-sm text-gray-600 mt-1 max-w-2xl line-clamp-2">
-                    {organization.description}
-                  </p>
-                )}
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-600">
-                Engagement: <span className="text-gray-900 font-bold">{organization.engagement_score}%</span>
-              </span>
+
               <button
-                onClick={() => setShowDeleteModal(true)}
-                className="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                title="Delete this organization"
+                onClick={() => setShowEditOrgModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-medium border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-200"
               >
-                🗑️ Delete
+                <Edit3 className="w-4 h-4" />
+                Edit Details
               </button>
+            </div>
+
+            {/* Metrics row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-600 font-medium">Trial Status</p>
+                    <p className="text-lg font-bold text-blue-900">
+                      {daysLeft >= 0 ? `${daysLeft} days left` : 'Expired'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-green-600 font-medium">Active Users</p>
+                    <p className="text-lg font-bold text-green-900">{activeUsers} / {users.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-purple-600 font-medium">Activities</p>
+                    <p className="text-lg font-bold text-purple-900">{activities.length}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex gap-6 border-b border-gray-200">
+        {/* Tab Navigation */}
+        <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
+          {([
+            { id: 'activity', label: 'Activity', icon: FileText },
+            { id: 'users', label: 'Users', icon: Users },
+            { id: 'details', label: 'Details', icon: Building2 },
+          ] as const).map(({ id, label, icon: Icon }) => (
             <button
-              onClick={() => setActiveTab('overview')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'overview'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`
+                flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300
+                ${activeTab === id
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                  : 'text-gray-600 hover:bg-white/80'
+                }
+              `}
             >
-              Overview
-              {activeTab === 'overview' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
+              <Icon className="w-4 h-4" />
+              {label}
             </button>
-            {/* REMOVED: Broken Users tab - OrgUsersTab queries non-existent managed_org_ids column */}
-            {/* <button
-              onClick={() => setActiveTab('users')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'users'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Users ({users.length})
-              {activeTab === 'users' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button> */}
-            <button
-              onClick={() => setActiveTab('queries')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'queries'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Support Queries
-              {activeTab === 'queries' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('deals')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'deals'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Deals
-              {activeTab === 'deals' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('activity')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'activity'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Activity
-              {activeTab === 'activity' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('demos')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'demos'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Demos
-              {activeTab === 'demos' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('meetings')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'meetings'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Meetings
-              {activeTab === 'meetings' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('features')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'features'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Feature Requests
-              {activeTab === 'features' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('followups')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'followups'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Follow-ups
-              {activeTab === 'followups' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('activitylog')}
-              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
-                activeTab === 'activitylog'
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Activity Log
-              {activeTab === 'activitylog' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-              )}
-            </button>
-          </div>
+          ))}
         </div>
-      </header>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Organization Details</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
-                  <input
-                    type="text"
-                    value={editedOrg.org_name || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, org_name: e.target.value })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
-                  <select
-                    value={editedOrg.org_domain || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, org_domain: e.target.value })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select domain...</option>
-                    {DOMAIN_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
-                  <select
-                    value={editedOrg.account_manager || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, account_manager: e.target.value })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select account manager...</option>
-                    {accountManagers.map((manager) => (
-                      <option key={manager.user_id} value={manager.full_name}>
-                        {manager.full_name} ({manager.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC (Optional)</label>
-                  <input
-                    type="text"
-                    value={editedOrg.sales_poc || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, sales_poc: e.target.value })}
-                    placeholder="Sales representative name"
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lifecycle Stage</label>
-                  <select
-                    value={editedOrg.org_lifecycle_stage || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, org_lifecycle_stage: e.target.value as any })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="prospect">Prospect</option>
-                    <option value="demo_scheduled">Demo Scheduled</option>
-                    <option value="trial_active">Trial Active</option>
-                    <option value="converted">Converted</option>
-                    <option value="churned">Churned</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Trial Start Date</label>
-                  <input
-                    type="date"
-                    value={editedOrg.trial_start_date || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, trial_start_date: e.target.value })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Trial End Date</label>
-                  <input
-                    type="date"
-                    value={editedOrg.trial_end_date || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, trial_end_date: e.target.value })}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization URL</label>
-                  <input
-                    type="url"
-                    value={editedOrg.org_url || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, org_url: e.target.value })}
-                    placeholder="https://example.com"
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-                  <input
-                    type="url"
-                    value={editedOrg.logo_url || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, logo_url: e.target.value })}
-                    placeholder="https://example.com/logo.png"
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    value={editedOrg.description || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, description: e.target.value })}
-                    rows={3}
-                    placeholder="Brief description of the organization..."
-                    className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Internal Comments</label>
-                  <textarea
-                    value={editedOrg.comments || ''}
-                    onChange={(e) => setEditedOrg({ ...editedOrg, comments: e.target.value })}
-                    rows={3}
-                    placeholder="Internal notes and comments..."
-                    className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={handleSaveOrganization}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
+        {/* Tab Content */}
+        <div className="transition-all duration-300">
+          {activeTab === 'activity' && (
+            <ActivityFeed
+              activities={activities}
+              onAddActivity={(type) => {
+                setActivityForm({ ...activityForm, type });
+                setShowAddActivityModal(true);
+              }}
+            />
+          )}
 
-            {/* Users Section */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Users</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {users.length} user{users.length !== 1 ? 's' : ''} in this organization
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddUserModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add User
-                </button>
-              </div>
+          {activeTab === 'users' && (
+            <UsersTab
+              users={users}
+              onAddUser={() => setShowAddUserModal(true)}
+              onEditUser={setEditingUser}
+              onDeleteUser={handleDeleteUser}
+            />
+          )}
 
-              {users.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <p className="text-sm text-gray-600 mb-1">No users added yet</p>
-                  <p className="text-xs text-gray-500">Add your first user to start tracking engagement</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50/80 border-b border-gray-200">
-                      <tr>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Name</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Email</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Role</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Stage</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Last Active</th>
-                        <th className="text-right text-xs font-semibold text-gray-700 px-4 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {users.map((user) => {
-                        const getStageColor = (stage: string) => {
-                          switch (stage) {
-                            case 'invited': return 'text-gray-600 bg-gray-100';
-                            case 'active': return 'text-green-600 bg-green-100';
-                            case 'onboarding': return 'text-blue-600 bg-blue-100';
-                            case 'engaged': return 'text-purple-600 bg-purple-100';
-                            case 'inactive': return 'text-orange-600 bg-orange-100';
-                            default: return 'text-gray-600 bg-gray-100';
-                          }
-                        };
-
-                        return (
-                          <tr key={user.user_id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-                                  <span className="text-xs font-semibold text-white">
-                                    {user.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                  </span>
-                                </div>
-                                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="text-sm text-gray-700">{user.email}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="text-sm text-gray-600">{user.role || '—'}</p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(user.current_stage)}`}>
-                                {user.current_stage}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <p className="text-xs text-gray-500">
-                                {user.last_active_at
-                                  ? format(new Date(user.last_active_at), 'MMM d, yyyy')
-                                  : 'Never'}
-                              </p>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => setEditingUser(user)}
-                                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                                  title="Edit user"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(user.user_id)}
-                                  className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                                  title="Delete user"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* REMOVED: Broken Users Tab - OrgUsersTab queries non-existent managed_org_ids column */}
-        {/* {activeTab === 'users' && (
-          <div className="space-y-6">
-            <OrgUsersTab orgId={orgId} />
-          </div>
-        )} */}
-
-        {/* Support Queries Tab */}
-        {activeTab === 'queries' && (
-          <div className="space-y-6">
-            <SupportQueriesTab orgId={orgId} />
-          </div>
-        )}
-
-
-        {/* Deal Tracking Tab */}
-        {activeTab === 'deals' && (
-          <div className="space-y-6">
-            <DealTrackingTab orgId={orgId} />
-          </div>
-        )}
-
-        {/* Activity Tab - Engagement Timeline */}
-        {activeTab === 'activity' && (
-          <div className="space-y-6">
-            <EngagementTimelineTab orgId={orgId} />
-          </div>
-        )}
-
-        {/* Demos Tab */}
-        {activeTab === 'demos' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900">Demo Events</h3>
-              <button
-                onClick={() => router.push('/support/trials/demos')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-              >
-                View All Demos
-              </button>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 overflow-hidden">
-              {demos.length === 0 ? (
-                <p className="text-center text-sm text-gray-500 py-12">No demos scheduled yet</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50/80 border-b border-gray-200">
-                      <tr>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Demo ID</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Date</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Sales POC</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Status</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 px-6 py-3">Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {demos.map((demo) => {
-                        const getStatusColor = (status: string) => {
-                          switch (status) {
-                            case 'scheduled': return 'text-blue-600 bg-blue-50';
-                            case 'completed': return 'text-green-600 bg-green-50';
-                            case 'cancelled': return 'text-red-600 bg-red-50';
-                            default: return 'text-gray-600 bg-gray-50';
-                          }
-                        };
-
-                        return (
-                          <tr
-                            key={demo.demo_id}
-                            onClick={() => router.push(`/support/trials/demos/${demo.demo_id}`)}
-                            className="hover:bg-blue-50/50 cursor-pointer transition-colors"
-                          >
-                            <td className="px-6 py-4">
-                              <p className="text-sm font-semibold text-gray-900">{demo.demo_id}</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-gray-900">
-                                {format(new Date(demo.demo_date), 'MMM d, yyyy')}
-                                {demo.demo_time && (
-                                  <span className="text-xs text-gray-500 ml-1">
-                                    {demo.demo_time}
-                                  </span>
-                                )}
-                              </p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-sm text-gray-900">{demo.sales_poc}</p>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(demo.demo_status)}`}>
-                                {demo.demo_status.charAt(0).toUpperCase() + demo.demo_status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              {demo.demo_rating ? (
-                                <div className="flex items-center gap-1">
-                                  {[...Array(demo.demo_rating)].map((_, i) => (
-                                    <svg key={i} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                                    </svg>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400">No rating</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Meetings Tab */}
-        {activeTab === 'meetings' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Meeting History</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Total meetings: {meetings.length} |
-                  Pending action items: {meetings.reduce((sum, m) => {
-                    const actionItems = typeof m.action_items === 'string'
-                      ? JSON.parse(m.action_items)
-                      : m.action_items || [];
-                    return sum + actionItems.filter((item: any) => item.status === 'pending').length;
-                  }, 0)}
-                  {meetings.length > 0 && ` | Last meeting: ${format(new Date(meetings[0].meeting_date), 'MMM d, yyyy')}`}
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/support/trials/meetings')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-              >
-                View All Meetings
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {meetings.length === 0 ? (
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-12 text-center">
-                  <p className="text-gray-500">No meetings recorded yet</p>
-                  <button
-                    onClick={() => router.push('/support/trials/meetings')}
-                    className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                  >
-                    Add First Meeting
-                  </button>
-                </div>
-              ) : (
-                meetings.map((meeting) => {
-                  const MEETING_TYPE_ICONS: Record<string, string> = {
-                    demo: '🎯',
-                    follow_up_call: '📞',
-                    check_in: '✅',
-                    technical_review: '🔧',
-                    executive_briefing: '💼',
-                    other: '📝',
-                  };
-
-                  const MEETING_TYPE_LABELS: Record<string, string> = {
-                    demo: 'Demo',
-                    follow_up_call: 'Follow-up Call',
-                    check_in: 'Check-in',
-                    technical_review: 'Technical Review',
-                    executive_briefing: 'Executive Briefing',
-                    other: 'Other',
-                  };
-
-                  const actionItems = typeof meeting.action_items === 'string'
-                    ? JSON.parse(meeting.action_items)
-                    : meeting.action_items || [];
-                  const completedActions = actionItems.filter((item: any) => item.status === 'completed').length;
-                  const totalActions = actionItems.length;
-                  const icon = MEETING_TYPE_ICONS[meeting.meeting_type] || '📝';
-                  const typeLabel = MEETING_TYPE_LABELS[meeting.meeting_type] || 'Meeting';
-
-                  return (
-                    <div
-                      key={meeting.meeting_id}
-                      onClick={() => router.push(`/support/trials/meetings/${meeting.meeting_id}`)}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-6 hover:shadow-lg cursor-pointer transition-all duration-200"
-                    >
-                      <div className="flex items-start gap-4">
-                        <span className="text-3xl">{icon}</span>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                              {typeLabel}
-                            </span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">
-                              {format(new Date(meeting.meeting_date), 'MMM d, yyyy')}
-                            </span>
-                            {meeting.duration_minutes && (
-                              <>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-sm text-gray-600">{meeting.duration_minutes} min</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-700 mb-1">
-                            <span className="font-medium">Conducted by:</span> {meeting.conducted_by}
-                          </div>
-                          {meeting.meeting_summary && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              {meeting.meeting_summary.length > 100
-                                ? `${meeting.meeting_summary.substring(0, 100)}...`
-                                : meeting.meeting_summary}
-                            </p>
-                          )}
-                          {totalActions > 0 && (
-                            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg text-xs">
-                              <span className="font-medium">Action Items:</span>
-                              <span className="text-green-600 font-semibold">{completedActions}</span>
-                              <span className="text-gray-400">/</span>
-                              <span className="text-gray-600 font-semibold">{totalActions}</span>
-                            </div>
-                          )}
-                        </div>
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
-
-
-        {/* Feature Requests Tab */}
-        {activeTab === 'features' && (
-          <div className="space-y-6">
-            <div className="flex justify-end mb-4">
-              <button
-                onClick={() => setShowBulkImportModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Bulk Import Past Requests</span>
-              </button>
-            </div>
-            <FeatureRequestsTab orgId={orgId} />
-          </div>
-        )}
-
-        {/* Follow-up Scheduling Tab */}
-        {activeTab === 'followups' && (
-          <div className="space-y-6">
-            <FollowupSchedulingTab orgId={orgId} />
-          </div>
-        )}
-
-        {/* Activity Log Tab */}
-        {activeTab === 'activitylog' && (
-          <div className="space-y-6">
-            <ActivityLogTab orgId={orgId} />
-          </div>
-        )}
+          {activeTab === 'details' && (
+            <DetailsTab organization={organization} />
+          )}
+        </div>
       </div>
 
-      {/* Bulk Action Bar for Users */}
-      {selectedUserIds.size > 0 && activeTab === 'users' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50">
-          <div className="max-w-7xl mx-auto px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-sm font-bold text-blue-600">{selectedUserIds.size}</span>
-                </div>
-                <p className="text-sm font-medium text-gray-900">
-                  {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''} selected
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowBulkMarkPrimaryModal(true)}
-                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Mark as Primary</span>
-                </button>
-                <button
-                  onClick={() => setShowBulkStatusModal(true)}
-                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                  </svg>
-                  <span>Change Status</span>
-                </button>
-                <button
-                  onClick={() => setShowBulkDeleteModal(true)}
-                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-red-50 text-gray-700 hover:text-red-600 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-red-300"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span>Delete Users</span>
-                </button>
-                <button
-                  onClick={() => setSelectedUserIds(new Set())}
-                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Clear</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Delete Users Modal */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Delete Users</h3>
-              <button
-                onClick={() => setShowBulkDeleteModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-red-800">Warning: This action cannot be undone</p>
-                  <p className="text-xs text-red-700 mt-1">
-                    You are about to delete {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''}.
-                    {hasPrimaryInSelection && ' This includes a primary contact.'}
-                    {hasChampionInSelection && ' This includes a champion.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-600">
-                Users to be deleted:
-                <ul className="mt-2 space-y-1">
-                  {selectedUsers.slice(0, 5).map((u) => (
-                    <li key={u.user_id} className="text-xs text-gray-500">• {u.full_name} ({u.email})</li>
-                  ))}
-                  {selectedUsers.length > 5 && (
-                    <li className="text-xs text-gray-400">... and {selectedUsers.length - 5} more</li>
-                  )}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowBulkDeleteModal(false)}
-                className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkDeleteUsers}
-                disabled={bulkProcessing}
-                className="flex-1 h-10 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bulkProcessing ? 'Deleting...' : `Delete ${selectedUserIds.size} User${selectedUserIds.size !== 1 ? 's' : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Mark Primary Modal */}
-      {showBulkMarkPrimaryModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Mark as Primary Contact</h3>
-              <button
-                onClick={() => setShowBulkMarkPrimaryModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-blue-800">Select One User</p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    Only one user can be marked as the primary contact. The current primary contact will be automatically unmarked.
-                  </p>
-                </div>
-              </div>
-
+      {/* Edit Org Modal */}
+      {showEditOrgModal && (
+        <Modal title="Edit Organization" onClose={() => setShowEditOrgModal(false)}>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Primary Contact</label>
-                <select
-                  value={bulkPrimaryUserId}
-                  onChange={(e) => setBulkPrimaryUserId(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a user...</option>
-                  {selectedUsers.map((u) => (
-                    <option key={u.user_id} value={u.user_id}>
-                      {u.full_name} ({u.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowBulkMarkPrimaryModal(false)}
-                className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkMarkPrimary}
-                disabled={bulkProcessing || !bulkPrimaryUserId}
-                className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bulkProcessing ? 'Updating...' : 'Mark as Primary'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Change Status Modal */}
-      {showBulkStatusModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Change User Status</h3>
-              <button
-                onClick={() => setShowBulkStatusModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">New Status</label>
-                <select
-                  value={bulkUserStatus}
-                  onChange={(e) => setBulkUserStatus(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select status...</option>
-                  <option value="invited">Invited</option>
-                  <option value="access_enabled">Access Enabled</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="text-xs text-gray-500">
-                This will update the status for {selectedUserIds.size} selected user{selectedUserIds.size !== 1 ? 's' : ''}.
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowBulkStatusModal(false)}
-                className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkChangeStatus}
-                disabled={bulkProcessing || !bulkUserStatus}
-                className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {bulkProcessing ? 'Updating...' : `Update ${selectedUserIds.size} User${selectedUserIds.size !== 1 ? 's' : ''}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add User Modal */}
-      {showAddUserModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add New User</h3>
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name *</label>
                 <input
                   type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="John Doe"
+                  value={orgForm.org_name || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, org_name: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="john@company.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                <input
-                  type="text"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Product Manager"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current Stage</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Domain *</label>
                 <select
-                  value={newUser.current_stage}
-                  onChange={(e) => setNewUser({ ...newUser, current_stage: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={orgForm.org_domain || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, org_domain: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="invited">Invited</option>
-                  <option value="onboarding">Onboarding</option>
-                  <option value="active">Active</option>
-                  <option value="engaged">Engaged</option>
-                  <option value="inactive">Inactive</option>
+                  {DOMAIN_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager *</label>
+                <select
+                  value={orgForm.account_manager || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, account_manager: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {accountManagers.map(am => <option key={am.user_id} value={am.username}>{am.username}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Lifecycle Stage *</label>
+                <select
+                  value={orgForm.org_lifecycle_stage || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, org_lifecycle_stage: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {LIFECYCLE_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Trial Start *</label>
+                <input
+                  type="date"
+                  value={orgForm.trial_start_date || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, trial_start_date: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Trial End *</label>
+                <input
+                  type="date"
+                  value={orgForm.trial_end_date || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, trial_end_date: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
-
-            <div className="flex gap-3 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Organization URL</label>
+              <input
+                type="url"
+                value={orgForm.org_url || ''}
+                onChange={(e) => setOrgForm({ ...orgForm, org_url: e.target.value })}
+                placeholder="https://trial.example.com"
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC</label>
+              <input
+                type="text"
+                value={orgForm.sales_poc || ''}
+                onChange={(e) => setOrgForm({ ...orgForm, sales_poc: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea
+                value={orgForm.description || ''}
+                onChange={(e) => setOrgForm({ ...orgForm, description: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
               <button
-                onClick={() => setShowAddUserModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                onClick={() => setShowEditOrgModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleAddUser}
-                disabled={!newUser.name || !newUser.email}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
-              >
-                Add User
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit User Modal */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Edit User</h3>
-              <button
-                onClick={() => setEditingUser(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={editingUser.name}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                <input
-                  type="email"
-                  value={editingUser.email}
-                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                <input
-                  type="text"
-                  value={editingUser.role || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={editingUser.phone || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current Stage</label>
-                <select
-                  value={editingUser.current_stage}
-                  onChange={(e) => setEditingUser({ ...editingUser, current_stage: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="invited">Invited</option>
-                  <option value="onboarding">Onboarding</option>
-                  <option value="active">Active</option>
-                  <option value="engaged">Engaged</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setEditingUser(null)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateUser}
-                disabled={!editingUser.name || !editingUser.email}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+                onClick={handleUpdateOrg}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
               >
                 Save Changes
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {/* Log Activity Modal */}
-      {showActivityModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Log Activity</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">User *</label>
-                <select
-                  value={newActivity.user_id}
-                  onChange={(e) => setNewActivity({ ...newActivity, user_id: e.target.value })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select user...</option>
-                  {users.map((singleUser) => (
-                    <option key={singleUser.user_id} value={singleUser.user_id}>
-                      {singleUser.name} ({singleUser.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type *</label>
-                <select
-                  value={newActivity.activity_type}
-                  onChange={(e) => setNewActivity({ ...newActivity, activity_type: e.target.value as any })}
-                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="login">Login</option>
-                  <option value="query_executed">Query Executed</option>
-                  <option value="report_generated">Report Generated</option>
-                  <option value="feature_used">Feature Used</option>
-                </select>
-              </div>
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <Modal title="Add User" onClose={() => setShowAddUserModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+              <input
+                type="text"
+                value={userForm.name}
+                onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <div className="flex gap-3 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+              <input
+                type="email"
+                value={userForm.email}
+                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <input
+                type="text"
+                value={userForm.role}
+                onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                placeholder="Product Manager"
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+              <select
+                value={userForm.current_stage}
+                onChange={(e) => setUserForm({ ...userForm, current_stage: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {USER_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Freshsales URL</label>
+              <input
+                type="url"
+                value={userForm.freshsales_url}
+                onChange={(e) => setUserForm({ ...userForm, freshsales_url: e.target.value })}
+                placeholder="https://myra.freshsales.io/contacts/..."
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
               <button
-                onClick={() => setShowActivityModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                onClick={() => setShowAddUserModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleLogActivity}
-                disabled={!newActivity.user_id}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg transition-colors"
+                onClick={handleAddUser}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
               >
-                Log Activity
+                Add User
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {/* Delete Organization Modal */}
-      <DeleteOrganizationModal
-        isOpen={showDeleteModal}
-        orgId={orgId}
-        orgName={organization?.org_name || ''}
-        userCount={users.length}
-        onClose={() => setShowDeleteModal(false)}
-        onSuccess={() => {
-          toast.success('Organization deleted successfully');
-          router.push('/support/trials');
-        }}
-      />
+      {/* Edit User Modal */}
+      {editingUser && (
+        <Modal title="Edit User" onClose={() => setEditingUser(null)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+              <input
+                type="text"
+                value={editingUser.name}
+                onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+              <input
+                type="email"
+                value={editingUser.email}
+                onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <input
+                type="text"
+                value={editingUser.role || ''}
+                onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
+              <select
+                value={editingUser.current_stage}
+                onChange={(e) => setEditingUser({ ...editingUser, current_stage: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {USER_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Freshsales URL</label>
+              <input
+                type="url"
+                value={editingUser.freshsales_url || ''}
+                onChange={(e) => setEditingUser({ ...editingUser, freshsales_url: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateUser}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
-      {/* Bulk Import Feature Requests Modal - Disabled */}
-      {/* Component to be implemented */}
+      {/* Add Activity Modal */}
+      {showAddActivityModal && (
+        <Modal title={`Log ${activityForm.type === 'meeting' ? 'Meeting' : 'Note'}`} onClose={() => setShowAddActivityModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+              <input
+                type="text"
+                value={activityForm.title}
+                onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
+                placeholder="Demo call with team"
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea
+                value={activityForm.content}
+                onChange={(e) => setActivityForm({ ...activityForm, content: e.target.value })}
+                rows={6}
+                placeholder="Meeting notes, action items, feature requests..."
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddActivityModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddActivity}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// Users Tab Component
+function UsersTab({ users, onAddUser, onEditUser, onDeleteUser }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-900">Users ({users.length})</h3>
+        <button
+          onClick={onAddUser}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
+        >
+          <Plus className="w-4 h-4" />
+          Add User
+        </button>
+      </div>
+
+      {users.length === 0 ? (
+        <div className="text-center py-12 px-6 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40">
+          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <p className="text-sm text-gray-600 font-medium mb-1">No users yet</p>
+          <p className="text-xs text-gray-500">Add your first user to get started</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {users.map((user: any) => (
+            <div
+              key={user.user_id}
+              className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Avatar name={user.name} size="lg" stage={user.current_stage} />
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900">{user.name}</h4>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      {user.role && (
+                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                          {user.role}
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                        user.current_stage === 'active' ? 'bg-green-100 text-green-700' :
+                        user.current_stage === 'onboarding' ? 'bg-purple-100 text-purple-700' :
+                        user.current_stage === 'invited' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {user.current_stage}
+                      </span>
+                      {user.freshsales_url && (
+                        <a
+                          href={user.freshsales_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Freshsales
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onEditUser(user)}
+                    className="px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteUser(user.user_id)}
+                    className="px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Details Tab Component
+function DetailsTab({ organization }: any) {
+  return (
+    <div className="p-8 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg">
+      <h3 className="text-lg font-bold text-gray-900 mb-6">Organization Details</h3>
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <label className="text-sm font-medium text-gray-600">Organization Name</label>
+          <p className="text-base text-gray-900 mt-1">{organization.org_name}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-600">Domain</label>
+          <p className="text-base text-gray-900 mt-1">{organization.org_domain}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-600">Account Manager</label>
+          <p className="text-base text-gray-900 mt-1">{organization.account_manager}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-600">Sales POC</label>
+          <p className="text-base text-gray-900 mt-1">{organization.sales_poc || '-'}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-600">Trial Period</label>
+          <p className="text-base text-gray-900 mt-1">
+            {format(new Date(organization.trial_start_date), 'MMM d, yyyy')} - {format(new Date(organization.trial_end_date), 'MMM d, yyyy')}
+          </p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-600">Organization URL</label>
+          {organization.org_url ? (
+            <a href={organization.org_url} target="_blank" rel="noopener noreferrer" className="text-base text-blue-600 hover:underline mt-1 flex items-center gap-1">
+              {organization.org_url}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          ) : (
+            <p className="text-base text-gray-900 mt-1">-</p>
+          )}
+        </div>
+        {organization.description && (
+          <div className="col-span-2">
+            <label className="text-sm font-medium text-gray-600">Description</label>
+            <p className="text-base text-gray-900 mt-1">{organization.description}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Modal Component
+function Modal({ title, children, onClose }: any) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
