@@ -68,11 +68,13 @@ export default function OrganizationDetailPage() {
   // Form states
   const [editedOrg, setEditedOrg] = useState<Partial<TrialOrg>>({});
   const [newUser, setNewUser] = useState({
-    full_name: '',
+    name: '',
     email: '',
-    title_role: '',
-    is_primary_contact: false,
+    role: '',
+    phone: '',
+    current_stage: 'invited' as string,
   });
+  const [editingUser, setEditingUser] = useState<TrialUser | null>(null);
   const [newActivity, setNewActivity] = useState({
     user_id: '',
     activity_type: 'login' as 'login' | 'query_executed' | 'report_generated' | 'feature_used',
@@ -207,18 +209,69 @@ export default function OrganizationDetailPage() {
       // @ts-ignore - Supabase typing issue with dynamic columns
       const { error } = await supabase.from('trial_users').insert({
         org_id: orgId,
-        ...newUser,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        phone: newUser.phone,
+        current_stage: newUser.current_stage,
+        account_manager: organization?.account_manager || '',
       });
 
       if (error) throw error;
 
       toast.success('User added successfully');
       setShowAddUserModal(false);
-      setNewUser({ full_name: '', email: '', title_role: '', is_primary_contact: false });
+      setNewUser({ name: '', email: '', role: '', phone: '', current_stage: 'invited' });
       fetchOrganizationData();
     } catch (error: any) {
       console.error('Error adding user:', error);
       toast.error('Failed to add user');
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+    const supabase = createClient();
+    try {
+      // @ts-ignore - Supabase typing issue with dynamic columns
+      const { error } = await supabase
+        .from('trial_users')
+        .update({
+          name: editingUser.name,
+          email: editingUser.email,
+          role: editingUser.role,
+          phone: editingUser.phone,
+          current_stage: editingUser.current_stage,
+        })
+        .eq('user_id', editingUser.user_id);
+
+      if (error) throw error;
+
+      toast.success('User updated successfully');
+      setEditingUser(null);
+      fetchOrganizationData();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast.error('Failed to update user');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    const supabase = createClient();
+    try {
+      const { error } = await supabase
+        .from('trial_users')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast.success('User deleted successfully');
+      fetchOrganizationData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
     }
   };
 
@@ -751,6 +804,121 @@ export default function OrganizationDetailPage() {
                 </button>
               </div>
             </div>
+
+            {/* Users Section */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Users</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {users.length} user{users.length !== 1 ? 's' : ''} in this organization
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add User
+                </button>
+              </div>
+
+              {users.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-xl">
+                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <p className="text-sm text-gray-600 mb-1">No users added yet</p>
+                  <p className="text-xs text-gray-500">Add your first user to start tracking engagement</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50/80 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Name</th>
+                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Email</th>
+                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Role</th>
+                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Stage</th>
+                        <th className="text-left text-xs font-semibold text-gray-700 px-4 py-3">Last Active</th>
+                        <th className="text-right text-xs font-semibold text-gray-700 px-4 py-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {users.map((user) => {
+                        const getStageColor = (stage: string) => {
+                          switch (stage) {
+                            case 'invited': return 'text-gray-600 bg-gray-100';
+                            case 'active': return 'text-green-600 bg-green-100';
+                            case 'onboarding': return 'text-blue-600 bg-blue-100';
+                            case 'engaged': return 'text-purple-600 bg-purple-100';
+                            case 'inactive': return 'text-orange-600 bg-orange-100';
+                            default: return 'text-gray-600 bg-gray-100';
+                          }
+                        };
+
+                        return (
+                          <tr key={user.user_id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+                                  <span className="text-xs font-semibold text-white">
+                                    {user.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="text-sm text-gray-700">{user.email}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="text-sm text-gray-600">{user.role || '—'}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(user.current_stage)}`}>
+                                {user.current_stage}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="text-xs text-gray-500">
+                                {user.last_active_at
+                                  ? format(new Date(user.last_active_at), 'MMM d, yyyy')
+                                  : 'Never'}
+                              </p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => setEditingUser(user)}
+                                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                                  title="Edit user"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(user.user_id)}
+                                  className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                                  title="Delete user"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1268,17 +1436,29 @@ export default function OrganizationDetailPage() {
 
       {/* Add User Modal */}
       {showAddUserModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Add New User</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Add New User</h3>
+              <button
+                onClick={() => setShowAddUserModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                 <input
                   type="text"
-                  value={newUser.full_name}
-                  onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="John Doe"
                 />
               </div>
               <div>
@@ -1288,27 +1468,45 @@ export default function OrganizationDetailPage() {
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="john@company.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title/Role</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <input
                   type="text"
-                  value={newUser.title_role}
-                  onChange={(e) => setNewUser({ ...newUser, title_role: e.target.value })}
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Product Manager"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                 <input
-                  type="checkbox"
-                  checked={newUser.is_primary_contact}
-                  onChange={(e) => setNewUser({ ...newUser, is_primary_contact: e.target.checked })}
-                  className="w-4 h-4"
+                  type="tel"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="+1 (555) 123-4567"
                 />
-                <label className="text-sm text-gray-700">Primary Contact</label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Stage</label>
+                <select
+                  value={newUser.current_stage}
+                  onChange={(e) => setNewUser({ ...newUser, current_stage: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="invited">Invited</option>
+                  <option value="onboarding">Onboarding</option>
+                  <option value="active">Active</option>
+                  <option value="engaged">Engaged</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             </div>
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddUserModal(false)}
@@ -1318,10 +1516,98 @@ export default function OrganizationDetailPage() {
               </button>
               <button
                 onClick={handleAddUser}
-                disabled={!newUser.full_name || !newUser.email}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-semibold rounded-lg transition-colors"
+                disabled={!newUser.name || !newUser.email}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
               >
                 Add User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Edit User</h3>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <input
+                  type="text"
+                  value={editingUser.role || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={editingUser.phone || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Stage</label>
+                <select
+                  value={editingUser.current_stage}
+                  onChange={(e) => setEditingUser({ ...editingUser, current_stage: e.target.value })}
+                  className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="invited">Invited</option>
+                  <option value="onboarding">Onboarding</option>
+                  <option value="active">Active</option>
+                  <option value="engaged">Engaged</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateUser}
+                disabled={!editingUser.name || !editingUser.email}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                Save Changes
               </button>
             </div>
           </div>
@@ -1344,7 +1630,7 @@ export default function OrganizationDetailPage() {
                   <option value="">Select user...</option>
                   {users.map((singleUser) => (
                     <option key={singleUser.user_id} value={singleUser.user_id}>
-                      {singleUser.full_name} ({singleUser.email})
+                      {singleUser.name} ({singleUser.email})
                     </option>
                   ))}
                 </select>
