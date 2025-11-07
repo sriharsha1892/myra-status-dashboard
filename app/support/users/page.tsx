@@ -55,7 +55,15 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      // Add cache-busting query parameter and aggressive no-cache headers
+      const cacheBuster = `?t=${Date.now()}`;
+      const response = await fetch(`/api/admin/users${cacheBuster}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -70,6 +78,9 @@ export default function UsersPage() {
       }
 
       const data = await response.json();
+      console.log('🔍 DEBUG: API returned users:', data.users?.length, 'users');
+      console.log('🔍 DEBUG: Pending users:', data.users?.filter((u: any) => u.status === 'Pending').length);
+      console.log('🔍 DEBUG: Full user list:', data.users);
       setUsers(data.users || []);
     } catch (error: any) {
       console.error('Error fetching users:', error);

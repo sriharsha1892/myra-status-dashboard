@@ -143,6 +143,12 @@ export async function GET(request: NextRequest) {
       users.push(...pendingUsers);
     }
 
+    // DEBUG: Log what we're returning
+    console.log('🔍 API DEBUG: Returning', users.length, 'total users');
+    console.log('🔍 API DEBUG: Active users:', users.filter(u => u.status === 'Active').length);
+    console.log('🔍 API DEBUG: Pending users:', users.filter(u => u.status === 'Pending').length);
+    console.log('🔍 API DEBUG: User list:', users.map(u => ({ email: u.email, status: u.status })));
+
     // Return with aggressive no-cache headers to prevent Vercel caching
     return NextResponse.json(
       { users },
