@@ -180,23 +180,23 @@ export default function EnterpriseCommandCenter() {
             </p>
           </div>
 
-          {/* Primary Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Primary Metrics Grid - 6-Column Compact Layout */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
             {/* Active Trials Card */}
             <button
               onClick={() => router.push('/support/trials')}
-              className="group relative bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-lg transition-all duration-200 text-left"
+              className="group relative bg-white rounded-lg border border-slate-200 p-3 hover:border-blue-300 hover:shadow-lg transition-all duration-200 text-left"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
               </div>
 
               <div>
-                <div className="text-xs text-slate-600 mb-1 uppercase font-medium tracking-wide">Active Trials</div>
-                <div className="text-3xl font-semibold text-slate-900">{activeTrials}</div>
+                <div className="text-[10px] text-slate-600 mb-1 uppercase font-medium tracking-wide">Active Trials</div>
+                <div className="text-2xl font-semibold text-slate-900">{activeTrials}</div>
               </div>
             </button>
 
@@ -204,21 +204,21 @@ export default function EnterpriseCommandCenter() {
             {criticalTickets > 0 && (
               <button
                 onClick={() => router.push('/support/tickets?priority=critical')}
-                className="group relative bg-white rounded-xl border border-amber-200 p-5 hover:border-amber-300 hover:shadow-lg transition-all duration-200 text-left"
+                className="group relative bg-white rounded-lg border border-amber-200 p-3 hover:border-amber-300 hover:shadow-lg transition-all duration-200 text-left"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" strokeWidth={1.5} />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" strokeWidth={1.5} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-600 mb-1 uppercase font-medium tracking-wide">Critical</div>
-                  <div className="text-3xl font-semibold text-slate-900">{criticalTickets}</div>
+                  <div className="text-[10px] text-slate-600 mb-1 uppercase font-medium tracking-wide">Critical</div>
+                  <div className="text-2xl font-semibold text-slate-900">{criticalTickets}</div>
                 </div>
               </button>
             )}
@@ -227,168 +227,161 @@ export default function EnterpriseCommandCenter() {
             {openTickets > 0 && (
               <button
                 onClick={() => router.push('/support/tickets')}
-                className="group relative bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-lg transition-all duration-200 text-left"
+                className="group relative bg-white rounded-lg border border-slate-200 p-3 hover:border-blue-300 hover:shadow-lg transition-all duration-200 text-left"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" strokeWidth={1.5} />
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-600 mb-1 uppercase font-medium tracking-wide">Open Tickets</div>
-                  <div className="text-3xl font-semibold text-slate-900">{openTickets}</div>
+                  <div className="text-[10px] text-slate-600 mb-1 uppercase font-medium tracking-wide">Open Tickets</div>
+                  <div className="text-2xl font-semibold text-slate-900">{openTickets}</div>
                 </div>
               </button>
             )}
 
             {/* At Risk Trials Card - Only show if > 0 */}
             {atRiskTrials > 0 && (
-              <div className="relative bg-white rounded-xl border border-amber-200 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-amber-600" strokeWidth={1.5} />
+              <div className="relative bg-white rounded-lg border border-amber-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+                    <Target className="w-3.5 h-3.5 text-amber-600" strokeWidth={1.5} />
                   </div>
-                  <div className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded">
-                    <span className="text-xs text-amber-700 font-medium">7D</span>
+                  <div className="px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded">
+                    <span className="text-[10px] text-amber-700 font-medium">7D</span>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-600 mb-1 uppercase font-medium tracking-wide">Ending Soon</div>
-                  <div className="text-3xl font-semibold text-slate-900">{atRiskTrials}</div>
+                  <div className="text-[10px] text-slate-600 mb-1 uppercase font-medium tracking-wide">Ending Soon</div>
+                  <div className="text-2xl font-semibold text-slate-900">{atRiskTrials}</div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Two-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Two-Column Layout - Compact Spacing */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column - Activity Feed */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4">
               {/* Todos Widget */}
               <TodosWidget userId={user?.id} />
-              {/* Recent Activity */}
-              <div className="relative bg-white rounded-xl border border-slate-200 p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Activity className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+              {/* Recent Activity - Only show if has items */}
+              {recentActivity.length > 0 && (
+                <div className="relative bg-white rounded-lg border border-slate-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <Activity className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
+                      </div>
+                      <h2 className="text-xs font-semibold text-slate-900">Recent Activity</h2>
                     </div>
-                    <h2 className="text-sm font-semibold text-slate-900">Recent Activity</h2>
+                    <button
+                      onClick={() => router.push('/support/tickets')}
+                      className="text-[10px] text-slate-600 hover:text-blue-600 font-medium transition-colors duration-200 flex items-center gap-1"
+                    >
+                      View all
+                      <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => router.push('/support/tickets')}
-                    className="text-xs text-slate-600 hover:text-blue-600 font-medium transition-colors duration-200 flex items-center gap-1"
-                  >
-                    View all
-                    <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
-                  </button>
-                </div>
 
-                {recentActivity.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
-                      <Sparkles className="w-6 h-6 text-slate-400" strokeWidth={1.5} />
-                    </div>
-                    <p className="text-sm text-slate-600">All clear. No active tickets.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {recentActivity.map((activity, idx) => (
                       <button
                         key={activity.id}
                         onClick={() => router.push(`/support/tickets/${activity.id}`)}
-                        className="group w-full text-left px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all duration-200"
+                        className="group w-full text-left px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all duration-200"
                         style={{ animationDelay: `${idx * 50}ms` }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
+                            <div className="flex items-center gap-1.5 mb-0.5">
                               {activity.priority === 'critical' && (
                                 <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
                               )}
-                              <p className="text-sm text-slate-900 font-medium truncate group-hover:text-blue-600 transition-colors duration-200">
+                              <p className="text-xs text-slate-900 font-medium truncate group-hover:text-blue-600 transition-colors duration-200">
                                 {activity.title}
                               </p>
                             </div>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-[10px] text-slate-500">
                               {formatDistanceToNow(new Date(activity.created), { addSuffix: true })}
                             </p>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" strokeWidth={1.5} />
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-200 flex-shrink-0" strokeWidth={1.5} />
                         </div>
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Quick Actions */}
-              <div className="relative bg-white rounded-xl border border-slate-200 p-6">
-                <div className="flex items-center gap-2.5 mb-5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+              {/* Quick Actions - Compact */}
+              <div className="relative bg-white rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <Zap className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-sm font-semibold text-slate-900">Quick Actions</h2>
+                  <h2 className="text-xs font-semibold text-slate-900">Quick Actions</h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => router.push('/support/trials')}
-                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-4 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
+                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-3 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
                   >
-                    <Building2 className="w-5 h-5 text-blue-600 mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-slate-900 font-medium mb-0.5">Trial Organizations</p>
-                    <p className="text-xs text-slate-600">Manage active trials</p>
+                    <Building2 className="w-4 h-4 text-blue-600 mb-1.5" strokeWidth={1.5} />
+                    <p className="text-xs text-slate-900 font-medium mb-0.5">Trial Organizations</p>
+                    <p className="text-[10px] text-slate-600">Manage active trials</p>
                   </button>
 
                   <button
                     onClick={() => router.push('/support/tickets')}
-                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-4 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
+                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-3 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
                   >
-                    <FileText className="w-5 h-5 text-blue-600 mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-slate-900 font-medium mb-0.5">Support Tickets</p>
-                    <p className="text-xs text-slate-600">View all tickets</p>
+                    <FileText className="w-4 h-4 text-blue-600 mb-1.5" strokeWidth={1.5} />
+                    <p className="text-xs text-slate-900 font-medium mb-0.5">Support Tickets</p>
+                    <p className="text-[10px] text-slate-600">View all tickets</p>
                   </button>
 
                   <button
                     onClick={() => router.push('/support/reports')}
-                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-4 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
+                    className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-3 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
                   >
-                    <TrendingUp className="w-5 h-5 text-blue-600 mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-slate-900 font-medium mb-0.5">Analytics</p>
-                    <p className="text-xs text-slate-600">Performance insights</p>
+                    <TrendingUp className="w-4 h-4 text-blue-600 mb-1.5" strokeWidth={1.5} />
+                    <p className="text-xs text-slate-900 font-medium mb-0.5">Analytics</p>
+                    <p className="text-[10px] text-slate-600">Performance insights</p>
                   </button>
 
                   {role?.toLowerCase() === 'admin' && (
                     <button
                       onClick={() => router.push('/support/admin/roadmap')}
-                      className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-4 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
+                      className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-3 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
                     >
-                      <Target className="w-5 h-5 text-blue-600 mb-2" strokeWidth={1.5} />
-                      <p className="text-sm text-slate-900 font-medium mb-0.5">Roadmap</p>
-                      <p className="text-xs text-slate-600">Product planning</p>
+                      <Target className="w-4 h-4 text-blue-600 mb-1.5" strokeWidth={1.5} />
+                      <p className="text-xs text-slate-900 font-medium mb-0.5">Roadmap</p>
+                      <p className="text-[10px] text-slate-600">Product planning</p>
                     </button>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Upcoming Demos & Insights */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Right Column - Upcoming Demos & Insights - Compact */}
+            <div className="lg:col-span-1 space-y-4">
               {/* Upcoming Demos */}
               {role?.toLowerCase() === 'admin' && upcomingDemos.length > 0 && (
-                <div className="relative bg-white rounded-xl border border-slate-200 p-6">
-                  <div className="flex items-center gap-2.5 mb-5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+                <div className="relative bg-white rounded-lg border border-slate-200 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
                     </div>
-                    <h2 className="text-sm font-semibold text-slate-900">Upcoming Demos</h2>
+                    <h2 className="text-xs font-semibold text-slate-900">Upcoming Demos</h2>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-1.5">
                     {upcomingDemos.slice(0, 4).map((demo, idx) => {
                       const demoDate = new Date(demo.meeting_date);
                       const isToday = format(demoDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -398,24 +391,24 @@ export default function EnterpriseCommandCenter() {
                         <button
                           key={demo.meeting_id}
                           onClick={() => router.push(`/support/trials/${demo.org_id}`)}
-                          className="group w-full text-left p-3 rounded-lg bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all duration-200"
+                          className="group w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all duration-200"
                         >
-                          <div className="flex items-start justify-between mb-1.5">
-                            <p className="text-sm text-slate-900 font-medium group-hover:text-blue-600 transition-colors duration-200">
+                          <div className="flex items-start justify-between mb-1">
+                            <p className="text-xs text-slate-900 font-medium group-hover:text-blue-600 transition-colors duration-200">
                               {(demo.trial_organizations as any)?.org_name || 'Unknown Org'}
                             </p>
                             {isToday && (
-                              <span className="px-2 py-0.5 bg-blue-100 border border-blue-200 rounded text-xs text-blue-700 font-medium">
+                              <span className="px-1.5 py-0.5 bg-blue-100 border border-blue-200 rounded text-[10px] text-blue-700 font-medium">
                                 TODAY
                               </span>
                             )}
                             {isTomorrow && (
-                              <span className="px-2 py-0.5 bg-amber-100 border border-amber-200 rounded text-xs text-amber-700 font-medium">
+                              <span className="px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[10px] text-amber-700 font-medium">
                                 TMR
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-[10px] text-slate-500">
                             {format(demoDate, 'MMM d, yyyy')} · {demo.conducted_by}
                           </p>
                         </button>
@@ -425,55 +418,55 @@ export default function EnterpriseCommandCenter() {
                 </div>
               )}
 
-              {/* Insights */}
-              <div className="relative bg-gradient-to-br from-purple-50 via-white to-pink-50 rounded-xl border border-slate-200 p-6">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
+              {/* Insights - Compact */}
+              <div className="relative bg-gradient-to-br from-purple-50 via-white to-pink-50 rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-sm font-semibold text-slate-900">Insights</h2>
+                  <h2 className="text-xs font-semibold text-slate-900">Insights</h2>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   {criticalTickets > 0 && (
                     <button
                       onClick={() => router.push('/support/tickets?priority=critical')}
-                      className="w-full text-left p-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all duration-200 group"
+                      className="w-full text-left p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all duration-200 group"
                     >
-                      <p className="text-sm text-slate-900 font-medium mb-1 group-hover:text-amber-700 transition-colors duration-200">
+                      <p className="text-xs text-slate-900 font-medium mb-0.5 group-hover:text-amber-700 transition-colors duration-200">
                         {criticalTickets} critical {criticalTickets === 1 ? 'issue' : 'issues'} need attention
                       </p>
-                      <p className="text-xs text-slate-600">Review critical tickets →</p>
+                      <p className="text-[10px] text-slate-600">Review critical tickets →</p>
                     </button>
                   )}
 
                   {atRiskTrials > 0 && (
                     <button
                       onClick={() => router.push('/support/trials')}
-                      className="w-full text-left p-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all duration-200 group"
+                      className="w-full text-left p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all duration-200 group"
                     >
-                      <p className="text-sm text-slate-900 font-medium mb-1 group-hover:text-amber-700 transition-colors duration-200">
+                      <p className="text-xs text-slate-900 font-medium mb-0.5 group-hover:text-amber-700 transition-colors duration-200">
                         {atRiskTrials} {atRiskTrials === 1 ? 'trial ends' : 'trials end'} within 7 days
                       </p>
-                      <p className="text-xs text-slate-600">Check trial status →</p>
+                      <p className="text-[10px] text-slate-600">Check trial status →</p>
                     </button>
                   )}
 
                   {activeTrials > 0 && criticalTickets === 0 && atRiskTrials === 0 && (
                     <button
                       onClick={() => router.push('/support/trials')}
-                      className="w-full text-left p-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all duration-200 group"
+                      className="w-full text-left p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all duration-200 group"
                     >
-                      <p className="text-sm text-slate-900 font-medium mb-1 group-hover:text-emerald-700 transition-colors duration-200">
+                      <p className="text-xs text-slate-900 font-medium mb-0.5 group-hover:text-emerald-700 transition-colors duration-200">
                         {activeTrials} active {activeTrials === 1 ? 'trial' : 'trials'} in progress
                       </p>
-                      <p className="text-xs text-slate-600">View all trials →</p>
+                      <p className="text-[10px] text-slate-600">View all trials →</p>
                     </button>
                   )}
 
                   {criticalTickets === 0 && atRiskTrials === 0 && activeTrials === 0 && (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-slate-600">All systems nominal</p>
+                    <div className="text-center py-3">
+                      <p className="text-xs text-slate-600">All systems nominal</p>
                     </div>
                   )}
                 </div>
