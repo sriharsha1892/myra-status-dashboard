@@ -64,19 +64,23 @@ export default function EnterpriseCommandCenter() {
           return;
         }
 
+        // Limit to 500 most recent tickets for performance - plenty for dashboard metrics
         const { data, error } = await supabase
           .from('tickets')
           .select('*')
           .in('trial_org_id', orgIds)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(500);
 
         if (error) throw error;
         setTickets(data || []);
       } else {
+        // Limit to 500 most recent tickets for performance - dashboard only needs recent data
         const { data, error } = await supabase
           .from('tickets')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(500);
 
         if (error) throw error;
         setTickets(data || []);

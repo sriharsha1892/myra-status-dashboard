@@ -17,7 +17,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import NotificationsBell from '@/components/NotificationsBell';
+import NotificationsBell from '@/components/NotificationsBell'; // Floating widget - renders globally
 
 export default function SupportLayout({
   children,
@@ -291,9 +291,6 @@ export default function SupportLayout({
 
           {/* Bottom Actions */}
           <div className="mt-auto pt-4 border-t border-slate-200 space-y-1">
-            {/* Notifications */}
-            <NotificationsBell />
-
             {/* Link to Public Status Page */}
             <a
               href="/status"
@@ -341,6 +338,9 @@ export default function SupportLayout({
 
         {children}
       </main>
+
+      {/* Floating Draggable Notification Widget - Renders globally for all authenticated pages */}
+      <NotificationsBell />
     </div>
   );
 }
