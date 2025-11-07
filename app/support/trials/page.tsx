@@ -13,6 +13,7 @@ import { format, differenceInDays, addDays } from 'date-fns';
 import Papa from 'papaparse';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import { CopyButtonInline } from '@/components/ui/CopyButton';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
@@ -25,6 +26,7 @@ interface OrgWithUsers extends TrialOrg {
 export default function TrialOrganizationsPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   const [organizations, setOrganizations] = useState<OrgWithUsers[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<OrgWithUsers[]>([]);
   const [loading, setLoading] = useState(true);
@@ -531,7 +533,12 @@ export default function TrialOrganizationsPage() {
                               <div>
                                 <p className="text-sm font-semibold text-gray-900">{org.org_name}</p>
                                 {org.org_domain && (
-                                  <p className="text-xs text-gray-500 mt-0.5">{org.org_domain}</p>
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <p className="text-xs text-gray-500">{org.org_domain}</p>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <CopyButtonInline text={org.org_domain} />
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </td>

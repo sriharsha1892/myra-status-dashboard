@@ -18,6 +18,9 @@ import DeleteOrganizationModal from '@/components/DeleteOrganizationModal';
 import FeatureRequestsTab from '@/components/FeatureRequestsTab';
 import FollowupSchedulingTab from '@/components/FollowupSchedulingTab';
 import ActivityLogTab from '@/components/ActivityLogTab';
+import { CopyButtonInline } from '@/components/ui/CopyButton';
+import RelativeTime from '@/components/ui/RelativeTime';
+import { trackRecentItem } from '@/components/ui/RecentItems';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
@@ -28,10 +31,11 @@ type MeetingNote = Database['public']['Tables']['meeting_notes']['Row'];
 type TabType = 'overview' | 'users' | 'queries' | 'deals' | 'activity' | 'demos' | 'meetings' | 'features' | 'followups' | 'activitylog';
 
 export default function OrganizationDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
   const params = useParams();
   const orgId = params.id as string;
+  const supabase = createClient();
 
   const [organization, setOrganization] = useState<TrialOrg | null>(null);
   const [users, setUsers] = useState<TrialUser[]>([]);
@@ -93,6 +97,19 @@ export default function OrganizationDetailPage() {
       if (orgError) throw orgError;
       setOrganization(org);
       setEditedOrg(org);
+
+      // Track this page view in recent items
+      trackRecentItem({
+        id: org.org_id,
+        label: org.org_name,
+        type: 'organization',
+        path: `/support/trials/${org.org_id}`,
+        viewedAt: new Date().toISOString(),
+        metadata: {
+          domain: org.domain || org.org_domain,
+          status: org.org_lifecycle_stage
+        }
+      });
 
       // Permission check: AMs can only access their own orgs
       if (role?.toLowerCase() === 'account_manager' && org.account_manager_id !== user?.id) {
@@ -456,17 +473,20 @@ export default function OrganizationDetailPage() {
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold text-gray-900">{organization.org_name}</h1>
                   {organization.org_url && (
-                    <a
-                      href={organization.org_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 transition-colors"
-                      title="Visit website"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
+                    <>
+                      <a
+                        href={organization.org_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 transition-colors"
+                        title="Visit website"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                      <CopyButtonInline text={organization.org_url} />
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -649,6 +669,13 @@ export default function OrganizationDetailPage() {
               <h3 className="text-lg font-bold text-gray-900 mb-4">Organization Details</h3>
               <div className="grid grid-cols-2 gap-6">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization ID</label>
+                  <div className="flex items-center gap-2 w-full h-10 px-4 text-sm bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="flex-1 font-mono text-gray-600">{organization.org_id}</span>
+                    <CopyButtonInline text={organization.org_id} />
+                  </div>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
                   <input
                     type="text"
@@ -814,7 +841,7 @@ export default function OrganizationDetailPage() {
                             </td>
                             <td className="px-6 py-4">
                               <p className="text-sm text-gray-900">
-                                {format(new Date(demo.demo_date), 'MMM d, yyyy')}
+                                <RelativeTime date={demo.demo_date} />
                                 {demo.demo_time && (
                                   <span className="text-xs text-gray-500 ml-1">
                                     {demo.demo_time}
@@ -868,7 +895,9 @@ export default function OrganizationDetailPage() {
                       : m.action_items || [];
                     return sum + actionItems.filter((item: any) => item.status === 'pending').length;
                   }, 0)}
-                  {meetings.length > 0 && ` | Last meeting: ${format(new Date(meetings[0].meeting_date), 'MMM d, yyyy')}`}
+                  {meetings.length > 0 && (
+                    <span> | Last meeting: <RelativeTime date={meetings[0].meeting_date} /></span>
+                  )}
                 </p>
               </div>
               <button
@@ -933,7 +962,7 @@ export default function OrganizationDetailPage() {
                             </span>
                             <span className="text-gray-400">•</span>
                             <span className="text-sm text-gray-600">
-                              {format(new Date(meeting.meeting_date), 'MMM d, yyyy')}
+                              <RelativeTime date={meeting.meeting_date} />
                             </span>
                             {meeting.duration_minutes && (
                               <>
