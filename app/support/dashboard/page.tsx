@@ -10,8 +10,6 @@ import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
 } from 'lucide-react';
-import AtRiskCustomers from '@/components/support/AtRiskCustomers';
-import QuickInsights from '@/components/support/QuickInsights';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -259,18 +257,10 @@ export default function EnterpriseCommandCenter() {
             )}
           </div>
 
-          {/* Quick Insights - Fills whitespace with valuable metrics for account managers */}
-          <div className="mb-8">
-            <QuickInsights userId={user?.id} role={role} />
-          </div>
-
           {/* Two-Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Activity Feed */}
             <div className="lg:col-span-2 space-y-6">
-              {/* At-Risk Customers - Customer Health Integration */}
-              <AtRiskCustomers />
-
               {/* Recent Activity */}
               <div className="relative bg-white rounded-xl border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-5">
