@@ -101,7 +101,7 @@ export default function WorldClassRoadmapPage() {
   // State
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('board'); // Changed default to board view
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [selectedArea, setSelectedArea] = useState<string>('all');
@@ -578,12 +578,7 @@ export default function WorldClassRoadmapPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Title</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Priority</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Version</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Environment</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Agent Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Agent URL</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Goal</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Area</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Assigned To</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wide">Target Date</th>
                   </tr>
@@ -591,7 +586,7 @@ export default function WorldClassRoadmapPage() {
                 <tbody className="divide-y divide-slate-200">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-12 text-center">
+                      <td colSpan={6} className="px-4 py-12 text-center">
                         <p className="text-sm text-slate-500">No items to display</p>
                       </td>
                     </tr>

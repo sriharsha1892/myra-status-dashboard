@@ -168,7 +168,7 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
           </span>
         </div>
 
-        {/* Last Activity + Hover Quick Actions */}
+        {/* Last Activity + Edit Button - Always Visible */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             {isStale && (
@@ -184,39 +184,14 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
             )}
           </div>
 
-          {/* Quick Actions - Hover Reveal */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Assign:', item.id);
-              }}
-              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-              title="Assign"
-            >
-              <UserPlus className="w-3.5 h-3.5" strokeWidth={2} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Edit:', item.id);
-              }}
-              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-              title="Edit"
-            >
-              <Edit3 className="w-3.5 h-3.5" strokeWidth={2} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Comment:', item.id);
-              }}
-              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
-              title="Comment"
-            >
-              <MessageSquare className="w-3.5 h-3.5" strokeWidth={2} />
-            </button>
-          </div>
+          {/* Prominent Edit Button - Always Visible */}
+          <button
+            onClick={onClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-all duration-200 border border-blue-200 hover:border-blue-300"
+          >
+            <Edit3 className="w-3.5 h-3.5" strokeWidth={2} />
+            <span>Edit</span>
+          </button>
         </div>
 
         {/* Estimate Variance Warning */}

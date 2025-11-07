@@ -120,31 +120,14 @@ export async function GET(request: NextRequest) {
     }));
 
     // Also fetch pending signup tokens that haven't been used yet
-    console.log('🔍 API DEBUG: Fetching pending tokens from signup_tokens table...');
+    console.log('🔍 Fetching pending signup tokens...');
 
-    // Try RPC function first, fallback to regular query
-    let pendingTokens: any[] | null = null;
-    let tokensError: any = null;
-
-    try {
-      console.log('🔍 API DEBUG: Trying RPC function...');
-      const rpcResult = await adminClient.rpc('get_pending_tokens');
-      pendingTokens = rpcResult.data;
-      tokensError = rpcResult.error;
-      console.log('🔍 API DEBUG: RPC result:', { success: !tokensError, count: pendingTokens?.length });
-    } catch (rpcError) {
-      console.log('🔍 API DEBUG: RPC failed, using regular query...', rpcError);
-      // Fallback to regular query
-      const regularResult = await adminClient
-        .from('signup_tokens')
-        .select('*')
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString());
-
-      pendingTokens = regularResult.data;
-      tokensError = regularResult.error;
-      console.log('🔍 API DEBUG: Regular query result:', { success: !tokensError, count: pendingTokens?.length });
-    }
+    // Direct query - no RPC function (was causing errors)
+    const { data: pendingTokens, error: tokensError } = await adminClient
+      .from('signup_tokens')
+      .select('*')
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString());
 
     console.log('🔍 API DEBUG: Pending tokens query result:', {
       success: !tokensError,
