@@ -100,7 +100,7 @@ export default function TrialOrganizationsPage() {
       // Fetch users count for each org
       const { data: users, error: usersError } = await supabase
         .from('trial_users')
-        .select('org_id, user_status');
+        .select('org_id, current_stage');
 
       if (usersError) throw usersError;
 
@@ -111,7 +111,7 @@ export default function TrialOrganizationsPage() {
         return {
           ...org,
           user_count: orgUsers.length,
-          active_users: orgUsers.filter((u: any) => u.user_status === 'active').length,
+          active_users: orgUsers.filter((u: any) => u.current_stage === 'active').length,
         };
       });
 
