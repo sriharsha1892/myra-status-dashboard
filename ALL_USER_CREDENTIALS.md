@@ -48,8 +48,8 @@
 #### 7. Nikita
 - **Email:** nikita@mordorintelligence.com
 - **Password:** `Nikita@2025!`
-- **Role:** Team
-- **Access:** Basic team access
+- **Role:** Account Manager
+- **Access:** See only assigned trial organizations
 
 ---
 
