@@ -43,6 +43,7 @@ import {
   ArrowUp,
   ArrowRight,
 } from 'lucide-react';
+import VelocityDashboard from '@/components/roadmap/VelocityDashboard';
 import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
 import TimeLoggingModal from '@/components/roadmap/TimeLoggingModal';
 
@@ -484,6 +485,11 @@ export default function WorldClassRoadmapPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Velocity Dashboard - Team Productivity Metrics */}
+      <div className="max-w-[1600px] mx-auto px-8 pt-6">
+        <VelocityDashboard />
       </div>
 
       {/* CONTENT AREA - 32px spacing system */}

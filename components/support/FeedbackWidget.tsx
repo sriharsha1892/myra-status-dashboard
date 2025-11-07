@@ -31,6 +31,10 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
     setLoading(true);
 
     try {
+      // Get user email
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Insert into database
       const { error } = await supabase
         .from('feedback_submissions')
         .insert({
@@ -39,6 +43,16 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
         });
 
       if (error) throw error;
+
+      // Send email notification
+      await fetch('/api/feedback/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          user_email: user?.email || 'unknown',
+        }),
+      });
 
       toast.success('Thank you for your feedback!');
       setFormData({ feedback_type: 'feedback', subject: '', message: '' });
