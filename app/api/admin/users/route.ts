@@ -57,9 +57,9 @@ async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: bo
       return { authorized: false };
     }
 
-    // Check if user has Admin role
+    // Check if user has Admin role (case-insensitive for safety)
     const role = user.user_metadata?.role;
-    if (role !== 'Admin') {
+    if (!role || role.toLowerCase() !== 'admin') {
       return { authorized: false };
     }
 
