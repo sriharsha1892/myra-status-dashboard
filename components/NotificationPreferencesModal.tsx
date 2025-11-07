@@ -156,75 +156,75 @@ export default function NotificationPreferencesModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1001] p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        {/* Header - Compact */}
+        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                <Bell className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Bell className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">
+                <h3 className="text-lg font-bold text-white">
                   Notification Preferences
                 </h3>
-                <p className="text-sm text-blue-100 mt-1">
+                <p className="text-xs text-blue-100">
                   Choose which notifications you want to receive
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
             >
-              <X className="w-6 h-6 text-white" />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-8">
+        {/* Body - Compact */}
+        <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {preferences.map((pref) => (
                 <button
                   key={pref.notification_type}
                   onClick={() => togglePreference(pref.notification_type)}
-                  className={`w-full p-5 rounded-xl border-2 transition-all duration-200 text-left group hover:shadow-md ${
+                  className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md ${
                     pref.enabled
                       ? 'border-blue-500 bg-blue-50 hover:bg-blue-100'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     {/* Checkbox */}
                     <div
-                      className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                      className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                         pref.enabled
                           ? 'bg-blue-600 border-blue-600'
                           : 'bg-white border-slate-300 group-hover:border-slate-400'
                       }`}
                     >
                       {pref.enabled && (
-                        <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <h4
-                        className={`text-base font-bold mb-1 ${
+                        className={`text-sm font-bold mb-0.5 ${
                           pref.enabled ? 'text-blue-900' : 'text-slate-900'
                         }`}
                       >
                         {pref.label}
                       </h4>
                       <p
-                        className={`text-sm ${
+                        className={`text-xs ${
                           pref.enabled ? 'text-blue-700' : 'text-slate-600'
                         }`}
                       >
@@ -234,7 +234,7 @@ export default function NotificationPreferencesModal({
 
                     {/* Status indicator */}
                     <div
-                      className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
+                      className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         pref.enabled
                           ? 'bg-blue-600 text-white'
                           : 'bg-slate-200 text-slate-600'
@@ -248,40 +248,38 @@ export default function NotificationPreferencesModal({
             </div>
           )}
 
-          {/* Info box */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <div className="flex gap-3">
+          {/* Info box - Compact */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex gap-2.5">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Bell className="w-4 h-4 text-white" />
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Bell className="w-3 h-3 text-white" />
                 </div>
               </div>
               <div>
-                <p className="text-sm font-semibold text-blue-900 mb-1">
+                <p className="text-xs font-semibold text-blue-900 mb-0.5">
                   About Notifications
                 </p>
-                <p className="text-sm text-blue-700 leading-relaxed">
-                  Notifications help you stay informed about important activities.
-                  You can customize which events trigger notifications based on your
-                  preferences.
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Customize which events trigger notifications based on your preferences.
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-5 bg-slate-50 border-t border-slate-200 flex gap-3">
+        {/* Footer - Compact */}
+        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 h-11 px-4 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-semibold transition-all"
+            className="flex-1 h-9 px-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-medium text-sm transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 h-11 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 h-9 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
               <>

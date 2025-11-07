@@ -317,32 +317,50 @@ export default function NotificationsBell() {
                 ) : (
                   <div className="py-1">
                     {notifications.map((notification) => (
-                      <button
+                      <div
                         key={notification.notification_id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`w-full text-left px-3 py-2 border-b border-slate-50 transition-all ${
+                        className={`relative group border-b border-slate-50 transition-all ${
                           notification.read
                             ? 'bg-white hover:bg-slate-50'
                             : 'bg-blue-50/50 hover:bg-blue-50'
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          {!notification.read && (
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] text-slate-900 font-medium leading-tight mb-1">
-                              {notification.org_activity_notes.trial_organizations.org_name}
-                            </p>
-                            <p className="text-[10px] text-slate-600 leading-tight line-clamp-2">
-                              {getNotificationText(notification)}
-                            </p>
-                            <p className="text-[9px] text-slate-400 mt-1">
-                              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                            </p>
+                        <button
+                          onClick={() => handleNotificationClick(notification)}
+                          className="w-full text-left px-3 py-2 pr-8"
+                        >
+                          <div className="flex items-start gap-2">
+                            {!notification.read && (
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] text-slate-900 font-medium leading-tight mb-1">
+                                {notification.org_activity_notes.trial_organizations.org_name}
+                              </p>
+                              <p className="text-[10px] text-slate-600 leading-tight line-clamp-2">
+                                {getNotificationText(notification)}
+                              </p>
+                              <p className="text-[9px] text-slate-400 mt-1">
+                                {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+
+                        {/* Dismiss Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead([notification.notification_id]);
+                          }}
+                          className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded opacity-0 group-hover:opacity-100 transition-all"
+                          title="Dismiss"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
