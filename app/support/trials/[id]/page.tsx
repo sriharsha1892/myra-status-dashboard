@@ -486,7 +486,29 @@ export default function OrganizationDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            maxWidth: '500px',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 sticky top-0 z-10">
@@ -754,6 +776,16 @@ export default function OrganizationDetailPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC (Optional)</label>
+                  <input
+                    type="text"
+                    value={editedOrg.sales_poc || ''}
+                    onChange={(e) => setEditedOrg({ ...editedOrg, sales_poc: e.target.value })}
+                    placeholder="Sales representative name"
+                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Lifecycle Stage</label>
                   <select
                     value={editedOrg.org_lifecycle_stage || ''}
@@ -785,12 +817,43 @@ export default function OrganizationDetailPage() {
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization URL</label>
+                  <input
+                    type="url"
+                    value={editedOrg.org_url || ''}
+                    onChange={(e) => setEditedOrg({ ...editedOrg, org_url: e.target.value })}
+                    placeholder="https://example.com"
+                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                  <input
+                    type="url"
+                    value={editedOrg.logo_url || ''}
+                    onChange={(e) => setEditedOrg({ ...editedOrg, logo_url: e.target.value })}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Comments</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={editedOrg.description || ''}
+                    onChange={(e) => setEditedOrg({ ...editedOrg, description: e.target.value })}
+                    rows={3}
+                    placeholder="Brief description of the organization..."
+                    className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Internal Comments</label>
                   <textarea
                     value={editedOrg.comments || ''}
                     onChange={(e) => setEditedOrg({ ...editedOrg, comments: e.target.value })}
-                    rows={4}
+                    rows={3}
+                    placeholder="Internal notes and comments..."
                     className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
