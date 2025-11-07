@@ -148,25 +148,25 @@ export default function NotificationsBell() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Button - Larger and more prominent */}
+      {/* Bell Button - Compact and professional */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className={`relative p-3 rounded-xl transition-all duration-200 ${
+        className={`relative p-2 rounded-lg transition-all duration-200 ${
           unreadCount > 0
-            ? 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl'
+            ? 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg'
             : 'bg-white/80 hover:bg-white backdrop-blur-sm border border-slate-200 hover:border-slate-300'
         } group`}
       >
         <svg
-          className={`w-6 h-6 transition-all duration-200 ${
+          className={`w-4 h-4 transition-all duration-200 ${
             unreadCount > 0
-              ? 'text-white animate-pulse'
+              ? 'text-white'
               : 'text-slate-700 group-hover:text-slate-900'
           }`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth={2.5}
+          strokeWidth={2}
         >
           <path
             strokeLinecap="round"
@@ -175,7 +175,7 @@ export default function NotificationsBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[24px] h-[24px] px-1.5 text-xs font-bold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-full ring-4 ring-white shadow-lg animate-bounce">
+          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-bold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-full ring-2 ring-white shadow-md">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}

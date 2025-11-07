@@ -120,21 +120,21 @@ export default function VelocityDashboard() {
   if (!metrics) return null;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-slate-200 p-6">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-lg border border-slate-200 p-4 mb-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shadow-sm">
-            <TrendingUp className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shadow-sm">
+            <TrendingUp className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Team Velocity</h2>
-            <p className="text-xs text-slate-500">Last 7 days</p>
+            <h2 className="text-xs font-semibold text-slate-900">Team Velocity</h2>
+            <p className="text-[10px] text-slate-500">Last 7 days</p>
           </div>
         </div>
 
         {/* Velocity Trend */}
-        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
+        <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded ${
           metrics.velocityTrend > 0
             ? 'bg-emerald-50 text-emerald-700'
             : metrics.velocityTrend < 0
@@ -142,54 +142,54 @@ export default function VelocityDashboard() {
             : 'bg-slate-50 text-slate-700'
         }`}>
           {metrics.velocityTrend > 0 ? (
-            <TrendingUp className="w-3.5 h-3.5" strokeWidth={2} />
+            <TrendingUp className="w-3 h-3" strokeWidth={2} />
           ) : metrics.velocityTrend < 0 ? (
-            <TrendingDown className="w-3.5 h-3.5" strokeWidth={2} />
+            <TrendingDown className="w-3 h-3" strokeWidth={2} />
           ) : (
-            <Clock className="w-3.5 h-3.5" strokeWidth={2} />
+            <Clock className="w-3 h-3" strokeWidth={2} />
           )}
-          <span className="text-xs font-semibold">
+          <span className="text-[10px] font-semibold">
             {metrics.velocityTrend > 0 ? '+' : ''}{metrics.velocityTrend}%
           </span>
         </div>
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         {/* Total Hours */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-blue-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Total Hours</span>
+        <div className="bg-white/80 backdrop-blur-sm rounded p-2.5 border border-slate-200">
+          <div className="flex items-center gap-1 mb-0.5">
+            <Clock className="w-3 h-3 text-blue-600" strokeWidth={2} />
+            <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wide">Hours</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.totalHoursLogged.toFixed(1)}h</p>
+          <p className="text-lg font-bold text-slate-900">{metrics.totalHoursLogged.toFixed(1)}h</p>
         </div>
 
         {/* Items Completed */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-4 h-4 text-emerald-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Completed</span>
+        <div className="bg-white/80 backdrop-blur-sm rounded p-2.5 border border-slate-200">
+          <div className="flex items-center gap-1 mb-0.5">
+            <Target className="w-3 h-3 text-emerald-600" strokeWidth={2} />
+            <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wide">Done</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.itemsCompleted}</p>
+          <p className="text-lg font-bold text-slate-900">{metrics.itemsCompleted}</p>
         </div>
 
         {/* Avg Completion Time */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Zap className="w-4 h-4 text-purple-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Avg Time</span>
+        <div className="bg-white/80 backdrop-blur-sm rounded p-2.5 border border-slate-200">
+          <div className="flex items-center gap-1 mb-0.5">
+            <Zap className="w-3 h-3 text-purple-600" strokeWidth={2} />
+            <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wide">Avg</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.avgCompletionTime.toFixed(1)}h</p>
+          <p className="text-lg font-bold text-slate-900">{metrics.avgCompletionTime.toFixed(1)}h</p>
         </div>
 
         {/* Stale Items */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className={`w-4 h-4 ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-400'}`} strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Stale</span>
+        <div className="bg-white/80 backdrop-blur-sm rounded p-2.5 border border-slate-200">
+          <div className="flex items-center gap-1 mb-0.5">
+            <AlertCircle className={`w-3 h-3 ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-400'}`} strokeWidth={2} />
+            <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wide">Stale</span>
           </div>
-          <p className={`text-2xl font-bold ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+          <p className={`text-lg font-bold ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
             {metrics.staleItemsCount}
           </p>
         </div>
@@ -198,20 +198,20 @@ export default function VelocityDashboard() {
       {/* Top Contributors */}
       {metrics.topContributors.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="w-4 h-4 text-slate-600" strokeWidth={2} />
-            <h3 className="text-xs font-semibold text-slate-900">Top Contributors</h3>
+          <div className="flex items-center gap-1 mb-2">
+            <Users className="w-3 h-3 text-slate-600" strokeWidth={2} />
+            <h3 className="text-[10px] font-semibold text-slate-900 uppercase tracking-wide">Top Contributors</h3>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {metrics.topContributors.map((contributor, index) => {
               const maxHours = metrics.topContributors[0].hours;
               const percentage = (contributor.hours / maxHours) * 100;
 
               return (
-                <div key={contributor.user_id} className="flex items-center gap-3">
+                <div key={contributor.user_id} className="flex items-center gap-2">
                   {/* Rank Badge */}
-                  <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
+                  <div className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${
                     index === 0 ? 'bg-amber-100 text-amber-700' :
                     index === 1 ? 'bg-slate-100 text-slate-700' :
                     index === 2 ? 'bg-orange-100 text-orange-700' :
@@ -222,13 +222,13 @@ export default function VelocityDashboard() {
 
                   {/* Name + Hours */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-slate-900 truncate">{contributor.name}</span>
-                      <span className="text-xs font-bold text-slate-700 ml-2">{contributor.hours.toFixed(1)}h</span>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[11px] font-medium text-slate-900 truncate">{contributor.name}</span>
+                      <span className="text-[11px] font-bold text-slate-700 ml-2">{contributor.hours.toFixed(1)}h</span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           index === 0 ? 'bg-gradient-to-r from-amber-400 to-orange-500' :
@@ -249,22 +249,22 @@ export default function VelocityDashboard() {
 
       {/* Alerts Section */}
       {(metrics.staleItemsCount > 0 || metrics.overdueItemsCount > 0) && (
-        <div className="mt-5 pt-4 border-t border-slate-200">
-          <div className="space-y-2">
+        <div className="mt-3 pt-2 border-t border-slate-200">
+          <div className="space-y-1.5">
             {metrics.staleItemsCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" strokeWidth={2} />
-                <p className="text-xs text-amber-800">
-                  <span className="font-semibold">{metrics.staleItemsCount} item{metrics.staleItemsCount > 1 ? 's' : ''}</span> with no activity in 5+ days
+              <div className="flex items-center gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded">
+                <AlertCircle className="w-3 h-3 text-amber-600 flex-shrink-0" strokeWidth={2} />
+                <p className="text-[11px] text-amber-800">
+                  <span className="font-semibold">{metrics.staleItemsCount} item{metrics.staleItemsCount > 1 ? 's' : ''}</span> no activity 5+ days
                 </p>
               </div>
             )}
 
             {metrics.overdueItemsCount > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" strokeWidth={2} />
-                <p className="text-xs text-red-800">
-                  <span className="font-semibold">{metrics.overdueItemsCount} item{metrics.overdueItemsCount > 1 ? 's' : ''}</span> past due date
+              <div className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 border border-red-200 rounded">
+                <AlertCircle className="w-3 h-3 text-red-600 flex-shrink-0" strokeWidth={2} />
+                <p className="text-[11px] text-red-800">
+                  <span className="font-semibold">{metrics.overdueItemsCount} item{metrics.overdueItemsCount > 1 ? 's' : ''}</span> past due
                 </p>
               </div>
             )}
