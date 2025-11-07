@@ -423,12 +423,12 @@ export default function EnterpriseCommandCenter() {
                   </button>
 
                   <button
-                    onClick={() => router.push('/support/reports')}
+                    onClick={() => router.push('/support/analytics')}
                     className="group relative bg-slate-50 hover:bg-slate-100 rounded-lg p-3 border border-transparent hover:border-slate-200 transition-all duration-200 text-left"
                   >
                     <TrendingUp className="w-4 h-4 text-blue-600 mb-1.5" strokeWidth={1.5} />
                     <p className="text-xs text-slate-900 font-medium mb-0.5">Analytics</p>
-                    <p className="text-[10px] text-slate-600">Performance insights</p>
+                    <p className="text-[10px] text-slate-600">Trial insights & metrics</p>
                   </button>
 
                   {role?.toLowerCase() === 'admin' && (
