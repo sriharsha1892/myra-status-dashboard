@@ -10,8 +10,6 @@ import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
 } from 'lucide-react';
-import TodosWidget from '@/components/support/TodosWidget';
-import FeedbackWidget from '@/components/support/FeedbackWidget';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
@@ -39,12 +37,18 @@ export default function EnterpriseCommandCenter() {
 
   const fetchAllData = async () => {
     setLoading(true);
+    const startTime = performance.now();
     try {
+      // Fetch in parallel for maximum speed
       await Promise.all([
         fetchTickets(),
         fetchOrganizations(),
         fetchUpcomingDemos(),
       ]);
+      const endTime = performance.now();
+      console.log(`✅ Dashboard data loaded in ${Math.round(endTime - startTime)}ms`);
+    } catch (error) {
+      console.error('Dashboard fetch error:', error);
     } finally {
       setLoading(false);
     }
@@ -333,9 +337,6 @@ export default function EnterpriseCommandCenter() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column - Activity Feed */}
             <div className="lg:col-span-2 space-y-4">
-              {/* Todos Widget */}
-              <TodosWidget userId={user?.id} />
-
               {/* Recent Activity - ALWAYS SHOW */}
               <div className="relative bg-white rounded-lg border border-slate-200 p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -559,9 +560,6 @@ export default function EnterpriseCommandCenter() {
           </div>
         </div>
       </div>
-
-      {/* Feedback Widget - Floating */}
-      <FeedbackWidget userId={user?.id} />
     </div>
   );
 }

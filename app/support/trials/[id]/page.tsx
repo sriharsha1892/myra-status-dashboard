@@ -39,6 +39,7 @@ export default function OrganizationDetailPage() {
   const [demos, setDemos] = useState<DemoEvent[]>([]);
   const [meetings, setMeetings] = useState<MeetingNote[]>([]);
   const [accountManagers, setAccountManagers] = useState<any[]>([]);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -145,6 +146,22 @@ export default function OrganizationDetailPage() {
         console.error('💥 Error fetching account managers:', error);
         toast.error('Error loading account managers. Check console for details.');
         setAccountManagers([]);
+      }
+
+      // Fetch unique domains for dropdown
+      try {
+        const { data: allOrgs, error: domainsError } = await supabase
+          .from('trial_organizations')
+          .select('org_domain')
+          .not('org_domain', 'is', null)
+          .order('org_domain');
+
+        if (!domainsError && allOrgs) {
+          const uniqueDomains = Array.from(new Set(allOrgs.map(o => o.org_domain).filter(Boolean)));
+          setAvailableDomains(uniqueDomains);
+        }
+      } catch (error) {
+        console.error('Error fetching domains:', error);
       }
 
       // Fetch users
@@ -711,12 +728,29 @@ export default function OrganizationDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Domain</label>
-                  <input
-                    type="text"
+                  <select
                     value={editedOrg.org_domain || ''}
                     onChange={(e) => setEditedOrg({ ...editedOrg, org_domain: e.target.value })}
                     className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select domain...</option>
+                    {availableDomains.map((domain) => (
+                      <option key={domain} value={domain}>
+                        {domain}
+                      </option>
+                    ))}
+                    <option value="__custom__">+ Add new domain...</option>
+                  </select>
+                  {editedOrg.org_domain === '__custom__' && (
+                    <input
+                      type="text"
+                      placeholder="Enter new domain (e.g., example.com)"
+                      value=""
+                      onChange={(e) => setEditedOrg({ ...editedOrg, org_domain: e.target.value })}
+                      className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
