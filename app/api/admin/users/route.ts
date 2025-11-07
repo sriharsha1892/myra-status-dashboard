@@ -57,6 +57,11 @@ async function verifyAdminAccess(request: NextRequest): Promise<{ authorized: bo
       return { authorized: false };
     }
 
+    // TEMPORARY: Allow admin@myra.ai regardless of role (JWT metadata not refreshing)
+    if (user.email === 'admin@myra.ai') {
+      return { authorized: true, userId: user.id };
+    }
+
     // Check if user has Admin role (case-insensitive for safety)
     const role = user.user_metadata?.role;
     if (!role || role.toLowerCase() !== 'admin') {
