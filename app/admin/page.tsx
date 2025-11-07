@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ProviderStatusOverride from '@/components/ProviderStatusOverride';
+import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 
 interface InternalStatus {
   organization: string;
@@ -396,6 +397,11 @@ export default function AdminPage() {
 
       {/* Main Content */}
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        {/* Announcements Bulletin */}
+        <div style={{ marginBottom: '24px' }}>
+          <AnnouncementsBulletin role="admin" />
+        </div>
+
         {/* Provider Override Tab */}
         {activeTab === 'provider-override' && (
           <ProviderStatusOverride />
