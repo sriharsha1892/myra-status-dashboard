@@ -44,7 +44,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
-import TimeLoggingModal from '@/components/roadmap/TimeLoggingModal';
 
 // Types
 type RoadmapItem = {
@@ -106,9 +105,6 @@ export default function WorldClassRoadmapPage() {
   const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('goal');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Time logging modal state
-  const [timeLogModalOpen, setTimeLogModalOpen] = useState(false);
-  const [selectedItemForTimeLog, setSelectedItemForTimeLog] = useState<RoadmapItem | null>(null);
 
   const supabase = createClient();
 
@@ -203,7 +199,7 @@ export default function WorldClassRoadmapPage() {
     };
   }, [filteredItems]);
 
-  // Grouping
+  // Grouping - NO UNCATEGORIZED ITEMS
   const groupedItems = useMemo(() => {
     if (groupBy === 'none') {
       return { 'All Items': filteredItems };
@@ -212,16 +208,22 @@ export default function WorldClassRoadmapPage() {
     const groups: Record<string, RoadmapItem[]> = {};
 
     filteredItems.forEach(item => {
-      let key = 'Uncategorized';
+      let key: string | null = null;
 
-      if (groupBy === 'goal' && item.goal) key = item.goal;
-      else if (groupBy === 'area' && item.area) key = item.area;
-      else if (groupBy === 'status') {
+      if (groupBy === 'goal' && item.goal) {
+        key = item.goal;
+      } else if (groupBy === 'area' && item.area) {
+        key = item.area;
+      } else if (groupBy === 'status') {
+        // Status always has a value, no uncategorized needed
         key = item.status === 'in_progress' ? 'In Progress' :
               item.status === 'completed' ? 'Completed' :
               item.status === 'planned' ? 'Planned' :
               item.status === 'suggested' ? 'Suggested' : 'Cancelled';
       }
+
+      // Skip items without proper categorization (no "Uncategorized" group)
+      if (!key) return;
 
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
@@ -525,10 +527,6 @@ export default function WorldClassRoadmapPage() {
                         <div className="absolute left-[-24px] top-1/2 w-6 h-px bg-gradient-to-r from-slate-200 to-transparent" />
                         <EnhancedRoadmapCard
                           item={item}
-                          onLogTime={() => {
-                            setSelectedItemForTimeLog(item);
-                            setTimeLogModalOpen(true);
-                          }}
                           onClick={() => {
                             // TODO: Navigate to detail view or open detail panel
                             console.log('Navigate to detail view for:', item.id);
@@ -810,22 +808,6 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
       </div>
-
-      {/* Time Logging Modal */}
-      {timeLogModalOpen && selectedItemForTimeLog && (
-        <TimeLoggingModal
-          itemId={selectedItemForTimeLog.id}
-          itemTitle={selectedItemForTimeLog.title}
-          currentUserId={user?.id}
-          onClose={() => {
-            setTimeLogModalOpen(false);
-            setSelectedItemForTimeLog(null);
-          }}
-          onSuccess={() => {
-            fetchRoadmapItems(); // Refresh data to show updated hours
-          }}
-        />
-      )}
     </div>
   );
 }

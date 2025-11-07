@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, AlertCircle, TrendingUp, TrendingDown, Minus, Calendar, User } from 'lucide-react';
+import { Clock, AlertCircle, TrendingUp, TrendingDown, Minus, Calendar, User, UserPlus, Edit3, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface RoadmapItem {
@@ -21,11 +21,10 @@ interface RoadmapItem {
 
 interface EnhancedRoadmapCardProps {
   item: RoadmapItem;
-  onLogTime: () => void;
   onClick: () => void;
 }
 
-export default function EnhancedRoadmapCard({ item, onLogTime, onClick }: EnhancedRoadmapCardProps) {
+export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCardProps) {
   // Calculate estimate variance
   const estimateVariance = item.estimated_hours && item.actual_hours
     ? ((item.actual_hours - item.estimated_hours) / item.estimated_hours * 100)
@@ -169,7 +168,7 @@ export default function EnhancedRoadmapCard({ item, onLogTime, onClick }: Enhanc
           </span>
         </div>
 
-        {/* Last Activity + Stale Warning */}
+        {/* Last Activity + Hover Quick Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             {isStale && (
@@ -185,16 +184,39 @@ export default function EnhancedRoadmapCard({ item, onLogTime, onClick }: Enhanc
             )}
           </div>
 
-          {/* Log Time Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onLogTime();
-            }}
-            className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm opacity-0 group-hover:opacity-100"
-          >
-            + Log Time
-          </button>
+          {/* Quick Actions - Hover Reveal */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Assign:', item.id);
+              }}
+              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+              title="Assign"
+            >
+              <UserPlus className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Edit:', item.id);
+              }}
+              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+              title="Edit"
+            >
+              <Edit3 className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Comment:', item.id);
+              }}
+              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+              title="Comment"
+            >
+              <MessageSquare className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         {/* Estimate Variance Warning */}
