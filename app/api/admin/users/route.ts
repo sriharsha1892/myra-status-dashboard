@@ -120,13 +120,26 @@ export async function GET(request: NextRequest) {
     }));
 
     // Also fetch pending signup tokens that haven't been used yet
+    console.log('🔍 API DEBUG: Fetching pending tokens from signup_tokens table...');
     const { data: pendingTokens, error: tokensError } = await adminClient
       .from('signup_tokens')
       .select('*')
       .is('used_at', null) // Only get unused tokens
       .gt('expires_at', new Date().toISOString()); // Only get non-expired tokens
 
+    console.log('🔍 API DEBUG: Pending tokens query result:', {
+      success: !tokensError,
+      error: tokensError?.message,
+      tokenCount: pendingTokens?.length || 0,
+      tokens: pendingTokens
+    });
+
+    if (tokensError) {
+      console.error('❌ API DEBUG: Error fetching pending tokens:', tokensError);
+    }
+
     if (!tokensError && pendingTokens) {
+      console.log('🔍 API DEBUG: Processing', pendingTokens.length, 'pending tokens...');
       // Add pending signups to the list
       const pendingUsers = pendingTokens
         .filter(token => !users.some(u => u.email === token.email)) // Don't duplicate if already signed up
@@ -140,6 +153,7 @@ export async function GET(request: NextRequest) {
           last_sign_in_at: null,
         }));
 
+      console.log('🔍 API DEBUG: Filtered to', pendingUsers.length, 'pending users (deduplicated)');
       users.push(...pendingUsers);
     }
 
