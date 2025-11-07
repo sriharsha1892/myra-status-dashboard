@@ -11,6 +11,7 @@ import {
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
 } from 'lucide-react';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
+import TodosWidget from '@/components/support/TodosWidget';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -453,8 +454,11 @@ export default function EnterpriseCommandCenter() {
               </div>
             </div>
 
-            {/* Right Column - Upcoming Demos & Insights - Compact */}
+            {/* Right Column - Todos, Upcoming Demos & Insights - Compact */}
             <div className="lg:col-span-1 space-y-4">
+              {/* Todos Widget - Always visible */}
+              <TodosWidget userId={user?.id} />
+
               {/* Upcoming Demos */}
               {role?.toLowerCase() === 'admin' && upcomingDemos.length > 0 && (
                 <div className="relative bg-white rounded-lg border border-slate-200 p-4">
