@@ -204,7 +204,7 @@ export default function WorldClassRoadmapPage() {
     const planned = filteredItems.filter(i => i.status === 'planned').length;
     const suggested = filteredItems.filter(i => i.status === 'suggested').length;
 
-    const completionRate = total > 0 ? Math.round((shipped / total) * 100) : 0; // Changed to use 'shipped' instead of 'completed'
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0; // Use 'completed' for completion rate
 
     // Timeline health
     const withDates = filteredItems.filter(i => i.target_date && i.status !== 'completed');
@@ -429,7 +429,7 @@ export default function WorldClassRoadmapPage() {
                 </div>
                 <div>
                   <div className="text-[32px] leading-[40px] font-semibold text-slate-900 tracking-[-0.02em]">{analytics.completed}</div>
-                  <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">of {analytics.total} shipped</div>
+                  <div className="text-sm font-medium text-slate-500 tracking-[-0.01em]">of {analytics.total} items</div>
                 </div>
               </div>
             </div>
@@ -598,8 +598,11 @@ export default function WorldClassRoadmapPage() {
                   ) : (
                     filteredItems.map((item, idx) => (
                       <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                        {/* Title - Click to edit */}
-                        <td className="px-4 py-3">
+                        {/* Title - Click anywhere on cell to edit */}
+                        <td
+                          className="px-4 py-3 cursor-pointer group"
+                          onClick={() => editingCell?.id !== item.id && handleStartEdit(item.id, 'title', item.title)}
+                        >
                           {editingCell?.id === item.id && editingCell?.field === 'title' ? (
                             <input
                               type="text"
@@ -610,21 +613,25 @@ export default function WorldClassRoadmapPage() {
                                 if (e.key === 'Enter') handleSaveEdit(item.id, 'title');
                                 if (e.key === 'Escape') handleCancelEdit();
                               }}
+                              onClick={(e) => e.stopPropagation()}
                               autoFocus
                               className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           ) : (
-                            <button
-                              onClick={() => handleStartEdit(item.id, 'title', item.title)}
-                              className="w-full text-left text-sm text-slate-900 font-medium hover:text-blue-600 transition-colors"
-                            >
-                              {item.title}
-                            </button>
+                            <div className="text-sm text-slate-900 font-medium group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                              <span>{item.title}</span>
+                              <svg className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </div>
                           )}
                         </td>
 
-                        {/* Status - Select dropdown */}
-                        <td className="px-4 py-3">
+                        {/* Status - Click anywhere on cell to edit */}
+                        <td
+                          className="px-4 py-3 cursor-pointer group"
+                          onClick={() => editingCell?.id !== item.id && handleStartEdit(item.id, 'status', item.status)}
+                        >
                           {editingCell?.id === item.id && editingCell?.field === 'status' ? (
                             <select
                               value={editValue}
@@ -634,6 +641,7 @@ export default function WorldClassRoadmapPage() {
                                 if (e.key === 'Enter') handleSaveEdit(item.id, 'status');
                                 if (e.key === 'Escape') handleCancelEdit();
                               }}
+                              onClick={(e) => e.stopPropagation()}
                               autoFocus
                               className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
@@ -644,12 +652,12 @@ export default function WorldClassRoadmapPage() {
                               <option value="cancelled">Cancelled</option>
                             </select>
                           ) : (
-                            <button
-                              onClick={() => handleStartEdit(item.id, 'status', item.status)}
-                              className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text} hover:opacity-80 transition-opacity`}
-                            >
-                              {item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </button>
+                            <div className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text} group-hover:opacity-80 transition-opacity`}>
+                              <span>{item.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                              <svg className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
                           )}
                         </td>
 
