@@ -400,27 +400,6 @@ export default function TrialOrganizationsPage() {
               <p className="text-xs text-gray-500 mt-0.5">Manage and track trial organizations</p>
             </div>
           <div className="flex items-center gap-3">
-            {role?.toLowerCase() === 'admin' && (
-              <button
-                onClick={() => router.push('/support/admin/trial-orgs-import')}
-                className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
-                title="Bulk import trial organizations from Excel/CSV"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span>Import</span>
-              </button>
-            )}
-            <button
-              onClick={() => router.push('/support/trials/new')}
-              className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>+ New Trial Org</span>
-            </button>
             {selectedOrgIds.size > 0 && (
               <button
                 onClick={() => setShowQuickEditPanel(true)}
@@ -492,6 +471,162 @@ export default function TrialOrganizationsPage() {
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Capture Hub */}
+              <div className="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-2 border-blue-100/60 p-8">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/30">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">Quick Capture Hub</h3>
+                      <p className="text-sm text-gray-600">Fast, flexible ways to add trial data</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Tool 1: Text Intel Parser */}
+                    <button
+                      onClick={() => router.push('/support/trials/parse')}
+                      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 hover:-translate-y-1 text-left"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Smart</span>
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900 mb-1">Text Parser</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">Paste emails, meeting notes, or call summaries to auto-extract trial data</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-purple-600 text-sm font-medium">
+                          <span>Parse Now</span>
+                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Tool 2: Import from Spreadsheet */}
+                    <button
+                      onClick={() => router.push('/support/admin/trial-orgs-import')}
+                      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-2 border-amber-200 hover:border-amber-400 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/20 hover:-translate-y-1 text-left"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Bulk</span>
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900 mb-1">Import CSV/Excel</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">Upload spreadsheets with flexible column mapping for bulk imports</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-amber-600 text-sm font-medium">
+                          <span>Import Now</span>
+                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Tool 3: Quick Add (Manual Form) */}
+                    <button
+                      onClick={() => router.push('/support/trials/new')}
+                      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 text-left"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Manual</span>
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900 mb-1">Quick Add</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">Create a single trial org with a simple guided form</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-blue-600 text-sm font-medium">
+                          <span>Add Trial</span>
+                          <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Tool 4: Bulk Actions on Selected */}
+                    <div className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/20 text-left">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          {selectedOrgIds.size > 0 && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-600 text-white animate-pulse">
+                              {selectedOrgIds.size} selected
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900 mb-1">Bulk Update</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {selectedOrgIds.size > 0
+                              ? `Update ${selectedOrgIds.size} selected trial${selectedOrgIds.size > 1 ? 's' : ''} at once`
+                              : 'Select trials below to enable batch operations'}
+                          </p>
+                        </div>
+                        {selectedOrgIds.size > 0 ? (
+                          <button
+                            onClick={() => setShowQuickEditPanel(true)}
+                            className="flex items-center gap-2 text-green-600 text-sm font-medium"
+                          >
+                            <span>Edit Selected</span>
+                            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <span>No trials selected</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Helpful Tip */}
+                  <div className="mt-6 flex items-start gap-3 p-4 rounded-xl bg-blue-50/50 border border-blue-100">
+                    <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-sm">
+                      <span className="font-semibold text-blue-900">Pro tip:</span>
+                      <span className="text-blue-700"> Use <span className="font-mono bg-blue-100 px-1.5 py-0.5 rounded text-xs">Text Parser</span> for quick updates from emails and meeting notes. It recognizes 30+ ask-myra.ai jargon terms automatically!</span>
                     </div>
                   </div>
                 </div>
