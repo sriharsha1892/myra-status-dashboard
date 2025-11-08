@@ -64,6 +64,22 @@ ALTER TABLE document_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_library ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resource_notes ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DO $policy_drop$
+BEGIN
+  DROP POLICY IF EXISTS "Categories are viewable by everyone" ON document_categories;
+  DROP POLICY IF EXISTS "Users can view documents" ON document_library;
+  DROP POLICY IF EXISTS "Authenticated users can create documents" ON document_library;
+  DROP POLICY IF EXISTS "Users can update their own documents" ON document_library;
+  DROP POLICY IF EXISTS "Users can delete their own documents" ON document_library;
+  DROP POLICY IF EXISTS "Users can view resource notes" ON resource_notes;
+  DROP POLICY IF EXISTS "Authenticated users can create notes" ON resource_notes;
+  DROP POLICY IF EXISTS "Users can update their own notes" ON resource_notes;
+  DROP POLICY IF EXISTS "Users can delete their own notes" ON resource_notes;
+EXCEPTION
+  WHEN OTHERS THEN NULL;
+END $policy_drop$;
+
 -- Everyone can view categories
 CREATE POLICY "Categories are viewable by everyone" ON document_categories
   FOR SELECT USING (true);

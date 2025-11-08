@@ -66,6 +66,18 @@ CREATE INDEX IF NOT EXISTS idx_trial_activities_type ON trial_activities(activit
 ALTER TABLE trial_activity_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trial_activities ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DO $policy_drop$
+BEGIN
+  DROP POLICY IF EXISTS "Activity types are viewable by everyone" ON trial_activity_types;
+  DROP POLICY IF EXISTS "Users can view trial activities" ON trial_activities;
+  DROP POLICY IF EXISTS "Authenticated users can create activities" ON trial_activities;
+  DROP POLICY IF EXISTS "Users can update their own activities" ON trial_activities;
+  DROP POLICY IF EXISTS "Users can delete their own activities" ON trial_activities;
+EXCEPTION
+  WHEN OTHERS THEN NULL;
+END $policy_drop$;
+
 -- Everyone can read activity types
 CREATE POLICY "Activity types are viewable by everyone" ON trial_activity_types
   FOR SELECT USING (true);
