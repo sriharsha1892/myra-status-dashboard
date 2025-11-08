@@ -431,8 +431,10 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* AI & LLM News Panel */}
-        <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
+        {/* AI & LLM News Panel - Feature Flag Controlled */}
+        {process.env.NEXT_PUBLIC_NEWS_LENS === 'on' && (
+          <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
+        )}
 
         {/* Tab Navigation */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
