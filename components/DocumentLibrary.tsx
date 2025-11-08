@@ -43,9 +43,52 @@ const ICON_MAP: Record<string, any> = {
   Rocket, GraduationCap, Code, Star, LifeBuoy, FileText, Scale, TrendingUp
 };
 
-const COLOR_MAP: Record<string, string> = {
-  blue: 'blue', purple: 'purple', green: 'green', yellow: 'yellow',
-  red: 'red', indigo: 'indigo', slate: 'slate', emerald: 'emerald'
+// Color class mappings for category badges (Tailwind JIT-safe)
+const COLOR_CLASSES: Record<string, {
+  gradient: string;
+  shadow: string;
+  border: string;
+}> = {
+  blue: {
+    gradient: 'from-blue-500 to-blue-600',
+    shadow: 'shadow-blue-500/30',
+    border: 'border-blue-200 hover:border-blue-400'
+  },
+  purple: {
+    gradient: 'from-purple-500 to-purple-600',
+    shadow: 'shadow-purple-500/30',
+    border: 'border-purple-200 hover:border-purple-400'
+  },
+  green: {
+    gradient: 'from-green-500 to-green-600',
+    shadow: 'shadow-green-500/30',
+    border: 'border-green-200 hover:border-green-400'
+  },
+  yellow: {
+    gradient: 'from-yellow-500 to-yellow-600',
+    shadow: 'shadow-yellow-500/30',
+    border: 'border-yellow-200 hover:border-yellow-400'
+  },
+  red: {
+    gradient: 'from-red-500 to-red-600',
+    shadow: 'shadow-red-500/30',
+    border: 'border-red-200 hover:border-red-400'
+  },
+  indigo: {
+    gradient: 'from-indigo-500 to-indigo-600',
+    shadow: 'shadow-indigo-500/30',
+    border: 'border-indigo-200 hover:border-indigo-400'
+  },
+  slate: {
+    gradient: 'from-slate-500 to-slate-600',
+    shadow: 'shadow-slate-500/30',
+    border: 'border-slate-200 hover:border-slate-400'
+  },
+  emerald: {
+    gradient: 'from-emerald-500 to-emerald-600',
+    shadow: 'shadow-emerald-500/30',
+    border: 'border-emerald-200 hover:border-emerald-400'
+  }
 };
 
 export default function DocumentLibrary({ trialOrgId, viewMode = 'both' }: DocumentLibraryProps) {
@@ -174,18 +217,21 @@ export default function DocumentLibrary({ trialOrgId, viewMode = 'both' }: Docum
       <div className="relative z-10 space-y-8">
         {/* Header Section with Glassmorphism */}
         <div className="relative overflow-hidden rounded-3xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-xl" />
-          <div className="relative backdrop-blur-xl bg-white/60 dark:bg-slate-900/40 border border-white/20 rounded-3xl p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10" />
+          <div className="relative backdrop-blur-xl bg-white/80 dark:bg-slate-900/60 border border-white/20 rounded-3xl p-8 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/50">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/50 animate-pulse">
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Resource Library
-                  </h1>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  <div className="relative inline-block">
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white relative z-10">
+                      Resource Library
+                    </h1>
+                    <div className="absolute -bottom-1 left-0 right-0 h-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-30 blur-sm rounded-full"></div>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
                     {viewMode === 'global' ? 'Global resources for all trials' : viewMode === 'org' ? 'Organization-specific resources' : 'All available resources'}
                   </p>
                 </div>
@@ -231,6 +277,7 @@ export default function DocumentLibrary({ trialOrgId, viewMode = 'both' }: Docum
           {categories.map((category) => {
             const Icon = ICON_MAP[category.icon] || FileText;
             const isSelected = selectedCategory === category.id;
+            const colorClass = COLOR_CLASSES[category.color] || COLOR_CLASSES['blue'];
 
             return (
               <button
@@ -238,8 +285,8 @@ export default function DocumentLibrary({ trialOrgId, viewMode = 'both' }: Docum
                 onClick={() => setSelectedCategory(isSelected ? null : category.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${
                   isSelected
-                    ? `bg-gradient-to-r from-${category.color}-600 to-purple-600 text-white shadow-lg shadow-${category.color}-500/30`
-                    : 'backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/50 hover:border-purple-500/50 hover:shadow-md'
+                    ? `bg-gradient-to-r ${colorClass.gradient} text-white shadow-lg ${colorClass.shadow} hover:scale-105`
+                    : `backdrop-blur-sm bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border ${colorClass.border} hover:shadow-md`
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -405,10 +452,13 @@ function AddResourceModal({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Add New Resource
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <div className="relative inline-block">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">
+                    Add New Resource
+                  </h2>
+                  <div className="absolute -bottom-1 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-purple-500 opacity-30 blur-sm rounded-full"></div>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
                   Add a link to OneDrive, Google Drive, or external resource
                 </p>
               </div>
@@ -624,10 +674,13 @@ function AddNoteModal({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Add Note
-                </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <div className="relative inline-block">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white relative z-10">
+                    Add Note
+                  </h2>
+                  <div className="absolute -bottom-1 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 to-blue-500 opacity-30 blur-sm rounded-full"></div>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
                   This note will be logged to the trial org activity feed
                 </p>
               </div>

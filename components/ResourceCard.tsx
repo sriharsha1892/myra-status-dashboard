@@ -27,6 +27,72 @@ const LINK_TYPE_CONFIG = {
   external: { label: 'External Link', color: 'bg-purple-500/20 text-purple-600' },
 };
 
+// Category color mappings (Tailwind JIT-safe)
+const CATEGORY_COLORS: Record<string, {
+  hoverGradient: string;
+  overlayGradient: string;
+  badge: string;
+  text: string;
+  border: string;
+}> = {
+  blue: {
+    hoverGradient: 'from-blue-400/40 via-purple-400/40 to-pink-400/40',
+    overlayGradient: 'from-blue-500/5',
+    badge: 'bg-blue-500/20',
+    text: 'text-blue-700',
+    border: 'border-blue-500/30'
+  },
+  purple: {
+    hoverGradient: 'from-purple-400/40 via-blue-400/40 to-pink-400/40',
+    overlayGradient: 'from-purple-500/5',
+    badge: 'bg-purple-500/20',
+    text: 'text-purple-700',
+    border: 'border-purple-500/30'
+  },
+  green: {
+    hoverGradient: 'from-green-400/40 via-emerald-400/40 to-teal-400/40',
+    overlayGradient: 'from-green-500/5',
+    badge: 'bg-green-500/20',
+    text: 'text-green-700',
+    border: 'border-green-500/30'
+  },
+  yellow: {
+    hoverGradient: 'from-yellow-400/40 via-orange-400/40 to-amber-400/40',
+    overlayGradient: 'from-yellow-500/5',
+    badge: 'bg-yellow-500/20',
+    text: 'text-yellow-700',
+    border: 'border-yellow-500/30'
+  },
+  red: {
+    hoverGradient: 'from-red-400/40 via-rose-400/40 to-pink-400/40',
+    overlayGradient: 'from-red-500/5',
+    badge: 'bg-red-500/20',
+    text: 'text-red-700',
+    border: 'border-red-500/30'
+  },
+  indigo: {
+    hoverGradient: 'from-indigo-400/40 via-purple-400/40 to-blue-400/40',
+    overlayGradient: 'from-indigo-500/5',
+    badge: 'bg-indigo-500/20',
+    text: 'text-indigo-700',
+    border: 'border-indigo-500/30'
+  },
+  slate: {
+    hoverGradient: 'from-slate-400/40 via-gray-400/40 to-zinc-400/40',
+    overlayGradient: 'from-slate-500/5',
+    badge: 'bg-slate-500/20',
+    text: 'text-slate-700',
+    border: 'border-slate-500/30'
+  },
+  emerald: {
+    hoverGradient: 'from-emerald-400/40 via-green-400/40 to-teal-400/40',
+    overlayGradient: 'from-emerald-500/5',
+    badge: 'bg-emerald-500/20',
+    text: 'text-emerald-700',
+    border: 'border-emerald-500/30'
+  }
+};
+
 export default function ResourceCard({
   id,
   title,
@@ -45,6 +111,7 @@ export default function ResourceCard({
 }: ResourceCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const linkConfig = LINK_TYPE_CONFIG[linkType];
+  const colors = CATEGORY_COLORS[categoryColor] || CATEGORY_COLORS['blue'];
 
   return (
     <div
@@ -56,7 +123,7 @@ export default function ResourceCard({
       <div className="relative overflow-hidden rounded-2xl">
         {/* Animated gradient border */}
         <div
-          className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-${categoryColor}-400/40 via-purple-400/40 to-pink-400/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm`}
+          className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${colors.hoverGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm`}
           style={{
             transform: isHovered ? 'scale(1.02)' : 'scale(1)',
             transition: 'transform 0.5s ease-out',
@@ -64,10 +131,10 @@ export default function ResourceCard({
         />
 
         {/* Main glass card */}
-        <div className="relative backdrop-blur-xl bg-white/70 dark:bg-slate-900/40 border border-white/20 rounded-2xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1">
+        <div className="relative backdrop-blur-xl bg-white/80 dark:bg-slate-900/60 border border-white/20 rounded-2xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1">
           {/* Gradient overlay on hover */}
           <div
-            className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-${categoryColor}-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
+            className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${colors.overlayGradient} via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
           />
 
           {/* Content */}
@@ -81,7 +148,7 @@ export default function ResourceCard({
                 {categoryName && (
                   <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm bg-${categoryColor}-500/20 text-${categoryColor}-700 border border-${categoryColor}-500/30`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${colors.badge} ${colors.text} border ${colors.border}`}
                     >
                       {categoryName}
                     </span>
