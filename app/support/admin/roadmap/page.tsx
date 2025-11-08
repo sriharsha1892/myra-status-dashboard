@@ -44,6 +44,7 @@ import {
   Table,
 } from 'lucide-react';
 import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
+import AgentKanbanBoard from '@/components/roadmap/AgentKanbanBoard';
 
 // Types
 type RoadmapItem = {
@@ -101,6 +102,9 @@ const COLORS = {
 export default function WorldClassRoadmapPage() {
   const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
+
+  // Feature flag for Agent Kanban Board
+  const AGENT_BOARD_ENABLED = process.env.NEXT_PUBLIC_AGENT_BOARD === 'on';
 
   // State
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
@@ -739,10 +743,21 @@ export default function WorldClassRoadmapPage() {
         </div>
       </div>
 
-      {/* CONTENT AREA - Professional spacing */}
-      <div className="max-w-[1600px] mx-auto px-8 py-8">
-        {/* TABLE VIEW - Excel-like Inline Editing */}
-        {viewMode === 'table' && (
+      {/* AGENT BOARD (Feature Flag Controlled) */}
+      {AGENT_BOARD_ENABLED ? (
+        <div className="max-w-[1600px] mx-auto px-8 py-8">
+          <AgentKanbanBoard
+            items={roadmapItems}
+            onRefresh={fetchRoadmapItems}
+            users={users}
+          />
+        </div>
+      ) : (
+        <>
+          {/* CONTENT AREA - Professional spacing */}
+          <div className="max-w-[1600px] mx-auto px-8 py-8">
+            {/* TABLE VIEW - Excel-like Inline Editing */}
+            {viewMode === 'table' && (
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -2097,6 +2112,9 @@ export default function WorldClassRoadmapPage() {
             </div>
           </div>
         </div>
+      )}
+          </div>
+        </>
       )}
     </div>
   );
