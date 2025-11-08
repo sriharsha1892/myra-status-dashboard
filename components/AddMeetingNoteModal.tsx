@@ -6,6 +6,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import MentionTextEditor from '@/components/MentionTextEditor';
+import { createMentionNotifications } from '@/lib/mentions';
 
 interface ActionItem {
   description: string;
@@ -94,6 +96,16 @@ export default function AddMeetingNoteModal({
   const [saving, setSaving] = useState(false);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
 
+  // Rich text editor states
+  const [meetingSummary, setMeetingSummary] = useState('');
+  const [meetingSummaryMentions, setMeetingSummaryMentions] = useState<string[]>([]);
+  const [painPoints, setPainPoints] = useState('');
+  const [painPointsMentions, setPainPointsMentions] = useState<string[]>([]);
+  const [objections, setObjections] = useState('');
+  const [objectionsMentions, setObjectionsMentions] = useState<string[]>([]);
+  const [positiveSignals, setPositiveSignals] = useState('');
+  const [positiveSignalsMentions, setPositiveSignalsMentions] = useState<string[]>([]);
+
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<MeetingFormData>({
     defaultValues: {
       meeting_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
@@ -181,7 +193,7 @@ export default function AddMeetingNoteModal({
         ? data.attendees.split('\n').map((a) => a.trim()).filter((a) => a)
         : [];
 
-      // Prepare meeting data
+      // Prepare meeting data with rich text content
       const meetingData = {
         org_id: data.org_id,
         meeting_type: data.meeting_type,
@@ -189,23 +201,59 @@ export default function AddMeetingNoteModal({
         duration_minutes: data.duration_minutes || null,
         conducted_by: data.conducted_by,
         attendees: attendeesArray,
-        meeting_summary: data.meeting_summary || null,
-        pain_points_discussed: data.pain_points_discussed || null,
-        objections_raised: data.objections_raised || null,
-        positive_signals: data.positive_signals || null,
+        meeting_summary: meetingSummary || null,
+        pain_points_discussed: painPoints || null,
+        objections_raised: objections || null,
+        positive_signals: positiveSignals || null,
         action_items: actionItems,
         next_meeting_date: data.next_meeting_date
           ? new Date(data.next_meeting_date).toISOString()
           : null,
       };
 
-      const { error } = await supabase.from('meeting_notes').insert([meetingData]);
+      const { data: insertedMeeting, error } = await supabase
+        .from('meeting_notes')
+        .insert([meetingData])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Get current user for mention notifications
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && insertedMeeting) {
+        // Collect all mentioned users from all rich text fields
+        const allMentions = [
+          ...meetingSummaryMentions,
+          ...painPointsMentions,
+          ...objectionsMentions,
+          ...positiveSignalsMentions,
+        ];
+        const uniqueMentions = Array.from(new Set(allMentions));
+
+        // Create notifications for all mentioned users
+        if (uniqueMentions.length > 0) {
+          await createMentionNotifications(uniqueMentions, user.id, {
+            type: 'meeting_note',
+            entityId: insertedMeeting.meeting_id,
+            entityTitle: `${data.meeting_type} with ${data.org_id}`,
+            url: `/support/trials/${data.org_id}`,
+          });
+        }
+      }
 
       toast.success('Meeting note created successfully!');
       reset();
       setActionItems([]);
+      // Reset rich text fields
+      setMeetingSummary('');
+      setPainPoints('');
+      setObjections('');
+      setPositiveSignals('');
+      setMeetingSummaryMentions([]);
+      setPainPointsMentions([]);
+      setObjectionsMentions([]);
+      setPositiveSignalsMentions([]);
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -329,53 +377,71 @@ export default function AddMeetingNoteModal({
             />
           </div>
 
-          {/* Meeting Summary */}
+          {/* Meeting Summary - Rich Text with @mentions */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Meeting Summary</label>
-            <textarea
-              {...register('meeting_summary')}
-              rows={4}
-              placeholder="Brief summary of the meeting discussion..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Meeting Summary
+            </label>
+            <MentionTextEditor
+              content={meetingSummary}
+              placeholder="Brief summary of the meeting discussion... Type @ to mention team members"
+              onChange={(content, mentions) => {
+                setMeetingSummary(content);
+                setMeetingSummaryMentions(mentions);
+              }}
+              minHeight="100px"
+              showToolbar={true}
             />
           </div>
 
-          {/* Pain Points */}
+          {/* Pain Points - Rich Text with @mentions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Pain Points Discussed
             </label>
-            <textarea
-              {...register('pain_points_discussed')}
-              rows={3}
-              placeholder="What problems or challenges did they mention?"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <MentionTextEditor
+              content={painPoints}
+              placeholder="What problems or challenges did they mention? Type @ to mention team members"
+              onChange={(content, mentions) => {
+                setPainPoints(content);
+                setPainPointsMentions(mentions);
+              }}
+              minHeight="80px"
+              showToolbar={true}
             />
           </div>
 
-          {/* Objections */}
+          {/* Objections - Rich Text with @mentions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Objections Raised
             </label>
-            <textarea
-              {...register('objections_raised')}
-              rows={3}
-              placeholder="Any concerns or objections raised during the meeting?"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <MentionTextEditor
+              content={objections}
+              placeholder="Any concerns or objections raised? Type @ to mention team members"
+              onChange={(content, mentions) => {
+                setObjections(content);
+                setObjectionsMentions(mentions);
+              }}
+              minHeight="80px"
+              showToolbar={true}
             />
           </div>
 
-          {/* Positive Signals */}
+          {/* Positive Signals - Rich Text with @mentions */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Positive Signals
             </label>
-            <textarea
-              {...register('positive_signals')}
-              rows={3}
-              placeholder="What positive indicators or buying signals did you notice?"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <MentionTextEditor
+              content={positiveSignals}
+              placeholder="What positive indicators or buying signals did you notice? Type @ to mention team members"
+              onChange={(content, mentions) => {
+                setPositiveSignals(content);
+                setPositiveSignalsMentions(mentions);
+              }}
+              minHeight="80px"
+              showToolbar={true}
             />
           </div>
 

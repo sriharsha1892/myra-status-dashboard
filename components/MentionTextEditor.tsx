@@ -22,6 +22,7 @@ interface MentionTextEditorProps {
   content?: string;
   placeholder?: string;
   onSubmit?: (content: string, mentions: string[]) => void;
+  onChange?: (content: string, mentions: string[]) => void;
   onCancel?: () => void;
   submitButtonText?: string;
   minHeight?: string;
@@ -32,6 +33,7 @@ export default function MentionTextEditor({
   content = '',
   placeholder = 'Type @ to mention someone...',
   onSubmit,
+  onChange,
   onCancel,
   submitButtonText = 'Send',
   minHeight = '120px',
@@ -127,6 +129,14 @@ export default function MentionTextEditor({
         class: 'prose prose-sm max-w-none focus:outline-none',
         style: `min-height: ${minHeight}`,
       },
+    },
+    onUpdate: ({ editor }) => {
+      // Call onChange when content changes (for form integration)
+      if (onChange) {
+        const html = editor.getHTML();
+        const mentionedUserIds = getMentionedUserIds();
+        onChange(html, mentionedUserIds);
+      }
     },
   });
 
