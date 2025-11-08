@@ -19,8 +19,6 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format, isAfter, isBefore, addDays, differenceInDays, parseISO } from 'date-fns';
 import {
-  LayoutGrid,
-  BarChart3,
   Plus,
   Search,
   X,
@@ -29,17 +27,13 @@ import {
   Flag,
   Clock,
   CheckCircle2,
-  Circle,
   Loader2,
   TrendingUp,
   Upload,
   Filter,
-  ChevronDown,
-  ChevronRight,
   Target,
   Zap,
   AlertCircle,
-  ArrowUp,
   ArrowRight,
   Table,
 } from 'lucide-react';
@@ -575,7 +569,7 @@ export default function WorldClassRoadmapPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
                 <input
                   type="text"
-                  placeholder="Search roadmap... (/, title, version, sprint)"
+                  placeholder="Search roadmap... (/, title, version)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
@@ -670,19 +664,8 @@ export default function WorldClassRoadmapPage() {
                 </select>
               </div>
 
-              {/* View Mode Selector - Sprint/Version/Owner/Table */}
+              {/* View Mode Selector - Version/Owner/Table */}
               <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
-                <button
-                  onClick={() => setViewMode('sprint')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
-                    viewMode === 'sprint'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                  title="Sprint Board (default)"
-                >
-                  Sprint
-                </button>
                 <button
                   onClick={() => setViewMode('version')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
@@ -1104,106 +1087,6 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
 
-        {/* SPRINT BOARD VIEW - Version-Centric Sprint Columns */}
-        {viewMode === 'sprint' && (
-          <div className="relative">
-            {/* Horizontal scroll container with snap points */}
-            <div className="overflow-x-auto pb-4" style={{ scrollSnapType: 'x mandatory' }}>
-              <div className="inline-flex gap-4 min-w-full">
-                {activeSprints.length === 0 ? (
-                  <div className="w-full text-center py-20">
-                    <p className="text-sm text-slate-600 mb-4">No active sprints yet. Add sprint_name to roadmap items.</p>
-                    <p className="text-xs text-slate-500">Sprint Board groups items by sprint (e.g., "Sprint 23.11", "Sprint 23.12")</p>
-                  </div>
-                ) : (
-                  activeSprints.map(sprint => {
-                    const sprintItems = filteredItems.filter(item => item.sprint_name === sprint);
-                    const doneCount = sprintItems.filter(i => i.status === 'completed').length;
-                    const totalCount = sprintItems.length;
-                    const velocity = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
-                    return (
-                      <div
-                        key={sprint}
-                        className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-slate-200 shadow-sm"
-                        style={{ scrollSnapAlign: 'start', padding: 'var(--card-padding)' }}
-                      >
-                        {/* Column Header */}
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-slate-900">{sprint}</h3>
-                            <span className="text-xs text-slate-500">{totalCount}</span>
-                          </div>
-                          {/* Velocity Indicator */}
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                                style={{ width: `${velocity}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-slate-600">{velocity}%</span>
-                          </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            {doneCount} / {totalCount} done
-                          </div>
-                        </div>
-
-                        {/* Items */}
-                        <div className="max-h-[calc(100vh-400px)] overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--card-gap)' }}>
-                          {sprintItems.map(item => (
-                            <div
-                              key={item.id}
-                              onClick={() => setSelectedItem(item)}
-                              className="group rounded-lg border border-slate-200 bg-white hover:shadow-md hover:border-blue-300 transition-all duration-150 cursor-pointer"
-                              style={{ padding: 'var(--card-padding)' }}
-                            >
-                              {/* Title */}
-                              <div className="flex items-start gap-2 mb-2">
-                                <h4 className="text-sm font-medium text-slate-900 line-clamp-2 flex-1 group-hover:text-blue-600 transition-colors">
-                                  {item.title}
-                                </h4>
-                                {item.priority === 'critical' && (
-                                  <Flag className="w-3 h-3 text-red-500 flex-shrink-0" />
-                                )}
-                              </div>
-
-                              {/* Meta badges */}
-                              <div className="flex items-center gap-2 flex-wrap text-xs">
-                                {/* Status pill */}
-                                <span className={`px-2 py-0.5 rounded-md font-medium ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
-                                  {item.status === 'in_progress' ? 'In Progress' :
-                                   item.status === 'completed' ? 'Done' :
-                                   item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                </span>
-
-                                {/* Version */}
-                                {item.version_planned && (
-                                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-medium">
-                                    {item.version_planned}
-                                  </span>
-                                )}
-
-                                {/* Owner */}
-                                {item.assigned_to && (
-                                  <span className="text-slate-600 flex items-center gap-1">
-                                    <User className="w-3 h-3" />
-                                    {users.find(u => u.email === item.assigned_to)?.name?.split(' ')[0] || item.assigned_to.split('@')[0]}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* VERSION BOARD VIEW - Grouped by Version with Progress Rings */}
         {viewMode === 'version' && (
           <div className="space-y-6">
@@ -1277,14 +1160,6 @@ export default function WorldClassRoadmapPage() {
                             <span className="font-medium">{totalCount}</span> total
                           </span>
                         </div>
-                        {/* Sprint spans for this version */}
-                        <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          {Array.from(new Set(versionItems.map(i => i.sprint_name).filter(Boolean))).map(sprint => (
-                            <span key={sprint} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
-                              {sprint}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     </div>
 
@@ -1310,9 +1185,6 @@ export default function WorldClassRoadmapPage() {
                                item.status === 'completed' ? 'Done' :
                                item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                             </span>
-                            {item.sprint_name && (
-                              <span className="text-slate-600">{item.sprint_name}</span>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -1369,51 +1241,6 @@ export default function WorldClassRoadmapPage() {
                   );
                 })
               )}
-            </div>
-
-            {/* Right: Items Grouped by Sprint */}
-            <div className="col-span-9">
-              <h3 className="text-sm font-semibold text-slate-900 mb-4">Items by Sprint</h3>
-              <div className="space-y-4">
-                {activeSprints.length === 0 ? (
-                  <p className="text-xs text-slate-500">No active sprints</p>
-                ) : (
-                  activeSprints.map(sprint => {
-                    const sprintItems = filteredItems.filter(item => item.sprint_name === sprint);
-
-                    return (
-                      <div key={sprint} className="bg-white rounded-lg border border-slate-200 p-4">
-                        <h4 className="text-sm font-semibold text-slate-900 mb-3">{sprint}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {sprintItems.map(item => (
-                            <div
-                              key={item.id}
-                              onClick={() => setSelectedItem(item)}
-                              className="group p-2 rounded-md border border-slate-200 hover:bg-slate-50 hover:border-blue-300 transition-all duration-150 cursor-pointer text-xs"
-                            >
-                              <div className="font-medium text-slate-900 line-clamp-1 mb-1 group-hover:text-blue-600">
-                                {item.title}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`px-1.5 py-0.5 rounded ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
-                                  {item.status === 'in_progress' ? 'In Progress' :
-                                   item.status === 'completed' ? 'Done' :
-                                   item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                </span>
-                                {item.assigned_to && (
-                                  <span className="text-slate-600">
-                                    {users.find(u => u.email === item.assigned_to)?.name?.split(' ')[0] || item.assigned_to.split('@')[0]}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
             </div>
           </div>
         )}
@@ -1754,16 +1581,6 @@ export default function WorldClassRoadmapPage() {
 
                   {/* Key Details Grid */}
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Sprint */}
-                    {selectedItem.sprint_name && (
-                      <div>
-                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
-                          Sprint
-                        </label>
-                        <div className="text-sm text-slate-900">{selectedItem.sprint_name}</div>
-                      </div>
-                    )}
-
                     {/* Version */}
                     {selectedItem.version_planned && (
                       <div>
@@ -1984,17 +1801,6 @@ export default function WorldClassRoadmapPage() {
               <div className="mb-4">
                 <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Views</div>
                 <button
-                  onClick={() => { setViewMode('sprint'); setShowCommandPalette(false); setCommandSearch(''); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
-                >
-                  <LayoutGrid className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-slate-900">Sprint Board</div>
-                    <div className="text-xs text-slate-500">View items grouped by sprint</div>
-                  </div>
-                  {viewMode === 'sprint' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
-                </button>
-                <button
                   onClick={() => { setViewMode('version'); setShowCommandPalette(false); setCommandSearch(''); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
                 >
@@ -2059,7 +1865,7 @@ export default function WorldClassRoadmapPage() {
               <div className="mb-4">
                 <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Filters</div>
                 <button
-                  onClick={() => { setSelectedGoal('all'); setSelectedArea('all'); setSelectedStatus([]); setSelectedSprint('all'); setSelectedVersion('all'); setSelectedOwner('all'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  onClick={() => { setSelectedGoal('all'); setSelectedArea('all'); setSelectedStatus([]); setSelectedVersion('all'); setSelectedOwner('all'); setShowCommandPalette(false); setCommandSearch(''); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
                 >
                   <X className="w-5 h-5 text-slate-400 group-hover:text-red-600" />
