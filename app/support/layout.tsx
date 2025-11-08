@@ -12,9 +12,10 @@ import {
   LogOut,
   Map,
   Menu,
-  X
+  X,
+  FolderOpen,
+  Bell
 } from 'lucide-react';
-import NotificationsBell from '@/components/NotificationsBell';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 
 export default function SupportLayout({
@@ -166,7 +167,6 @@ export default function SupportLayout({
               myRA AI
             </span>
           </div>
-          <NotificationsBell />
         </div>
 
         {/* Navigation */}
@@ -182,6 +182,18 @@ export default function SupportLayout({
             >
               <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              href="/support/notifications"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/support/notifications'
+                  ? 'text-slate-900 bg-slate-900/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Bell className={`w-5 h-5 shrink-0 ${pathname === '/support/notifications' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <span>Notifications</span>
             </Link>
 
             <Link
@@ -206,6 +218,18 @@ export default function SupportLayout({
             >
               <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
               <span>Reports</span>
+            </Link>
+
+            <Link
+              href="/support/documents"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/support/documents'
+                  ? 'text-slate-900 bg-slate-900/5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <FolderOpen className={`w-5 h-5 shrink-0 ${pathname === '/support/documents' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <span>Documents</span>
             </Link>
 
             {/* Users - Admin only */}
