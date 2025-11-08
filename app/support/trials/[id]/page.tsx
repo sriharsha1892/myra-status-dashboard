@@ -25,6 +25,7 @@ import {
 import LoadingState from '@/components/LoadingState';
 import Avatar, { AvatarGroup } from '@/components/Avatar';
 import ActivityFeed from '@/components/support/ActivityFeed';
+import AINewsPanel from '@/components/support/AINewsPanel';
 
 type TabType = 'activity' | 'users' | 'details';
 
@@ -343,7 +344,25 @@ export default function TrialOrgPage() {
             {/* Top row */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-4">
-                <Avatar name={organization.org_name} size="xl" type="org" />
+                {organization.logo_url ? (
+                  <img
+                    src={organization.logo_url}
+                    alt={`${organization.org_name} logo`}
+                    className="w-20 h-20 rounded-2xl object-contain bg-white border-2 border-white/60 shadow-lg"
+                    onError={(e) => {
+                      // Fallback to Avatar if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      const avatar = e.currentTarget.nextElementSibling;
+                      if (avatar) avatar.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <Avatar
+                  name={organization.org_name}
+                  size="xl"
+                  type="org"
+                  className={organization.logo_url ? 'hidden' : ''}
+                />
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{organization.org_name}</h1>
                   <div className="flex items-center gap-3 flex-wrap">
@@ -411,6 +430,9 @@ export default function TrialOrgPage() {
             </div>
           </div>
         </div>
+
+        {/* AI & LLM News Panel */}
+        <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
 
         {/* Tab Navigation */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
@@ -534,9 +556,34 @@ export default function TrialOrgPage() {
                 type="url"
                 value={orgForm.org_url || ''}
                 onChange={(e) => setOrgForm({ ...orgForm, org_url: e.target.value })}
-                placeholder="https://trial.example.com"
+                placeholder="https://example.com"
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+              <input
+                type="url"
+                value={orgForm.logo_url || ''}
+                onChange={(e) => setOrgForm({ ...orgForm, logo_url: e.target.value })}
+                placeholder="https://example.com/logo.png"
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {orgForm.logo_url && (
+                <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-2">Logo Preview:</p>
+                  <img
+                    src={orgForm.logo_url}
+                    alt="Logo preview"
+                    className="w-16 h-16 rounded-lg object-contain bg-white border border-gray-200"
+                    onError={(e) => {
+                      e.currentTarget.src = '';
+                      e.currentTarget.alt = 'Invalid logo URL';
+                      e.currentTarget.className = 'w-16 h-16 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-500 text-xs';
+                    }}
+                  />
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC</label>

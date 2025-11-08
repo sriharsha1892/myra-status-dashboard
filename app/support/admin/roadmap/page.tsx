@@ -73,9 +73,13 @@ type RoadmapItem = {
   progress_percentage?: number;
   last_activity_at?: string;
   days_since_activity?: number;
+  // Sprint fields (version-centric sprints)
+  sprint_id?: string;
+  sprint_name?: string; // e.g., "Sprint 23.11", "Sprint 23.12"
 };
 
-type ViewMode = 'board' | 'table';
+type ViewMode = 'sprint' | 'version' | 'owner' | 'table';
+type DensityPreset = 'cozy' | 'default' | 'compact';
 
 // Premium status pill system
 const COLORS = {
@@ -101,17 +105,29 @@ export default function WorldClassRoadmapPage() {
   // State
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('board'); // Changed default to board view
+  const [viewMode, setViewMode] = useState<ViewMode>('sprint'); // Default to sprint view (version-centric)
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('none'); // Changed default from 'goal' to 'none'
+  const [selectedSprint, setSelectedSprint] = useState<string>('all');
+  const [selectedVersion, setSelectedVersion] = useState<string>('all');
+  const [selectedOwner, setSelectedOwner] = useState<string>('all');
+  const [density, setDensity] = useState<DensityPreset>('default');
+  const [groupBy, setGroupBy] = useState<'none' | 'goal' | 'area' | 'status'>('none');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Inline editing state for table view
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+
+  // Detail drawer state
+  const [selectedItem, setSelectedItem] = useState<RoadmapItem | null>(null);
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'activity' | 'links'>('overview');
+
+  // Command palette state
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
 
   // Users state for assignment dropdown
   const [users, setUsers] = useState<Array<{ id: string; email: string; name: string; role: string; status: string }>>([]);
@@ -129,6 +145,24 @@ export default function WorldClassRoadmapPage() {
       fetchUsers();
     }
   }, [user, authLoading, router]);
+
+  // Command palette keyboard shortcut (Cmd+K or Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
+      }
+      // Escape to close
+      if (e.key === 'Escape' && showCommandPalette) {
+        setShowCommandPalette(false);
+        setCommandSearch('');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCommandPalette]);
 
   const fetchRoadmapItems = async () => {
     try {
@@ -181,7 +215,9 @@ export default function WorldClassRoadmapPage() {
           item.title?.toLowerCase().includes(search) ||
           item.description?.toLowerCase().includes(search) ||
           item.area?.toLowerCase().includes(search) ||
-          item.goal?.toLowerCase().includes(search);
+          item.goal?.toLowerCase().includes(search) ||
+          item.sprint_name?.toLowerCase().includes(search) ||
+          item.version_planned?.toLowerCase().includes(search);
         if (!matchesSearch) return false;
       }
 
@@ -189,10 +225,13 @@ export default function WorldClassRoadmapPage() {
       if (selectedGoal !== 'all' && item.goal !== selectedGoal) return false;
       if (selectedArea !== 'all' && item.area !== selectedArea) return false;
       if (selectedStatus.length > 0 && !selectedStatus.includes(item.status)) return false;
+      if (selectedSprint !== 'all' && item.sprint_name !== selectedSprint) return false;
+      if (selectedVersion !== 'all' && item.version_planned !== selectedVersion) return false;
+      if (selectedOwner !== 'all' && item.assigned_to !== selectedOwner) return false;
 
       return true;
     });
-  }, [roadmapItems, searchQuery, selectedGoal, selectedArea, selectedStatus]);
+  }, [roadmapItems, searchQuery, selectedGoal, selectedArea, selectedStatus, selectedSprint, selectedVersion, selectedOwner]);
 
   // Analytics
   const analytics = useMemo(() => {
@@ -257,7 +296,7 @@ export default function WorldClassRoadmapPage() {
     return groups;
   }, [filteredItems, groupBy]);
 
-  // Unique values for filters
+  // Unique values for filters (all derived from API data, no hardcoding)
   const uniqueGoals = useMemo(() =>
     Array.from(new Set(roadmapItems.map(i => i.goal).filter(Boolean))).sort(),
     [roadmapItems]
@@ -267,6 +306,32 @@ export default function WorldClassRoadmapPage() {
     Array.from(new Set(roadmapItems.map(i => i.area).filter(Boolean))).sort(),
     [roadmapItems]
   );
+
+  const uniqueSprints = useMemo(() =>
+    Array.from(new Set(roadmapItems.map(i => i.sprint_name).filter(Boolean))).sort().reverse(), // Most recent first
+    [roadmapItems]
+  );
+
+  const uniqueVersions = useMemo(() =>
+    Array.from(new Set(roadmapItems.map(i => i.version_planned).filter(Boolean))).sort().reverse(), // Most recent first
+    [roadmapItems]
+  );
+
+  const uniqueOwners = useMemo(() =>
+    Array.from(new Set(roadmapItems.map(i => i.assigned_to).filter(Boolean))).sort(),
+    [roadmapItems]
+  );
+
+  // Active sprints (sprints with in_progress or planned items)
+  const activeSprints = useMemo(() => {
+    const sprints = new Set<string>();
+    roadmapItems.forEach(item => {
+      if (item.sprint_name && (item.status === 'in_progress' || item.status === 'planned')) {
+        sprints.add(item.sprint_name);
+      }
+    });
+    return Array.from(sprints).sort().reverse(); // Most recent first
+  }, [roadmapItems]);
 
   const toggleGroup = (group: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -353,8 +418,36 @@ export default function WorldClassRoadmapPage() {
     );
   }
 
+  // CSS variables for density control
+  const densityVars = {
+    cozy: {
+      '--card-padding': '1.5rem',
+      '--card-gap': '1rem',
+      '--text-base': '0.9375rem',
+      '--text-sm': '0.875rem',
+      '--text-xs': '0.8125rem',
+      '--spacing': '1.5rem',
+    },
+    default: {
+      '--card-padding': '1rem',
+      '--card-gap': '0.75rem',
+      '--text-base': '0.875rem',
+      '--text-sm': '0.8125rem',
+      '--text-xs': '0.75rem',
+      '--spacing': '1rem',
+    },
+    compact: {
+      '--card-padding': '0.75rem',
+      '--card-gap': '0.5rem',
+      '--text-base': '0.8125rem',
+      '--text-sm': '0.75rem',
+      '--text-xs': '0.6875rem',
+      '--spacing': '0.75rem',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-[#fafafa]" style={densityVars[density] as React.CSSProperties}>
       {/* Premium Header - Clean & Purposeful */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
         <div className="max-w-[1600px] mx-auto px-8 py-6">
@@ -377,13 +470,6 @@ export default function WorldClassRoadmapPage() {
               >
                 <Upload className="w-4 h-4" strokeWidth={1.5} />
                 Import
-              </button>
-              <button
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-150"
-              >
-                <Plus className="w-4 h-4" strokeWidth={1.5} />
-                New Item
-                <kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-blue-700 bg-opacity-50 rounded">⌘K</kbd>
               </button>
             </div>
           </div>
@@ -485,82 +571,169 @@ export default function WorldClassRoadmapPage() {
             </div>
           </div>
 
-          {/* Search & Filters - Refined */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="flex-1 max-w-lg relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
-              <input
-                type="text"
-                placeholder="Search roadmap..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
-              />
-            </div>
+          {/* Top Utility Bar - Version-Centric Sprint Controls */}
+          <div className="space-y-3">
+            {/* Row 1: Search + Primary Filters */}
+            <div className="flex items-center gap-3">
+              {/* Global Search (fuzzy, debounced) */}
+              <div className="flex-1 max-w-lg relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  placeholder="Search roadmap... (/, title, version, sprint)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
+                />
+              </div>
 
-            {/* Goal Filter */}
-            <select
-              value={selectedGoal}
-              onChange={(e) => setSelectedGoal(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
-            >
-              <option value="all">All Goals</option>
-              {uniqueGoals.map(goal => (
-                <option key={goal} value={goal}>{goal}</option>
-              ))}
-            </select>
-
-            {/* Area Filter */}
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
-            >
-              <option value="all">All Areas</option>
-              {uniqueAreas.map(area => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
-
-            {/* Group By */}
-            <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg bg-white">
-              <LayoutGrid className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
+              {/* Sprint Selector (Version-Centric) */}
               <select
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value as any)}
-                className="text-sm focus:outline-none bg-transparent tracking-[-0.01em]"
+                value={selectedSprint}
+                onChange={(e) => setSelectedSprint(e.target.value)}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150 min-w-[140px]"
               >
-                <option value="none">No grouping</option>
-                <option value="goal">Group by Goal</option>
-                <option value="area">Group by Area</option>
-                <option value="status">Group by Status</option>
+                <option value="all">All Sprints</option>
+                {uniqueSprints.map(sprint => (
+                  <option key={sprint} value={sprint}>{sprint}</option>
+                ))}
               </select>
+
+              {/* Version Selector */}
+              <select
+                value={selectedVersion}
+                onChange={(e) => setSelectedVersion(e.target.value)}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150 min-w-[120px]"
+              >
+                <option value="all">All Versions</option>
+                {uniqueVersions.map(version => (
+                  <option key={version} value={version}>{version}</option>
+                ))}
+              </select>
+
+              {/* Density Slider - Presets */}
+              <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg bg-white">
+                <span className="text-xs text-slate-600 font-medium">Density:</span>
+                <div className="flex gap-1">
+                  {(['cozy', 'default', 'compact'] as const).map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => setDensity(preset)}
+                      className={`px-2 py-0.5 text-xs font-medium rounded transition-all duration-150 ${
+                        density === preset
+                          ? 'bg-blue-500 text-white'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {preset.charAt(0).toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* New Item Button with Cmd+K hint */}
+              <button
+                onClick={() => setShowCommandPalette(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-150"
+              >
+                <Plus className="w-4 h-4" strokeWidth={1.5} />
+                New
+                <kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-blue-700 bg-opacity-50 rounded">⌘K</kbd>
+              </button>
             </div>
 
-            {/* View Mode - Refined Segmented Control */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                  viewMode === 'table'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Excel-like table view"
-              >
-                <Table className="w-4 h-4" strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={() => setViewMode('board')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                  viewMode === 'board'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
-              </button>
+            {/* Row 2: Composable Filter Chips + View Mode */}
+            <div className="flex items-center gap-3">
+              {/* Filter Chips */}
+              <div className="flex items-center gap-2 flex-1">
+                <Filter className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
+
+                {/* Goal Filter */}
+                <select
+                  value={selectedGoal}
+                  onChange={(e) => setSelectedGoal(e.target.value)}
+                  className="px-2 py-1 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
+                >
+                  <option value="all">Goal: All</option>
+                  {uniqueGoals.map(goal => (
+                    <option key={goal} value={goal}>Goal: {goal}</option>
+                  ))}
+                </select>
+
+                {/* Area Filter */}
+                <select
+                  value={selectedArea}
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  className="px-2 py-1 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
+                >
+                  <option value="all">Area: All</option>
+                  {uniqueAreas.map(area => (
+                    <option key={area} value={area}>Area: {area}</option>
+                  ))}
+                </select>
+
+                {/* Owner Filter */}
+                <select
+                  value={selectedOwner}
+                  onChange={(e) => setSelectedOwner(e.target.value)}
+                  className="px-2 py-1 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
+                >
+                  <option value="all">Owner: All</option>
+                  {uniqueOwners.map(owner => (
+                    <option key={owner} value={owner}>
+                      {users.find(u => u.email === owner)?.name || owner}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* View Mode Selector - Sprint/Version/Owner/Table */}
+              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+                <button
+                  onClick={() => setViewMode('sprint')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    viewMode === 'sprint'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Sprint Board (default)"
+                >
+                  Sprint
+                </button>
+                <button
+                  onClick={() => setViewMode('version')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    viewMode === 'version'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Version Board (grouped by version)"
+                >
+                  Version
+                </button>
+                <button
+                  onClick={() => setViewMode('owner')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    viewMode === 'owner'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Owner Board (workload view)"
+                >
+                  Owner
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    viewMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Table view"
+                >
+                  <Table className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -937,7 +1110,321 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
 
-        {/* KANBAN BOARD VIEW - Fully Functional */}
+        {/* SPRINT BOARD VIEW - Version-Centric Sprint Columns */}
+        {viewMode === 'sprint' && (
+          <div className="relative">
+            {/* Horizontal scroll container with snap points */}
+            <div className="overflow-x-auto pb-4" style={{ scrollSnapType: 'x mandatory' }}>
+              <div className="inline-flex gap-4 min-w-full">
+                {activeSprints.length === 0 ? (
+                  <div className="w-full text-center py-20">
+                    <p className="text-sm text-slate-600 mb-4">No active sprints yet. Add sprint_name to roadmap items.</p>
+                    <p className="text-xs text-slate-500">Sprint Board groups items by sprint (e.g., "Sprint 23.11", "Sprint 23.12")</p>
+                  </div>
+                ) : (
+                  activeSprints.map(sprint => {
+                    const sprintItems = filteredItems.filter(item => item.sprint_name === sprint);
+                    const doneCount = sprintItems.filter(i => i.status === 'completed').length;
+                    const totalCount = sprintItems.length;
+                    const velocity = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+                    return (
+                      <div
+                        key={sprint}
+                        className="flex-shrink-0 w-[320px] bg-white rounded-xl border border-slate-200 shadow-sm"
+                        style={{ scrollSnapAlign: 'start', padding: 'var(--card-padding)' }}
+                      >
+                        {/* Column Header */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-semibold text-slate-900">{sprint}</h3>
+                            <span className="text-xs text-slate-500">{totalCount}</span>
+                          </div>
+                          {/* Velocity Indicator */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                                style={{ width: `${velocity}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-slate-600">{velocity}%</span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            {doneCount} / {totalCount} done
+                          </div>
+                        </div>
+
+                        {/* Items */}
+                        <div className="max-h-[calc(100vh-400px)] overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--card-gap)' }}>
+                          {sprintItems.map(item => (
+                            <div
+                              key={item.id}
+                              onClick={() => setSelectedItem(item)}
+                              className="group rounded-lg border border-slate-200 bg-white hover:shadow-md hover:border-blue-300 transition-all duration-150 cursor-pointer"
+                              style={{ padding: 'var(--card-padding)' }}
+                            >
+                              {/* Title */}
+                              <div className="flex items-start gap-2 mb-2">
+                                <h4 className="text-sm font-medium text-slate-900 line-clamp-2 flex-1 group-hover:text-blue-600 transition-colors">
+                                  {item.title}
+                                </h4>
+                                {item.priority === 'critical' && (
+                                  <Flag className="w-3 h-3 text-red-500 flex-shrink-0" />
+                                )}
+                              </div>
+
+                              {/* Meta badges */}
+                              <div className="flex items-center gap-2 flex-wrap text-xs">
+                                {/* Status pill */}
+                                <span className={`px-2 py-0.5 rounded-md font-medium ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
+                                  {item.status === 'in_progress' ? 'In Progress' :
+                                   item.status === 'completed' ? 'Done' :
+                                   item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                </span>
+
+                                {/* Version */}
+                                {item.version_planned && (
+                                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-medium">
+                                    {item.version_planned}
+                                  </span>
+                                )}
+
+                                {/* Owner */}
+                                {item.assigned_to && (
+                                  <span className="text-slate-600 flex items-center gap-1">
+                                    <User className="w-3 h-3" />
+                                    {users.find(u => u.email === item.assigned_to)?.name?.split(' ')[0] || item.assigned_to.split('@')[0]}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VERSION BOARD VIEW - Grouped by Version with Progress Rings */}
+        {viewMode === 'version' && (
+          <div className="space-y-6">
+            {uniqueVersions.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-sm text-slate-600 mb-4">No versions defined yet. Add version_planned to roadmap items.</p>
+                <p className="text-xs text-slate-500">Version Board groups items by version (e.g., "V2.0", "V2.1")</p>
+              </div>
+            ) : (
+              uniqueVersions.map(version => {
+                const versionItems = filteredItems.filter(item => item.version_planned === version);
+                const completedCount = versionItems.filter(i => i.status === 'completed').length;
+                const inProgressCount = versionItems.filter(i => i.status === 'in_progress').length;
+                const totalCount = versionItems.length;
+                const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+                // Progress ring SVG values
+                const radius = 40;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (completionPercent / 100) * circumference;
+
+                return (
+                  <div key={version} className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                    {/* Version Header with Progress Ring */}
+                    <div className="flex items-start gap-6 mb-6">
+                      {/* Progress Ring */}
+                      <div className="relative w-24 h-24 flex-shrink-0">
+                        <svg className="transform -rotate-90 w-24 h-24">
+                          <circle
+                            cx="48"
+                            cy="48"
+                            r={radius}
+                            stroke="#e5e7eb"
+                            strokeWidth="6"
+                            fill="none"
+                          />
+                          <circle
+                            cx="48"
+                            cy="48"
+                            r={radius}
+                            stroke="#6366f1"
+                            strokeWidth="6"
+                            fill="none"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={offset}
+                            strokeLinecap="round"
+                            className="transition-all duration-500"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-slate-900">{completionPercent}%</div>
+                            <div className="text-[10px] text-slate-500">complete</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Version Info */}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-2">{version}</h3>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-slate-600">
+                            <span className="font-medium text-emerald-600">{completedCount}</span> done
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-600">
+                            <span className="font-medium text-amber-600">{inProgressCount}</span> in progress
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-600">
+                            <span className="font-medium">{totalCount}</span> total
+                          </span>
+                        </div>
+                        {/* Sprint spans for this version */}
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          {Array.from(new Set(versionItems.map(i => i.sprint_name).filter(Boolean))).map(sprint => (
+                            <span key={sprint} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
+                              {sprint}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Items Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {versionItems.map(item => (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItem(item)}
+                          className="group p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md hover:border-blue-300 transition-all duration-150 cursor-pointer"
+                        >
+                          <div className="flex items-start gap-2 mb-2">
+                            <h4 className="text-sm font-medium text-slate-900 line-clamp-2 flex-1 group-hover:text-blue-600 transition-colors">
+                              {item.title}
+                            </h4>
+                            {item.priority === 'critical' && (
+                              <Flag className="w-3 h-3 text-red-500 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className={`px-2 py-0.5 rounded-md font-medium ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
+                              {item.status === 'in_progress' ? 'In Progress' :
+                               item.status === 'completed' ? 'Done' :
+                               item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                            </span>
+                            {item.sprint_name && (
+                              <span className="text-slate-600">{item.sprint_name}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* OWNER BOARD VIEW - Workload Visualization */}
+        {viewMode === 'owner' && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* Left: Owner List with Load Meters */}
+            <div className="col-span-3 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4">Team Bandwidth</h3>
+              {uniqueOwners.length === 0 ? (
+                <p className="text-xs text-slate-500">No assigned owners yet</p>
+              ) : (
+                uniqueOwners.map(owner => {
+                  const ownerItems = filteredItems.filter(item => item.assigned_to === owner);
+                  const activeCount = ownerItems.filter(i => i.status === 'in_progress' || i.status === 'planned').length;
+                  const totalCount = ownerItems.length;
+                  const loadPercent = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+                  const userName = users.find(u => u.email === owner)?.name || owner.split('@')[0];
+
+                  return (
+                    <div
+                      key={owner}
+                      className="p-3 rounded-lg border border-slate-200 bg-white hover:shadow-md transition-all duration-150"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold">
+                          {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-slate-900 truncate">{userName}</div>
+                          <div className="text-xs text-slate-500">{activeCount} active</div>
+                        </div>
+                      </div>
+                      {/* Load meter */}
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            loadPercent > 80 ? 'bg-red-500' :
+                            loadPercent > 50 ? 'bg-amber-500' :
+                            'bg-emerald-500'
+                          }`}
+                          style={{ width: `${loadPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Right: Items Grouped by Sprint */}
+            <div className="col-span-9">
+              <h3 className="text-sm font-semibold text-slate-900 mb-4">Items by Sprint</h3>
+              <div className="space-y-4">
+                {activeSprints.length === 0 ? (
+                  <p className="text-xs text-slate-500">No active sprints</p>
+                ) : (
+                  activeSprints.map(sprint => {
+                    const sprintItems = filteredItems.filter(item => item.sprint_name === sprint);
+
+                    return (
+                      <div key={sprint} className="bg-white rounded-lg border border-slate-200 p-4">
+                        <h4 className="text-sm font-semibold text-slate-900 mb-3">{sprint}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {sprintItems.map(item => (
+                            <div
+                              key={item.id}
+                              onClick={() => setSelectedItem(item)}
+                              className="group p-2 rounded-md border border-slate-200 hover:bg-slate-50 hover:border-blue-300 transition-all duration-150 cursor-pointer text-xs"
+                            >
+                              <div className="font-medium text-slate-900 line-clamp-1 mb-1 group-hover:text-blue-600">
+                                {item.title}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-1.5 py-0.5 rounded ${COLORS.status[item.status].bg} ${COLORS.status[item.status].text}`}>
+                                  {item.status === 'in_progress' ? 'In Progress' :
+                                   item.status === 'completed' ? 'Done' :
+                                   item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                </span>
+                                {item.assigned_to && (
+                                  <span className="text-slate-600">
+                                    {users.find(u => u.email === item.assigned_to)?.name?.split(' ')[0] || item.assigned_to.split('@')[0]}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* OLD STATUS BOARD VIEW - Kept for reference, can be removed later */}
         {viewMode === 'board' && (
           <div className="grid grid-cols-5 gap-4">
             {/* Suggested Column */}
@@ -1196,6 +1683,421 @@ export default function WorldClassRoadmapPage() {
           </div>
         )}
       </div>
+
+      {/* RIGHT DETAIL DRAWER - 480px, Non-Modal */}
+      {selectedItem && (
+        <>
+          {/* Backdrop overlay (semi-transparent, allows interaction) */}
+          <div
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 transition-opacity duration-200"
+            onClick={() => setSelectedItem(null)}
+          />
+
+          {/* Drawer */}
+          <div className="fixed top-0 right-0 h-full w-[480px] bg-white border-l border-slate-200 shadow-2xl z-50 overflow-hidden flex flex-col transform transition-transform duration-300 ease-out">
+            {/* Header */}
+            <div className="flex-shrink-0 px-6 py-4 border-b border-slate-200">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1 line-clamp-2">
+                    {selectedItem.title}
+                  </h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${COLORS.status[selectedItem.status].bg} ${COLORS.status[selectedItem.status].text}`}>
+                      {selectedItem.status === 'in_progress' ? 'In Progress' :
+                       selectedItem.status === 'completed' ? 'Done' :
+                       selectedItem.status.charAt(0).toUpperCase() + selectedItem.status.slice(1)}
+                    </span>
+                    {selectedItem.priority !== 'low' && (
+                      <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${COLORS.priority[selectedItem.priority].bg} ${COLORS.priority[selectedItem.priority].text}`}>
+                        {selectedItem.priority.charAt(0).toUpperCase() + selectedItem.priority.slice(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="flex-shrink-0 w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-600" />
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex items-center gap-1 mt-4 border-b border-slate-200 -mb-px">
+                {(['overview', 'activity', 'links'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setDrawerTab(tab)}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      drawerTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {/* Overview Tab */}
+              {drawerTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Description */}
+                  {selectedItem.description && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block">
+                        Description
+                      </label>
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {selectedItem.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Key Details Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Sprint */}
+                    {selectedItem.sprint_name && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Sprint
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.sprint_name}</div>
+                      </div>
+                    )}
+
+                    {/* Version */}
+                    {selectedItem.version_planned && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Version
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.version_planned}</div>
+                      </div>
+                    )}
+
+                    {/* Goal */}
+                    {selectedItem.goal && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Goal
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.goal}</div>
+                      </div>
+                    )}
+
+                    {/* Area */}
+                    {selectedItem.area && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Area
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.area}</div>
+                      </div>
+                    )}
+
+                    {/* Assigned To */}
+                    {selectedItem.assigned_to && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Assigned To
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold">
+                            {(users.find(u => u.email === selectedItem.assigned_to)?.name || selectedItem.assigned_to).charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-slate-900">
+                            {users.find(u => u.email === selectedItem.assigned_to)?.name || selectedItem.assigned_to}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Target Date */}
+                    {selectedItem.target_date && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Target Date
+                        </label>
+                        <div className="text-sm text-slate-900">
+                          {format(parseISO(selectedItem.target_date), 'MMM d, yyyy')}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Environment */}
+                    {selectedItem.environment && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Environment
+                        </label>
+                        <span className={`inline-block text-xs px-2 py-1 rounded-md font-medium ${
+                          selectedItem.environment === 'production'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {selectedItem.environment.charAt(0).toUpperCase() + selectedItem.environment.slice(1)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Estimated Hours */}
+                    {selectedItem.estimated_hours && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Estimated Hours
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.estimated_hours}h</div>
+                      </div>
+                    )}
+
+                    {/* Actual Hours */}
+                    {selectedItem.actual_hours && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 block">
+                          Actual Hours
+                        </label>
+                        <div className="text-sm text-slate-900">{selectedItem.actual_hours}h</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Agent Info */}
+                  {(selectedItem.agent_name || selectedItem.agent_url) && (
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <label className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-2 block">
+                        Agent
+                      </label>
+                      <div className="text-sm text-blue-900 font-medium mb-1">{selectedItem.agent_name}</div>
+                      {selectedItem.agent_url && (
+                        <a
+                          href={selectedItem.agent_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+                        >
+                          View Agent
+                          <ArrowRight className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Rationale */}
+                  {selectedItem.rationale && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block">
+                        Rationale
+                      </label>
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                        {selectedItem.rationale}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Metadata */}
+                  <div className="pt-4 border-t border-slate-200">
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-500">
+                      <div>
+                        <span className="font-medium">Created:</span>{' '}
+                        {format(parseISO(selectedItem.created_at), 'MMM d, yyyy')}
+                      </div>
+                      <div>
+                        <span className="font-medium">Updated:</span>{' '}
+                        {format(parseISO(selectedItem.updated_at), 'MMM d, yyyy')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Tab */}
+              {drawerTab === 'activity' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">Activity history coming soon...</p>
+                  {selectedItem.last_activity_at && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <div className="text-xs font-medium text-slate-700 mb-1">Last Activity</div>
+                      <div className="text-sm text-slate-900">
+                        {format(parseISO(selectedItem.last_activity_at), 'MMM d, yyyy h:mm a')}
+                      </div>
+                      {selectedItem.days_since_activity !== undefined && (
+                        <div className="text-xs text-slate-500 mt-1">
+                          {selectedItem.days_since_activity} days ago
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Links Tab */}
+              {drawerTab === 'links' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">Related links coming soon...</p>
+                  {selectedItem.agent_url && (
+                    <a
+                      href={selectedItem.agent_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                          <ArrowRight className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">Agent URL</div>
+                          <div className="text-xs text-slate-500">{selectedItem.agent_name || 'View agent'}</div>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* COMMAND PALETTE (Cmd+K) */}
+      {showCommandPalette && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center pt-[20vh]">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            {/* Search Input */}
+            <div className="p-4 border-b border-slate-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={commandSearch}
+                  onChange={(e) => setCommandSearch(e.target.value)}
+                  placeholder="Type a command or search..."
+                  autoFocus
+                  className="w-full pl-11 pr-4 py-3 text-base border-none focus:outline-none focus:ring-0 placeholder-slate-400"
+                />
+              </div>
+            </div>
+
+            {/* Commands List */}
+            <div className="max-h-[400px] overflow-y-auto p-2">
+              {/* View Actions */}
+              <div className="mb-4">
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Views</div>
+                <button
+                  onClick={() => { setViewMode('sprint'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <LayoutGrid className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-900">Sprint Board</div>
+                    <div className="text-xs text-slate-500">View items grouped by sprint</div>
+                  </div>
+                  {viewMode === 'sprint' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                </button>
+                <button
+                  onClick={() => { setViewMode('version'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <Target className="w-5 h-5 text-slate-400 group-hover:text-purple-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-900">Version Board</div>
+                    <div className="text-xs text-slate-500">View progress by version</div>
+                  </div>
+                  {viewMode === 'version' && <CheckCircle2 className="w-4 h-4 text-purple-600" />}
+                </button>
+                <button
+                  onClick={() => { setViewMode('owner'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <User className="w-5 h-5 text-slate-400 group-hover:text-green-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-900">Owner Board</div>
+                    <div className="text-xs text-slate-500">View team workload</div>
+                  </div>
+                  {viewMode === 'owner' && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+                </button>
+                <button
+                  onClick={() => { setViewMode('table'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <Table className="w-5 h-5 text-slate-400 group-hover:text-amber-600" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-slate-900">Table View</div>
+                    <div className="text-xs text-slate-500">Spreadsheet-like editing</div>
+                  </div>
+                  {viewMode === 'table' && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
+                </button>
+              </div>
+
+              {/* Density Actions */}
+              <div className="mb-4">
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Density</div>
+                <button
+                  onClick={() => { setDensity('cozy'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <div className="text-sm font-medium text-slate-900">Cozy</div>
+                  {density === 'cozy' && <CheckCircle2 className="w-4 h-4 text-blue-600 ml-auto" />}
+                </button>
+                <button
+                  onClick={() => { setDensity('default'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <div className="text-sm font-medium text-slate-900">Default</div>
+                  {density === 'default' && <CheckCircle2 className="w-4 h-4 text-blue-600 ml-auto" />}
+                </button>
+                <button
+                  onClick={() => { setDensity('compact'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <div className="text-sm font-medium text-slate-900">Compact</div>
+                  {density === 'compact' && <CheckCircle2 className="w-4 h-4 text-blue-600 ml-auto" />}
+                </button>
+              </div>
+
+              {/* Quick Filters */}
+              <div className="mb-4">
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Filters</div>
+                <button
+                  onClick={() => { setSelectedGoal('all'); setSelectedArea('all'); setSelectedStatus([]); setSelectedSprint('all'); setSelectedVersion('all'); setSelectedOwner('all'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <X className="w-5 h-5 text-slate-400 group-hover:text-red-600" />
+                  <div className="text-sm font-medium text-slate-900">Clear all filters</div>
+                </button>
+              </div>
+
+              {/* Navigation */}
+              <div>
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Navigate</div>
+                <button
+                  onClick={() => { router.push('/support/admin/roadmap-import'); setShowCommandPalette(false); setCommandSearch(''); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left group"
+                >
+                  <Upload className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
+                  <div className="text-sm font-medium text-slate-900">Import Roadmap</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-4">
+                <span>↑↓ Navigate</span>
+                <span>⏎ Select</span>
+                <span>Esc Close</span>
+              </div>
+              <kbd className="px-2 py-1 bg-white border border-slate-200 rounded text-xs font-mono">⌘K</kbd>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
