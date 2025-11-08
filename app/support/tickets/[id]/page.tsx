@@ -34,6 +34,7 @@ import { linkTickets, mergeTickets } from '@/lib/support/ticketLinks';
 import EmailThreadViewer from '@/components/support/email/EmailThreadViewer';
 import CalendarEventList from '@/components/support/calendar/CalendarEventList';
 import CalendarEventForm from '@/components/support/calendar/CalendarEventForm';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 type TicketComment = Database['public']['Tables']['ticket_comments']['Row'];
@@ -349,6 +350,17 @@ export default function TicketDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
+
+      {/* Breadcrumbs */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <div className="max-w-7xl mx-auto">
+          <Breadcrumbs items={[
+            { label: 'Dashboard', href: '/support/dashboard' },
+            { label: 'Support Tickets', href: '/support/tickets' },
+            { label: `#${ticketId.slice(0, 8)}` }
+          ]} />
+        </div>
+      </div>
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">

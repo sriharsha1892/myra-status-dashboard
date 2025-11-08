@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import EnhancedRoadmapCard from '@/components/roadmap/EnhancedRoadmapCard';
 import AgentKanbanBoard from '@/components/roadmap/AgentKanbanBoard';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 // Types
 type RoadmapItem = {
@@ -452,6 +453,17 @@ export default function WorldClassRoadmapPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]" style={densityVars[density] as React.CSSProperties}>
+      {/* Breadcrumbs */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-[1600px] mx-auto px-8 py-4">
+          <Breadcrumbs items={[
+            { label: 'Dashboard', href: '/support/dashboard' },
+            { label: 'Admin', href: '/support/admin/roadmap' },
+            { label: 'Product Roadmap' }
+          ]} />
+        </div>
+      </div>
+
       {/* Premium Header - Clean & Purposeful */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
         <div className="max-w-[1600px] mx-auto px-8 py-6">

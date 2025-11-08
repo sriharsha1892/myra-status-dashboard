@@ -26,6 +26,7 @@ import LoadingState from '@/components/LoadingState';
 import Avatar, { AvatarGroup } from '@/components/Avatar';
 import ActivityFeed from '@/components/support/ActivityFeed';
 import AINewsPanel from '@/components/support/AINewsPanel';
+import Breadcrumbs from '@/components/Breadcrumbs';
 
 type TabType = 'activity' | 'users' | 'details';
 
@@ -335,6 +336,14 @@ export default function TrialOrgPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <Breadcrumbs items={[
+            { label: 'Dashboard', href: '/support/dashboard' },
+            { label: 'Trial Organizations', href: '/support/trials' },
+            { label: organization.org_name }
+          ]} />
+        </div>
         {/* Glassmorphism Header */}
         <div className="mb-8 p-8 rounded-3xl backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl relative overflow-hidden">
           {/* Background gradient animation */}
