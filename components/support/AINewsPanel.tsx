@@ -27,21 +27,21 @@ export default function AINewsPanel({ orgId, orgName }: AINewsPanelProps) {
 
   return (
     <div className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms', animationFillMode: 'forwards' }}>
-      <div className="backdrop-blur-xl bg-white/70 border border-white/40 rounded-3xl shadow-xl p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <Sparkles className="w-5 h-5 text-white" />
+      <div className="backdrop-blur-xl bg-white/70 border border-white/40 rounded-2xl shadow-lg p-6">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Recent AI & LLM Developments</h3>
-              <p className="text-xs text-gray-600">Signals and context for your next conversation</p>
+              <h3 className="text-sm font-semibold text-gray-900">AI & LLM Activity</h3>
+              <p className="text-xs text-gray-500">Context for your conversation</p>
             </div>
           </div>
           {newsItems.length > 0 && (
-            <div className="px-3 py-1 rounded-lg bg-violet-100 border border-violet-200 text-violet-700 text-xs font-medium">
-              {newsItems.length} update{newsItems.length !== 1 ? 's' : ''}
+            <div className="px-2 py-1 rounded-md bg-violet-50 border border-violet-200 text-violet-700 text-xs font-medium">
+              {newsItems.length}
             </div>
           )}
         </div>
@@ -86,46 +86,45 @@ function NewsCard({ item, index }: { item: AINewsItem; index: number }) {
 
   return (
     <div
-      className="group p-4 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 hover:shadow-lg transition-all duration-200 hover:scale-[1.01]"
-      style={{
-        animationDelay: `${index * 100 + 200}ms`,
-        animationFillMode: 'forwards',
-      }}
+      className="group p-3 rounded-xl bg-white/60 border border-gray-200/60 hover:bg-white hover:shadow-md transition-all duration-150"
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-2">
+      {/* Header - Compact */}
+      <div className="flex items-start justify-between gap-2 mb-1.5">
         <a
           href={item.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors leading-snug group-hover:underline"
+          className="flex-1 text-xs font-semibold text-gray-900 hover:text-blue-600 transition-colors leading-tight line-clamp-2"
         >
           {item.headline}
-          <ExternalLink className="inline-block w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
-        <span className={`px-2 py-0.5 rounded-md text-xs font-medium border flex-shrink-0 ${categoryConfig.color}`}>
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex-shrink-0 ${categoryConfig.color}`}>
           {categoryConfig.label}
         </span>
       </div>
 
-      {/* Summary */}
-      <p className="text-sm text-gray-600 leading-relaxed mb-3">{item.summary}</p>
+      {/* Summary - Condensed */}
+      <p className="text-xs text-gray-600 leading-snug mb-2 line-clamp-2">{item.summary}</p>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <Calendar className="w-3 h-3" />
+      {/* Footer - Single Line */}
+      <div className="flex items-center justify-between text-[10px] text-gray-500">
+        <div className="flex items-center gap-1">
+          <Calendar className="w-2.5 h-2.5" />
           <span>{format(new Date(item.date), 'MMM d, yyyy')}</span>
         </div>
+        <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-blue-600">
+          <span>Read</span>
+          <ExternalLink className="w-2.5 h-2.5" />
+        </a>
       </div>
 
-      {/* Internal Note (if present) */}
+      {/* Internal Note - Compact (if present) */}
       {item.internal_note && (
-        <div className="mt-3 pt-3 border-t border-gray-200/60">
-          <div className="flex items-start gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-violet-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-600 italic leading-relaxed">
-              <span className="font-medium text-violet-600">Pitch angle:</span> {item.internal_note}
+        <div className="mt-2 pt-2 border-t border-gray-200/50">
+          <div className="flex items-start gap-1.5">
+            <TrendingUp className="w-3 h-3 text-violet-600 flex-shrink-0 mt-0.5" />
+            <p className="text-[10px] text-gray-600 leading-snug">
+              <span className="font-semibold text-violet-600">Angle:</span> {item.internal_note}
             </p>
           </div>
         </div>

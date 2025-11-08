@@ -431,11 +431,6 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* AI & LLM News Panel - Feature Flag Controlled */}
-        {process.env.NEXT_PUBLIC_NEWS_LENS === 'on' && (
-          <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
-        )}
-
         {/* Tab Navigation */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
           {([
@@ -894,49 +889,56 @@ function UsersTab({ users, onAddUser, onEditUser, onDeleteUser }: any) {
 // Details Tab Component
 function DetailsTab({ organization }: any) {
   return (
-    <div className="p-8 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg">
-      <h3 className="text-lg font-bold text-gray-900 mb-6">Organization Details</h3>
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="text-sm font-medium text-gray-600">Organization Name</label>
-          <p className="text-base text-gray-900 mt-1">{organization.org_name}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-600">Domain</label>
-          <p className="text-base text-gray-900 mt-1">{organization.org_domain}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-600">Account Manager</label>
-          <p className="text-base text-gray-900 mt-1">{organization.account_manager}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-600">Sales POC</label>
-          <p className="text-base text-gray-900 mt-1">{organization.sales_poc || '-'}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-600">Trial Period</label>
-          <p className="text-base text-gray-900 mt-1">
-            {format(new Date(organization.trial_start_date), 'MMM d, yyyy')} - {format(new Date(organization.trial_end_date), 'MMM d, yyyy')}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-600">Organization URL</label>
-          {organization.org_url ? (
-            <a href={organization.org_url} target="_blank" rel="noopener noreferrer" className="text-base text-blue-600 hover:underline mt-1 flex items-center gap-1">
-              {organization.org_url}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          ) : (
-            <p className="text-base text-gray-900 mt-1">-</p>
+    <div className="space-y-6">
+      <div className="p-8 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg">
+        <h3 className="text-lg font-bold text-gray-900 mb-6">Organization Details</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm font-medium text-gray-600">Organization Name</label>
+            <p className="text-base text-gray-900 mt-1">{organization.org_name}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Domain</label>
+            <p className="text-base text-gray-900 mt-1">{organization.org_domain}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Account Manager</label>
+            <p className="text-base text-gray-900 mt-1">{organization.account_manager}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Sales POC</label>
+            <p className="text-base text-gray-900 mt-1">{organization.sales_poc || '-'}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Trial Period</label>
+            <p className="text-base text-gray-900 mt-1">
+              {format(new Date(organization.trial_start_date), 'MMM d, yyyy')} - {format(new Date(organization.trial_end_date), 'MMM d, yyyy')}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-600">Organization URL</label>
+            {organization.org_url ? (
+              <a href={organization.org_url} target="_blank" rel="noopener noreferrer" className="text-base text-blue-600 hover:underline mt-1 flex items-center gap-1">
+                {organization.org_url}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <p className="text-base text-gray-900 mt-1">-</p>
+            )}
+          </div>
+          {organization.description && (
+            <div className="col-span-2">
+              <label className="text-sm font-medium text-gray-600">Description</label>
+              <p className="text-base text-gray-900 mt-1">{organization.description}</p>
+            </div>
           )}
         </div>
-        {organization.description && (
-          <div className="col-span-2">
-            <label className="text-sm font-medium text-gray-600">Description</label>
-            <p className="text-base text-gray-900 mt-1">{organization.description}</p>
-          </div>
-        )}
       </div>
+
+      {/* AI & LLM News Panel - Feature Flag Controlled */}
+      {process.env.NEXT_PUBLIC_NEWS_LENS === 'on' && (
+        <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
+      )}
     </div>
   );
 }

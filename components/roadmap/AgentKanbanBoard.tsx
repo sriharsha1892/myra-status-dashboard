@@ -59,8 +59,6 @@ export type AgentRoadmapItem = {
   progress_percentage?: number;
   last_activity_at?: string;
   days_since_activity?: number;
-  sprint_id?: string;
-  sprint_name?: string;
   // Lifecycle phase (derived from status or explicitly set)
   lifecycle_phase?: LifecyclePhase;
 };
@@ -110,7 +108,12 @@ function getLifecyclePhase(item: AgentRoadmapItem): LifecyclePhase {
       }
       return 'under_build';
     case 'completed':
-      return 'live';
+      // Only show as Live if environment is production
+      if (item.environment === 'production') {
+        return 'live';
+      }
+      // Otherwise it's still in testing
+      return 'testing';
     case 'cancelled':
       return 'retired';
     default:
@@ -461,10 +464,10 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
 
   return (
     <div className="space-y-6">
-      {/* Summary Ribbon */}
+      {/* Summary Ribbon - Responsive */}
       <div className="backdrop-blur-xl bg-white/70 border border-white/40 rounded-2xl p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-6 text-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center flex-wrap gap-4 sm:gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-900">Total</span>
               <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">{summaryCounts.total}</span>
@@ -607,9 +610,9 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
         </div>
       </div>
 
-      {/* Kanban Board */}
+      {/* Kanban Board - Responsive */}
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {LIFECYCLE_PHASES.map(phase => (
             <div
               key={phase.id}
