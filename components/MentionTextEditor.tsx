@@ -4,13 +4,38 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import Placeholder from '@tiptap/extension-placeholder';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import Highlight from '@tiptap/extension-highlight';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Underline from '@tiptap/extension-underline';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import { lowlight } from 'lowlight/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import python from 'highlight.js/lib/languages/python';
+import json from 'highlight.js/lib/languages/json';
+import sql from 'highlight.js/lib/languages/sql';
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
-  Bold, Italic, List, ListOrdered, AtSign, Send, Sparkles
+  Bold, Italic, List, ListOrdered, AtSign, Send, Sparkles,
+  Underline as UnderlineIcon, Link as LinkIcon, Table as TableIcon,
+  Code, Palette, Highlighter, X
 } from 'lucide-react';
 import tippy, { Instance as TippyInstance } from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
+
+// Register languages for code highlighting
+lowlight.register('javascript', javascript);
+lowlight.register('typescript', typescript);
+lowlight.register('python', python);
+lowlight.register('json', json);
+lowlight.register('sql', sql);
 
 interface User {
   user_id: string;
@@ -40,7 +65,36 @@ export default function MentionTextEditor({
   showToolbar = true,
 }: MentionTextEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const supabase = createClient();
+
+  // Handle link insertion
+  const setLink = () => {
+    if (!editor || !linkUrl) return;
+
+    if (linkUrl === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    } else {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .setLink({ href: linkUrl })
+        .run();
+    }
+
+    setShowLinkInput(false);
+    setLinkUrl('');
+  };
+
+  // Handle color change
+  const setTextColor = (color: string) => {
+    if (!editor) return;
+    editor.chain().focus().setColor(color).run();
+    setShowColorPicker(false);
+  };
 
   // Fetch users for mentions
   const fetchUsers = async (query: string) => {
@@ -61,9 +115,41 @@ export default function MentionTextEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false, // Disable default code block to use CodeBlockLowlight
+      }),
       Placeholder.configure({
         placeholder,
+      }),
+      Underline,
+      TextStyle,
+      Color,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 underline hover:text-blue-800 cursor-pointer',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Highlight.configure({
+        multicolor: true,
+        HTMLAttributes: {
+          class: 'bg-yellow-200',
+        },
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: 'code-block',
+        },
       }),
       Mention.configure({
         HTMLAttributes: {
@@ -189,16 +275,17 @@ export default function MentionTextEditor({
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
-      {/* Toolbar */}
+      {/* Enhanced Toolbar */}
       {showToolbar && (
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-slate-200 bg-slate-50">
+        <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-slate-200 bg-slate-50">
+          {/* Text Formatting */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-2 rounded hover:bg-slate-200 transition-colors ${
               editor.isActive('bold') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
             }`}
-            title="Bold"
+            title="Bold (Ctrl+B)"
           >
             <Bold className="w-4 h-4" />
           </button>
@@ -208,11 +295,24 @@ export default function MentionTextEditor({
             className={`p-2 rounded hover:bg-slate-200 transition-colors ${
               editor.isActive('italic') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
             }`}
-            title="Italic"
+            title="Italic (Ctrl+I)"
           >
             <Italic className="w-4 h-4" />
           </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
+              editor.isActive('underline') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            }`}
+            title="Underline (Ctrl+U)"
+          >
+            <UnderlineIcon className="w-4 h-4" />
+          </button>
+
           <div className="w-px h-6 bg-slate-300 mx-1" />
+
+          {/* Lists */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -233,10 +333,117 @@ export default function MentionTextEditor({
           >
             <ListOrdered className="w-4 h-4" />
           </button>
+
+          <div className="w-px h-6 bg-slate-300 mx-1" />
+
+          {/* Link */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                const previousUrl = editor.getAttributes('link').href;
+                setLinkUrl(previousUrl || '');
+                setShowLinkInput(!showLinkInput);
+              }}
+              className={`p-2 rounded hover:bg-slate-200 transition-colors ${
+                editor.isActive('link') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+              }`}
+              title="Insert Link"
+            >
+              <LinkIcon className="w-4 h-4" />
+            </button>
+            {showLinkInput && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-64">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    className="flex-1 px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyDown={(e) => e.key === 'Enter' && setLink()}
+                    autoFocus
+                  />
+                  <button
+                    onClick={setLink}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Set
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Table */}
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
+              editor.isActive('table') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            }`}
+            title="Insert Table (3x3)"
+          >
+            <TableIcon className="w-4 h-4" />
+          </button>
+
+          {/* Code Block */}
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
+              editor.isActive('codeBlock') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            }`}
+            title="Code Block"
+          >
+            <Code className="w-4 h-4" />
+          </button>
+
+          {/* Highlight */}
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
+              editor.isActive('highlight') ? 'bg-slate-200 text-yellow-600' : 'text-slate-600'
+            }`}
+            title="Highlight Text"
+          >
+            <Highlighter className="w-4 h-4" />
+          </button>
+
+          {/* Text Color */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
+              title="Text Color"
+            >
+              <Palette className="w-4 h-4" />
+            </button>
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-2">
+                <div className="grid grid-cols-5 gap-1">
+                  {['#000000', '#64748b', '#ef4444', '#f59e0b', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff'].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setTextColor(color)}
+                      className="w-6 h-6 rounded border-2 border-slate-200 hover:border-blue-500 transition-colors"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex-1" />
+
+          {/* Mentions Hint */}
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <AtSign className="w-3.5 h-3.5" />
-            <span>Type @ to mention</span>
+            <span>@ mention</span>
           </div>
         </div>
       )}
@@ -286,7 +493,7 @@ export default function MentionTextEditor({
         </div>
       )}
 
-      {/* Mention Styles */}
+      {/* Enhanced Styles */}
       <style jsx global>{`
         .ProseMirror {
           min-height: ${minHeight};
@@ -302,6 +509,11 @@ export default function MentionTextEditor({
           pointer-events: none;
         }
 
+        .ProseMirror:focus {
+          outline: none;
+        }
+
+        /* Mentions */
         .ProseMirror .mention {
           background: #dbeafe;
           color: #1e40af;
@@ -312,8 +524,85 @@ export default function MentionTextEditor({
           white-space: nowrap;
         }
 
-        .ProseMirror:focus {
-          outline: none;
+        /* Tables */
+        .ProseMirror table {
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          margin: 0.5rem 0;
+          overflow: hidden;
+        }
+
+        .ProseMirror table td,
+        .ProseMirror table th {
+          min-width: 1em;
+          border: 2px solid #e2e8f0;
+          padding: 0.5rem;
+          vertical-align: top;
+          box-sizing: border-box;
+          position: relative;
+        }
+
+        .ProseMirror table th {
+          font-weight: bold;
+          text-align: left;
+          background-color: #f8fafc;
+        }
+
+        .ProseMirror table .selectedCell:after {
+          z-index: 2;
+          position: absolute;
+          content: "";
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          background: rgba(59, 130, 246, 0.1);
+          pointer-events: none;
+        }
+
+        /* Code Blocks */
+        .ProseMirror .code-block {
+          background: #1e293b;
+          color: #f1f5f9;
+          font-family: 'JetBrainsMono', 'Fira Code', 'Monaco', 'Courier New', monospace;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          margin: 0.5rem 0;
+          overflow-x: auto;
+        }
+
+        .ProseMirror code {
+          background: #f1f5f9;
+          color: #0f172a;
+          padding: 0.2em 0.4em;
+          border-radius: 0.25rem;
+          font-size: 0.875em;
+          font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .ProseMirror pre code {
+          background: none;
+          color: inherit;
+          padding: 0;
+        }
+
+        /* Links */
+        .ProseMirror a {
+          color: #3b82f6;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+
+        .ProseMirror a:hover {
+          color: #1d4ed8;
+        }
+
+        /* Highlight */
+        .ProseMirror mark {
+          background-color: #fef08a;
+          padding: 0.1em 0;
+          border-radius: 0.125rem;
         }
       `}</style>
     </div>
