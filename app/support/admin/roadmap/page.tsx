@@ -75,12 +75,9 @@ type RoadmapItem = {
   progress_percentage?: number;
   last_activity_at?: string;
   days_since_activity?: number;
-  // Sprint fields (version-centric sprints)
-  sprint_id?: string;
-  sprint_name?: string; // e.g., "Sprint 23.11", "Sprint 23.12"
 };
 
-type ViewMode = 'sprint' | 'version' | 'owner' | 'table';
+type ViewMode = 'version' | 'owner' | 'table';
 type DensityPreset = 'cozy' | 'default' | 'compact';
 
 // Premium status pill system
@@ -110,12 +107,11 @@ export default function WorldClassRoadmapPage() {
   // State
   const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('sprint'); // Default to sprint view (version-centric)
+  const [viewMode, setViewMode] = useState<ViewMode>('table'); // Default to table view (full disclosure)
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
-  const [selectedSprint, setSelectedSprint] = useState<string>('all');
   const [selectedVersion, setSelectedVersion] = useState<string>('all');
   const [selectedOwner, setSelectedOwner] = useState<string>('all');
   const [density, setDensity] = useState<DensityPreset>('default');
@@ -221,7 +217,6 @@ export default function WorldClassRoadmapPage() {
           item.description?.toLowerCase().includes(search) ||
           item.area?.toLowerCase().includes(search) ||
           item.goal?.toLowerCase().includes(search) ||
-          item.sprint_name?.toLowerCase().includes(search) ||
           item.version_planned?.toLowerCase().includes(search);
         if (!matchesSearch) return false;
       }
@@ -230,13 +225,12 @@ export default function WorldClassRoadmapPage() {
       if (selectedGoal !== 'all' && item.goal !== selectedGoal) return false;
       if (selectedArea !== 'all' && item.area !== selectedArea) return false;
       if (selectedStatus.length > 0 && !selectedStatus.includes(item.status)) return false;
-      if (selectedSprint !== 'all' && item.sprint_name !== selectedSprint) return false;
       if (selectedVersion !== 'all' && item.version_planned !== selectedVersion) return false;
       if (selectedOwner !== 'all' && item.assigned_to !== selectedOwner) return false;
 
       return true;
     });
-  }, [roadmapItems, searchQuery, selectedGoal, selectedArea, selectedStatus, selectedSprint, selectedVersion, selectedOwner]);
+  }, [roadmapItems, searchQuery, selectedGoal, selectedArea, selectedStatus, selectedVersion, selectedOwner]);
 
   // Analytics
   const analytics = useMemo(() => {
@@ -312,10 +306,6 @@ export default function WorldClassRoadmapPage() {
     [roadmapItems]
   );
 
-  const uniqueSprints = useMemo(() =>
-    Array.from(new Set(roadmapItems.map(i => i.sprint_name).filter(Boolean))).sort().reverse(), // Most recent first
-    [roadmapItems]
-  );
 
   const uniqueVersions = useMemo(() =>
     Array.from(new Set(roadmapItems.map(i => i.version_planned).filter(Boolean))).sort().reverse(), // Most recent first
@@ -326,17 +316,6 @@ export default function WorldClassRoadmapPage() {
     Array.from(new Set(roadmapItems.map(i => i.assigned_to).filter(Boolean))).sort(),
     [roadmapItems]
   );
-
-  // Active sprints (sprints with in_progress or planned items)
-  const activeSprints = useMemo(() => {
-    const sprints = new Set<string>();
-    roadmapItems.forEach(item => {
-      if (item.sprint_name && (item.status === 'in_progress' || item.status === 'planned')) {
-        sprints.add(item.sprint_name);
-      }
-    });
-    return Array.from(sprints).sort().reverse(); // Most recent first
-  }, [roadmapItems]);
 
   const toggleGroup = (group: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -602,18 +581,6 @@ export default function WorldClassRoadmapPage() {
                   className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150"
                 />
               </div>
-
-              {/* Sprint Selector (Version-Centric) */}
-              <select
-                value={selectedSprint}
-                onChange={(e) => setSelectedSprint(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white tracking-[-0.01em] transition-all duration-150 min-w-[140px]"
-              >
-                <option value="all">All Sprints</option>
-                {uniqueSprints.map(sprint => (
-                  <option key={sprint} value={sprint}>{sprint}</option>
-                ))}
-              </select>
 
               {/* Version Selector */}
               <select
