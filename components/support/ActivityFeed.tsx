@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
   Calendar,
   MessageSquare,
@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Plus,
   Filter,
+  Users,
 } from 'lucide-react';
 import Avatar from '../Avatar';
 
@@ -35,6 +36,8 @@ interface Activity {
 
 interface ActivityFeedProps {
   activities: Activity[];
+  users?: any[];
+  organization?: any;
   onAddActivity?: (type: 'meeting' | 'note') => void;
 }
 
@@ -52,12 +55,35 @@ const PRIORITY_BADGES = {
   critical: 'bg-red-100 text-red-700 border-red-200 animate-pulse',
 };
 
-export default function ActivityFeed({ activities, onAddActivity }: ActivityFeedProps) {
+export default function ActivityFeed({ activities, users = [], organization, onAddActivity }: ActivityFeedProps) {
   const [filter, setFilter] = useState<'all' | 'meeting' | 'ticket' | 'note' | 'user_event'>('all');
 
+  // Auto-generate user creation events if users exist but no activities
+  const enrichedActivities = React.useMemo(() => {
+    const allActivities = [...activities];
+
+    // Add user creation events for context
+    if (users.length > 0 && activities.length === 0) {
+      users.forEach((user: any) => {
+        allActivities.push({
+          id: `user-created-${user.user_id}`,
+          type: 'user_event' as const,
+          title: `${user.name} joined the trial`,
+          user_name: user.name,
+          new_stage: user.current_stage,
+          created_at: user.created_at,
+        });
+      });
+    }
+
+    return allActivities.sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [activities, users]);
+
   const filteredActivities = filter === 'all'
-    ? activities
-    : activities.filter(a => a.type === filter);
+    ? enrichedActivities
+    : enrichedActivities.filter(a => a.type === filter);
 
   return (
     <div className="space-y-6">
@@ -111,19 +137,116 @@ export default function ActivityFeed({ activities, onAddActivity }: ActivityFeed
       {/* Activity Timeline */}
       <div className="space-y-4">
         {filteredActivities.length === 0 ? (
-          <div className="text-center py-12 px-6 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-              <MessageSquare className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-600 font-medium mb-1">No activity yet</p>
-            <p className="text-xs text-gray-500">Add your first meeting note or internal comment</p>
-          </div>
+          <SmartEmptyState users={users} organization={organization} onAddActivity={onAddActivity} />
         ) : (
           filteredActivities.map((activity, index) => (
             <ActivityCard key={activity.id} activity={activity} isLast={index === filteredActivities.length - 1} />
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+// Smart Empty State Component
+function SmartEmptyState({ users, organization, onAddActivity }: { users?: any[]; organization?: any; onAddActivity?: (type: 'meeting' | 'note') => void }) {
+  const hasUsers = users && users.length > 0;
+  const trialDaysLeft = organization?.trial_end_date
+    ? differenceInDays(new Date(organization.trial_end_date), new Date())
+    : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Main Empty State Card */}
+      <div className="text-center py-16 px-8 rounded-3xl backdrop-blur-xl bg-gradient-to-br from-blue-50/80 to-purple-50/80 border border-white/60 shadow-xl">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+          <Calendar className="w-10 h-10 text-white" />
+        </div>
+
+        <h3 className="text-2xl font-bold text-gray-900 mb-3">
+          {hasUsers ? 'Start tracking activity' : 'Getting started'}
+        </h3>
+
+        <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+          {hasUsers
+            ? `You have ${users.length} user${users.length > 1 ? 's' : ''} in this trial. Log your first meeting or add notes to track engagement.`
+            : 'Add users to this trial organization, then log meetings and track their journey.'
+          }
+        </p>
+
+        {/* Action Buttons */}
+        {onAddActivity && (
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={() => onAddActivity('meeting')}
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
+            >
+              <Calendar className="w-5 h-5" />
+              Log First Meeting
+            </button>
+            <button
+              onClick={() => onAddActivity('note')}
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/90 backdrop-blur-sm text-gray-700 font-medium border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-200"
+            >
+              <MessageSquare className="w-5 h-5" />
+              Add Note
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Contextual Suggestions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-4">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <h4 className="font-semibold text-gray-900 mb-2">Track Users</h4>
+          <p className="text-sm text-gray-600">
+            {hasUsers
+              ? `${users.length} user${users.length > 1 ? 's' : ''} added. Update their stages as they progress.`
+              : 'Add users to start tracking their trial journey.'
+            }
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-4">
+            <Calendar className="w-6 h-6 text-white" />
+          </div>
+          <h4 className="font-semibold text-gray-900 mb-2">Log Meetings</h4>
+          <p className="text-sm text-gray-600">
+            Document demo calls, check-ins, and important conversations.
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-4">
+            <Lightbulb className="w-6 h-6 text-white" />
+          </div>
+          <h4 className="font-semibold text-gray-900 mb-2">Capture Insights</h4>
+          <p className="text-sm text-gray-600">
+            Note feature requests, feedback, and key decisions inline.
+          </p>
+        </div>
+      </div>
+
+      {/* Trial Timeline Hint */}
+      {trialDaysLeft !== null && trialDaysLeft >= 0 && (
+        <div className="p-4 rounded-2xl backdrop-blur-xl bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200/60 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900">
+              {trialDaysLeft} days left in trial
+            </p>
+            <p className="text-xs text-gray-600">
+              Start logging activity to track engagement and conversion potential
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

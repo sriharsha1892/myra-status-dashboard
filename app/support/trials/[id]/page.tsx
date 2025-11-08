@@ -63,7 +63,7 @@ export default function TrialOrgPage() {
 
   // State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('activity');
+  const [activeTab, setActiveTab] = useState<TabType>('details');
   const [organization, setOrganization] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -415,9 +415,9 @@ export default function TrialOrgPage() {
         {/* Tab Navigation */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
           {([
-            { id: 'activity', label: 'Activity', icon: FileText },
-            { id: 'users', label: 'Users', icon: Users },
             { id: 'details', label: 'Details', icon: Building2 },
+            { id: 'users', label: 'Users', icon: Users },
+            { id: 'activity', label: 'Activity', icon: FileText },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -438,14 +438,8 @@ export default function TrialOrgPage() {
 
         {/* Tab Content */}
         <div className="transition-all duration-300">
-          {activeTab === 'activity' && (
-            <ActivityFeed
-              activities={activities}
-              onAddActivity={(type) => {
-                setActivityForm({ ...activityForm, type });
-                setShowAddActivityModal(true);
-              }}
-            />
+          {activeTab === 'details' && (
+            <DetailsTab organization={organization} />
           )}
 
           {activeTab === 'users' && (
@@ -457,8 +451,16 @@ export default function TrialOrgPage() {
             />
           )}
 
-          {activeTab === 'details' && (
-            <DetailsTab organization={organization} />
+          {activeTab === 'activity' && (
+            <ActivityFeed
+              activities={activities}
+              users={users}
+              organization={organization}
+              onAddActivity={(type) => {
+                setActivityForm({ ...activityForm, type });
+                setShowAddActivityModal(true);
+              }}
+            />
           )}
         </div>
       </div>
