@@ -5,13 +5,27 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays } from 'date-fns';
 import CategoryTrendsChart from '@/components/support/CategoryTrendsChart';
 import CategoryTrendsTable from '@/components/support/CategoryTrendsTable';
 import TrendInsightsPanel from '@/components/support/TrendInsightsPanel';
 import { Period, calculateWeeklyStats, exportTrendsCSV, downloadCSV } from '@/lib/analytics/categoryTrends';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import {
+  TrendingUp,
+  TrendingDown,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  BarChart3,
+  Activity,
+  Settings,
+  Plus,
+  Maximize2,
+  Minimize2
+} from 'lucide-react';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -32,6 +46,12 @@ export default function ReportsPage() {
   const [selectedAssignedTo, setSelectedAssignedTo] = useState<string>('all');
   const [selectedOrganization, setSelectedOrganization] = useState<string>('all');
   const [dateRange, setDateRange] = useState<'7' | '30' | '90' | 'all'>('all');
+
+  // New UI state
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'analysis'>('overview');
+  const [builderMode, setBuilderMode] = useState(false);
+  const [expandedChart, setExpandedChart] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -168,6 +188,39 @@ export default function ReportsPage() {
     downloadCSV(csv, `category-trends-${format(new Date(), 'yyyy-MM-dd')}.csv`);
   };
 
+  // Calculate trend indicators for KPIs
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return { percent: 0, direction: 'neutral' as const };
+    const percent = ((current - previous) / previous) * 100;
+    return {
+      percent: Math.abs(percent),
+      direction: percent > 0 ? ('up' as const) : percent < 0 ? ('down' as const) : ('neutral' as const)
+    };
+  };
+
+  // Get previous period data for trends
+  const getPreviousPeriodData = () => {
+    const days = dateRange === 'all' ? 30 : parseInt(dateRange);
+    const previousStart = subDays(new Date(), days * 2);
+    const previousEnd = subDays(new Date(), days);
+
+    return tickets.filter((ticket) => {
+      const ticketDate = new Date(ticket.created_at);
+      return ticketDate >= previousStart && ticketDate < previousEnd;
+    });
+  };
+
+  const previousPeriodTickets = dateRange !== 'all' ? getPreviousPeriodData() : [];
+  const totalTrend = calculateTrend(filteredTickets.length, previousPeriodTickets.length);
+  const openTrend = calculateTrend(
+    filteredTickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length,
+    previousPeriodTickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length
+  );
+  const resolvedTrend = calculateTrend(
+    filteredTickets.filter((t) => ['Resolved', 'Closed'].includes(t.status)).length,
+    previousPeriodTickets.filter((t) => ['Resolved', 'Closed'].includes(t.status)).length
+  );
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -181,100 +234,171 @@ export default function ReportsPage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto">
-      {/* Modern Header */}
-        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 shadow-sm sticky top-0 z-10">
-          <div className="px-8 py-6">
-            <Breadcrumbs items={[
-              { label: 'Dashboard', href: '/support/dashboard' },
-              { label: 'Reports & Analytics' }
-            ]} />
-            <div className="flex items-center justify-between mt-3">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Reports & Analytics</h2>
-                <p className="text-sm text-gray-500 mt-1">Comprehensive support ticket analytics with deep insights</p>
+    <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/10 min-h-screen">
+      {/* Modern Header with Glassmorphism */}
+      <header className="bg-white/70 backdrop-blur-2xl border-b border-white/20 shadow-lg sticky top-0 z-20">
+        <div className="px-8 py-6">
+          <Breadcrumbs items={[
+            { label: 'Dashboard', href: '/support/dashboard' },
+            { label: 'Reports & Analytics' }
+          ]} />
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Reports & Analytics</h2>
               </div>
+              <p className="text-sm text-slate-600 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-500" />
+                Comprehensive insights and performance metrics
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
               <button
-                onClick={handleExportTrends}
-                className="flex items-center gap-2 h-10 px-5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => setBuilderMode(!builderMode)}
+                className={`group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 ${ builderMode
+                    ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30'
+                    : 'text-slate-700 bg-white/80 hover:bg-white border border-slate-200 hover:shadow-md'
+                }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Export Analytics (CSV)</span>
+                {builderMode && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
+                <LayoutGrid className="w-4 h-4 relative z-10" />
+                <span className="relative z-10">{builderMode ? 'Exit Builder' : 'Customize'}</span>
               </button>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Page content */}
-        <div className="p-8 space-y-8">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="flex flex-col items-center gap-3">
-                <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-sm font-medium text-gray-600">Loading reports...</p>
+      {/* Page content */}
+      <div className="p-8 space-y-6">
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <div className="relative">
+              <div className="w-20 h-20">
+                <div className="absolute inset-0 border-4 border-blue-200 rounded-full animate-ping opacity-20"></div>
+                <div className="absolute inset-0 border-4 border-t-blue-600 border-r-purple-600 border-b-pink-600 border-l-blue-600 rounded-full animate-spin"></div>
               </div>
+              <p className="mt-6 text-sm font-medium text-slate-600 text-center">Loading analytics...</p>
             </div>
-          ) : (
-            <>
-              {/* Summary Stats - Above fold */}
-              <div className="grid grid-cols-3 gap-5 mb-6">
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                    <div className="flex items-start justify-between">
+          </div>
+        ) : (
+          <>
+            {/* Enhanced KPI Cards with Trends */}
+            <div className="grid grid-cols-3 gap-6">
+              {/* Total Tickets Card */}
+              <div className="group relative overflow-hidden rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+                <div className="relative backdrop-blur-xl bg-white/90 border border-white/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 shadow-lg shadow-blue-500/10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-600 mb-1.5">Total Tickets</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">{filteredTickets.length}</p>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Tickets</p>
+                        <p className="text-4xl font-bold text-slate-900 tracking-tight">{filteredTickets.length}</p>
                       </div>
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/40">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                     </div>
+                    {dateRange !== 'all' && totalTrend.direction !== 'neutral' && (
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                        totalTrend.direction === 'up'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-700'
+                      }`}>
+                        {totalTrend.direction === 'up' ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-semibold">{totalTrend.percent.toFixed(1)}% vs prev period</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                    <div className="flex items-start justify-between">
+              {/* Open Tickets Card */}
+              <div className="group relative overflow-hidden rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 via-blue-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+                <div className="relative backdrop-blur-xl bg-white/90 border border-white/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 shadow-lg shadow-purple-500/10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-600 mb-1.5">Open Tickets</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Open Tickets</p>
+                        <p className="text-4xl font-bold text-slate-900 tracking-tight">
                           {filteredTickets.filter((t) => !['Resolved', 'Closed'].includes(t.status)).length}
                         </p>
                       </div>
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-sm">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/40">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     </div>
+                    {dateRange !== 'all' && openTrend.direction !== 'neutral' && (
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                        openTrend.direction === 'down'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-700'
+                      }`}>
+                        {openTrend.direction === 'down' ? (
+                          <TrendingDown className="w-4 h-4" />
+                        ) : (
+                          <TrendingUp className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-semibold">{openTrend.percent.toFixed(1)}% vs prev period</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="relative group">
-                  <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                    <div className="flex items-start justify-between">
+              {/* Resolved Tickets Card */}
+              <div className="group relative overflow-hidden rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 via-green-400/20 to-teal-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+                <div className="relative backdrop-blur-xl bg-white/90 border border-white/30 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 shadow-lg shadow-green-500/10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-600 mb-1.5">Resolved</p>
-                        <p className="text-3xl font-bold text-gray-900 tracking-tight">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Resolved</p>
+                        <p className="text-4xl font-bold text-slate-900 tracking-tight">
                           {filteredTickets.filter((t) => ['Resolved', 'Closed'].includes(t.status)).length}
                         </p>
                       </div>
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/40">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     </div>
+                    {dateRange !== 'all' && resolvedTrend.direction !== 'neutral' && (
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                        resolvedTrend.direction === 'up'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-700'
+                      }`}>
+                        {resolvedTrend.direction === 'up' ? (
+                          <TrendingUp className="w-4 h-4" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-semibold">{resolvedTrend.percent.toFixed(1)}% vs prev period</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
 
                   {/* Compact Filters Section */}
               <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-sm p-4 mb-6">
