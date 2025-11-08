@@ -2113,7 +2113,6 @@ export default function WorldClassRoadmapPage() {
           </div>
         </div>
       )}
-          </div>
         </>
       )}
     </div>
