@@ -257,6 +257,13 @@ export default function ReportsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
+                onClick={() => router.push('/support/reports/engagement')}
+                className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 text-slate-700 bg-white/80 hover:bg-white border border-slate-200 hover:shadow-md"
+              >
+                <Activity className="w-4 h-4" />
+                <span>Engagement Waves</span>
+              </button>
+              <button
                 onClick={() => setBuilderMode(!builderMode)}
                 className={`group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 ${ builderMode
                     ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-blue-500/30'
