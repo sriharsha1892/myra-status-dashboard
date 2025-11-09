@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { Mail, Eye, ClipboardList, Rocket, CheckCircle, XCircle, Copy, Circle, AlertTriangle, ArrowUp, ThumbsUp } from 'lucide-react';
 import AddFeatureRequestModal from './AddFeatureRequestModal';
 import LinkIndicator from './LinkIndicator';
 import LinkedItemsDisplay from './LinkedItemsDisplay';
@@ -33,21 +34,21 @@ interface FeatureRequestsTabProps {
   orgId: string;
 }
 
-const STATUS_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  submitted: { icon: '📬', color: 'blue', label: 'Submitted' },
-  reviewed: { icon: '👀', color: 'purple', label: 'Reviewed' },
-  planned: { icon: '📋', color: 'yellow', label: 'Planned' },
-  in_progress: { icon: '🚀', color: 'orange', label: 'In Progress' },
-  completed: { icon: '✅', color: 'green', label: 'Completed' },
-  rejected: { icon: '❌', color: 'red', label: 'Rejected' },
-  duplicate: { icon: '⚡', color: 'gray', label: 'Duplicate' },
+const STATUS_CONFIG: { [key: string]: { icon: any; color: string; label: string } } = {
+  submitted: { icon: Mail, color: 'blue', label: 'Submitted' },
+  reviewed: { icon: Eye, color: 'purple', label: 'Reviewed' },
+  planned: { icon: ClipboardList, color: 'yellow', label: 'Planned' },
+  in_progress: { icon: Rocket, color: 'orange', label: 'In Progress' },
+  completed: { icon: CheckCircle, color: 'green', label: 'Completed' },
+  rejected: { icon: XCircle, color: 'red', label: 'Rejected' },
+  duplicate: { icon: Copy, color: 'gray', label: 'Duplicate' },
 };
 
-const PRIORITY_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  low: { icon: '🟢', color: 'green', label: 'Low' },
-  medium: { icon: '🟡', color: 'yellow', label: 'Medium' },
-  high: { icon: '🔴', color: 'red', label: 'High' },
-  critical: { icon: '🚨', color: 'red', label: 'Critical' },
+const PRIORITY_CONFIG: { [key: string]: { icon: any; color: string; label: string } } = {
+  low: { icon: Circle, color: 'green', label: 'Low' },
+  medium: { icon: Circle, color: 'yellow', label: 'Medium' },
+  high: { icon: Circle, color: 'red', label: 'High' },
+  critical: { icon: AlertTriangle, color: 'red', label: 'Critical' },
 };
 
 export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
@@ -176,17 +177,18 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
           </button>
           {Object.entries(STATUS_CONFIG).map(([status, config]) => {
             const count = requests.filter((req) => req.status === status).length;
+            const IconComponent = config.icon;
             return (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   filterStatus === status
                     ? `${getStatusColor(status)} border`
                     : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {config.icon} ({count})
+                <IconComponent className="w-4 h-4" /> ({count})
               </button>
             );
           })}
@@ -219,6 +221,8 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
           {filteredRequests.map((request) => {
             const statusConfig = STATUS_CONFIG[request.status];
             const priorityConfig = PRIORITY_CONFIG[request.priority];
+            const StatusIcon = statusConfig.icon;
+            const PriorityIcon = priorityConfig.icon;
 
             return (
               <div key={request.id} className={`rounded-lg border-2 p-4 ${getStatusColor(request.status)}`}>
@@ -226,7 +230,7 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-lg">{statusConfig.icon}</span>
+                      <StatusIcon className="w-5 h-5" />
                       <h4 className="text-base font-semibold text-gray-900 break-words">{request.title}</h4>
                     </div>
                     <p className="text-sm text-gray-700 mt-1">{request.description}</p>
@@ -236,11 +240,11 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
                   </div>
                   <div className="flex gap-2 flex-shrink-0 flex-col items-end">
                     <div className="flex gap-2">
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(request.priority)}`}>
-                        {priorityConfig.icon} {priorityConfig.label}
+                      <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(request.priority)}`}>
+                        <PriorityIcon className="w-3.5 h-3.5" /> {priorityConfig.label}
                       </div>
                       <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg">
-                        <span className="text-sm font-bold text-gray-900">👍</span>
+                        <ThumbsUp className="w-3.5 h-3.5 text-gray-700" />
                         <span className="text-sm font-medium text-gray-700">{request.votes}</span>
                       </div>
                     </div>
@@ -262,9 +266,9 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
                           setShowForwardModal(true);
                         }}
                         title="Forward to admin with context"
-                        className="px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium text-xs transition-all"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium text-xs transition-all"
                       >
-                        ⬆️ Forward
+                        <ArrowUp className="w-3 h-3" /> Forward
                       </button>
                     </div>
                   </div>

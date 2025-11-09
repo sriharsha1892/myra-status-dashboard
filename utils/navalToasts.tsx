@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import { Sparkles } from 'lucide-react';
 
 /**
  * Naval Ravikant + Elon Musk-style contextual success toasts
@@ -30,7 +31,7 @@ const navalGeneralQuotes = [
 const elonGeneralQuotes = [
   "Ship it before it's perfect",
   "Move fast, break things... then fix them faster",
-  "First principles thinking: applied",
+  "Iterate to excellence",
   "Production hell survived",
   "If you need a spreadsheet, you're doing it wrong",
   "Failure is an option here. If things are not failing, you're not innovating",
@@ -54,7 +55,7 @@ function showNavalToast(message: string, quote: string) {
     </div>,
     {
       duration: 3500,
-      icon: '✨',
+      icon: <Sparkles className="w-5 h-5" />,
       style: {
         background: '#10b981',
         color: '#fff',

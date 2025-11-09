@@ -13,11 +13,12 @@ import {
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
 import PersonalImpactWidget from '@/components/support/PersonalImpactWidget';
+import PasswordReminderBanner from '@/components/PasswordReminderBanner';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
 export default function EnterpriseCommandCenter() {
-  const { user, loading: authLoading, role } = useAuth();
+  const { user, loading: authLoading, role, parent_company, is_super_admin } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +103,11 @@ export default function EnterpriseCommandCenter() {
 
       if (role?.toLowerCase() === 'account_manager') {
         query = query.eq('account_manager_id', user?.id);
+      }
+
+      // If not super admin: filter by parent company
+      if (!is_super_admin && parent_company) {
+        query = query.eq('parent_company', parent_company);
       }
 
       const { data, error } = await query;
@@ -195,6 +201,11 @@ export default function EnterpriseCommandCenter() {
           <div className="mb-8">
             <AnnouncementsBulletin role={role} />
           </div>
+
+          {/* Password Reminder Banner */}
+          {user?.email && (
+            <PasswordReminderBanner userEmail={user.email} />
+          )}
 
           {/* Greeting Section */}
           <div className="mb-8">
@@ -558,7 +569,7 @@ export default function EnterpriseCommandCenter() {
 
                   {criticalTickets === 0 && atRiskTrials === 0 && activeTrials === 0 && (
                     <div className="text-center py-4">
-                      <p className="text-xs text-slate-900 font-medium mb-1">🎉 All systems nominal</p>
+                      <p className="text-xs text-slate-900 font-medium mb-1">All systems nominal</p>
                       <p className="text-[10px] text-slate-500 italic">"Compounding works. Keep going."</p>
                     </div>
                   )}

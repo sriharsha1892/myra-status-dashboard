@@ -20,6 +20,14 @@ import {
   CheckCircle2,
   Clock,
   Trash2,
+  MessageSquare,
+  Folder,
+  Headphones,
+  Activity,
+  Lightbulb,
+  Target,
+  UserCheck,
+  RotateCcw,
 } from 'lucide-react';
 
 import LoadingState from '@/components/LoadingState';
@@ -27,8 +35,17 @@ import Avatar, { AvatarGroup } from '@/components/Avatar';
 import ActivityFeed from '@/components/support/ActivityFeed';
 import AINewsPanel from '@/components/support/AINewsPanel';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import DeleteOrganizationModal from '@/components/DeleteOrganizationModal';
+import UnifiedNotesPanel from '@/components/UnifiedNotesPanel';
+import DocumentLibrary2027 from '@/components/DocumentLibrary2027';
+import SupportQueriesTab from '@/components/SupportQueriesTab';
+import TrialExtensionsTab from '@/components/TrialExtensionsTab';
+import PeopleAdoptionTab from '@/components/PeopleAdoptionTab';
+import ActivityEngagementTab from '@/components/ActivityEngagementTab';
+import ProductResearchTab from '@/components/ProductResearchTab';
+import OverviewTab from '@/components/OverviewTab';
 
-type TabType = 'activity' | 'users' | 'details';
+type TabType = 'overview' | 'people' | 'activity' | 'support' | 'product';
 
 const LIFECYCLE_STAGES = [
   { value: 'prospect', label: 'Prospect', color: 'text-gray-600 bg-gray-100' },
@@ -41,9 +58,10 @@ const LIFECYCLE_STAGES = [
 
 const USER_STAGES = [
   { value: 'invited', label: 'Invited' },
-  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'low_activity', label: 'Low Activity' },
   { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'power_user', label: 'Power User' },
+  { value: 'dormant', label: 'Dormant' },
 ];
 
 const DOMAIN_OPTIONS = [
@@ -65,7 +83,7 @@ export default function TrialOrgPage() {
 
   // State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('details');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [organization, setOrganization] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -75,6 +93,7 @@ export default function TrialOrgPage() {
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
 
   // Form states
@@ -388,13 +407,22 @@ export default function TrialOrgPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowEditOrgModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-medium border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-200"
-              >
-                <Edit3 className="w-4 h-4" />
-                Edit Details
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowEditOrgModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-medium border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-200"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit Details
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-200"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Organization
+                </button>
+              </div>
             </div>
 
             {/* Metrics row */}
@@ -440,38 +468,46 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2">
+        {/* Tab Navigation - 5 Optimized Tabs */}
+        <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2 flex-wrap">
           {([
-            { id: 'details', label: 'Details', icon: Building2 },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'activity', label: 'Activity', icon: FileText },
-          ] as const).map(({ id, label, icon: Icon }) => (
+            { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
+            { id: 'people', label: 'People & Adoption', icon: Users, description: 'Stakeholders & platform users' },
+            { id: 'activity', label: 'Activity & Engagement', icon: Activity, description: 'Timeline of all events' },
+            { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
+            { id: 'product', label: 'Product & Research', icon: Lightbulb, description: 'Features, research, docs' },
+          ] as const).map(({ id, label, icon: Icon, description }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-300
+                flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
                 ${activeTab === id
                   ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105'
                   : 'text-gray-600 hover:bg-white/80'
                 }
               `}
+              title={description}
             >
               <Icon className="w-4 h-4" />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
+              <span className="sm:hidden">{label.split(' ')[0]}</span>
             </button>
           ))}
         </div>
 
         {/* Tab Content */}
         <div className="transition-all duration-300">
-          {activeTab === 'details' && (
-            <DetailsTab organization={organization} />
+          {activeTab === 'overview' && (
+            <OverviewTab
+              organization={organization}
+              orgId={orgId}
+            />
           )}
 
-          {activeTab === 'users' && (
-            <UsersTab
+          {activeTab === 'people' && (
+            <PeopleAdoptionTab
+              orgId={orgId}
               users={users}
               onAddUser={() => setShowAddUserModal(true)}
               onEditUser={setEditingUser}
@@ -480,7 +516,8 @@ export default function TrialOrgPage() {
           )}
 
           {activeTab === 'activity' && (
-            <ActivityFeed
+            <ActivityEngagementTab
+              orgId={orgId}
               activities={activities}
               users={users}
               organization={organization}
@@ -488,6 +525,19 @@ export default function TrialOrgPage() {
                 setActivityForm({ ...activityForm, type });
                 setShowAddActivityModal(true);
               }}
+            />
+          )}
+
+          {activeTab === 'support' && (
+            <SupportQueriesTab orgId={orgId} />
+          )}
+
+          {activeTab === 'product' && (
+            <ProductResearchTab
+              orgId={orgId}
+              organizationName={organization?.org_name || ''}
+              currentUserId={user?.id || ''}
+              currentUserRole={user?.user_metadata?.role}
             />
           )}
         </div>
@@ -806,6 +856,19 @@ export default function TrialOrgPage() {
           </div>
         </Modal>
       )}
+
+      {/* Delete Organization Modal */}
+      <DeleteOrganizationModal
+        isOpen={showDeleteModal}
+        orgId={orgId}
+        orgName={organization?.org_name || ''}
+        userCount={users.length}
+        onClose={() => setShowDeleteModal(false)}
+        onSuccess={() => {
+          toast.success('Organization deleted successfully');
+          router.push('/support/trials');
+        }}
+      />
     </div>
   );
 }

@@ -14,11 +14,6 @@ const fixedTrialPages = [
 ];
 
 test.describe('Sidebar Architecture - No Duplicates', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock authentication by setting localStorage
-    await page.goto('/support/login', { waitUntil: 'networkidle' });
-  });
-
   test('Dashboard page renders without duplicate sidebars', async ({ page }) => {
     await page.goto('/support/dashboard', { waitUntil: 'networkidle' });
 

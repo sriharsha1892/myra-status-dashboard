@@ -10,10 +10,12 @@ interface DealTracking {
   id: string;
   org_id: string;
   deal_status: string;
+  opportunity_value?: number;
   deal_value?: number;
   deal_currency?: string;
   loss_reason?: string;
-  future_prospect_reason?: string;
+  deferred_reason?: string;
+  expected_followup_date?: string;
   notes?: string;
   status_updated_at?: string;
   created_at: string;
@@ -49,11 +51,11 @@ const DEAL_STATUS_CONFIG: { [key: string]: { icon: string; color: string; label:
     label: 'Lost',
     description: 'Deal did not close'
   },
-  future_prospect: {
-    icon: '📅',
+  deferred: {
+    icon: '⏸️',
     color: 'purple',
-    label: 'Future Prospect',
-    description: 'Potential deal for future'
+    label: 'Deferred',
+    description: 'Postponed for future follow-up'
   },
 };
 
@@ -165,15 +167,26 @@ export default function DealTrackingTab({ orgId }: DealTrackingTabProps) {
           </div>
         </div>
 
-        {/* Deal Value for Won Deals */}
-        {deal.deal_status === 'won' && deal.deal_value && (
-          <div className="mt-4 pt-4 border-t border-current border-opacity-20">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">Deal Value:</span>
-              <span className="text-2xl font-bold">
-                {deal.deal_currency || 'USD'} {deal.deal_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
+        {/* Opportunity Value and Deal Value */}
+        {(deal.opportunity_value || (deal.deal_status === 'won' && deal.deal_value)) && (
+          <div className="mt-4 pt-4 border-t border-current border-opacity-20 space-y-2">
+            {deal.opportunity_value && (
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Opportunity Value:</span>
+                <span className="text-lg font-bold">
+                  {deal.deal_currency || 'USD'} {deal.opportunity_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+
+            {deal.deal_status === 'won' && deal.deal_value && (
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Final Deal Value:</span>
+                <span className="text-2xl font-bold">
+                  {deal.deal_currency || 'USD'} {deal.deal_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -195,11 +208,23 @@ export default function DealTrackingTab({ orgId }: DealTrackingTabProps) {
           </div>
         )}
 
-        {/* Future Prospect Reason */}
-        {deal.deal_status === 'future_prospect' && deal.future_prospect_reason && (
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-            <h4 className="text-sm font-semibold text-purple-900 mb-2">Future Opportunity</h4>
-            <p className="text-sm text-purple-800">{deal.future_prospect_reason}</p>
+        {/* Deferred Reason and Follow-up Date */}
+        {deal.deal_status === 'deferred' && (deal.deferred_reason || deal.expected_followup_date) && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
+            {deal.deferred_reason && (
+              <div>
+                <h4 className="text-sm font-semibold text-purple-900 mb-1">Reason</h4>
+                <p className="text-sm text-purple-800">{deal.deferred_reason}</p>
+              </div>
+            )}
+            {deal.expected_followup_date && (
+              <div>
+                <h4 className="text-sm font-semibold text-purple-900 mb-1">Follow-up Date</h4>
+                <p className="text-sm text-purple-800 font-medium">
+                  {format(new Date(deal.expected_followup_date), 'MMMM dd, yyyy')}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

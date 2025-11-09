@@ -24,6 +24,7 @@ interface CreateOrganizationModalProps {
 }
 
 const DOMAINS = ['TMT', 'NEO', 'AF&B', 'E&C', 'HC', 'AAD'];
+const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'];
 
 export default function CreateOrganizationModal({
   isOpen,
@@ -38,6 +39,7 @@ export default function CreateOrganizationModal({
   const [orgName, setOrgName] = useState('');
   const [selectedPOC, setSelectedPOC] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('');
+  const [parentCompany, setParentCompany] = useState('Mordor Intelligence');
   const [logoUrl, setLogoUrl] = useState('');
   const [orgUrl, setOrgUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -112,6 +114,7 @@ export default function CreateOrganizationModal({
       const { error } = await supabase.from('trial_organizations').insert({
         org_name: orgName,
         org_domain: selectedDomain,
+        parent_company: parentCompany,
         logo_url: logoUrl || null,
         org_url: orgUrl || null,
         description: description || null,
@@ -140,6 +143,7 @@ export default function CreateOrganizationModal({
     setOrgName('');
     setSelectedPOC('');
     setSelectedDomain('');
+    setParentCompany('Mordor Intelligence');
     setLogoUrl('');
     setOrgUrl('');
     setDescription('');
@@ -226,6 +230,24 @@ export default function CreateOrganizationModal({
               {DOMAINS.map((domain) => (
                 <option key={domain} value={domain}>
                   {domain}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Parent Company Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Parent Company *
+            </label>
+            <select
+              value={parentCompany}
+              onChange={(e) => setParentCompany(e.target.value)}
+              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {PARENT_COMPANIES.map((company) => (
+                <option key={company} value={company}>
+                  {company}
                 </option>
               ))}
             </select>

@@ -46,9 +46,9 @@ const ICON_MAP: Record<string, any> = {
 };
 
 const LINK_TYPE_CONFIG = {
-  onedrive: { label: 'OneDrive', color: 'from-blue-500 to-blue-600', icon: '📁' },
-  google_drive: { label: 'Google Drive', color: 'from-green-500 to-green-600', icon: '📂' },
-  external: { label: 'Link', color: 'from-purple-500 to-purple-600', icon: '🔗' },
+  onedrive: { label: 'OneDrive', color: 'from-blue-500 to-blue-600' },
+  google_drive: { label: 'Google Drive', color: 'from-green-500 to-green-600' },
+  external: { label: 'Link', color: 'from-purple-500 to-purple-600' },
 };
 
 export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: DocumentLibrary2027Props) {
@@ -153,31 +153,21 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] relative overflow-hidden">
-      {/* Animated Background Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)]" />
-
-      {/* Gradient Orbs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="space-y-2">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-8 shadow-sm sticky top-0 z-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-20 blur"></div>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
                     Resource Library
                   </h1>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {filteredResources.length} resources • {categories.length} categories
                   </p>
                 </div>
@@ -185,66 +175,69 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-gray-100 border border-gray-200">
                 <button
                   onClick={() => setViewType('grid')}
-                  className={`p-2 rounded-lg transition-all duration-300 ${
+                  className={`p-2 rounded-md transition-all duration-200 ${
                     viewType === 'grid'
-                      ? 'bg-white/10 text-white shadow-lg'
-                      : 'text-gray-500 hover:text-white hover:bg-white/5'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
+                  aria-label="Grid view"
                 >
                   <Grid3x3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewType('list')}
-                  className={`p-2 rounded-lg transition-all duration-300 ${
+                  className={`p-2 rounded-md transition-all duration-200 ${
                     viewType === 'list'
-                      ? 'bg-white/10 text-white shadow-lg'
-                      : 'text-gray-500 hover:text-white hover:bg-white/5'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
+                  aria-label="List view"
                 >
                   <List className="w-4 h-4" />
                 </button>
               </div>
 
-              <button className="group relative px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105">
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Resource
-                </div>
+              <button className="flex items-center gap-2 h-9 px-3 sm:px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex-1 sm:flex-none justify-center">
+                <Plus className="w-4 h-4" />
+                <span className="hidden xs:inline sm:inline">Add Resource</span>
+                <span className="xs:hidden sm:hidden">Add</span>
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Search & Filters */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search resources, tags, or descriptions..."
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-300"
-              />
-            </div>
-            <button className="p-3.5 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-300">
-              <Filter className="w-5 h-5" />
-            </button>
+        {/* Search & Filters */}
+        <div className="flex items-center gap-2 sm:gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search resources..."
+              className="w-full pl-9 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+            />
           </div>
+          <button
+            className="p-2.5 sm:p-3 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all shadow-sm"
+            aria-label="Filters"
+          >
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-6 scrollbar-hide">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`group relative px-5 py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105 whitespace-nowrap ${
+            className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               !selectedCategory
-                ? 'bg-white/10 text-white shadow-lg shadow-white/10 border border-white/20'
-                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                ? 'bg-blue-600 text-white shadow-md hover:shadow-lg'
+                : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
             All Resources
@@ -255,13 +248,13 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`group relative px-5 py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105 whitespace-nowrap ${
+                className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 ${
                   selectedCategory === cat.id
-                    ? 'bg-white/10 text-white shadow-lg shadow-white/10 border border-white/20'
-                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                    ? 'bg-blue-600 text-white shadow-md hover:shadow-lg'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <Icon className="w-4 h-4 inline-block mr-2" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {cat.name}
               </button>
             );
@@ -272,17 +265,17 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
         {loading ? (
           <div className="flex items-center justify-center py-32">
             <div className="text-center space-y-4">
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-              <p className="text-gray-500">Loading resources...</p>
+              <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
+              <p className="text-sm text-gray-600">Loading resources...</p>
             </div>
           </div>
         ) : filteredResources.length === 0 ? (
           <div className="flex items-center justify-center py-32">
             <div className="text-center space-y-4 max-w-md">
-              <div className="w-20 h-20 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center mx-auto">
-                <FileText className="w-10 h-10 text-gray-600" />
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
+                <FileText className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-xl font-medium text-gray-400">No resources found</p>
+              <p className="text-xl font-semibold text-gray-900">No resources found</p>
               <p className="text-sm text-gray-600">Try adjusting your search or filters</p>
             </div>
           </div>
@@ -296,43 +289,40 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
                   key={resource.id}
                   className="group relative"
                 >
-                  {/* Magnetic Hover Effect Background */}
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-pink-500/50 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500"></div>
-
                   {/* Card */}
-                  <div className="relative h-full rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 overflow-hidden transition-all duration-500 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02]">
+                  <div className="relative h-full rounded-xl bg-white border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-xl hover:shadow-gray-900/5 hover:-translate-y-1">
                     {/* Content */}
-                    <div className="p-6 space-y-4">
+                    <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                       {/* Header */}
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start justify-between gap-2 sm:gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-white mb-1 line-clamp-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400 transition-all duration-300">
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 sm:mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors">
                             {resource.title}
                           </h3>
                           {resource.description && (
-                            <p className="text-sm text-gray-500 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
                               {resource.description}
                             </p>
                           )}
                         </div>
-                        <div className={`shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-r ${linkConfig.color} text-white text-xs font-medium shadow-lg`}>
-                          {linkConfig.icon} {linkConfig.label}
+                        <div className={`shrink-0 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-gradient-to-r ${linkConfig.color} text-white text-[10px] sm:text-xs font-medium shadow-sm whitespace-nowrap`}>
+                          {linkConfig.label}
                         </div>
                       </div>
 
                       {/* Tags */}
                       {resource.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
                           {resource.tags.slice(0, 3).map((tag, idx) => (
                             <span
                               key={idx}
-                              className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300"
+                              className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                             >
                               {tag}
                             </span>
                           ))}
                           {resource.tags.length > 3 && (
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white/5 text-gray-500 border border-white/10">
+                            <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-500">
                               +{resource.tags.length - 3}
                             </span>
                           )}
@@ -340,35 +330,37 @@ export default function DocumentLibrary2027({ trialOrgId, viewMode = 'both' }: D
                       )}
 
                       {/* Footer */}
-                      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <RelativeTime
                           date={resource.created_at}
-                          className="text-xs text-gray-600"
+                          className="text-xs text-gray-500"
                         />
 
                         {/* Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                           <a
                             href={resource.link_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-110"
+                            className="p-1.5 sm:p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 hover:border-blue-200 transition-all hover:scale-110"
+                            aria-label="Open resource"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </a>
-                          <button className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100">
-                            <MessageCircle className="w-4 h-4" />
+                          <button
+                            className="p-1.5 sm:p-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100"
+                            aria-label="Add comment"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
-                          <button className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100">
-                            <Edit className="w-4 h-4" />
+                          <button
+                            className="p-1.5 sm:p-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all hover:scale-110 sm:opacity-0 sm:group-hover:opacity-100"
+                            aria-label="Edit resource"
+                          >
+                            <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Shine Effect */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-2xl transform translate-x-16 -translate-y-16"></div>
                     </div>
                   </div>
                 </div>

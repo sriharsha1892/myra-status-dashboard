@@ -23,13 +23,14 @@ interface OrgWithUsers extends TrialOrg {
 }
 
 export default function TrialOrganizationsPage() {
-  const { user, loading: authLoading, signOut, role } = useAuth();
+  const { user, loading: authLoading, signOut, role, parent_company, is_super_admin } = useAuth();
   const router = useRouter();
   const [organizations, setOrganizations] = useState<OrgWithUsers[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<OrgWithUsers[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
 
   // Debounce search query for better performance (300ms delay)
@@ -69,7 +70,7 @@ export default function TrialOrganizationsPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [organizations, debouncedSearchQuery, stageFilter]);
+  }, [organizations, debouncedSearchQuery, stageFilter, companyFilter]);
 
   // Update trial end date when start date changes
   useEffect(() => {
@@ -91,7 +92,12 @@ export default function TrialOrganizationsPage() {
       if (role?.toLowerCase() === 'account_manager') {
         query = query.eq('account_manager_id', user?.id);
       }
-      // If Admin or Product: show all orgs (no filter needed)
+
+      // If not super admin: filter by parent company
+      if (!is_super_admin && parent_company) {
+        query = query.eq('parent_company', parent_company);
+      }
+      // If super admin: show all orgs (no company filter)
 
       const { data: orgs, error: orgsError } = await query.order('created_at', { ascending: false });
 
@@ -157,6 +163,11 @@ export default function TrialOrganizationsPage() {
     // Stage filter
     if (stageFilter !== 'all') {
       filtered = filtered.filter((org) => org.org_lifecycle_stage === stageFilter);
+    }
+
+    // Company filter
+    if (companyFilter !== 'all') {
+      filtered = filtered.filter((org) => org.parent_company === companyFilter);
     }
 
     setFilteredOrgs(filtered);
@@ -400,6 +411,15 @@ export default function TrialOrganizationsPage() {
               <p className="text-xs text-gray-500 mt-0.5">Manage and track trial organizations</p>
             </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/support/trials/bulk-edit')}
+              className="flex items-center gap-2 h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <span>Bulk Edit All</span>
+            </button>
             {selectedOrgIds.size > 0 && (
               <button
                 onClick={() => setShowQuickEditPanel(true)}
@@ -655,6 +675,17 @@ export default function TrialOrganizationsPage() {
                   <option value="converted">Converted</option>
                   <option value="churned">Churned</option>
                 </select>
+                {is_super_admin && (
+                  <select
+                    value={companyFilter}
+                    onChange={(e) => setCompanyFilter(e.target.value)}
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Companies</option>
+                    <option value="Mordor Intelligence">MI - Mordor Intelligence</option>
+                    <option value="GMI">GMI</option>
+                  </select>
+                )}
               </div>
 
               {/* Organizations Card Grid - Modern & Engaging */}
@@ -716,10 +747,17 @@ export default function TrialOrganizationsPage() {
                             </p>
                           </div>
 
-                          {/* Stage Badge */}
-                          <div>
+                          {/* Stage Badge & Company Badge */}
+                          <div className="flex flex-wrap gap-2">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStageColor(org.org_lifecycle_stage)}`}>
                               {formatStage(org.org_lifecycle_stage)}
+                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              org.parent_company === 'GMI'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {org.parent_company}
                             </span>
                           </div>
 
@@ -779,7 +817,7 @@ export default function TrialOrganizationsPage() {
                                 'text-gray-700'
                               }`}>
                                 {isExpired ? 'Expired' :
-                                 isExpiringSoon ? `${daysLeft} days left ⚠️` :
+                                 isExpiringSoon ? `${daysLeft} days left` :
                                  `${daysLeft} days left`}
                               </span>
                             </div>

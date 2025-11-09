@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   FolderOpen,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 
@@ -228,8 +229,8 @@ export default function SupportLayout({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <FolderOpen className={`w-5 h-5 shrink-0 ${pathname === '/support/documents' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
-              <span>Documents</span>
+              <Sparkles className={`w-5 h-5 shrink-0 ${pathname === '/support/documents' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <span>Resources</span>
             </Link>
 
             {/* Users - Admin only */}

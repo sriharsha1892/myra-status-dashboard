@@ -12,6 +12,7 @@ import { Modal } from '@/components/support/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
+import CredentialsModal from '@/components/CredentialsModal';
 
 interface User {
   id: string;
@@ -42,6 +43,26 @@ export default function UsersPage() {
     role: 'Team',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [newUserCredentials, setNewUserCredentials] = useState<any>(null);
+
+  // Generate a smart, branded password
+  const generatePassword = () => {
+    const firstName = formData.name.split(' ')[0] || 'User';
+    const year = new Date().getFullYear();
+    const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const password = `${firstName}@${year}!${randomChars}`;
+    setFormData({ ...formData, password });
+    setShowPassword(true);
+    toast.success('Password generated!');
+  };
+
+  // Copy password to clipboard
+  const copyPassword = () => {
+    navigator.clipboard.writeText(formData.password);
+    toast.success('Password copied to clipboard!');
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,8 +125,17 @@ export default function UsersPage() {
       }
 
       const data = await response.json();
-      toast.success(data.message || 'User created successfully');
+
+      // Store credentials and show credentials modal
+      setNewUserCredentials({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+
       setShowAddModal(false);
+      setShowCredentialsModal(true);
       setFormData({ email: '', password: '', name: '', role: 'Team' });
       fetchUsers();
     } catch (error: any) {
@@ -344,16 +374,45 @@ export default function UsersPage() {
             fullWidth
           />
 
-          <Input
-            label="Temporary Password"
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder="Minimum 6 characters"
-            required
-            fullWidth
-            helperText="You'll share this password with the user directly"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Temporary Password
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Minimum 6 characters"
+                  required
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={generatePassword}
+                disabled={!formData.name}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={!formData.name ? "Enter name first" : "Generate password"}
+              >
+                Generate
+              </button>
+              {formData.password && (
+                <button
+                  type="button"
+                  onClick={copyPassword}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                  title="Copy password"
+                >
+                  Copy
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              You'll share this password with the user directly. Click Generate for a smart password like "John@2025!A3x"
+            </p>
+          </div>
 
           <Select
             label="Role"
@@ -443,6 +502,18 @@ export default function UsersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Credentials Modal */}
+      {newUserCredentials && (
+        <CredentialsModal
+          isOpen={showCredentialsModal}
+          onClose={() => {
+            setShowCredentialsModal(false);
+            setNewUserCredentials(null);
+          }}
+          credentials={newUserCredentials}
+        />
+      )}
     </div>
   );
 }

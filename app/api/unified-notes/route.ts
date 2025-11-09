@@ -146,6 +146,43 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
+    // Create notifications for feature proposals (notify all admins)
+    if (entity_type === 'feature_proposal') {
+      try {
+        // Fetch all admin users from Supabase Auth
+        const { data: { users: allUsers }, error: usersError } = await supabase.auth.admin.listUsers();
+
+        if (!usersError && allUsers) {
+          const adminUsers = allUsers.filter(u => u.user_metadata?.role === 'Admin');
+
+          // Create notifications for each admin
+          const adminNotifications = adminUsers
+            .filter(admin => admin.id !== user.id) // Don't notify the proposer
+            .map(admin => ({
+              user_id: admin.id,
+              entity_type: 'feature_proposal',
+              entity_id: data.id,
+              entity_title: entity_title || 'Feature Proposal',
+              notification_type: 'feature_proposal',
+              actor_id: user.id,
+              title: `New Feature Proposal`,
+              message: plain_text?.substring(0, 200) || '',
+              action_url: `/support/feature-proposals/${data.id}`,
+              priority_score: 80, // High priority for feature proposals
+              thread_key: `feature_proposal:${data.id}`,
+              status: 'unread'
+            }));
+
+          if (adminNotifications.length > 0) {
+            await supabase.from('notifications').insert(adminNotifications);
+          }
+        }
+      } catch (notifError) {
+        console.error('Error creating feature proposal notifications:', notifError);
+        // Don't fail the note creation if notifications fail
+      }
+    }
+
     // Create notifications for mentions if any
     if (mentioned_user_ids && mentioned_user_ids.length > 0) {
       const notifications = mentioned_user_ids.map((userId: string) => ({

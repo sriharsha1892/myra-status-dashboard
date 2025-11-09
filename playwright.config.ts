@@ -14,13 +14,28 @@ export default defineConfig({
   },
 
   projects: [
+    // Setup project for authentication
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+    },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use stored auth state for all tests
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // Use stored auth state for all tests
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
     },
   ],
 

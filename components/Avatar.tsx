@@ -4,15 +4,16 @@ interface AvatarProps {
   name: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   type?: 'user' | 'org';
-  stage?: 'invited' | 'onboarding' | 'active' | 'inactive';
+  stage?: 'invited' | 'low_activity' | 'active' | 'power_user' | 'dormant';
   className?: string;
 }
 
 const STAGE_COLORS = {
-  invited: 'from-blue-400 to-blue-600',
-  onboarding: 'from-purple-400 to-purple-600',
+  invited: 'from-gray-400 to-gray-600',
+  low_activity: 'from-blue-400 to-blue-600',
   active: 'from-green-400 to-green-600',
-  inactive: 'from-gray-400 to-gray-600',
+  power_user: 'from-purple-400 to-purple-600',
+  dormant: 'from-gray-400 to-gray-600',
 };
 
 const SIZE_CLASSES = {
@@ -89,13 +90,21 @@ export default function Avatar({ name, size = 'md', type = 'user', stage, classN
           <div className="absolute inset-0 w-full h-full bg-green-400 rounded-full animate-ping opacity-75" />
         </div>
       )}
+
+      {/* Power user pulse with purple color */}
+      {stage === 'power_user' && (
+        <div className="absolute -top-0.5 -right-0.5 w-3 h-3">
+          <div className="w-full h-full bg-purple-400 rounded-full animate-pulse" />
+          <div className="absolute inset-0 w-full h-full bg-purple-400 rounded-full animate-ping opacity-75" />
+        </div>
+      )}
     </div>
   );
 }
 
 // Avatar Group Component for showing multiple avatars
 interface AvatarGroupProps {
-  avatars: Array<{ name: string; stage?: 'invited' | 'onboarding' | 'active' | 'inactive' }>;
+  avatars: Array<{ name: string; stage?: 'invited' | 'low_activity' | 'active' | 'power_user' | 'dormant' }>;
   max?: number;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }

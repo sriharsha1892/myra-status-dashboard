@@ -19,9 +19,12 @@ interface User {
   status: 'Active' | 'Invited' | 'Pending';
   created_at: string;
   last_sign_in_at: string | null;
+  parent_company: string;
+  is_super_admin: boolean;
 }
 
 const ROLES = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'] as const;
+const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'] as const;
 
 export default function UsersPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
@@ -33,7 +36,9 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
   const [signupLink, setSignupLink] = useState('');
-  const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const });
+  const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const, parent_company: 'Mordor Intelligence' as const });
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Debounce search query for better performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -83,7 +88,9 @@ export default function UsersPage() {
       console.log('🔍 DEBUG: API returned users:', data.users?.length, 'users');
       console.log('🔍 DEBUG: Pending users:', data.users?.filter((u: any) => u.status === 'Pending').length);
       console.log('🔍 DEBUG: Full user list:', data.users);
+      console.log('🔍 DEBUG: Is Super Admin:', data.is_super_admin);
       setUsers(data.users || []);
+      setIsSuperAdmin(data.is_super_admin || false);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -93,6 +100,12 @@ export default function UsersPage() {
   };
 
   const filteredUsers = users.filter((u) => {
+    // Company filter
+    if (companyFilter !== 'all' && u.parent_company !== companyFilter) {
+      return false;
+    }
+
+    // Search filter
     if (debouncedSearchQuery) {
       const query = debouncedSearchQuery.toLowerCase();
       return (
@@ -153,6 +166,7 @@ export default function UsersPage() {
           email: newUser.email,
           name: newUser.name,
           role: newUser.role,
+          parent_company: newUser.parent_company,
         }),
       });
 
@@ -173,7 +187,7 @@ export default function UsersPage() {
         customQuote: 'Play long-term games with long-term people'
       });
 
-      setNewUser({ email: '', name: '', role: 'Team' });
+      setNewUser({ email: '', name: '', role: 'Team', parent_company: 'Mordor Intelligence' });
     } catch (error: any) {
       toast.error(error.message || 'Failed to create signup link');
     }
@@ -255,6 +269,20 @@ export default function UsersPage() {
               <p className="text-xs text-gray-500 mt-0.5">Manage team access and permissions</p>
             </div>
             <div className="flex items-center gap-3">
+              {isSuperAdmin && (
+                <select
+                  value={companyFilter}
+                  onChange={(e) => setCompanyFilter(e.target.value)}
+                  className="h-10 px-4 text-sm bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                >
+                  <option value="all">All Companies</option>
+                  {PARENT_COMPANIES.map((company) => (
+                    <option key={company} value={company}>
+                      {company === 'Mordor Intelligence' ? 'MI - Mordor Intelligence' : 'GMI'}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="relative">
               <input
                 type="text"
@@ -384,6 +412,9 @@ export default function UsersPage() {
                         User
                       </th>
                       <th className="h-12 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Company
+                      </th>
+                      <th className="h-12 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                         Role
                       </th>
                       <th className="h-12 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
@@ -410,10 +441,35 @@ export default function UsersPage() {
                               {u.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-gray-900">{u.name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900">{u.name}</span>
+                                {u.is_super_admin && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L4 7.723V8a1 1 0 01-2 0V6a.996.996 0 01.52-.878l1.734-.99a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.733.99A1.002 1.002 0 0118 6v2a1 1 0 11-2 0v-.277l-.254.145a1 1 0 11-.992-1.736l.23-.132-.23-.132a1 1 0 01-.372-1.364zm-7 4a1 1 0 011.364-.372L10 8.848l1.254-.716a1 1 0 11.992 1.736L11 10.58V12a1 1 0 11-2 0v-1.42l-1.246-.712a1 1 0 01-.372-1.364zM3 11a1 1 0 011 1v1.42l1.246.712a1 1 0 11-.992 1.736l-1.75-1A1 1 0 012 14v-2a1 1 0 011-1zm14 0a1 1 0 011 1v2a1 1 0 01-.504.868l-1.75 1a1 1 0 11-.992-1.736L16 13.42V12a1 1 0 011-1zm-9.618 5.504a1 1 0 011.364-.372l.254.145V16a1 1 0 112 0v.277l.254-.145a1 1 0 11.992 1.736l-1.735.992a.995.995 0 01-1.022 0l-1.735-.992a1 1 0 01-.372-1.364z" clipRule="evenodd" />
+                                    </svg>
+                                    SUPER ADMIN
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-gray-500">{u.email}</div>
                             </div>
                           </div>
+                        </td>
+                        <td className="h-16 px-6">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                              u.parent_company === 'GMI'
+                                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm'
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
+                            }`}
+                            title={u.parent_company}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                            </svg>
+                            {u.parent_company === 'Mordor Intelligence' ? 'MI' : 'GMI'}
+                          </span>
                         </td>
                         <td className="h-16 px-6">
                           {u.status === 'Pending' ? (
@@ -535,6 +591,21 @@ export default function UsersPage() {
                   {ROLES.map((role) => (
                     <option key={role} value={role}>
                       {role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Parent Company</label>
+                <select
+                  value={newUser.parent_company}
+                  onChange={(e) => setNewUser({ ...newUser, parent_company: e.target.value as any })}
+                  className="w-full h-11 px-4 text-sm bg-white border-2 border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none"
+                >
+                  {PARENT_COMPANIES.map((company) => (
+                    <option key={company} value={company}>
+                      {company}
                     </option>
                   ))}
                 </select>

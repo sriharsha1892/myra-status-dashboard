@@ -216,7 +216,7 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
             <h2 className="text-sm font-semibold text-slate-900">What Needs Attention</h2>
           </div>
           <span className="text-[10px] text-slate-500 uppercase tracking-wide">
-            First Principles
+            Priority Focus
           </span>
         </div>
 

@@ -11,6 +11,8 @@ interface UseAuthReturn {
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   role: 'AM' | 'Team' | 'Admin' | null;
+  parent_company: string;
+  is_super_admin: boolean;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -75,6 +77,8 @@ export function useAuth(): UseAuthReturn {
   };
 
   const role = user?.user_metadata?.role || null;
+  const parent_company = user?.user_metadata?.parent_company || 'Mordor Intelligence';
+  const is_super_admin = user?.user_metadata?.is_super_admin || false;
 
   return {
     user,
@@ -82,5 +86,7 @@ export function useAuth(): UseAuthReturn {
     signIn,
     signOut,
     role,
+    parent_company,
+    is_super_admin,
   };
 }

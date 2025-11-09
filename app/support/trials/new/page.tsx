@@ -61,6 +61,8 @@ export default function CreateOrganizationPage() {
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const supabase = createClient();
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');

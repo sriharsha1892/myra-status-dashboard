@@ -18,44 +18,28 @@ interface PlatformUser {
   name: string;
   email: string;
   role: string | null;
-  phone: string | null;
   salesforce_id: string | null;
   current_stage: string;
   account_manager: string;
-  sales_poc: string | null;
   created_at: string;
   last_active_at: string | null;
   invited_at: string;
 }
 
 const JOURNEY_STAGES = [
-  { value: 'invited', label: 'Invited', color: 'gray' },
-  { value: 'onboarding', label: 'Onboarding', color: 'blue' },
-  { value: 'exploring', label: 'Exploring', color: 'cyan' },
-  { value: 'building', label: 'Building', color: 'purple' },
-  { value: 'testing', label: 'Testing', color: 'yellow' },
-  { value: 'integrating', label: 'Integrating', color: 'orange' },
-  { value: 'pilot', label: 'Pilot', color: 'indigo' },
-  { value: 'evaluating', label: 'Evaluating', color: 'pink' },
-  { value: 'production_ready', label: 'Production Ready', color: 'green' },
-  { value: 'blocked', label: 'Blocked', color: 'red' },
-  { value: 'stalled', label: 'Stalled', color: 'amber' },
-  { value: 'inactive', label: 'Inactive', color: 'gray-400' },
+  { value: 'invited', label: 'Invited', color: 'gray', description: 'Never logged in, credentials sent' },
+  { value: 'low_activity', label: 'Low Activity', color: 'blue', description: 'Logged in but minimal activity' },
+  { value: 'active', label: 'Active', color: 'green', description: 'Regular, consistent usage' },
+  { value: 'power_user', label: 'Power User', color: 'purple', description: 'Heavy usage, advanced adoption' },
+  { value: 'dormant', label: 'Dormant', color: 'gray-400', description: 'Previously active, now inactive' },
 ];
 
 const STAGE_COLORS: Record<string, string> = {
   invited: 'bg-gray-100 text-gray-700',
-  onboarding: 'bg-blue-100 text-blue-700',
-  exploring: 'bg-cyan-100 text-cyan-700',
-  building: 'bg-purple-100 text-purple-700',
-  testing: 'bg-yellow-100 text-yellow-700',
-  integrating: 'bg-orange-100 text-orange-700',
-  pilot: 'bg-indigo-100 text-indigo-700',
-  evaluating: 'bg-pink-100 text-pink-700',
-  production_ready: 'bg-green-100 text-green-700',
-  blocked: 'bg-red-100 text-red-700',
-  stalled: 'bg-amber-100 text-amber-700',
-  inactive: 'bg-gray-100 text-gray-600',
+  low_activity: 'bg-blue-100 text-blue-700',
+  active: 'bg-green-100 text-green-700',
+  power_user: 'bg-purple-100 text-purple-700',
+  dormant: 'bg-gray-100 text-gray-600',
 };
 
 type TabType = 'overview' | 'activities' | 'topics' | 'issues';
@@ -240,22 +224,10 @@ export default function UserDetailPage() {
               <label className="text-sm font-medium text-gray-600">Account Manager</label>
               <p className="text-lg text-gray-900 mt-1">{user.account_manager}</p>
             </div>
-            {user.sales_poc && (
-              <div>
-                <label className="text-sm font-medium text-gray-600">Sales POC</label>
-                <p className="text-lg text-gray-900 mt-1">{user.sales_poc}</p>
-              </div>
-            )}
             {user.salesforce_id && (
               <div>
                 <label className="text-sm font-medium text-gray-600">Salesforce ID</label>
                 <p className="text-lg text-gray-900 mt-1 font-mono">{user.salesforce_id}</p>
-              </div>
-            )}
-            {user.phone && (
-              <div>
-                <label className="text-sm font-medium text-gray-600">Phone</label>
-                <p className="text-lg text-gray-900 mt-1">{user.phone}</p>
               </div>
             )}
             <div>

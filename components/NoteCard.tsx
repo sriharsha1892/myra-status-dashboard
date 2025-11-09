@@ -184,10 +184,28 @@ export default function NoteCard({
         {/* Note Content */}
         <div className="px-4 pb-3">
           <div
-            className="prose prose-sm dark:prose-invert max-w-none"
+            className="prose prose-sm dark:prose-invert max-w-none note-content"
             dangerouslySetInnerHTML={{ __html: note.content }}
           />
         </div>
+
+        {/* Global Mention Styles */}
+        <style jsx global>{`
+          .note-content .mention {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            white-space: nowrap;
+          }
+
+          .dark .note-content .mention {
+            background: #1e3a8a;
+            color: #93c5fd;
+          }
+        `}</style>
 
         {/* Note Actions */}
         {!isReply && (
