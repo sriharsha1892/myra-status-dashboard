@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Flag, User, Clock, Edit2, Check } from 'lucide-react';
+import { X, Calendar, Flag, User, Clock, Edit2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -82,6 +82,13 @@ export default function RoadmapDetailPanel({
   const [editingDescription, setEditingDescription] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
   const [tempDescription, setTempDescription] = useState('');
+
+  // Collapsible sections state
+  const [sectionsExpanded, setSectionsExpanded] = useState({
+    details: true,
+    relationships: true,
+    metadata: false,
+  });
 
   const supabase = createClient();
 
@@ -368,42 +375,87 @@ export default function RoadmapDetailPanel({
                     </div>
                   </div>
 
-                  {/* Labels */}
+                  {/* Details Section */}
                   <div className="pt-4 border-t border-gray-200">
-                    <LabelManager
-                      orgId={orgId}
-                      selectedLabelIds={item.label_ids || []}
-                      onLabelsChange={async (labelIds) => {
-                        await updateField('label_ids', labelIds.length > 0 ? labelIds : null);
-                      }}
-                    />
+                    <button
+                      onClick={() =>
+                        setSectionsExpanded((prev) => ({ ...prev, details: !prev.details }))
+                      }
+                      className="flex items-center justify-between w-full text-left group mb-3"
+                    >
+                      <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        Details
+                      </h4>
+                      {sectionsExpanded.details ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                      )}
+                    </button>
+
+                    {sectionsExpanded.details && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {/* Labels */}
+                        <LabelManager
+                          orgId={orgId}
+                          selectedLabelIds={item.label_ids || []}
+                          onLabelsChange={async (labelIds) => {
+                            await updateField('label_ids', labelIds.length > 0 ? labelIds : null);
+                          }}
+                        />
+
+                        {/* Milestone */}
+                        <MilestoneManager
+                          orgId={orgId}
+                          selectedMilestoneId={item.milestone_id}
+                          onMilestoneChange={async (milestoneId) => {
+                            await updateField('milestone_id', milestoneId);
+                          }}
+                          showProgress={false}
+                        />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Milestone */}
+                  {/* Relationships Section */}
                   <div className="pt-4 border-t border-gray-200">
-                    <MilestoneManager
-                      orgId={orgId}
-                      selectedMilestoneId={item.milestone_id}
-                      onMilestoneChange={async (milestoneId) => {
-                        await updateField('milestone_id', milestoneId);
-                      }}
-                      showProgress={false}
-                    />
-                  </div>
+                    <button
+                      onClick={() =>
+                        setSectionsExpanded((prev) => ({ ...prev, relationships: !prev.relationships }))
+                      }
+                      className="flex items-center justify-between w-full text-left group mb-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          Relationships
+                        </h4>
+                        {((item.blocked_by_ids?.length || 0) + (item.blocks_ids?.length || 0)) > 0 && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                            {(item.blocked_by_ids?.length || 0) + (item.blocks_ids?.length || 0)}
+                          </span>
+                        )}
+                      </div>
+                      {sectionsExpanded.relationships ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                      )}
+                    </button>
 
-                  {/* Dependencies */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Dependencies</h4>
-                    <DependencyManager
-                      itemId={itemId}
-                      orgId={orgId}
-                      currentItem={item}
-                      allItems={allItems}
-                      onUpdate={() => {
-                        fetchItem();
-                        onUpdate?.();
-                      }}
-                    />
+                    {sectionsExpanded.relationships && (
+                      <div className="animate-in fade-in slide-in-from-top-1 duration-150">
+                        <DependencyManager
+                          itemId={itemId}
+                          orgId={orgId}
+                          currentItem={item}
+                          allItems={allItems}
+                          onUpdate={() => {
+                            fetchItem();
+                            onUpdate?.();
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Metadata */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -11,6 +11,10 @@ import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
 import RoadmapFilters from './roadmap/RoadmapFilters';
 import RoadmapAnalytics from './roadmap/RoadmapAnalytics';
 import CalendarView from './roadmap/CalendarView';
+import QuickStats from './roadmap/QuickStats';
+import { GridSkeleton, StatsSkeleton } from './roadmap/RoadmapSkeleton';
+import KeyboardShortcuts from './roadmap/KeyboardShortcuts';
+import { STATUS_CONFIG, PRIORITY_CONFIG, ANIMATIONS } from '@/lib/roadmap/constants';
 
 interface RoadmapItem {
   id: string;
@@ -77,6 +81,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -247,8 +252,9 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <StatsSkeleton />
+        <GridSkeleton count={6} />
       </div>
     );
   }
@@ -348,6 +354,11 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         />
       )}
 
+      {/* Quick Stats */}
+      {viewMode !== 'analytics' && (
+        <QuickStats items={filteredItems} allItems={items} />
+      )}
+
       {/* Content */}
       {viewMode === 'analytics' ? (
         <RoadmapAnalytics items={items} />
@@ -385,61 +396,115 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                 const priorityConfig = PRIORITY_CONFIG[item.priority];
                 const isBlocked = hasActiveBlockers(item);
 
+                // Calculate counts for indicators
+                const blockerCount = item.blocked_by_ids?.length || 0;
+                const linkedCount = item.linked_features?.length || 0;
+                const labelCount = item.label_ids?.length || 0;
+
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-lg border-2 p-4 ${getStatusColor(
-                      item.status
-                    )} cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01]`}
+                    className={`
+                      rounded-lg border-2 p-4 bg-white cursor-pointer
+                      ${statusConfig.color.bg} ${statusConfig.color.border} ${statusConfig.color.borderLeft}
+                      ${ANIMATIONS.card.hover} ${ANIMATIONS.card.active}
+                    `}
                     onClick={() => setSelectedItemId(item.id)}
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{statusConfig.icon}</span>
-                          <h4 className="text-lg font-semibold text-gray-900">{item.title}</h4>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    {item.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                    )}
-
-                    {/* Priority Badge */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${getPriorityColor(
-                          item.priority
-                        )}`}
-                      >
-                        {priorityConfig.icon} {priorityConfig.label}
-                      </span>
-                      {isBlocked && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Blocked
+                    {/* Header: Title + Progress */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h4 className="text-base font-semibold text-gray-900 flex-1 line-clamp-2">
+                        {item.title}
+                      </h4>
+                      {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
+                        <span className="text-xs font-semibold text-gray-600 shrink-0">
+                          {item.progress_percentage}%
                         </span>
                       )}
                     </div>
 
-                    {/* Dates */}
-                    <div className="text-xs text-gray-500 space-y-1">
-                      {item.target_date && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Target:</span>
-                          <span>{format(new Date(item.target_date), 'MMM d, yyyy')}</span>
-                        </div>
+                    {/* Separator */}
+                    <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-3" />
+
+                    {/* Metadata: Labels + Date */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                      {item.label_ids && item.label_ids.length > 0 && (
+                        <span className="font-medium">
+                          {labels.find(l => l.id === item.label_ids![0])?.name || 'Label'}
+                        </span>
                       )}
-                      {item.estimated_completion_date && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Est. Complete:</span>
-                          <span>
-                            {format(new Date(item.estimated_completion_date), 'MMM d, yyyy')}
+                      {item.label_ids && item.label_ids.length > 0 && item.target_date && (
+                        <span>•</span>
+                      )}
+                      {item.target_date && (
+                        <span>{format(new Date(item.target_date), 'MMM d, yyyy')}</span>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    {item.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {item.description}
+                      </p>
+                    )}
+
+                    {/* Progress Bar */}
+                    {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
+                      <div className="mb-3">
+                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              item.progress_percentage === 100
+                                ? 'bg-green-500'
+                                : statusConfig.color.dot
+                            }`}
+                            style={{ width: `${item.progress_percentage}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[10px] font-medium ${statusConfig.color.text}`}>
+                            {statusConfig.label}
                           </span>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Indicators */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Priority Badge */}
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${priorityConfig.color.bg} ${priorityConfig.color.text} ${priorityConfig.color.border}`}
+                      >
+                        {priorityConfig.icon} {priorityConfig.label}
+                      </span>
+
+                      {/* Blocker Indicator */}
+                      {isBlocked && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">
+                          <AlertCircle className="w-3 h-3" />
+                          {blockerCount}
+                        </span>
+                      )}
+
+                      {/* Linked Items */}
+                      {linkedCount > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
+                          🔗 {linkedCount}
+                        </span>
+                      )}
+
+                      {/* Label Count */}
+                      {labelCount > 1 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
+                          🏷️ {labelCount}
+                        </span>
+                      )}
+
+                      {/* Milestone */}
+                      {item.milestone_id && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
+                          🎯
+                        </span>
                       )}
                     </div>
                   </div>
@@ -468,6 +533,24 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         allItems={items}
         labels={labels}
         milestones={milestones}
+      />
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts
+        onNewItem={() => setShowAddModal(true)}
+        onToggleFilters={() => {
+          // Scroll to filters section
+          const filtersElement = document.querySelector('[data-roadmap-filters]');
+          if (filtersElement) {
+            filtersElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }}
+        onFocusSearch={() => {
+          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+          if (searchInput) {
+            searchInput.focus();
+          }
+        }}
       />
     </div>
   );
