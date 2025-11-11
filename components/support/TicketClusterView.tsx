@@ -63,7 +63,7 @@ const getLinkTypeIcon = (linkType: string) => {
 const getLinkTypeBadgeClass = (linkType: string) => {
   switch (linkType) {
     case 'duplicate':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
+      return 'bg-accent-50 text-accent-700 border-accent-200';
     case 'blocks':
       return 'bg-red-50 text-red-700 border-red-200';
     case 'blocked_by':
@@ -120,7 +120,7 @@ export function TicketClusterView({
       {/* Parent Ticket */}
       <div
         className={`rounded-lg ${
-          isDuplicate ? 'bg-gray-100' : isBlocked ? 'border-l-4 border-orange-400' : ''
+          isDuplicate ? 'bg-gray-100' : ''
         }`}
       >
         <div className="flex items-center gap-2 mb-2">

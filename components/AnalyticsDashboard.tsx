@@ -153,8 +153,8 @@ export default function AnalyticsDashboard({ orgId }: AnalyticsDashboardProps) {
               <p className="text-xs font-medium text-green-700 mb-1">Completed</p>
               <p className="text-2xl font-bold text-green-900">{roadmapAnalytics.completed}</p>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
-              <p className="text-xs font-medium text-purple-700 mb-1">Planned</p>
+            <div className="bg-gradient-to-br from-accent-50 to-purple-100 border border-accent-200 rounded-lg p-4">
+              <p className="text-xs font-medium text-accent-700 mb-1">Planned</p>
               <p className="text-2xl font-bold text-purple-900">{roadmapAnalytics.planned}</p>
             </div>
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-lg p-4">
@@ -241,8 +241,8 @@ export default function AnalyticsDashboard({ orgId }: AnalyticsDashboardProps) {
               <p className="text-xs font-medium text-green-700 mb-1">Completed</p>
               <p className="text-2xl font-bold text-green-900">{featureAnalytics.completed}</p>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
-              <p className="text-xs font-medium text-purple-700 mb-1">In Progress</p>
+            <div className="bg-gradient-to-br from-accent-50 to-purple-100 border border-accent-200 rounded-lg p-4">
+              <p className="text-xs font-medium text-accent-700 mb-1">In Progress</p>
               <p className="text-2xl font-bold text-purple-900">{featureAnalytics.inProgress}</p>
             </div>
           </div>

@@ -14,7 +14,7 @@ const PRIORITY_OPTIONS = [
   { value: 'Critical', label: 'Critical', color: 'bg-red-50 text-red-700', dot: 'bg-red-600' },
   { value: 'High', label: 'High', color: 'bg-orange-50 text-orange-700', dot: 'bg-orange-600' },
   { value: 'Medium', label: 'Medium', color: 'bg-yellow-50 text-yellow-700', dot: 'bg-yellow-600' },
-  { value: 'Low', label: 'Low', color: 'bg-slate-50 text-slate-700', dot: 'bg-slate-600' },
+  { value: 'Low', label: 'Low', color: 'bg-neutral-50 text-neutral-700', dot: 'bg-slate-600' },
 ];
 
 export default function InlinePrioritySelect({
@@ -98,7 +98,7 @@ export default function InlinePrioritySelect({
         onClick={handleButtonClick}
         disabled={isSaving}
         className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${
-          currentOption?.color || 'bg-slate-50 text-slate-700'
+          currentOption?.color || 'bg-neutral-50 text-neutral-700'
         } ${
           isOpen ? 'ring-2 ring-blue-600/20' : 'hover:opacity-80'
         } ${
@@ -128,7 +128,7 @@ export default function InlinePrioritySelect({
       {isOpen && !isSaving && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden"
+          className="absolute left-0 top-full mt-1 w-40 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden"
         >
           <div className="py-1">
             {PRIORITY_OPTIONS.map((option) => (
@@ -141,7 +141,7 @@ export default function InlinePrioritySelect({
                 className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors ${
                   option.value === selectedPriority
                     ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-50'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 {option.value === 'Critical' ? (

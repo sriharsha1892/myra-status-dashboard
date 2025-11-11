@@ -15,7 +15,7 @@ const STATUS_OPTIONS = [
   { value: 'In Progress', label: 'In Progress', color: 'bg-amber-50 text-amber-700' },
   { value: 'Waiting on User', label: 'Waiting on User', color: 'bg-orange-50 text-orange-700' },
   { value: 'Resolved', label: 'Resolved', color: 'bg-green-50 text-green-700' },
-  { value: 'Closed', label: 'Closed', color: 'bg-slate-50 text-slate-700' },
+  { value: 'Closed', label: 'Closed', color: 'bg-neutral-50 text-neutral-700' },
 ];
 
 export default function InlineStatusSelect({
@@ -99,7 +99,7 @@ export default function InlineStatusSelect({
         onClick={handleButtonClick}
         disabled={isSaving}
         className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${
-          currentOption?.color || 'bg-slate-50 text-slate-700'
+          currentOption?.color || 'bg-neutral-50 text-neutral-700'
         } ${
           isOpen ? 'ring-2 ring-blue-600/20' : 'hover:opacity-80'
         } ${
@@ -124,7 +124,7 @@ export default function InlineStatusSelect({
       {isOpen && !isSaving && (
         <div
           ref={dropdownRef}
-          className="absolute left-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden"
+          className="absolute left-0 top-full mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden"
         >
           <div className="py-1">
             {STATUS_OPTIONS.map((option) => (
@@ -137,7 +137,7 @@ export default function InlineStatusSelect({
                 className={`w-full flex items-center px-3 py-2 text-sm text-left transition-colors ${
                   option.value === selectedStatus
                     ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-50'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full mr-2.5 ${

@@ -162,9 +162,9 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white rounded-xl border border-neutral-200 p-5">
         <div className="flex items-center justify-center py-8">
-          <Activity className="w-5 h-5 text-slate-400 animate-pulse" />
+          <Activity className="w-5 h-5 text-neutral-400 animate-pulse" />
         </div>
       </div>
     );
@@ -173,49 +173,49 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
   return (
     <div className="space-y-4">
       {/* Impact Summary - Minimal, Focused */}
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-slate-200 p-5">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-neutral-200 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="w-4 h-4 text-blue-600" />
-          <h2 className="text-sm font-semibold text-slate-900">Your Impact</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Your Impact</h2>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
-            <div className="text-2xl font-bold text-slate-900">{stats.activeTrials}</div>
-            <div className="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Active</div>
+            <div className="text-2xl font-bold text-neutral-900">{stats.activeTrials === 0 ? '—' : stats.activeTrials}</div>
+            <div className="text-[10px] text-neutral-600 uppercase tracking-wide mt-1">Active</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.closedDeals}</div>
-            <div className="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Closed</div>
+            <div className="text-2xl font-bold text-green-600">{stats.closedDeals === 0 ? '—' : stats.closedDeals}</div>
+            <div className="text-[10px] text-neutral-600 uppercase tracking-wide mt-1">Closed</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-amber-600">{stats.pendingActions}</div>
-            <div className="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Urgent</div>
+            <div className="text-2xl font-bold text-amber-600">{stats.pendingActions === 0 ? '—' : stats.pendingActions}</div>
+            <div className="text-[10px] text-neutral-600 uppercase tracking-wide mt-1">Urgent</div>
           </div>
         </div>
 
         {/* Insight Quote */}
-        <div className="mt-4 pt-4 border-t border-slate-200">
+        <div className="mt-4 pt-4 border-t border-neutral-200">
           <div className="flex items-start gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-accent-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-xs text-slate-700 leading-relaxed italic">
+              <p className="text-xs text-neutral-700 leading-relaxed italic">
                 "{randomInsight.text}"
               </p>
-              <p className="text-[10px] text-slate-500 mt-1">— {randomInsight.author}</p>
+              <p className="text-[10px] text-neutral-500 mt-1">— {randomInsight.author}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Contextual Activity Feed */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5">
+      <div className="bg-white rounded-xl border border-neutral-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-slate-900">What Needs Attention</h2>
+            <h2 className="text-sm font-semibold text-neutral-900">What Needs Attention</h2>
           </div>
-          <span className="text-[10px] text-slate-500 uppercase tracking-wide">
+          <span className="text-[10px] text-neutral-500 uppercase tracking-wide">
             Priority Focus
           </span>
         </div>
@@ -223,8 +223,8 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
         {contextualFeed.length === 0 ? (
           <div className="text-center py-8">
             <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="text-xs text-slate-600 mb-1">All caught up!</p>
-            <p className="text-[10px] text-slate-500 italic">"The best work happens in the margins"</p>
+            <p className="text-xs text-neutral-600 mb-1">All caught up!</p>
+            <p className="text-[10px] text-neutral-500 italic">"The best work happens in the margins"</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -242,11 +242,11 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-900 mb-1 leading-tight">
+                      <p className="text-xs font-medium text-neutral-900 mb-1 leading-tight">
                         {item.title}
                       </p>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] text-slate-600">
+                        <p className="text-[10px] text-neutral-600">
                           {item.context}
                         </p>
                         <div className="flex items-center gap-1 text-[10px] font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -264,8 +264,8 @@ export default function PersonalImpactWidget({ userId, role }: PersonalImpactWid
 
         {/* Action Principle */}
         {contextualFeed.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <p className="text-[10px] text-slate-500 text-center italic">
+          <div className="mt-4 pt-4 border-t border-neutral-200">
+            <p className="text-[10px] text-neutral-500 text-center italic">
               "Focus is more about saying no to the good ideas than saying yes to the great ones"
             </p>
           </div>

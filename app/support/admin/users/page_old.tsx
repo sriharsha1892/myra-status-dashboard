@@ -47,7 +47,7 @@ export default function UsersPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
-    } else if (!authLoading && role?.toLowerCase() !== 'admin') {
+    } else if (!authLoading && role !== 'Admin') {
       router.push('/support/dashboard');
       toast.error('Admin access required');
     }
@@ -171,7 +171,7 @@ export default function UsersPage() {
     }
   };
 
-  if (authLoading || (user && role?.toLowerCase() !== 'admin')) {
+  if (authLoading || (user && role !== 'Admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600 dark:text-gray-400">Loading...</div>

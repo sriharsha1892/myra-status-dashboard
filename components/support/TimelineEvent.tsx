@@ -34,7 +34,7 @@ const eventConfig = {
   },
   status_changed: {
     icon: ArrowRight,
-    color: 'bg-purple-500',
+    color: 'bg-accent-500',
     textColor: 'text-purple-500',
     borderColor: 'border-purple-500',
   },
@@ -167,7 +167,7 @@ export function TimelineEvent({
               )}
               <ArrowRight className="w-3 h-3 text-gray-400" />
               {newValue && (
-                <span className="px-2 py-1 text-xs rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 font-medium">
+                <span className="px-2 py-1 text-xs rounded-md bg-accent-50 dark:bg-purple-900/20 text-accent-700 dark:text-purple-300 border border-accent-200 dark:border-purple-700 font-medium">
                   {newValue}
                 </span>
               )}

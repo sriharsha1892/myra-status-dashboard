@@ -167,11 +167,11 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
         };
       case 'purple':
         return {
-          bg: 'bg-purple-50',
-          border: 'border-purple-200',
-          text: 'text-purple-700',
-          icon: 'text-purple-600',
-          hover: 'hover:border-purple-300 hover:bg-purple-50/80'
+          bg: 'bg-accent-50',
+          border: 'border-accent-200',
+          text: 'text-accent-700',
+          icon: 'text-accent-600',
+          hover: 'hover:border-purple-300 hover:bg-accent-50/80'
         };
     }
   };
@@ -179,22 +179,22 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
   const getTrendIcon = (trend?: InsightMetric['trend']) => {
     if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2} />;
     if (trend === 'down') return <TrendingDown className="w-3.5 h-3.5 text-red-600" strokeWidth={2} />;
-    return <Minus className="w-3.5 h-3.5 text-slate-400" strokeWidth={2} />;
+    return <Minus className="w-3.5 h-3.5 text-neutral-400" strokeWidth={2} />;
   };
 
   if (loading) {
     return (
-      <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6">
+      <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-200 p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" strokeWidth={1.5} />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">Quick Insights</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Quick Insights</h2>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-20 bg-slate-100 rounded-lg" />
+              <div className="h-20 bg-neutral-100 rounded-lg" />
             </div>
           ))}
         </div>
@@ -203,7 +203,7 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
   }
 
   return (
-    <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 p-6">
+    <div className="relative bg-white/80 backdrop-blur-sm rounded-xl border border-neutral-200 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -211,8 +211,8 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
             <Sparkles className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Quick Insights</h2>
-            <p className="text-xs text-slate-500">Your key metrics</p>
+            <h2 className="text-sm font-semibold text-neutral-900">Quick Insights</h2>
+            <p className="text-xs text-neutral-500">Your key metrics</p>
           </div>
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
                   <span className={`text-xs font-semibold ${
                     insight.trend === 'up' ? 'text-emerald-600' :
                     insight.trend === 'down' ? 'text-red-600' :
-                    'text-slate-500'
+                    'text-neutral-500'
                   }`}>
                     {insight.change > 0 ? '+' : ''}{insight.change}%
                   </span>
@@ -246,7 +246,7 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
 
               {/* Content */}
               <div className="pr-16">
-                <p className="text-xs font-medium text-slate-600 mb-2">
+                <p className="text-xs font-medium text-neutral-600 mb-2">
                   {insight.title}
                 </p>
                 <p className={`text-2xl font-bold ${colors.text} mb-1`}>
@@ -254,8 +254,8 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
                 </p>
                 {insight.action && (
                   <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <span className="text-xs font-medium text-slate-600">{insight.action}</span>
-                    <ArrowRight className="w-3 h-3 text-slate-600" strokeWidth={2} />
+                    <span className="text-xs font-medium text-neutral-600">{insight.action}</span>
+                    <ArrowRight className="w-3 h-3 text-neutral-600" strokeWidth={2} />
                   </div>
                 )}
               </div>
@@ -265,8 +265,8 @@ export default function QuickInsights({ userId, role }: { userId?: string; role?
       </div>
 
       {/* Footer tip */}
-      <div className="mt-4 pt-4 border-t border-slate-200">
-        <p className="text-xs text-slate-500 text-center">
+      <div className="mt-4 pt-4 border-t border-neutral-200">
+        <p className="text-xs text-neutral-500 text-center">
           💡 Click any metric for details
         </p>
       </div>

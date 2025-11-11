@@ -103,7 +103,7 @@ export function UserProfilePanel({ userId, isOpen, onClose }: UserProfilePanelPr
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'Admin':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-accent-100 text-accent-700';
       case 'Team':
         return 'bg-blue-100 text-blue-700';
       case 'AM':

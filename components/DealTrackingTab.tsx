@@ -101,7 +101,7 @@ export default function DealTrackingTab({ orgId }: DealTrackingTabProps) {
       case 'red':
         return 'text-red-600 bg-red-50 border-red-200';
       case 'purple':
-        return 'text-purple-600 bg-purple-50 border-purple-200';
+        return 'text-accent-600 bg-accent-50 border-accent-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -146,7 +146,7 @@ export default function DealTrackingTab({ orgId }: DealTrackingTabProps) {
         </div>
         <button
           onClick={() => setShowUpdateModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -210,7 +210,7 @@ export default function DealTrackingTab({ orgId }: DealTrackingTabProps) {
 
         {/* Deferred Reason and Follow-up Date */}
         {deal.deal_status === 'deferred' && (deal.deferred_reason || deal.expected_followup_date) && (
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-2">
+          <div className="bg-accent-50 border border-accent-200 rounded-xl p-4 space-y-2">
             {deal.deferred_reason && (
               <div>
                 <h4 className="text-sm font-semibold text-purple-900 mb-1">Reason</h4>

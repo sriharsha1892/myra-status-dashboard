@@ -36,8 +36,8 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
   const displayComponents = [...modelComponents, ...apiComponents, ...otherComponents];
 
   return (
-    <div className={`glass-effect rounded-xl p-5 hover-lift cursor-pointer group transition-all ${
-      status !== 'operational' ? 'ring-2 ring-red-200' : ''
+    <div className={`glass-card hover:-translate-y-1 cursor-pointer group transition-all duration-200 ${
+      status !== 'operational' ? 'ring-2 ring-red-300' : ''
     }`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
@@ -50,12 +50,12 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="text-base font-bold text-slate-900">
+              <h3 className="text-base font-bold text-neutral-900">
                 {getProviderDisplayName(provider, isAdminView)}
               </h3>
               <StatusIndicator status={status} showLabel={false} size="sm" showPulse={status !== 'operational'} />
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500">
               {components.length} service{components.length !== 1 ? 's' : ''} monitored
             </p>
           </div>
@@ -65,14 +65,14 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
       {/* Status Summary */}
       <div className="mb-4">
         {status === 'operational' ? (
-          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-success-700 bg-success-50 px-3 py-2 rounded-lg border border-success-100">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="font-medium">All services operational</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -84,7 +84,7 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
       {/* Component/Model Status - Always show top services */}
       {displayComponents.length > 0 && (
         <div className="space-y-2 mb-4">
-          <div className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">
+          <div className="text-xs font-semibold text-neutral-700 uppercase tracking-wide mb-2">
             Service Status
           </div>
           {displayComponents.slice(0, 5).map((component) => {
@@ -98,18 +98,18 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
                 className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${
                   component.status !== 'operational'
                     ? 'bg-red-50 border-red-200'
-                    : 'bg-slate-50 border-slate-200'
+                    : 'bg-neutral-50 border-neutral-200'
                 }`}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {isModel && (
-                    <svg className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3.5 h-3.5 text-accent-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M13 7H7v6h6V7z" />
                       <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
                     </svg>
                   )}
                   <span className={`text-sm font-medium truncate ${
-                    component.status !== 'operational' ? 'text-red-900' : 'text-slate-700'
+                    component.status !== 'operational' ? 'text-red-900' : 'text-neutral-700'
                   }`}>
                     {component.name}
                   </span>
@@ -119,7 +119,7 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
             );
           })}
           {displayComponents.length > 5 && (
-            <button className="text-xs text-purple-600 hover:text-purple-700 font-medium w-full text-center py-1">
+            <button className="text-xs text-accent-600 hover:text-accent-700 font-medium w-full text-center py-1 transition-colors">
               View {displayComponents.length - 5} more service{displayComponents.length - 5 !== 1 ? 's' : ''} →
             </button>
           )}
@@ -128,7 +128,7 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
 
       {/* Active Incidents */}
       {hasActiveIncidents && (
-        <div className="border-t border-slate-200 pt-4 mt-4">
+        <div className="border-t border-neutral-200 pt-4 mt-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="text-sm font-bold text-red-900">Active Incident{incidents.length > 1 ? 's' : ''}</span>
@@ -151,15 +151,15 @@ export default function StatusCard({ providerStatus }: StatusCardProps) {
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200 text-xs">
-        <span className="text-slate-500">
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-200 text-xs">
+        <span className="text-neutral-500">
           Last updated {new Date().toLocaleTimeString()}
         </span>
         <a
           href={provider.statusPageUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-purple-600 hover:text-purple-700 font-medium transition-colors flex items-center gap-1"
+          className="text-accent-600 hover:text-accent-700 font-medium transition-colors flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
           View details

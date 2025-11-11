@@ -3,53 +3,57 @@
  * Centralized colors, spacing, and configuration for roadmap components
  */
 
-// Status Configuration
+// Status Configuration - 2029 Professional Palette with Uniform Contextual Borders
 export const STATUS_CONFIG = {
   planned: {
     label: 'Planned',
     color: {
       bg: 'bg-blue-50/50',
-      border: 'border-blue-200',
-      borderLeft: 'border-l-4 border-l-blue-400',
+      border: 'border-2 border-blue-400/40',
       text: 'text-blue-700',
-      dot: 'bg-blue-500',
-      hover: 'hover:bg-blue-100/50',
+      dot: 'bg-blue-600',
+      hover: 'hover:bg-blue-100/50 hover:border-blue-500/60',
+      glow: 'shadow-[inset_0_0_20px_rgba(37,99,235,0.12),0_0_24px_rgba(37,99,235,0.08)]', // Uniform inner + outer glow
+      hex: '#2563eb', // For JS-based effects
     },
     icon: '📋',
   },
   in_progress: {
     label: 'In Progress',
     color: {
-      bg: 'bg-amber-50/50',
-      border: 'border-amber-200',
-      borderLeft: 'border-l-4 border-l-amber-500',
-      text: 'text-amber-700',
-      dot: 'bg-amber-500',
-      hover: 'hover:bg-amber-100/50',
+      bg: 'bg-orange-50/50',
+      border: 'border-2 border-orange-400/40',
+      text: 'text-orange-700',
+      dot: 'bg-orange-500',
+      hover: 'hover:bg-orange-100/50 hover:border-orange-500/60',
+      glow: 'shadow-[inset_0_0_20px_rgba(249,115,22,0.12),0_0_24px_rgba(249,115,22,0.08)]',
+      hex: '#f97316',
     },
     icon: '🚀',
   },
   completed: {
     label: 'Completed',
     color: {
-      bg: 'bg-green-50/50',
-      border: 'border-green-200',
-      borderLeft: 'border-l-4 border-l-green-500',
-      text: 'text-green-700',
-      dot: 'bg-green-500',
-      hover: 'hover:bg-green-100/50',
+      bg: 'bg-emerald-50/50',
+      border: 'border-2 border-emerald-400/40',
+      text: 'text-emerald-700',
+      dot: 'bg-emerald-600',
+      hover: 'hover:bg-emerald-100/50 hover:border-emerald-500/60',
+      glow: 'shadow-[inset_0_0_24px_rgba(5,150,105,0.15),0_0_28px_rgba(5,150,105,0.12)]', // Stronger uniform glow for celebration
+      hex: '#059669',
     },
     icon: '✅',
   },
   cancelled: {
     label: 'Cancelled',
     color: {
-      bg: 'bg-gray-50/50',
-      border: 'border-gray-200',
-      borderLeft: 'border-l-4 border-l-gray-300',
-      text: 'text-gray-600',
-      dot: 'bg-gray-400',
-      hover: 'hover:bg-gray-100/50',
+      bg: 'bg-slate-50/50',
+      border: 'border-2 border-slate-300/40',
+      text: 'text-slate-600',
+      dot: 'bg-slate-500',
+      hover: 'hover:bg-slate-100/50 hover:border-slate-400/60',
+      glow: 'shadow-[inset_0_0_16px_rgba(100,116,139,0.08),0_0_20px_rgba(100,116,139,0.06)]',
+      hex: '#64748b',
     },
     icon: '⛔',
   },

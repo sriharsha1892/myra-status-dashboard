@@ -128,7 +128,7 @@ export default function LinkedItemsDisplay({
                   </span>
                 )}
                 {type === 'roadmap' && 'votes' in item && (
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded">
+                  <span className="px-2 py-0.5 bg-accent-100 text-purple-800 rounded">
                     {item.votes} votes
                   </span>
                 )}

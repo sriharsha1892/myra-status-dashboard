@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ interface AddRoadmapItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialDate?: string; // Optional pre-filled date in yyyy-MM-dd format
 }
 
 export default function AddRoadmapItemModal({
@@ -17,6 +18,7 @@ export default function AddRoadmapItemModal({
   isOpen,
   onClose,
   onSuccess,
+  initialDate,
 }: AddRoadmapItemModalProps) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -28,6 +30,13 @@ export default function AddRoadmapItemModal({
   const [createdBy, setCreatedBy] = useState('');
 
   const supabase = createClient();
+
+  // Pre-fill target date when modal opens with initialDate
+  useEffect(() => {
+    if (isOpen && initialDate) {
+      setTargetDate(initialDate);
+    }
+  }, [isOpen, initialDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,7 +219,7 @@ export default function AddRoadmapItemModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

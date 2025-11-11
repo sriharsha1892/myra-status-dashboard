@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import MentionTextEditor from '@/components/MentionTextEditor';
 
 interface UpdateDealStatusModalProps {
   orgId: string;
@@ -306,18 +307,19 @@ export default function UpdateDealStatusModal({
 
           {/* Deferred: Reason and Follow-up Date */}
           {dealStatus === 'deferred' && (
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+            <div className="p-4 bg-accent-50 border border-accent-200 rounded-lg space-y-3">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Reason for Deferring *
                 </label>
-                <textarea
-                  value={deferredReason}
-                  onChange={(e) => setDeferredReason(e.target.value)}
-                  placeholder="Why is this deal deferred? (e.g., Waiting for budget cycle, Product roadmap alignment pending, Team expansion planned, etc.)"
-                  rows={2}
-                  className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                />
+                <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
+                  <MentionTextEditor
+                    content={deferredReason}
+                    onChange={(html) => setDeferredReason(html)}
+                    placeholder="Why is this deal deferred? (e.g., Waiting for budget cycle, Product roadmap alignment pending, Team expansion planned, etc.)"
+                    minHeight={100}
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -330,7 +332,7 @@ export default function UpdateDealStatusModal({
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
-                <p className="text-xs text-purple-700 mt-1">When should we follow up with this prospect?</p>
+                <p className="text-xs text-accent-700 mt-1">When should we follow up with this prospect?</p>
               </div>
             </div>
           )}
@@ -340,13 +342,14 @@ export default function UpdateDealStatusModal({
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Additional Notes
             </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any additional context or notes about this deal..."
-              rows={2}
-              className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
+            <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
+              <MentionTextEditor
+                content={notes}
+                onChange={(html) => setNotes(html)}
+                placeholder="Any additional context or notes about this deal..."
+                minHeight={100}
+              />
+            </div>
           </div>
 
           {/* Info Box */}
@@ -376,7 +379,7 @@ export default function UpdateDealStatusModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

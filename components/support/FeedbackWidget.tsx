@@ -94,8 +94,8 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
           />
 
           {/* Form Panel */}
-          <div className="fixed bottom-24 right-6 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
+          <div className="fixed bottom-24 right-6 w-96 bg-white rounded-xl shadow-2xl border border-neutral-200 z-50 overflow-hidden">
+            <div className="bg-accent-500 px-5 py-4">
               <h3 className="text-base font-bold text-white">Feedback & Support</h3>
               <p className="text-xs text-blue-100 mt-0.5">Help us improve myRA AI</p>
             </div>
@@ -103,13 +103,13 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               {/* Type Selection */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                <label className="block text-xs font-medium text-neutral-700 mb-1.5">
                   Type
                 </label>
                 <select
                   value={formData.feedback_type}
                   onChange={(e) => setFormData({ ...formData, feedback_type: e.target.value as any })}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="feedback">General Feedback</option>
                   <option value="support">Support Request</option>
@@ -120,7 +120,7 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
 
               {/* Subject */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                <label className="block text-xs font-medium text-neutral-700 mb-1.5">
                   Subject
                 </label>
                 <input
@@ -128,14 +128,14 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder="Brief summary..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
               {/* Message */}
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                <label className="block text-xs font-medium text-neutral-700 mb-1.5">
                   Details
                 </label>
                 <textarea
@@ -143,7 +143,7 @@ export default function FeedbackWidget({ userId }: FeedbackWidgetProps) {
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   placeholder="Tell us more..."
                   rows={4}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   required
                 />
               </div>

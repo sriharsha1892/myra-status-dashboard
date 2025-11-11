@@ -157,7 +157,7 @@ export default function FeatureProposalsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center shadow-md">
               <Lightbulb className="w-6 h-6 text-white" />
             </div>
             <div>

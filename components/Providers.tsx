@@ -13,6 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         containerStyle={{
           top: 80,
           right: 20,
+          zIndex: 99999,
         }}
         toastOptions={{
           duration: 5000,
@@ -72,9 +73,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <div className="flex-1">{t.message}</div>
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="flex-shrink-0 p-1 hover:bg-slate-100 rounded transition-colors"
+              className="flex-shrink-0 p-1 hover:bg-neutral-100 rounded transition-colors"
             >
-              <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+              <X className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />
             </button>
           </div>
         )}

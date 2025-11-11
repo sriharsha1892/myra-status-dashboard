@@ -2,13 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom myRA colors (configured in tailwind.config.js) */
+/* Asana-inspired design system colors */
 :root {
-  --color-myra-primary: #6366f1;
-  --color-myra-secondary: #8b5cf6;
-  --color-myra-accent: #a78bfa;
-  --color-myra-dark: #1e1b4b;
-  --color-myra-light: #f5f3ff;
+  /* Warm coral accent (replaces purple/violet) */
+  --color-accent-primary: #FF6B6B;
+  --color-accent-dark: #F03E3E;
+  --color-accent-light: #FFA8A8;
+
+  /* Sophisticated neutrals */
+  --color-neutral-50: #FAFBFC;
+  --color-neutral-100: #F6F8FA;
+  --color-neutral-200: #E9ECEF;
+  --color-neutral-900: #1A202C;
+
+  /* Glassmorphism */
+  --glass-bg-white: rgba(255, 255, 255, 0.7);
+  --glass-bg-light: rgba(255, 255, 255, 0.5);
+  --glass-bg-dark: rgba(0, 0, 0, 0.3);
+
+  /* Transitions */
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-duration: 200ms;
 }
 
 /* Global resets */
@@ -18,34 +32,35 @@
   padding: 0;
 }
 
-/* Enterprise design system base styles */
+/* Asana-inspired design system base styles */
 body {
-  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 0.875rem; /* 14px - professional default */
-  line-height: 1.625;
-  color: #171717; /* gray-900 */
-  background-color: #fafafa; /* gray-50 */
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 15px; /* Base 15px for readability */
+  line-height: 1.6;
+  color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
 }
 
-/* Typography */
+/* Typography - Asana-inspired */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600; /* semibold, not bold */
-  letter-spacing: -0.025em; /* tight */
-  color: #171717; /* gray-900 */
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-neutral-900);
+  line-height: 1.3;
 }
 
 p {
   line-height: 1.625;
 }
 
-/* Focus styles for accessibility */
+/* Focus styles for accessibility - Asana-inspired */
 *:focus-visible {
-  outline: 2px solid #3b82f6; /* primary-500 */
+  outline: 2px solid var(--color-accent-primary);
   outline-offset: 2px;
-  border-radius: 0.375rem;
+  border-radius: 8px;
 }
 
 @keyframes spin {
@@ -225,18 +240,60 @@ p {
   }
 }
 
-/* Enterprise card styles */
-.enterprise-card {
-  background: #ffffff;
-  border: 1px solid #e5e5e5; /* gray-200 */
-  border-radius: 0.5rem; /* 8px */
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+/* Glassmorphism Card Utilities */
+.glass-card {
+  background: var(--glass-bg-white);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(233, 236, 239, 0.8);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: all var(--transition-duration) var(--transition-smooth);
 }
 
-.enterprise-card:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  border-color: #d4d4d4; /* gray-300 */
+.glass-card:hover {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 12px 24px rgba(0, 0, 0, 0.06);
+  border-color: rgba(223, 227, 232, 1);
+  transform: translateY(-1px);
+}
+
+/* Glass Modal Overlay */
+.glass-modal {
+  background: var(--glass-bg-dark);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Glass Button States */
+.glass-button {
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
+  transition: all var(--transition-duration) var(--transition-smooth);
+}
+
+.glass-button:hover {
+  backdrop-filter: blur(12px) saturate(200%);
+  -webkit-backdrop-filter: blur(12px) saturate(200%);
+  transform: translateY(-1px);
+}
+
+/* Glass Input Fields */
+.glass-input {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(233, 236, 239, 0.6);
+  transition: all var(--transition-duration) var(--transition-smooth);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
 }
 
 /* Smooth scrolling */
@@ -325,11 +382,11 @@ html {
   }
 }
 
-/* Glass morphism enhancement */
+/* Glass Effect (Legacy - kept for backward compatibility) */
 .glass-effect {
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--glass-bg-white);
 }
 
 /* Smooth transitions for all interactive elements */
@@ -338,15 +395,15 @@ a,
 input,
 select,
 textarea {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-duration) var(--transition-smooth);
 }
 
-/* Focus state enhancement */
+/* Focus state enhancement - Asana-inspired */
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-accent-primary);
   outline-offset: 3px;
-  border-radius: 0.5rem;
+  border-radius: 8px;
 }
 
 /* Hover state for navigation items */
@@ -365,23 +422,162 @@ nav a:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Modern scrollbar styling */
+/* Asana-inspired scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-neutral-100);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #C1C7CD;
   border-radius: 10px;
-  transition: background 0.2s ease;
+  transition: background var(--transition-duration) ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9CA3AF;
+}
+
+/* 2028 Mind-Bending Animations */
+
+/* 3D Tilt Effect */
+@keyframes tilt3d {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(5deg) rotateY(5deg);
+  }
+}
+
+/* Magnetic Pull */
+@keyframes magneticPull {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Liquid Morph */
+@keyframes liquidMorph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  20% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  40% {
+    border-radius: 50% 60% 30% 70% / 30% 70% 50% 60%;
+  }
+  60% {
+    border-radius: 40% 50% 60% 30% / 70% 40% 60% 50%;
+  }
+  80% {
+    border-radius: 60% 30% 40% 60% / 50% 60% 40% 70%;
+  }
+}
+
+/* Glow Pulse */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+    filter: brightness(1.2);
+  }
+}
+
+/* Parallax Float */
+@keyframes parallaxFloat {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-15px) translateZ(20px);
+  }
+}
+
+/* Shimmer Sweep */
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+
+/* Elastic Bounce */
+@keyframes elasticBounce {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  75% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Smooth spring scale */
+@keyframes springScale {
+  0% {
+    transform: scale(0.95);
+  }
+  40% {
+    transform: scale(1.05);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  80% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Performance optimization: Force GPU acceleration */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
 }

@@ -8,16 +8,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import toast, { Toaster } from 'react-hot-toast';
 import {
-  LayoutDashboard,
   FileText,
-  BarChart3,
-  Settings,
-  Users,
   Plus,
   Pencil,
   Trash2,
   X,
-  Tag,
   AlertCircle,
 } from 'lucide-react';
 
@@ -63,6 +58,7 @@ interface TemplateFormData {
 export default function TemplatesPage() {
   const { user, loading: authLoading, signOut, role } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   const [templates, setTemplates] = useState<TicketTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -259,7 +255,7 @@ export default function TemplatesPage() {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      'Security': 'text-purple-700 bg-purple-50',
+      'Security': 'text-accent-700 bg-accent-50',
       'Tool Functioning': 'text-blue-700 bg-blue-50',
       'Performance': 'text-red-700 bg-red-50',
       'Feature Request': 'text-green-700 bg-green-50',
@@ -276,7 +272,7 @@ export default function TemplatesPage() {
     );
   }
 
-  if (!user || (role?.toLowerCase() !== 'admin' && role !== 'Team')) {
+  if (!user || (role !== 'Admin' && role !== 'Team')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-sm text-gray-500">Unauthorized access</div>
@@ -285,74 +281,11 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="h-full bg-gray-50">
       <Toaster position="top-right" />
 
-      {/* Sidebar */}
-      <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
-        <div className="h-14 px-4 flex items-center border-b border-gray-200">
-          <h1 className="text-sm font-semibold text-gray-900">myRA AI Support</h1>
-        </div>
-
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          <button
-            onClick={() => router.push('/support/dashboard')}
-            className="flex items-center gap-3 h-8 px-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors w-full"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => router.push('/support/submit')}
-            className="flex items-center gap-3 h-8 px-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors w-full"
-          >
-            <FileText className="w-4 h-4" />
-            Submit Ticket
-          </button>
-          <button
-            onClick={() => router.push('/support/reports')}
-            className="flex items-center gap-3 h-8 px-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors w-full"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Reports
-          </button>
-
-          <div className="pt-4 pb-2">
-            <div className="text-xs font-medium text-gray-500 px-3 mb-1">Settings</div>
-            <button
-              onClick={() => router.push('/support/settings/users')}
-              className="flex items-center gap-3 h-8 px-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors w-full"
-            >
-              <Users className="w-4 h-4" />
-              Users
-            </button>
-            <button className="flex items-center gap-3 h-8 px-3 text-sm font-medium text-gray-900 bg-gray-100 rounded-md transition-colors w-full">
-              <FileText className="w-4 h-4" />
-              Templates
-            </button>
-          </div>
-        </nav>
-
-        <div className="p-2 border-t border-gray-200">
-          <button
-            onClick={() => signOut()}
-            className="flex items-center gap-3 px-3 h-10 w-full text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xs font-semibold text-white">
-              {user?.email?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <div className="flex-1 text-left">
-              <div className="text-xs font-medium text-gray-900 truncate">
-                {user?.email?.split('@')[0] || 'Admin'}
-              </div>
-              <div className="text-xs text-gray-500">Sign out</div>
-            </div>
-          </button>
-        </div>
-      </aside>
-
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <div className="h-full overflow-y-auto">
         <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-10">
           <h2 className="text-lg font-semibold text-gray-900">Ticket Templates</h2>
           <button
@@ -456,7 +389,7 @@ export default function TemplatesPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Create/Edit Modal */}
       {showModal && (

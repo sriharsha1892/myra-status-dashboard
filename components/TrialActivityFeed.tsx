@@ -47,7 +47,7 @@ const ICON_MAP: Record<string, any> = {
 
 const COLOR_MAP: Record<string, string> = {
   user_login: 'bg-blue-50 text-blue-600',
-  questions_asked: 'bg-purple-50 text-purple-600',
+  questions_asked: 'bg-accent-50 text-accent-600',
   report_generated: 'bg-green-50 text-green-600',
   expert_review_requested: 'bg-yellow-50 text-yellow-600',
   demo_completed: 'bg-indigo-50 text-indigo-600',
@@ -57,7 +57,7 @@ const COLOR_MAP: Record<string, string> = {
   ticket_created: 'bg-red-50 text-red-600',
   ticket_resolved: 'bg-green-50 text-green-600',
   technical_issue: 'bg-red-50 text-red-600',
-  feature_request: 'bg-purple-50 text-purple-600',
+  feature_request: 'bg-accent-50 text-accent-600',
   call_scheduled: 'bg-blue-50 text-blue-600',
   call_completed: 'bg-green-50 text-green-600',
   trial_extended: 'bg-orange-50 text-orange-600',
@@ -124,20 +124,20 @@ export default function TrialActivityFeed({ trialOrgId, refreshTrigger }: TrialA
     return (
       <div className="text-center py-12">
         <MessageCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 text-sm">No activities logged yet</p>
-        <p className="text-slate-400 text-xs mt-1">Activity will appear here as you log them</p>
+        <p className="text-neutral-500 text-sm">No activities logged yet</p>
+        <p className="text-neutral-400 text-xs mt-1">Activity will appear here as you log them</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-slate-900 mb-4">Activity Timeline</h3>
+      <h3 className="text-sm font-semibold text-neutral-900 mb-4">Activity Timeline</h3>
 
       <div className="space-y-3">
         {activities.map((activity, index) => {
           const Icon = ICON_MAP[activity.activity_type] || MessageCircle;
-          const colorClass = COLOR_MAP[activity.activity_type] || 'bg-slate-50 text-slate-600';
+          const colorClass = COLOR_MAP[activity.activity_type] || 'bg-neutral-50 text-neutral-600';
 
           return (
             <div
@@ -146,7 +146,7 @@ export default function TrialActivityFeed({ trialOrgId, refreshTrigger }: TrialA
             >
               {/* Timeline line */}
               {index < activities.length - 1 && (
-                <div className="absolute left-4 top-10 bottom-0 w-px bg-slate-200" />
+                <div className="absolute left-4 top-10 bottom-0 w-px bg-neutral-200" />
               )}
 
               {/* Icon */}
@@ -155,19 +155,19 @@ export default function TrialActivityFeed({ trialOrgId, refreshTrigger }: TrialA
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0 bg-white rounded-lg border border-slate-200 p-3 group-hover:shadow-md transition-shadow">
+              <div className="flex-1 min-w-0 bg-white rounded-lg border border-neutral-200 p-3 group-hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-slate-900">
+                  <h4 className="text-sm font-medium text-neutral-900">
                     {activity.title}
                   </h4>
                   <RelativeTime
                     date={activity.created_at}
-                    className="text-xs text-slate-500 flex-shrink-0"
+                    className="text-xs text-neutral-500 flex-shrink-0"
                   />
                 </div>
 
                 {activity.description && activity.description !== activity.title && (
-                  <p className="text-sm text-slate-600 mb-2">
+                  <p className="text-sm text-neutral-600 mb-2">
                     {activity.description}
                   </p>
                 )}
@@ -176,12 +176,12 @@ export default function TrialActivityFeed({ trialOrgId, refreshTrigger }: TrialA
                 {Object.keys(activity.metadata || {}).length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {activity.metadata.count && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-700">
                         Count: {activity.metadata.count}
                       </span>
                     )}
                     {activity.metadata.report_title && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-700">
                         {activity.metadata.report_title}
                       </span>
                     )}
@@ -190,7 +190,7 @@ export default function TrialActivityFeed({ trialOrgId, refreshTrigger }: TrialA
 
                 {/* Created by */}
                 {activity.created_by && users[activity.created_by] && (
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-neutral-500 mt-2">
                     Logged by {users[activity.created_by]}
                   </p>
                 )}

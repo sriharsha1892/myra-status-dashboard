@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import AddRoadmapItemModal from '../AddRoadmapItemModal';
 
 interface RoadmapItem {
   id: string;
@@ -63,6 +64,8 @@ export default function CalendarView({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('month');
   const [draggedItem, setDraggedItem] = useState<RoadmapItem | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const supabase = createClient();
 
   // Calculate calendar days
@@ -151,8 +154,8 @@ export default function CalendarView({
   };
 
   const handleDateClick = (date: Date) => {
-    // Could open a "create item" modal with this date pre-filled
-    toast.success(`Create item for ${format(date, 'MMM d, yyyy')}`);
+    setSelectedDate(date);
+    setShowAddModal(true);
   };
 
   const getItemsForDate = (date: Date): RoadmapItem[] => {
@@ -297,14 +300,6 @@ export default function CalendarView({
                         className={`px-2 py-1 rounded text-xs font-medium border cursor-pointer hover:shadow-sm transition-all ${
                           STATUS_COLORS[item.status]
                         }`}
-                        style={
-                          accentColor
-                            ? {
-                                borderLeftWidth: '3px',
-                                borderLeftColor: accentColor,
-                              }
-                            : undefined
-                        }
                       >
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] opacity-60">
@@ -334,8 +329,23 @@ export default function CalendarView({
           <span>••• High</span>
           <span>•••• Critical</span>
         </div>
-        <div className="text-gray-500 italic">Drag items to reschedule</div>
+        <div className="text-gray-500 italic">Drag items to reschedule • Click empty date to create</div>
       </div>
+
+      {/* Add Item Modal */}
+      <AddRoadmapItemModal
+        orgId={orgId}
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setSelectedDate(null);
+        }}
+        onSuccess={() => {
+          onUpdate();
+          setSelectedDate(null);
+        }}
+        initialDate={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined}
+      />
     </div>
   );
 }

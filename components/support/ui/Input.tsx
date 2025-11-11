@@ -17,23 +17,29 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={id}
-            className="text-sm font-medium text-gray-900"
+            className="text-sm font-medium text-neutral-900"
           >
             {label}
-            {props.required && <span className="text-error ml-1">*</span>}
+            {props.required && <span className="text-red-600 ml-1">*</span>}
           </label>
         )}
         <input
           ref={ref}
           id={id}
           className={clsx(
-            'h-12 px-4 text-base text-gray-900 bg-white border-2 border-gray-300 rounded-xl transition-all',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10',
-            'disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500',
+            // Asana-inspired: clean, minimal, comfortable
+            'h-10 px-3 text-sm text-neutral-900 bg-white border border-neutral-300 rounded-lg',
+            'placeholder:text-neutral-400',
+            // Focus state with accent color
+            'focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20',
+            // Transitions
+            'transition-all duration-200',
+            // Disabled state
+            'disabled:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-500',
+            // Error state
             error
-              ? 'border-red-300 focus:border-error focus:ring-error/20'
-              : 'border-gray-300',
+              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+              : 'border-neutral-300',
             className
           )}
           {...props}
@@ -42,7 +48,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p
             className={clsx(
               'text-xs',
-              error ? 'text-error' : 'text-gray-500'
+              error ? 'text-red-600' : 'text-neutral-500'
             )}
           >
             {error || helperText}

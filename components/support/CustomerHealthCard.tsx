@@ -67,7 +67,7 @@ const HEALTH_COLORS = {
 };
 
 const PRIORITY_COLORS = {
-  low: 'bg-slate-100 text-slate-700 border-slate-300',
+  low: 'bg-neutral-100 text-neutral-700 border-neutral-300',
   medium: 'bg-blue-100 text-blue-700 border-blue-300',
   high: 'bg-orange-100 text-orange-700 border-orange-300',
   critical: 'bg-red-100 text-red-700 border-red-300',
@@ -102,7 +102,7 @@ export default function CustomerHealthCard({
   const getTrendColor = () => {
     if (trend === 'improving') return 'text-emerald-600';
     if (trend === 'declining') return 'text-red-600';
-    return 'text-slate-600';
+    return 'text-neutral-600';
   };
 
   const displayedTickets = showAllTickets ? recentTickets : recentTickets.slice(0, 3);
@@ -287,7 +287,7 @@ export default function CustomerHealthCard({
           {!lastOutreach ? (
             <p className="text-sm text-gray-500 italic">No recent interactions logged</p>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+            <div className="bg-gray-50 rounded-lg p-4 border border-neutral-200">
               <p className="text-base text-gray-900 font-medium">
                 {formatDistanceToNow(new Date(lastOutreach), { addSuffix: true })}
               </p>

@@ -33,7 +33,7 @@ export function Comment({ comment, userName, userRole }: CommentProps) {
     <div
       className={`rounded-lg border transition-all duration-200 ${
         isInternal
-          ? 'bg-gray-100 border-gray-300 border-l-4 border-l-gray-400'
+          ? 'bg-gray-100 border border-neutral-200'
           : 'bg-white border-gray-200'
       }`}
     >

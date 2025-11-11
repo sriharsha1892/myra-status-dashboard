@@ -57,7 +57,7 @@ export default function TrialOrgsImportPage() {
 
   const checkAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.user_metadata?.role?.toLowerCase() !== 'admin') {
+    if (!user || user.user_metadata?.role !== 'Admin') {
       toast.error('Admin access required');
       router.push('/support/dashboard');
     }
@@ -502,7 +502,7 @@ export default function TrialOrgsImportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-slate-600">Loading...</div>
+        <div className="text-neutral-600">Loading...</div>
       </div>
     );
   }
@@ -514,32 +514,32 @@ export default function TrialOrgsImportPage() {
     <div className="max-w-[95vw] mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900 mb-2">
+        <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
           🔄 Trial Organizations Import
         </h1>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-neutral-600">
           Safe atomic replace: Delete all → Import new data with validation & editing
         </p>
       </div>
 
       {/* Step Indicator */}
       <div className="flex items-center gap-4 mb-8">
-        <div className={`flex items-center gap-2 ${step === 'upload' ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>
+        <div className={`flex items-center gap-2 ${step === 'upload' ? 'text-blue-600 font-semibold' : 'text-neutral-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-blue-600 text-white' : 'bg-neutral-200'}`}>
             1
           </div>
           <span>Upload File</span>
         </div>
-        <div className="flex-1 h-0.5 bg-slate-200"></div>
-        <div className={`flex items-center gap-2 ${step === 'preview' ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'preview' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>
+        <div className="flex-1 h-0.5 bg-neutral-200"></div>
+        <div className={`flex items-center gap-2 ${step === 'preview' ? 'text-blue-600 font-semibold' : 'text-neutral-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'preview' ? 'bg-blue-600 text-white' : 'bg-neutral-200'}`}>
             2
           </div>
           <span>Preview & Edit</span>
         </div>
-        <div className="flex-1 h-0.5 bg-slate-200"></div>
-        <div className={`flex items-center gap-2 ${step === 'confirm' ? 'text-blue-600 font-semibold' : 'text-slate-400'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'confirm' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}>
+        <div className="flex-1 h-0.5 bg-neutral-200"></div>
+        <div className={`flex items-center gap-2 ${step === 'confirm' ? 'text-blue-600 font-semibold' : 'text-neutral-400'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'confirm' ? 'bg-blue-600 text-white' : 'bg-neutral-200'}`}>
             3
           </div>
           <span>Confirm & Import</span>
@@ -548,9 +548,9 @@ export default function TrialOrgsImportPage() {
 
       {/* Step 1: Upload */}
       {step === 'upload' && (
-        <div className="bg-white rounded-lg border border-slate-200 p-8">
+        <div className="bg-white rounded-lg border border-neutral-200 p-8">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Upload Excel/CSV File</h2>
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Upload Excel/CSV File</h2>
 
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-900 mb-2">📋 Supported Columns:</h3>
@@ -581,11 +581,11 @@ export default function TrialOrgsImportPage() {
               type="file"
               accept=".xlsx,.xls,.csv"
               onChange={handleFileUpload}
-              className="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer"
+              className="block w-full text-sm text-neutral-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer"
             />
 
             {file && (
-              <div className="mt-4 text-sm text-slate-600">
+              <div className="mt-4 text-sm text-neutral-600">
                 Selected: <span className="font-semibold">{file.name}</span>
               </div>
             )}
@@ -598,45 +598,45 @@ export default function TrialOrgsImportPage() {
         <div>
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <div className="text-2xl font-bold text-slate-900">{mappedData.length}</div>
-              <div className="text-sm text-slate-600">Total Organizations</div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <div className="text-2xl font-bold text-neutral-900">{mappedData.length}</div>
+              <div className="text-sm text-neutral-600">Total Organizations</div>
             </div>
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
               <div className="text-2xl font-bold text-green-600">{validCount}</div>
-              <div className="text-sm text-slate-600">Valid Rows</div>
+              <div className="text-sm text-neutral-600">Valid Rows</div>
             </div>
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
               <div className="text-2xl font-bold text-red-600">{errorCount}</div>
-              <div className="text-sm text-slate-600">Rows with Errors</div>
+              <div className="text-sm text-neutral-600">Rows with Errors</div>
             </div>
           </div>
 
           {/* Preview Table */}
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden mb-6">
+          <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden mb-6">
             <div className="overflow-x-auto" style={{ maxHeight: '600px' }}>
               <table className="w-full text-xs">
-                <thead className="bg-slate-50 sticky top-0 z-10">
+                <thead className="bg-neutral-50 sticky top-0 z-10">
                   <tr>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">#</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Org Name</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Domain</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Stage</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Score</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Trial Start</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Trial End</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Account Manager</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Sales POC</th>
-                    <th className="px-3 py-2 text-left text-slate-700 font-semibold border-b">Errors</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">#</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Org Name</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Domain</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Stage</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Score</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Trial Start</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Trial End</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Account Manager</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Sales POC</th>
+                    <th className="px-3 py-2 text-left text-neutral-700 font-semibold border-b">Errors</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mappedData.map((org, index) => (
                     <tr
                       key={org.id}
-                      className={`border-b hover:bg-slate-50 ${org.validation_errors.length > 0 ? 'bg-red-50' : ''}`}
+                      className={`border-b hover:bg-neutral-50 ${org.validation_errors.length > 0 ? 'bg-red-50' : ''}`}
                     >
-                      <td className="px-3 py-2 text-slate-600">{index + 1}</td>
+                      <td className="px-3 py-2 text-neutral-600">{index + 1}</td>
 
                       {/* Organization Name */}
                       <td className="px-3 py-2">
@@ -874,7 +874,7 @@ export default function TrialOrgsImportPage() {
                 setMappedData([]);
                 setFile(null);
               }}
-              className="px-4 py-2 text-slate-600 hover:text-slate-900"
+              className="px-4 py-2 text-neutral-600 hover:text-neutral-900"
             >
               ← Back
             </button>

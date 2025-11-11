@@ -31,7 +31,7 @@ const STAGE_COLORS: Record<string, { bg: string; badge: string; text: string }> 
   invited: { bg: 'bg-gray-50', badge: 'bg-gray-100 text-gray-700', text: 'gray' },
   onboarding: { bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-700', text: 'blue' },
   exploring: { bg: 'bg-cyan-50', badge: 'bg-cyan-100 text-cyan-700', text: 'cyan' },
-  building: { bg: 'bg-purple-50', badge: 'bg-purple-100 text-purple-700', text: 'purple' },
+  building: { bg: 'bg-accent-50', badge: 'bg-accent-100 text-accent-700', text: 'purple' },
   testing: { bg: 'bg-yellow-50', badge: 'bg-yellow-100 text-yellow-700', text: 'yellow' },
   integrating: { bg: 'bg-orange-50', badge: 'bg-orange-100 text-orange-700', text: 'orange' },
   pilot: { bg: 'bg-indigo-50', badge: 'bg-indigo-100 text-indigo-700', text: 'indigo' },
@@ -132,9 +132,9 @@ export default function PlatformUsersTab({ orgId }: PlatformUsersTabProps) {
           <div className="text-2xl font-bold text-green-600">{stats.byStage.production_ready}</div>
           <div className="text-sm text-green-700">Production Ready</div>
         </div>
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-          <div className="text-2xl font-bold text-purple-600">{stats.byStage.building}</div>
-          <div className="text-sm text-purple-700">Building</div>
+        <div className="bg-accent-50 rounded-lg p-4 border border-accent-200">
+          <div className="text-2xl font-bold text-accent-600">{stats.byStage.building}</div>
+          <div className="text-sm text-accent-700">Building</div>
         </div>
         <div className="bg-red-50 rounded-lg p-4 border border-red-200">
           <div className="text-2xl font-bold text-red-600">{stats.byStage.blocked}</div>
@@ -225,7 +225,7 @@ export default function PlatformUsersTab({ orgId }: PlatformUsersTabProps) {
               <Link
                 key={user.user_id}
                 href={`/trials/users/${user.user_id}`}
-                className={`block ${colors.bg} rounded-xl shadow-md hover:shadow-lg transition-all duration-200 p-6 border-l-4 border-blue-500`}
+                className={`block ${colors.bg} rounded-xl shadow-md hover:shadow-lg transition-all duration-200 p-6 border border-neutral-200`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

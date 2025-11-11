@@ -175,7 +175,7 @@ export default function MeetingsPage() {
   const getColorFromName = (name: string) => {
     const colors = [
       'bg-blue-500',
-      'bg-purple-500',
+      'bg-accent-500',
       'bg-pink-500',
       'bg-indigo-500',
       'bg-green-500',
@@ -281,7 +281,7 @@ export default function MeetingsPage() {
           </div>
 
           {/* Unique Organizations */}
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+          <div className="bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
               <div className="p-3 bg-white/20 rounded-lg">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -454,8 +454,8 @@ export default function MeetingsPage() {
                     <div className="text-blue-600 font-semibold mb-2">📝 Document Meetings</div>
                     <p className="text-sm text-gray-600">Record meeting details, attendees, and key discussion points</p>
                   </div>
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <div className="text-purple-600 font-semibold mb-2">✅ Track Action Items</div>
+                  <div className="p-4 bg-accent-50 rounded-lg">
+                    <div className="text-accent-600 font-semibold mb-2">✅ Track Action Items</div>
                     <p className="text-sm text-gray-600">Create and monitor action items with due dates and assignees</p>
                   </div>
                   <div className="p-4 bg-green-50 rounded-lg">
@@ -506,7 +506,7 @@ export default function MeetingsPage() {
                       <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">{MEETING_TYPE_LABELS[selectedType]}</span>
                     )}
                     {selectedConductedBy !== 'all' && (
-                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full">{selectedConductedBy}</span>
+                      <span className="px-3 py-1 bg-accent-100 text-accent-700 rounded-full">{selectedConductedBy}</span>
                     )}
                     {searchQuery && (
                       <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">Search: "{searchQuery}"</span>
@@ -527,7 +527,7 @@ export default function MeetingsPage() {
                 <Link
                   key={meeting.meeting_id}
                   href={`/support/trials/meetings/${meeting.meeting_id}`}
-                  className="block bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-6 border-l-4 border-blue-500"
+                  className="block bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-neutral-200"
                   role="listitem"
                   aria-label={`${typeLabel} with ${meeting.org_name} on ${format(new Date(meeting.meeting_date), 'PPP')}. ${total > 0 ? `${completed} of ${total} action items completed.` : 'No action items.'}`}
                 >
@@ -733,7 +733,7 @@ export default function MeetingsPage() {
       {/* Floating Action Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-200 flex items-center justify-center z-50 group"
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br bg-accent-500 text-white rounded-full shadow-2xl hover:shadow-3xl hover:scale-110 transition-all duration-200 flex items-center justify-center z-50 group"
         title="Quick Add Meeting (Shift+N)"
         aria-label="Add new meeting"
       >

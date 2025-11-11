@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar, Trash2, CheckCircle, User } from 'lucide-react';
 import AddRoadmapItemModal from './AddRoadmapItemModal';
 import RoadmapDetailPanel from './roadmap/RoadmapDetailPanel';
 import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
@@ -15,6 +15,20 @@ import QuickStats from './roadmap/QuickStats';
 import { GridSkeleton, StatsSkeleton } from './roadmap/RoadmapSkeleton';
 import KeyboardShortcuts from './roadmap/KeyboardShortcuts';
 import { STATUS_CONFIG, PRIORITY_CONFIG, ANIMATIONS } from '@/lib/roadmap/constants';
+import { MagneticCard } from './animations/MagneticCard';
+import { RippleEffect } from './animations/RippleEffect';
+import { LiquidProgressBar } from './animations/LiquidProgressBar';
+import { ConfettiEffect } from './animations/ConfettiEffect';
+import { HolographicOverlay } from './animations/HolographicOverlay';
+import { ChromaticShift } from './animations/ChromaticShift';
+import { BlobBackground } from './animations/MorphingBlob';
+import { StatusGlow } from './animations/StatusGlow';
+
+interface Owner {
+  id: string;
+  user_name: string;
+  role: 'primary' | 'contributor' | 'reviewer';
+}
 
 interface RoadmapItem {
   id: string;
@@ -33,6 +47,8 @@ interface RoadmapItem {
   blocks_ids: string[] | null;
   label_ids: string[] | null;
   milestone_id: string | null;
+  progress_percentage?: number;
+  owners?: Owner[];
 }
 
 interface Label {
@@ -53,23 +69,15 @@ interface Milestone {
   color: string;
 }
 
+interface Organization {
+  org_id: string;
+  org_name: string;
+  domain: string;
+}
+
 interface ProductRoadmapTabProps {
   orgId: string;
 }
-
-const STATUS_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  planned: { icon: '📋', color: 'blue', label: 'Planned' },
-  in_progress: { icon: '🚀', color: 'yellow', label: 'In Progress' },
-  completed: { icon: '✅', color: 'green', label: 'Completed' },
-  cancelled: { icon: '⛔', color: 'gray', label: 'Cancelled' },
-};
-
-const PRIORITY_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  low: { icon: '🟢', color: 'green', label: 'Low' },
-  medium: { icon: '🟡', color: 'yellow', label: 'Medium' },
-  high: { icon: '🔴', color: 'red', label: 'High' },
-  critical: { icon: '🚨', color: 'red', label: 'Critical' },
-};
 
 type ViewMode = 'cards' | 'kanban' | 'analytics' | 'calendar';
 
@@ -89,11 +97,16 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<string[]>([]);
+  const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
     start: null,
     end: null,
   });
   const [showBlockedOnly, setShowBlockedOnly] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+
+  // Confetti trigger
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const supabase = createClient();
 
@@ -112,7 +125,25 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
         .order('target_date', { ascending: true, nullsFirst: false });
 
       if (itemsError) throw itemsError;
-      setItems(itemsData || []);
+
+      // Fetch owners for each roadmap item
+      const itemsWithOwners = await Promise.all(
+        (itemsData || []).map(async (item) => {
+          const { data: ownersData } = await supabase
+            .from('roadmap_owner_assignments')
+            .select('id, user_name, role')
+            .eq('roadmap_item_id', item.id)
+            .eq('org_id', orgId)
+            .order('role', { ascending: true }); // primary first
+
+          return {
+            ...item,
+            owners: ownersData || []
+          };
+        })
+      );
+
+      setItems(itemsWithOwners);
 
       // Fetch labels
       const { data: labelsData, error: labelsError } = await supabase
@@ -133,11 +164,71 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
       if (milestonesError) throw milestonesError;
       setMilestones(milestonesData || []);
+
+      // Fetch organizations
+      const { data: orgsData, error: orgsError } = await supabase
+        .from('trial_organizations')
+        .select('org_id, org_name, org_domain as domain')
+        .order('org_name');
+
+      if (orgsError) throw orgsError;
+      setOrganizations(orgsData || []);
     } catch (error: any) {
       console.error('Error fetching roadmap data:', error);
       toast.error('Failed to load roadmap data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string, itemTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${itemTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('org_product_roadmap')
+        .delete()
+        .eq('id', itemId)
+        .eq('org_id', orgId);
+
+      if (error) throw error;
+
+      toast.success('Roadmap item deleted');
+      fetchAll();
+    } catch (error: any) {
+      console.error('Error deleting roadmap item:', error);
+      toast.error('Failed to delete roadmap item');
+    }
+  };
+
+  const handleMarkComplete = async (itemId: string, itemTitle: string, currentStatus: string) => {
+    if (currentStatus === 'completed') {
+      toast.success('Item is already completed');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('org_product_roadmap')
+        .update({
+          status: 'completed',
+          progress_percentage: 100,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId)
+        .eq('org_id', orgId);
+
+      if (error) throw error;
+
+      toast.success(`Marked "${itemTitle}" as complete!`);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+      fetchAll();
+    } catch (error: any) {
+      console.error('Error marking item complete:', error);
+      toast.error('Failed to mark item complete');
     }
   };
 
@@ -191,6 +282,13 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       });
     }
 
+    // Organization filter
+    if (selectedOrgIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        item.org_id && selectedOrgIds.includes(item.org_id)
+      );
+    }
+
     // Blocked only filter
     if (showBlockedOnly) {
       filtered = filtered.filter((item) => {
@@ -202,7 +300,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
     }
 
     return filtered;
-  }, [items, searchQuery, selectedStatuses, selectedPriorities, selectedLabelIds, selectedMilestoneIds, dateRange, showBlockedOnly]);
+  }, [items, searchQuery, selectedStatuses, selectedPriorities, selectedLabelIds, selectedMilestoneIds, selectedOrgIds, dateRange, showBlockedOnly]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -210,38 +308,9 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
     setSelectedPriorities([]);
     setSelectedLabelIds([]);
     setSelectedMilestoneIds([]);
+    setSelectedOrgIds([]);
     setDateRange({ start: null, end: null });
     setShowBlockedOnly(false);
-  };
-
-  const getStatusColor = (status: string) => {
-    const config = STATUS_CONFIG[status];
-    switch (config?.color) {
-      case 'blue':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'yellow':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'green':
-        return 'text-green-600 bg-green-50 border-green-200';
-      case 'gray':
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const config = PRIORITY_CONFIG[priority];
-    switch (config?.color) {
-      case 'green':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'yellow':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'red':
-        return 'bg-red-50 text-red-700 border-red-200';
-      default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
   };
 
   const hasActiveBlockers = (item: RoadmapItem) => {
@@ -344,6 +413,8 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           onLabelIdsChange={setSelectedLabelIds}
           selectedMilestoneIds={selectedMilestoneIds}
           onMilestoneIdsChange={setSelectedMilestoneIds}
+          selectedOrgIds={selectedOrgIds}
+          onOrgIdsChange={setSelectedOrgIds}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
           showBlockedOnly={showBlockedOnly}
@@ -351,6 +422,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           onClearFilters={clearFilters}
           labels={labels}
           milestones={milestones}
+          organizations={organizations}
         />
       )}
 
@@ -390,8 +462,8 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredItems.map((item, index) => {
                 const statusConfig = STATUS_CONFIG[item.status];
                 const priorityConfig = PRIORITY_CONFIG[item.priority];
                 const isBlocked = hasActiveBlockers(item);
@@ -402,112 +474,202 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                 const labelCount = item.label_ids?.length || 0;
 
                 return (
-                  <div
+                  <MagneticCard
                     key={item.id}
-                    className={`
-                      rounded-lg border-2 p-4 bg-white cursor-pointer
-                      ${statusConfig.color.bg} ${statusConfig.color.border} ${statusConfig.color.borderLeft}
-                      ${ANIMATIONS.card.hover} ${ANIMATIONS.card.active}
-                    `}
-                    onClick={() => setSelectedItemId(item.id)}
+                    index={index}
+                    className={`group rounded-xl shadow-lg ${statusConfig.color.border} ${statusConfig.color.glow || ''} cursor-pointer overflow-hidden relative h-[400px] flex flex-col`}
+                    style={{
+                      background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%)`,
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    }}
                   >
-                    {/* Header: Title + Progress */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h4 className="text-base font-semibold text-gray-900 flex-1 line-clamp-2">
-                        {item.title}
-                      </h4>
-                      {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
-                        <span className="text-xs font-semibold text-gray-600 shrink-0">
-                          {item.progress_percentage}%
-                        </span>
-                      )}
-                    </div>
+                    {/* Status glow aura */}
+                    <StatusGlow
+                      color={statusConfig.color.hex || '#3b82f6'}
+                      intensity={item.status === 'completed' ? 'high' : 'medium'}
+                      pulse={item.status === 'in_progress'}
+                    />
 
-                    {/* Separator */}
-                    <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-3" />
+                    {/* Morphing blob background */}
+                    <BlobBackground statusColor={statusConfig.color.hex} />
 
-                    {/* Metadata: Labels + Date */}
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      {item.label_ids && item.label_ids.length > 0 && (
-                        <span className="font-medium">
-                          {labels.find(l => l.id === item.label_ids![0])?.name || 'Label'}
-                        </span>
-                      )}
-                      {item.label_ids && item.label_ids.length > 0 && item.target_date && (
-                        <span>•</span>
-                      )}
-                      {item.target_date && (
-                        <span>{format(new Date(item.target_date), 'MMM d, yyyy')}</span>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    {item.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-
-                    {/* Progress Bar */}
-                    {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
-                      <div className="mb-3">
-                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    {/* Holographic overlay */}
+                    <HolographicOverlay intensity={0.4}>
+                      {/* Chromatic shift effect */}
+                      <ChromaticShift intensity={0.6}>
+                        <RippleEffect
+                          color={statusConfig.color.dot?.replace('bg-', 'rgba(') || 'rgba(59, 130, 246, 0.4)'}
+                        >
                           <div
-                            className={`h-full transition-all duration-300 ${
-                              item.progress_percentage === 100
-                                ? 'bg-green-500'
-                                : statusConfig.color.dot
-                            }`}
-                            style={{ width: `${item.progress_percentage}%` }}
-                          />
+                            className="flex-1 overflow-y-auto"
+                          >
+                            <div
+                              onClick={() => setSelectedItemId(item.id)}
+                              className="p-5 relative"
+                            >
+                        {/* Header: Title + Progress */}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <h4 className="text-lg font-bold text-gray-900 flex-1 line-clamp-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
+                            {item.title}
+                          </h4>
+                          {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
+                            <span className="text-xs font-bold text-gray-700 shrink-0 bg-gray-100 px-2 py-1 rounded-lg">
+                              {item.progress_percentage}%
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-[10px] font-medium ${statusConfig.color.text}`}>
-                            {statusConfig.label}
+
+                        {/* Animated Separator */}
+                        <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-3" />
+
+                        {/* Metadata: Labels + Date */}
+                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                          {item.label_ids && item.label_ids.length > 0 && (
+                            <span className="font-semibold">
+                              {labels.find(l => l.id === item.label_ids![0])?.name || 'Label'}
+                            </span>
+                          )}
+                          {item.label_ids && item.label_ids.length > 0 && item.target_date && (
+                            <span className="font-bold">•</span>
+                          )}
+                          {item.target_date && (
+                            <span className="font-medium">{format(new Date(item.target_date), 'MMM d, yyyy')}</span>
+                          )}
+                        </div>
+
+                        {/* Owners */}
+                        {item.owners && item.owners.length > 0 && (
+                          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                            {item.owners.slice(0, 3).map((owner, idx) => (
+                              <div
+                                key={owner.id}
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+                                  owner.role === 'primary'
+                                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                                    : owner.role === 'contributor'
+                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                    : 'bg-green-100 text-green-700 border border-green-300'
+                                }`}
+                                title={`${owner.user_name} (${owner.role})`}
+                              >
+                                <User className="w-3 h-3" />
+                                <span>{owner.user_name}</span>
+                                {owner.role === 'primary' && (
+                                  <span className="text-[10px] font-bold">★</span>
+                                )}
+                              </div>
+                            ))}
+                            {item.owners.length > 3 && (
+                              <span className="text-xs text-gray-500 font-medium">
+                                +{item.owners.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Description */}
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+                        )}
+
+                        {/* Liquid Progress Bar */}
+                        {item.progress_percentage !== undefined && item.progress_percentage > 0 && (
+                          <div className="mb-3">
+                            <LiquidProgressBar
+                              progress={item.progress_percentage}
+                              color={item.progress_percentage === 100 ? '#10b981' : (statusConfig.color.dot?.replace('bg-', '#') || '#3b82f6')}
+                              height={8}
+                            />
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className={`text-[10px] font-bold ${statusConfig.color.text} backdrop-blur-sm px-2 py-0.5 rounded-md`}
+                                style={{ background: `${statusConfig.color.dot?.replace('bg-', 'rgba(') || 'rgba(59, 130, 246, 0.15)'}15` }}
+                              >
+                                {statusConfig.label}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Enhanced Indicators */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Priority Badge with gradient */}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm ${priorityConfig.color.bg} ${priorityConfig.color.text} ${priorityConfig.color.border}`}
+                          >
+                            {priorityConfig.icon} {priorityConfig.label}
                           </span>
+
+                          {/* Blocker Indicator with pulse */}
+                          {isBlocked && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 shadow-sm">
+                              <AlertCircle className="w-3.5 h-3.5 animate-pulse" />
+                              {blockerCount}
+                            </span>
+                          )}
+
+                          {/* Linked Items */}
+                          {linkedCount > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">
+                              🔗 {linkedCount}
+                            </span>
+                          )}
+
+                          {/* Label Count */}
+                          {labelCount > 1 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">
+                              🏷️ {labelCount}
+                            </span>
+                          )}
+
+                          {/* Milestone */}
+                          {item.milestone_id && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">
+                              🎯
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    )}
+                            </div>
+                          </div>
 
-                    {/* Indicators */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* Priority Badge */}
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${priorityConfig.color.bg} ${priorityConfig.color.text} ${priorityConfig.color.border}`}
-                      >
-                        {priorityConfig.icon} {priorityConfig.label}
-                      </span>
-
-                      {/* Blocker Indicator */}
-                      {isBlocked && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">
-                          <AlertCircle className="w-3 h-3" />
-                          {blockerCount}
-                        </span>
-                      )}
-
-                      {/* Linked Items */}
-                      {linkedCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
-                          🔗 {linkedCount}
-                        </span>
-                      )}
-
-                      {/* Label Count */}
-                      {labelCount > 1 && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
-                          🏷️ {labelCount}
-                        </span>
-                      )}
-
-                      {/* Milestone */}
-                      {item.milestone_id && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-gray-600">
-                          🎯
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                          {/* Action Buttons Footer */}
+                          <div className="border-t border-gray-200 bg-white/80 backdrop-blur-sm p-3 flex gap-2">
+                            {item.status !== 'completed' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkComplete(item.id, item.title, item.status);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                Mark Complete
+                              </button>
+                            )}
+                            {item.status === 'completed' && (
+                              <div className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                Completed
+                              </div>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteItem(item.id, item.title);
+                              }}
+                              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                              title="Delete item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        </RippleEffect>
+                      </ChromaticShift>
+                    </HolographicOverlay>
+                  </MagneticCard>
                 );
               })}
             </div>
@@ -552,6 +714,9 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           }
         }}
       />
+
+      {/* Confetti Effect */}
+      <ConfettiEffect trigger={showConfetti} />
     </div>
   );
 }

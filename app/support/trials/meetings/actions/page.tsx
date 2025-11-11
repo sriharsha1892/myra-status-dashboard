@@ -322,23 +322,23 @@ export default function ActionItemsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-neutral-200">
             <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
             <div className="text-sm text-gray-600 mt-1">Total Items</div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-neutral-200">
             <div className="text-3xl font-bold text-red-600">{stats.overdue}</div>
             <div className="text-sm text-gray-600 mt-1">🔴 Overdue</div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-neutral-200">
             <div className="text-3xl font-bold text-orange-600">{stats.dueToday}</div>
             <div className="text-sm text-gray-600 mt-1">⏰ Due Today</div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-yellow-500">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-neutral-200">
             <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
             <div className="text-sm text-gray-600 mt-1">📅 Pending</div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+          <div className="bg-white rounded-xl shadow-md p-6 border border-neutral-200">
             <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
             <div className="text-sm text-gray-600 mt-1">✅ Completed</div>
           </div>

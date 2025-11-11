@@ -28,6 +28,7 @@ import {
   Target,
   UserCheck,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 
 import LoadingState from '@/components/LoadingState';
@@ -40,19 +41,20 @@ import UnifiedNotesPanel from '@/components/UnifiedNotesPanel';
 import DocumentLibrary2027 from '@/components/DocumentLibrary2027';
 import SupportQueriesTab from '@/components/SupportQueriesTab';
 import TrialExtensionsTab from '@/components/TrialExtensionsTab';
-import PeopleAdoptionTab from '@/components/PeopleAdoptionTab';
-import ActivityEngagementTab from '@/components/ActivityEngagementTab';
 import ProductResearchTab from '@/components/ProductResearchTab';
 import OverviewTab from '@/components/OverviewTab';
+import LogActivityModal from '@/components/LogActivityModal';
+import PeopleEngagementTab from '@/components/PeopleEngagementTab';
+import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
 
-type TabType = 'overview' | 'people' | 'activity' | 'support' | 'product';
+type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support' | 'product';
 
 const LIFECYCLE_STAGES = [
   { value: 'prospect', label: 'Prospect', color: 'text-gray-600 bg-gray-100' },
   { value: 'trial_pending', label: 'Trial Pending', color: 'text-blue-600 bg-blue-100' },
   { value: 'trial_active', label: 'Trial Active', color: 'text-green-600 bg-green-100' },
   { value: 'trial_expired', label: 'Trial Expired', color: 'text-amber-600 bg-amber-100' },
-  { value: 'customer', label: 'Customer', color: 'text-purple-600 bg-purple-100' },
+  { value: 'customer', label: 'Customer', color: 'text-accent-600 bg-accent-100' },
   { value: 'lost', label: 'Lost', color: 'text-red-600 bg-red-100' },
 ];
 
@@ -105,11 +107,6 @@ export default function TrialOrgPage() {
     current_stage: 'invited',
     freshsales_url: '',
   });
-  const [activityForm, setActivityForm] = useState({
-    type: 'meeting' as 'meeting' | 'note',
-    title: '',
-    content: '',
-  });
 
   // Auth check
   useEffect(() => {
@@ -136,6 +133,20 @@ export default function TrialOrgPage() {
         .single();
 
       if (orgError) throw orgError;
+
+      // Fetch account manager details separately if account_manager exists
+      if (org && org.account_manager) {
+        const { data: amData } = await supabase
+          .from('users')
+          .select('user_id, username, email, full_name')
+          .eq('user_id', org.account_manager)
+          .single();
+
+        if (amData) {
+          org.account_manager_name = amData.full_name || amData.username || amData.email;
+        }
+      }
+
       setOrganization(org);
       setOrgForm(org);
 
@@ -186,11 +197,9 @@ export default function TrialOrgPage() {
 
       setActivities(allActivities);
 
-      // Fetch account managers
-      const { data: managers } = await supabase
-        .from('users')
-        .select('user_id, username, email')
-        .in('role', ['Admin', 'Account Manager']);
+      // Fetch account managers via API (bypasses RLS)
+      const managersResponse = await fetch('/api/account-managers');
+      const { managers } = await managersResponse.json();
 
       setAccountManagers(managers || []);
 
@@ -290,33 +299,6 @@ export default function TrialOrgPage() {
     }
   };
 
-  const handleAddActivity = async () => {
-    if (!activityForm.title) {
-      toast.error('Title is required');
-      return;
-    }
-
-    try {
-      if (activityForm.type === 'meeting') {
-        const { error } = await supabase.from('meeting_notes').insert({
-          org_id: orgId,
-          meeting_date: new Date().toISOString(),
-          notes: activityForm.content,
-          conducted_by: user?.email?.split('@')[0] || 'Unknown',
-        });
-        if (error) throw error;
-      }
-
-      toast.success(`${activityForm.type === 'meeting' ? 'Meeting' : 'Note'} added successfully`);
-      setShowAddActivityModal(false);
-      setActivityForm({ type: 'meeting', title: '', content: '' });
-      fetchData();
-    } catch (error: any) {
-      console.error('Error adding activity:', error);
-      toast.error('Failed to add activity');
-    }
-  };
-
   if (authLoading || loading) {
     return <LoadingState message="Loading trial organization..." />;
   }
@@ -401,7 +383,7 @@ export default function TrialOrgPage() {
                       {organization.org_domain}
                     </span>
                     <span className="text-sm text-gray-600">
-                      AM: <span className="font-medium">{organization.account_manager}</span>
+                      AM: <span className="font-medium">{organization.account_manager_name || organization.account_manager || 'Unassigned'}</span>
                     </span>
                   </div>
                 </div>
@@ -453,13 +435,13 @@ export default function TrialOrgPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/40">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-accent-50 to-purple-100/50 border border-accent-200/40">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-accent-500 flex items-center justify-center">
                     <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-purple-600 font-medium">Activities</p>
+                    <p className="text-xs text-accent-600 font-medium">Activities</p>
                     <p className="text-lg font-bold text-purple-900">{activities.length}</p>
                   </div>
                 </div>
@@ -468,12 +450,12 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* Tab Navigation - 5 Optimized Tabs */}
+        {/* Tab Navigation - 5 Consolidated Tabs */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2 flex-wrap">
           {([
             { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
-            { id: 'people', label: 'People & Adoption', icon: Users, description: 'Stakeholders & platform users' },
-            { id: 'activity', label: 'Activity & Engagement', icon: Activity, description: 'Timeline of all events' },
+            { id: 'peopleEngagement', label: 'People & Engagement', icon: Users, description: 'Stakeholders, users & activity' },
+            { id: 'timeline', label: 'Timeline & Activity', icon: Clock, description: 'Unified timeline with AI insights' },
             { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
             { id: 'product', label: 'Product & Research', icon: Lightbulb, description: 'Features, research, docs' },
           ] as const).map(({ id, label, icon: Icon, description }) => (
@@ -483,7 +465,7 @@ export default function TrialOrgPage() {
               className={`
                 flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
                 ${activeTab === id
-                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-accent-500/30 scale-105'
                   : 'text-gray-600 hover:bg-white/80'
                 }
               `}
@@ -505,8 +487,8 @@ export default function TrialOrgPage() {
             />
           )}
 
-          {activeTab === 'people' && (
-            <PeopleAdoptionTab
+          {activeTab === 'peopleEngagement' && (
+            <PeopleEngagementTab
               orgId={orgId}
               users={users}
               onAddUser={() => setShowAddUserModal(true)}
@@ -515,16 +497,13 @@ export default function TrialOrgPage() {
             />
           )}
 
-          {activeTab === 'activity' && (
-            <ActivityEngagementTab
+          {activeTab === 'timeline' && (
+            <UnifiedTimelineTab
               orgId={orgId}
               activities={activities}
               users={users}
               organization={organization}
-              onAddActivity={(type) => {
-                setActivityForm({ ...activityForm, type });
-                setShowAddActivityModal(true);
-              }}
+              onAddActivity={() => setShowAddActivityModal(true)}
             />
           )}
 
@@ -574,7 +553,12 @@ export default function TrialOrgPage() {
                   onChange={(e) => setOrgForm({ ...orgForm, account_manager: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {accountManagers.map(am => <option key={am.user_id} value={am.username}>{am.username}</option>)}
+                  <option value="">Select Account Manager</option>
+                  {accountManagers.map(am => (
+                    <option key={am.user_id} value={am.user_id}>
+                      {am.full_name || am.email}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -815,47 +799,14 @@ export default function TrialOrgPage() {
         </Modal>
       )}
 
-      {/* Add Activity Modal */}
-      {showAddActivityModal && (
-        <Modal title={`Log ${activityForm.type === 'meeting' ? 'Meeting' : 'Note'}`} onClose={() => setShowAddActivityModal(false)}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-              <input
-                type="text"
-                value={activityForm.title}
-                onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })}
-                placeholder="Demo call with team"
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-              <textarea
-                value={activityForm.content}
-                onChange={(e) => setActivityForm({ ...activityForm, content: e.target.value })}
-                rows={6}
-                placeholder="Meeting notes, action items, feature requests..."
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAddActivityModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddActivity}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Log Activity Modal */}
+      <LogActivityModal
+        isOpen={showAddActivityModal}
+        onClose={() => setShowAddActivityModal(false)}
+        orgId={orgId}
+        users={users}
+        onActivityLogged={fetchData}
+      />
 
       {/* Delete Organization Modal */}
       <DeleteOrganizationModal
@@ -881,7 +832,7 @@ function UsersTab({ users, onAddUser, onEditUser, onDeleteUser }: any) {
         <h3 className="text-lg font-bold text-gray-900">Users ({users.length})</h3>
         <button
           onClick={onAddUser}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-accent-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           Add User
@@ -915,7 +866,7 @@ function UsersTab({ users, onAddUser, onEditUser, onDeleteUser }: any) {
                       )}
                       <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                         user.current_stage === 'active' ? 'bg-green-100 text-green-700' :
-                        user.current_stage === 'onboarding' ? 'bg-purple-100 text-purple-700' :
+                        user.current_stage === 'onboarding' ? 'bg-accent-100 text-accent-700' :
                         user.current_stage === 'invited' ? 'bg-blue-100 text-blue-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>

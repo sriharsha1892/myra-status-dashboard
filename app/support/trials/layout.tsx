@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 export default function TrialsLayout({
   children,
@@ -37,10 +37,5 @@ export default function TrialsLayout({
   }
 
   // Trials section uses children directly (pages handle their own sidebar)
-  return (
-    <>
-      <Toaster position="top-right" />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

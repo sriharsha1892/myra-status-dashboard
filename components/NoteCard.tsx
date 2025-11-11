@@ -106,32 +106,32 @@ export default function NoteCard({
   const visibilityColor = {
     team: 'text-blue-600 dark:text-blue-400',
     internal: 'text-orange-600 dark:text-orange-400',
-    private: 'text-slate-600 dark:text-slate-400'
+    private: 'text-neutral-600 dark:text-neutral-400'
   };
 
   return (
     <div className={`${isReply ? 'ml-12' : ''}`}>
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-neutral-200 dark:border-slate-700 hover:border-neutral-300 dark:hover:border-slate-600 transition-colors">
         {/* Note Header */}
         <div className="flex items-start justify-between p-4 pb-2">
           <div className="flex items-center gap-3 flex-1">
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-accent-600 flex items-center justify-center text-white text-sm font-semibold">
               {note.created_by.substring(0, 2).toUpperCase()}
             </div>
 
             {/* User info */}
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-slate-900 dark:text-white text-sm">
+                <span className="font-medium text-neutral-900 dark:text-white text-sm">
                   {isAuthor ? 'You' : 'User'}
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <RelativeTime date={note.created_at} className="text-xs text-slate-500" />
+                <span className="text-xs text-neutral-500">•</span>
+                <RelativeTime date={note.created_at} className="text-xs text-neutral-500" />
                 {note.edited && (
                   <>
-                    <span className="text-xs text-slate-500">•</span>
-                    <span className="text-xs text-slate-500">edited</span>
+                    <span className="text-xs text-neutral-500">•</span>
+                    <span className="text-xs text-neutral-500">edited</span>
                   </>
                 )}
                 {/* Visibility badge */}
@@ -148,19 +148,19 @@ export default function NoteCard({
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                className="p-1 hover:bg-neutral-100 dark:hover:bg-slate-700 rounded"
               >
-                <MoreVertical className="w-4 h-4 text-slate-500" />
+                <MoreVertical className="w-4 h-4 text-neutral-500" />
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 z-10 min-w-[120px]">
+                <div className="absolute right-0 top-8 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-neutral-200 dark:border-slate-700 py-1 z-10 min-w-[120px]">
                   <button
                     onClick={() => {
                       setShowEditForm(true);
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-slate-700 flex items-center gap-2"
                   >
                     <Edit2 className="w-3 h-3" />
                     Edit
@@ -170,7 +170,7 @@ export default function NoteCard({
                       handleDelete();
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 text-red-600"
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-slate-700 flex items-center gap-2 text-red-600"
                   >
                     <Trash2 className="w-3 h-3" />
                     Delete
@@ -212,14 +212,14 @@ export default function NoteCard({
           <div className="px-4 pb-3 flex items-center gap-4">
             <button
               onClick={() => setShowReplyEditor(!showReplyEditor)}
-              className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               <Reply className="w-4 h-4" />
               <span>Reply</span>
             </button>
 
             {note.reply_count > 0 && (
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-neutral-500">
                 {note.reply_count} {note.reply_count === 1 ? 'reply' : 'replies'}
               </span>
             )}
@@ -263,7 +263,7 @@ export default function NoteCard({
 
       {/* Loading Replies */}
       {loadingReplies && (
-        <div className="mt-3 ml-12 text-sm text-slate-500">
+        <div className="mt-3 ml-12 text-sm text-neutral-500">
           Loading replies...
         </div>
       )}

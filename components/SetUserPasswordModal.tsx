@@ -135,7 +135,7 @@ export default function SetUserPasswordModal({
               onClick={() => setMode('set')}
               className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition ${
                 mode === 'set'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-accent-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -145,7 +145,7 @@ export default function SetUserPasswordModal({
               onClick={() => setMode('generate')}
               className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition ${
                 mode === 'generate'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-accent-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >

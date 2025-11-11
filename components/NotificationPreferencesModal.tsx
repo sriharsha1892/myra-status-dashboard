@@ -159,7 +159,7 @@ export default function NotificationPreferencesModal({
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1001] p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header - Compact */}
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700">
+        <div className="px-6 py-4 bg-accent-500 border-b border-blue-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -198,7 +198,7 @@ export default function NotificationPreferencesModal({
                   className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md ${
                     pref.enabled
                       ? 'border-blue-500 bg-blue-50 hover:bg-blue-100'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                      : 'border-neutral-200 bg-white hover:bg-neutral-50'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -207,7 +207,7 @@ export default function NotificationPreferencesModal({
                       className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                         pref.enabled
                           ? 'bg-blue-600 border-blue-600'
-                          : 'bg-white border-slate-300 group-hover:border-slate-400'
+                          : 'bg-white border-neutral-300 group-hover:border-slate-400'
                       }`}
                     >
                       {pref.enabled && (
@@ -218,14 +218,14 @@ export default function NotificationPreferencesModal({
                     <div className="flex-1 min-w-0">
                       <h4
                         className={`text-sm font-bold mb-0.5 ${
-                          pref.enabled ? 'text-blue-900' : 'text-slate-900'
+                          pref.enabled ? 'text-blue-900' : 'text-neutral-900'
                         }`}
                       >
                         {pref.label}
                       </h4>
                       <p
                         className={`text-xs ${
-                          pref.enabled ? 'text-blue-700' : 'text-slate-600'
+                          pref.enabled ? 'text-blue-700' : 'text-neutral-600'
                         }`}
                       >
                         {pref.description}
@@ -237,7 +237,7 @@ export default function NotificationPreferencesModal({
                       className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         pref.enabled
                           ? 'bg-blue-600 text-white'
-                          : 'bg-slate-200 text-slate-600'
+                          : 'bg-neutral-200 text-neutral-600'
                       }`}
                     >
                       {pref.enabled ? 'ON' : 'OFF'}
@@ -269,17 +269,17 @@ export default function NotificationPreferencesModal({
         </div>
 
         {/* Footer - Compact */}
-        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex gap-2">
+        <div className="px-5 py-3 bg-neutral-50 border-t border-neutral-200 flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 h-9 px-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-medium text-sm transition-all"
+            className="flex-1 h-9 px-3 border-2 border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium text-sm transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 h-9 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 h-9 px-3 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
               <>

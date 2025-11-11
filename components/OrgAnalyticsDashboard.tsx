@@ -217,13 +217,13 @@ export default function OrgAnalyticsDashboard({ orgId }: OrgAnalyticsDashboardPr
         </div>
 
         {/* Total Engagement Activities */}
-        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+        <div className="bg-accent-50 border border-accent-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-purple-900">Activities</h4>
             <span className="text-xl">📊</span>
           </div>
-          <div className="text-3xl font-bold text-purple-600">{logs.length}</div>
-          <p className="text-xs text-purple-700 mt-1">
+          <div className="text-3xl font-bold text-accent-600">{logs.length}</div>
+          <p className="text-xs text-accent-700 mt-1">
             {users.length > 0 ? `${(logs.length / users.length).toFixed(1)}/user avg` : 'No users'}
           </p>
         </div>

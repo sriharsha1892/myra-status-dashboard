@@ -89,10 +89,10 @@ export default function StatusWidget({
             showLabel={false}
             showPulse={hasIssues}
           />
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-neutral-700">
             {hasIssues ? 'Service Issues' : 'All Systems Operational'}
           </span>
-          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </div>
@@ -104,7 +104,7 @@ export default function StatusWidget({
     <div className="glass-effect rounded-xl overflow-hidden">
       {/* Header */}
       <div
-        className="p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+        className="p-4 cursor-pointer hover:bg-neutral-50/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
@@ -117,12 +117,12 @@ export default function StatusWidget({
             />
             <div>
               <h3 className="font-semibold text-slate-800">LLM Provider Status</h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-neutral-600">
                 {operationalCount}/{statusData.providers.length} operational
               </p>
             </div>
           </div>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
+          <button className="text-neutral-400 hover:text-neutral-600 transition-colors">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
               fill="none"
@@ -137,12 +137,12 @@ export default function StatusWidget({
 
       {/* Provider List */}
       {(showProviders || isExpanded) && (
-        <div className="border-t border-slate-200">
+        <div className="border-t border-neutral-200">
           <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
             {statusData.providers.map((provider) => (
               <div
                 key={provider.provider.id}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-neutral-50 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -151,7 +151,7 @@ export default function StatusWidget({
                   >
                     {provider.provider.name.substring(0, 2)}
                   </div>
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-neutral-700">
                     {provider.provider.userFacingName}
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export default function StatusWidget({
               </div>
             ))}
           </div>
-          <div className="p-3 bg-slate-50/50 border-t border-slate-200">
+          <div className="p-3 bg-neutral-50/50 border-t border-neutral-200">
             <a
               href="/status"
               target="_blank"

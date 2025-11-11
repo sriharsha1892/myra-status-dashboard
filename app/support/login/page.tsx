@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { formatErrorForToast } from '@/lib/errorHandler'
 
 // Strategic quotes from tech leaders
 const LOGIN_QUOTES = [
@@ -42,7 +43,7 @@ export default function LoginPage() {
     const { error: authError } = await signIn(email, password, rememberMe)
 
     if (authError) {
-      setError(authError.message)
+      setError(formatErrorForToast(authError, 'login', true))
       setLoading(false)
       return
     }
@@ -96,13 +97,7 @@ export default function LoginPage() {
       setShowForgotPassword(false)
       setResetEmail('')
     } catch (error: any) {
-      toast.error(
-        <div>
-          <div className="font-semibold">Couldn't submit request</div>
-          <div className="text-xs mt-1">{error.message || 'Please try again or contact support'}</div>
-        </div>,
-        { duration: 5000 }
-      )
+      toast.error(formatErrorForToast(error, 'api_call', true), { duration: 5000 })
     } finally {
       setResetLoading(false)
     }
@@ -117,7 +112,7 @@ export default function LoginPage() {
           style={{ animation: 'liquidMove 20s ease-in-out infinite' }}
         ></div>
         <div
-          className="absolute top-0 -right-4 w-72 h-72 bg-gradient-to-br from-purple-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70"
+          className="absolute top-0 -right-4 w-72 h-72 bg-gradient-to-br from-accent-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70"
           style={{ animation: 'liquidMove 25s ease-in-out infinite reverse' }}
         ></div>
         <div
@@ -130,11 +125,15 @@ export default function LoginPage() {
       <div className="relative w-full max-w-lg animate-[scaleIn_0.5s_ease-out]">
         {/* Logo & Title */}
         <div className="text-center mb-10 animate-[fadeInUp_0.6s_ease-out]">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl mb-4 shadow-2xl shadow-blue-600/30 relative overflow-hidden group">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-accent-500 rounded-2xl mb-4 shadow-2xl shadow-accent-500/30 relative overflow-hidden group">
             {/* Shine effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            <svg className="w-8 h-8 text-white relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg className="w-8 h-8 text-white relative z-10" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="2" fill="currentColor" opacity="1"/>
+              <circle cx="12" cy="6" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="18" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="12" cy="18" r="1.5" fill="currentColor" opacity="0.9"/>
+              <circle cx="6" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">myRA AI</h1>
@@ -259,11 +258,11 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="relative w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700
+                className="relative w-full h-12 bg-accent-500 hover:from-blue-700 hover:to-indigo-700
                          active:scale-[0.98] disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed
                          text-white text-sm font-semibold rounded-xl
                          transition-all duration-200 ease-out
-                         shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 disabled:shadow-none
+                         shadow-lg shadow-accent-500/30 hover:shadow-xl hover:shadow-blue-600/40 disabled:shadow-none
                          flex items-center justify-center gap-2 mt-8 overflow-hidden group"
               >
                 {/* Button shine effect */}
@@ -383,7 +382,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="flex-1 h-11 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-lg shadow-blue-600/30 hover:shadow-xl flex items-center justify-center gap-2"
+                  className="flex-1 h-11 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-lg shadow-accent-500/30 hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   {resetLoading ? (
                     <>

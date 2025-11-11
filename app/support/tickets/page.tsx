@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,7 +20,12 @@ import {
   ArrowUpDown,
   ChevronDown,
   XCircle,
+  Building2,
+  User,
 } from 'lucide-react';
+import { MagneticCard } from '@/components/animations/MagneticCard';
+import { HolographicOverlay } from '@/components/animations/HolographicOverlay';
+import { ChromaticShift } from '@/components/animations/ChromaticShift';
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 
@@ -74,6 +80,113 @@ const getPriorityConfig = (priority: string) => {
   }
 };
 
+// Memoized TicketCard component for performance
+const TicketCard = React.memo(({ ticket, index, router }: { ticket: Ticket; index: number; router: any }) => {
+  const statusConfig = getStatusConfig(ticket.status);
+  const priorityConfig = getPriorityConfig(ticket.priority);
+  const StatusIcon = statusConfig.icon;
+  const isCritical = ticket.priority === 'Critical';
+  const isHigh = ticket.priority === 'High';
+
+  return (
+    <MagneticCard
+      key={ticket.id}
+      index={index}
+      className="group/card relative overflow-hidden"
+    >
+      {/* Animated gradient border for critical/high */}
+      {(isCritical || isHigh) && (
+        <div className={`absolute inset-0 rounded-2xl ${
+          isCritical ? 'bg-gradient-to-br from-red-400/40 via-orange-400/40 to-yellow-400/40' : 'bg-gradient-to-br from-orange-400/40 via-yellow-400/40 to-amber-400/40'
+        } opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 blur-sm pointer-events-none`}></div>
+      )}
+
+      {/* Holographic overlay */}
+      <HolographicOverlay intensity={0.3}>
+        <ChromaticShift intensity={0.4}>
+          {/* Main glass card */}
+          <div className={`relative backdrop-blur-xl border-2 rounded-2xl p-5 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 ${
+            isCritical
+              ? 'bg-gradient-to-br from-red-50/90 to-orange-50/70 border-red-300/50 shadow-lg shadow-red-500/10'
+              : isHigh
+              ? 'bg-gradient-to-br from-orange-50/90 to-yellow-50/70 border-orange-300/50 shadow-lg shadow-orange-500/10'
+              : 'bg-white/80 border-white/20 shadow-md'
+          }`}>
+            {/* Gradient overlay on hover */}
+            <div className={`absolute inset-0 rounded-2xl ${
+              isCritical ? 'bg-gradient-to-br from-red-500/5 via-transparent to-orange-500/5' : 'bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5'
+            } opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none`}></div>
+
+            <button
+              onClick={() => router.push(`/support/tickets/${ticket.id}`)}
+              className="w-full text-left relative z-10"
+            >
+              {/* Header: Ticket Number & Priority */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`shrink-0 w-9 h-9 rounded-xl ${statusConfig.bg} ${statusConfig.border} border flex items-center justify-center shadow-lg transition-transform duration-300 group-hover/card:scale-110`}>
+                    <FileText className={`w-4 h-4 ${statusConfig.text}`} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-blue-600">
+                      {ticket.ticket_number}
+                    </div>
+                    <div className="text-xs text-neutral-500">{ticket.category}</div>
+                  </div>
+                </div>
+
+                <span
+                  className={`shrink-0 inline-flex items-center h-6 px-2.5 text-xs font-semibold rounded-lg border shadow-md ${priorityConfig.bg} ${priorityConfig.text} ${priorityConfig.border}`}
+                >
+                  {ticket.priority}
+                </span>
+              </div>
+
+              {/* Description */}
+              <h3 className="font-semibold text-neutral-900 leading-tight mb-3 line-clamp-2">
+                {ticket.description}
+              </h3>
+
+              {/* Organization & User */}
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Building2 className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="text-neutral-700 truncate">{ticket.organization}</span>
+                </div>
+                {ticket.user_name && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="w-3.5 h-3.5 text-neutral-400" />
+                    <span className="text-neutral-600">{ticket.user_name}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer: Status & Time */}
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-neutral-200/50">
+                <span
+                  className={`inline-flex items-center gap-1.5 h-6 px-2.5 text-xs font-semibold rounded-lg border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
+                >
+                  <StatusIcon className="w-3 h-3" />
+                  {ticket.status}
+                </span>
+
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-neutral-100/80 backdrop-blur-sm">
+                  <Clock className="w-3 h-3 text-neutral-500" />
+                  <span className="text-xs text-neutral-600 font-medium">
+                    {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
+                  </span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </ChromaticShift>
+      </HolographicOverlay>
+    </MagneticCard>
+  );
+});
+
+TicketCard.displayName = 'TicketCard';
+
 export default function TicketsListPage() {
   const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
@@ -83,6 +196,7 @@ export default function TicketsListPage() {
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -104,7 +218,7 @@ export default function TicketsListPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [tickets, searchQuery, statusFilter, priorityFilter, categoryFilter, sortField, sortDirection]);
+  }, [tickets, debouncedSearch, statusFilter, priorityFilter, categoryFilter, sortField, sortDirection]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -152,8 +266,8 @@ export default function TicketsListPage() {
     let filtered = [...tickets];
 
     // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (ticket) =>
           ticket.ticket_number?.toLowerCase().includes(query) ||
@@ -250,7 +364,7 @@ export default function TicketsListPage() {
 
             <button
               onClick={() => router.push('/support/submit')}
-              className="flex items-center gap-2 h-10 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30"
+              className="flex items-center gap-2 h-10 px-5 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30"
             >
               <Plus className="w-4 h-4" />
               New Ticket
@@ -363,112 +477,24 @@ export default function TicketsListPage() {
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No tickets found</h3>
             <p className="text-sm text-gray-500 mb-6">
-              {searchQuery || activeFiltersCount > 0
+              {debouncedSearch || activeFiltersCount > 0
                 ? 'Try adjusting your filters or search query'
                 : 'Get started by creating your first ticket'}
             </p>
             <button
               onClick={() => router.push('/support/submit')}
-              className="inline-flex items-center gap-2 h-10 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all"
+              className="inline-flex items-center gap-2 h-10 px-5 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all"
             >
               <Plus className="w-4 h-4" />
               Create Ticket
             </button>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              <div className="col-span-2">Ticket #</div>
-              <div className="col-span-3">Description</div>
-              <div className="col-span-2">Organization</div>
-              <div className="col-span-1">
-                <button
-                  onClick={() => toggleSort('priority')}
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                >
-                  Priority
-                  <ArrowUpDown className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-2">
-                <button
-                  onClick={() => toggleSort('created_at')}
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                >
-                  Created
-                  <ArrowUpDown className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-
-            {/* Table Body */}
-            <div className="divide-y divide-gray-200">
-              {filteredTickets.map((ticket) => {
-                const statusConfig = getStatusConfig(ticket.status);
-                const priorityConfig = getPriorityConfig(ticket.priority);
-                const StatusIcon = statusConfig.icon;
-
-                return (
-                  <button
-                    key={ticket.id}
-                    onClick={() => router.push(`/support/tickets/${ticket.id}`)}
-                    className="w-full grid grid-cols-12 gap-4 px-6 py-4 hover:bg-blue-50/50 transition-colors text-left"
-                  >
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-blue-600 truncate">
-                          {ticket.ticket_number}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">{ticket.category}</div>
-                    </div>
-
-                    <div className="col-span-3">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                        {ticket.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{ticket.user_name}</span>
-                      </div>
-                    </div>
-
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-900 truncate">{ticket.organization}</p>
-                    </div>
-
-                    <div className="col-span-1">
-                      <span
-                        className={`inline-flex items-center h-6 px-2 text-xs font-medium rounded-md border ${priorityConfig.bg} ${priorityConfig.text} ${priorityConfig.border}`}
-                      >
-                        {ticket.priority}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 h-6 px-2 text-xs font-medium rounded-md border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
-                      >
-                        <StatusIcon className="w-3 h-3" />
-                        {ticket.status}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Updated {formatDistanceToNow(new Date(ticket.updated_at), { addSuffix: true })}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          /* Glassmorphism Cards Grid */
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredTickets.map((ticket, index) => (
+              <TicketCard key={ticket.id} ticket={ticket} index={index} router={router} />
+            ))}
           </div>
         )}
       </div>

@@ -96,18 +96,18 @@ export default function UnifiedNoteEditor({
     : 'Add a note... Use @ to mention someone';
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-neutral-200 dark:border-slate-700">
       {/* Header */}
       {mode === 'root' && (
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-          <MessageSquare className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-slate-700">
+          <MessageSquare className="w-4 h-4 text-neutral-500" />
+          <span className="text-sm font-medium text-neutral-700 dark:text-slate-300">
             Add Note
           </span>
           <select
             value={visibility}
             disabled={isSubmitting}
-            className="ml-auto text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+            className="ml-auto text-xs px-2 py-1 rounded border border-neutral-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-neutral-700 dark:text-slate-300"
             onChange={(e) => {
               // This would need to be lifted to parent component to be functional
               console.log('Visibility changed:', e.target.value);
@@ -134,7 +134,7 @@ export default function UnifiedNoteEditor({
 
       {/* Visibility indicator */}
       <div className="px-4 pb-3">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-neutral-500">
           {visibility === 'team' && (
             <span>👥 Visible to all team members</span>
           )}

@@ -12,7 +12,7 @@ interface AINewsPanelProps {
 
 const CATEGORY_LABELS = {
   partnership: { label: 'Partnership', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  internal_ai_use: { label: 'Internal AI Use', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  internal_ai_use: { label: 'Internal AI Use', color: 'bg-accent-100 text-accent-700 border-accent-200' },
   executive_hire: { label: 'Executive Hire', color: 'bg-green-100 text-green-700 border-green-200' },
   product_launch: { label: 'Product Launch', color: 'bg-amber-100 text-amber-700 border-amber-200' },
   research: { label: 'Research', color: 'bg-pink-100 text-pink-700 border-pink-200' },
@@ -31,7 +31,7 @@ export default function AINewsPanel({ orgId, orgName }: AINewsPanelProps) {
         {/* Compact Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-accent-600 flex items-center justify-center shadow-sm">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>

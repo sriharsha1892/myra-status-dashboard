@@ -26,7 +26,7 @@ const LINK_TYPE_COLORS: Record<string, string> = {
   blocks: 'bg-red-100 text-red-700',
   blocked_by: 'bg-orange-100 text-orange-700',
   related: 'bg-blue-100 text-blue-700',
-  duplicate: 'bg-purple-100 text-purple-700',
+  duplicate: 'bg-accent-100 text-accent-700',
 };
 
 export function TicketLinks({ ticketId, ticketNumber }: TicketLinksProps) {

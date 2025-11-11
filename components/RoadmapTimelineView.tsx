@@ -28,13 +28,6 @@ const STATUS_COLOR = {
   cancelled: 'bg-gray-100 border-gray-300',
 };
 
-const PRIORITY_COLOR = {
-  low: 'border-l-4 border-l-green-500',
-  medium: 'border-l-4 border-l-yellow-500',
-  high: 'border-l-4 border-l-red-500',
-  critical: 'border-l-4 border-l-red-700',
-};
-
 const STATUS_ICON = {
   planned: '📋',
   in_progress: '🚀',
@@ -138,11 +131,11 @@ export default function RoadmapTimelineView({ items, onItemClick }: RoadmapTimel
           </div>
           <div className="text-xs text-green-700">Completed</div>
         </div>
-        <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
-          <div className="text-2xl font-bold text-purple-600">
+        <div className="p-2 bg-accent-50 rounded-lg border border-accent-200">
+          <div className="text-2xl font-bold text-accent-600">
             {itemsInMonth.reduce((sum, i) => sum + (i.forwarded_feature_count || 0), 0)}
           </div>
-          <div className="text-xs text-purple-700">Forwarded Features</div>
+          <div className="text-xs text-accent-700">Forwarded Features</div>
         </div>
       </div>
 
@@ -184,7 +177,7 @@ export default function RoadmapTimelineView({ items, onItemClick }: RoadmapTimel
                         <div
                           key={item.id}
                           onClick={() => onItemClick(item.id)}
-                          className={`text-xs p-1 rounded cursor-pointer hover:shadow-md transition-all border ${PRIORITY_COLOR[item.priority]} ${STATUS_COLOR[item.status]}`}
+                          className={`text-xs p-1 rounded cursor-pointer hover:shadow-md transition-all border ${STATUS_COLOR[item.status]}`}
                         >
                           <div className="flex items-start gap-0.5">
                             <span className="text-xs flex-shrink-0">{STATUS_ICON[item.status]}</span>
@@ -208,7 +201,7 @@ export default function RoadmapTimelineView({ items, onItemClick }: RoadmapTimel
 
                           {/* Forwarded indicator */}
                           {item.forwarded_feature_count && item.forwarded_feature_count > 0 && (
-                            <div className="text-xs font-semibold text-purple-600 mt-0.5">
+                            <div className="text-xs font-semibold text-accent-600 mt-0.5">
                               ⬆️ {item.forwarded_feature_count} forwarded
                             </div>
                           )}

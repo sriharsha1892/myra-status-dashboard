@@ -1,11 +1,12 @@
 'use client';
 
-import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp } from 'lucide-react';
+import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Video, CalendarClock, MessageSquare, Sparkles } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import TrialExtensionsTab from './TrialExtensionsTab';
 import UpdateDealStatusModal from './UpdateDealStatusModal';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 interface OverviewTabProps {
   organization: any;
@@ -17,7 +18,7 @@ const DEAL_STATUS_CONFIG: { [key: string]: { icon: string; color: string; bgColo
   negotiating: { icon: '💼', color: 'yellow', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700' },
   won: { icon: '🎉', color: 'green', bgColor: 'bg-green-50', textColor: 'text-green-700' },
   lost: { icon: '❌', color: 'red', bgColor: 'bg-red-50', textColor: 'text-red-700' },
-  deferred: { icon: '⏸️', color: 'purple', bgColor: 'bg-purple-50', textColor: 'text-purple-700' },
+  deferred: { icon: '⏸️', color: 'purple', bgColor: 'bg-accent-50', textColor: 'text-accent-700' },
 };
 
 export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
@@ -105,7 +106,7 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
           {organization.trial_expiry_date && (
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-accent-100 text-accent-700 flex items-center justify-center">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
@@ -117,6 +118,79 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-blue-600" />
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Demos Tracking */}
+          <Link
+            href={`/support/trials/demos?org_id=${orgId}`}
+            className="group bg-gradient-to-br from-accent-50 to-pink-50 rounded-lg p-4 border border-accent-200 hover:shadow-lg hover:scale-105 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-accent-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Video className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Demos</p>
+                <p className="text-xs text-gray-600">Track demo sessions</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Follow-ups Management */}
+          <Link
+            href={`/support/trials/follow-ups?org_id=${orgId}`}
+            className="group bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200 hover:shadow-lg hover:scale-105 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-amber-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CalendarClock className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Follow-ups</p>
+                <p className="text-xs text-gray-600">Scheduled reminders</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Meetings */}
+          <Link
+            href={`/support/trials/meetings?org_id=${orgId}`}
+            className="group bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200 hover:shadow-lg hover:scale-105 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Meetings</p>
+                <p className="text-xs text-gray-600">Meeting logs & notes</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* AI Parser */}
+          <Link
+            href={`/support/trials/parse?org_id=${orgId}`}
+            className="group bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200 hover:shadow-lg hover:scale-105 transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-emerald-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">AI Parser</p>
+                <p className="text-xs text-gray-600">Extract insights</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
 
@@ -190,7 +264,7 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
             {dealData.deal_status === 'deferred' && dealData.expected_followup_date && (
               <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-accent-100 text-accent-700 flex items-center justify-center">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div className="flex-1">

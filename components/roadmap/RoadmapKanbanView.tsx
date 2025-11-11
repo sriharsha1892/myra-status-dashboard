@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { AlertCircle, CheckCircle2, Clock, XCircle, Link2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { handleError } from '@/lib/utils/errorHandler';
 
 interface RoadmapItem {
   id: string;
@@ -22,7 +23,7 @@ interface RoadmapItem {
 }
 
 interface RoadmapKanbanViewProps {
-  orgId: string;
+  orgId?: string | null; // Optional to support global roadmap items
   onItemClick: (itemId: string) => void;
   items: RoadmapItem[];
   onUpdate: () => void;
@@ -85,24 +86,36 @@ export default function RoadmapKanbanView({ orgId, onItemClick, items, onUpdate 
 
     const newStatus = destination.droppableId as RoadmapItem['status'];
 
-    // Update the item status in the database
-    const { error } = await supabase
-      .from('org_product_roadmap')
-      .update({
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', draggableId)
-      .eq('org_id', orgId);
+    try {
+      // Update the item status in the database
+      let query = supabase
+        .from('org_product_roadmap')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', draggableId);
 
-    if (error) {
-      console.error('Error updating item status:', error);
-      toast.error('Failed to update status');
-      return;
+      // For org-specific roadmap items, filter by org_id
+      // For global roadmap items (orgId is null/undefined), use IS NULL check
+      if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+        query = query.eq('org_id', orgId);
+      } else if (!orgId || orgId === 'null' || orgId === 'undefined') {
+        query = query.is('org_id', null);
+      }
+
+      const { error } = await query;
+
+      if (error) throw error;
+
+      toast.success(`Moved to ${COLUMNS[newStatus].title}`);
+      onUpdate();
+    } catch (error: any) {
+      handleError(error, {
+        context: 'updating roadmap item status via drag and drop',
+        additionalContext: { itemId: draggableId, newStatus, orgId }
+      });
     }
-
-    toast.success(`Moved to ${COLUMNS[newStatus].title}`);
-    onUpdate();
   };
 
   const getColumnItems = (status: RoadmapItem['status']) => {

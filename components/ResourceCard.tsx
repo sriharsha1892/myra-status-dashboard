@@ -24,7 +24,7 @@ interface ResourceCardProps {
 const LINK_TYPE_CONFIG = {
   onedrive: { label: 'OneDrive', color: 'bg-blue-500/20 text-blue-600' },
   google_drive: { label: 'Google Drive', color: 'bg-green-500/20 text-green-600' },
-  external: { label: 'External Link', color: 'bg-purple-500/20 text-purple-600' },
+  external: { label: 'External Link', color: 'bg-accent-500/20 text-accent-600' },
 };
 
 // Category color mappings (Tailwind JIT-safe)
@@ -45,8 +45,8 @@ const CATEGORY_COLORS: Record<string, {
   purple: {
     hoverGradient: 'from-purple-400/40 via-blue-400/40 to-pink-400/40',
     overlayGradient: 'from-purple-500/5',
-    badge: 'bg-purple-500/20',
-    text: 'text-purple-700',
+    badge: 'bg-accent-500/20',
+    text: 'text-accent-700',
     border: 'border-purple-500/30'
   },
   green: {
@@ -80,8 +80,8 @@ const CATEGORY_COLORS: Record<string, {
   slate: {
     hoverGradient: 'from-slate-400/40 via-gray-400/40 to-zinc-400/40',
     overlayGradient: 'from-slate-500/5',
-    badge: 'bg-slate-500/20',
-    text: 'text-slate-700',
+    badge: 'bg-neutral-500/20',
+    text: 'text-neutral-700',
     border: 'border-slate-500/30'
   },
   emerald: {
@@ -142,7 +142,7 @@ export default function ResourceCard({
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1 truncate group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1 truncate group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-accent-600 transition-all duration-300">
                   {title}
                 </h3>
                 {categoryName && (
@@ -171,7 +171,7 @@ export default function ResourceCard({
 
             {/* Description */}
             {description && (
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 line-clamp-2">
+              <p className="text-sm text-neutral-600 dark:text-slate-300 mb-4 line-clamp-2">
                 {description}
               </p>
             )}
@@ -182,7 +182,7 @@ export default function ResourceCard({
                 {tags.map((tag, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium backdrop-blur-sm bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20 hover:bg-slate-500/20 transition-colors"
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium backdrop-blur-sm bg-neutral-500/10 text-neutral-700 dark:text-slate-300 border border-slate-500/20 hover:bg-neutral-500/20 transition-colors"
                   >
                     {tag}
                   </span>
@@ -191,16 +191,16 @@ export default function ResourceCard({
             )}
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center justify-between pt-4 border-t border-neutral-200/50 dark:border-slate-700/50">
               <div className="flex flex-col gap-0.5">
                 {createdByName && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     Added by {createdByName}
                   </p>
                 )}
                 <RelativeTime
                   date={createdAt}
-                  className="text-xs text-slate-400 dark:text-slate-500"
+                  className="text-xs text-neutral-400 dark:text-neutral-500"
                 />
               </div>
 
@@ -221,7 +221,7 @@ export default function ResourceCard({
                 {onAddNote && (
                   <button
                     onClick={() => onAddNote(id)}
-                    className="p-2 rounded-lg backdrop-blur-sm bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all hover:scale-110"
+                    className="p-2 rounded-lg backdrop-blur-sm bg-accent-500/10 text-accent-600 hover:bg-accent-500/20 border border-purple-500/20 hover:border-purple-500/40 transition-all hover:scale-110"
                     title="Add note"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -232,7 +232,7 @@ export default function ResourceCard({
                 {onEdit && (
                   <button
                     onClick={() => onEdit(id)}
-                    className="p-2 rounded-lg backdrop-blur-sm bg-slate-500/10 text-slate-600 hover:bg-slate-500/20 border border-slate-500/20 hover:border-slate-500/40 transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
+                    className="p-2 rounded-lg backdrop-blur-sm bg-neutral-500/10 text-neutral-600 hover:bg-neutral-500/20 border border-slate-500/20 hover:border-slate-500/40 transition-all hover:scale-110 opacity-0 group-hover:opacity-100"
                     title="Edit resource"
                   >
                     <Edit className="w-4 h-4" />

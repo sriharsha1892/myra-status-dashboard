@@ -12,7 +12,7 @@ const STAGE_COLORS = {
   invited: 'from-gray-400 to-gray-600',
   low_activity: 'from-blue-400 to-blue-600',
   active: 'from-green-400 to-green-600',
-  power_user: 'from-purple-400 to-purple-600',
+  power_user: 'from-purple-400 to-accent-600',
   dormant: 'from-gray-400 to-gray-600',
 };
 
@@ -42,7 +42,7 @@ function stringToColor(str: string): string {
 
   const colors = [
     'from-blue-400 to-blue-600',
-    'from-purple-400 to-purple-600',
+    'from-purple-400 to-accent-600',
     'from-pink-400 to-pink-600',
     'from-indigo-400 to-indigo-600',
     'from-cyan-400 to-cyan-600',

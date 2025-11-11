@@ -62,6 +62,12 @@ export default function MilestoneManager({
   const fetchMilestones = async () => {
     setLoading(true);
     try {
+      if (!orgId) {
+        console.warn('MilestoneManager: orgId is undefined, cannot fetch milestones');
+        setMilestones([]);
+        return;
+      }
+
       if (showProgress) {
         // Fetch with progress data from view
         const { data, error } = await supabase

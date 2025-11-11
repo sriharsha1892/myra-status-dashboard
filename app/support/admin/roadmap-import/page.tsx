@@ -63,7 +63,7 @@ export default function RoadmapImportPage() {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (!user || role?.toLowerCase() !== 'admin') {
+  if (!user || role !== 'Admin') {
     router.push('/support/dashboard');
     return null;
   }
@@ -389,7 +389,7 @@ export default function RoadmapImportPage() {
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.push('/support/admin/roadmap')}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
+            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Roadmap
@@ -400,8 +400,8 @@ export default function RoadmapImportPage() {
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Upload className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">Import Roadmap Items</h1>
-              <p className="text-sm text-slate-600">
+              <h1 className="text-2xl font-bold text-neutral-900 mb-2">Import Roadmap Items</h1>
+              <p className="text-sm text-neutral-600">
                 Upload your roadmap data from CSV or Excel. We'll intelligently map columns and let you edit before importing.
               </p>
             </div>
@@ -427,7 +427,7 @@ export default function RoadmapImportPage() {
             </div>
 
             {/* File Upload */}
-            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+            <div className="border-2 border-dashed border-neutral-300 rounded-2xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all">
               <input
                 type="file"
                 accept=".csv,.xlsx,.xls"
@@ -439,63 +439,63 @@ export default function RoadmapImportPage() {
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center gap-4"
               >
-                <FileSpreadsheet className="w-16 h-16 text-slate-400" />
+                <FileSpreadsheet className="w-16 h-16 text-neutral-400" />
                 <div>
-                  <p className="text-base font-semibold text-slate-900 mb-1">
+                  <p className="text-base font-semibold text-neutral-900 mb-1">
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-neutral-600">
                     CSV, XLSX, or XLS files supported
                   </p>
                 </div>
-                <div className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-xl">
+                <div className="px-6 py-3 bg-accent-500 text-white text-sm font-semibold rounded-xl">
                   Choose File
                 </div>
               </label>
             </div>
 
             {/* Supported Columns */}
-            <div className="mt-8 p-6 bg-slate-50 rounded-xl">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Supported Columns</h3>
+            <div className="mt-8 p-6 bg-neutral-50 rounded-xl">
+              <h3 className="text-sm font-bold text-neutral-900 mb-3">Supported Columns</h3>
               <div className="grid grid-cols-3 gap-3 text-xs">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Title (required)</span>
+                  <span className="text-neutral-700">Title (required)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Description</span>
+                  <span className="text-neutral-700">Description</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Status</span>
+                  <span className="text-neutral-700">Status</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Priority</span>
+                  <span className="text-neutral-700">Priority</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Category</span>
+                  <span className="text-neutral-700">Category</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Goal</span>
+                  <span className="text-neutral-700">Goal</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Area</span>
+                  <span className="text-neutral-700">Area</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Proposer</span>
+                  <span className="text-neutral-700">Proposer</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-slate-700">Due Date</span>
+                  <span className="text-neutral-700">Due Date</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-3">
+              <p className="text-xs text-neutral-500 mt-3">
                 Don't worry about exact column names - our AI will intelligently map them!
               </p>
             </div>
@@ -517,14 +517,14 @@ export default function RoadmapImportPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setStep('upload')}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Preview & Edit Data</h1>
-                <p className="text-sm text-slate-600 mt-1">
+                <h1 className="text-2xl font-bold text-neutral-900">Preview & Edit Data</h1>
+                <p className="text-sm text-neutral-600 mt-1">
                   {validCount} valid, {invalidCount} invalid • Click cells to edit
                 </p>
               </div>
@@ -542,21 +542,21 @@ export default function RoadmapImportPage() {
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="bg-slate-100 border-b border-slate-200">
+                <thead className="bg-neutral-100 border-b border-neutral-200">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700 sticky left-0 bg-slate-100 z-10">Status</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Title</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Priority</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Category</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Goal</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Area</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700 sticky left-0 bg-neutral-100 z-10">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Title</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Description</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Priority</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Category</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Goal</th>
+                    <th className="px-4 py-3 text-left font-semibold text-neutral-700">Area</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {parsedData.map((row, rowIndex) => (
-                    <tr key={row.id} className={`hover:bg-slate-50 ${!row._isValid ? 'bg-red-50' : ''}`}>
+                    <tr key={row.id} className={`hover:bg-neutral-50 ${!row._isValid ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-3 sticky left-0 bg-white z-10">
                         {row._isValid ? (
                           <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -572,7 +572,7 @@ export default function RoadmapImportPage() {
                           type="text"
                           value={row.title}
                           onChange={(e) => handleCellEdit(rowIndex, 'title', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500"
                           placeholder="Required"
                         />
                       </td>
@@ -581,14 +581,14 @@ export default function RoadmapImportPage() {
                           type="text"
                           value={row.description || ''}
                           onChange={(e) => handleCellEdit(rowIndex, 'description', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <select
                           value={row.status}
                           onChange={(e) => handleCellEdit(rowIndex, 'status', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500 text-xs"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500 text-xs"
                         >
                           {STATUSES.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -599,7 +599,7 @@ export default function RoadmapImportPage() {
                         <select
                           value={row.priority}
                           onChange={(e) => handleCellEdit(rowIndex, 'priority', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500 text-xs"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500 text-xs"
                         >
                           {PRIORITIES.map(priority => (
                             <option key={priority} value={priority}>{priority}</option>
@@ -611,7 +611,7 @@ export default function RoadmapImportPage() {
                           type="text"
                           value={row.category || ''}
                           onChange={(e) => handleCellEdit(rowIndex, 'category', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -619,7 +619,7 @@ export default function RoadmapImportPage() {
                           type="text"
                           value={row.goal || ''}
                           onChange={(e) => handleCellEdit(rowIndex, 'goal', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -627,7 +627,7 @@ export default function RoadmapImportPage() {
                           type="text"
                           value={row.area || ''}
                           onChange={(e) => handleCellEdit(rowIndex, 'area', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                          className="w-full px-2 py-1 border border-neutral-200 rounded focus:outline-none focus:border-blue-500"
                         />
                       </td>
                     </tr>
@@ -649,11 +649,11 @@ export default function RoadmapImportPage() {
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
             <Upload className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Importing Roadmap Items</h2>
-          <p className="text-sm text-slate-600 mb-6">Please wait while we process your data...</p>
-          <div className="w-full bg-slate-200 rounded-full h-3 mb-4">
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">Importing Roadmap Items</h2>
+          <p className="text-sm text-neutral-600 mb-6">Please wait while we process your data...</p>
+          <div className="w-full bg-neutral-200 rounded-full h-3 mb-4">
             <div
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-3 rounded-full transition-all duration-500"
+              className="bg-accent-500 h-3 rounded-full transition-all duration-500"
               style={{ width: `${importProgress}%` }}
             />
           </div>
@@ -671,23 +671,23 @@ export default function RoadmapImportPage() {
           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Import Complete!</h2>
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">Import Complete!</h2>
           <div className="flex items-center justify-center gap-8 my-8">
             <div>
               <p className="text-3xl font-bold text-green-600">{importResults.success}</p>
-              <p className="text-sm text-slate-600">Succeeded</p>
+              <p className="text-sm text-neutral-600">Succeeded</p>
             </div>
             {importResults.failed > 0 && (
               <div>
                 <p className="text-3xl font-bold text-red-600">{importResults.failed}</p>
-                <p className="text-sm text-slate-600">Failed</p>
+                <p className="text-sm text-neutral-600">Failed</p>
               </div>
             )}
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/support/admin/roadmap')}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all"
+              className="flex-1 px-6 py-3 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all"
             >
               View Roadmap
             </button>
@@ -697,7 +697,7 @@ export default function RoadmapImportPage() {
                 setParsedData([]);
                 setImportResults({ success: 0, failed: 0 });
               }}
-              className="flex-1 px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition-all"
+              className="flex-1 px-6 py-3 bg-neutral-200 hover:bg-slate-300 text-neutral-700 text-sm font-semibold rounded-xl transition-all"
             >
               Import More
             </button>

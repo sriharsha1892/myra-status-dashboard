@@ -18,10 +18,12 @@ import {
   Star,
   ChevronDown,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
+import NotificationPreferencesModal from '@/components/NotificationPreferencesModal';
 
 interface Notification {
   id: string;
@@ -54,8 +56,8 @@ const NOTIFICATION_TYPES: Record<string, {
   },
   assignment: {
     icon: UserPlus,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-500/10',
+    color: 'text-accent-600',
+    bgColor: 'bg-accent-500/10',
     borderColor: 'border-purple-500/20',
     glowColor: 'shadow-purple-500/20'
   },
@@ -101,10 +103,17 @@ const NOTIFICATION_TYPES: Record<string, {
     borderColor: 'border-amber-500/20',
     glowColor: 'shadow-amber-500/20'
   },
+  feature_proposal: {
+    icon: Sparkles,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-500/10',
+    borderColor: 'border-indigo-500/20',
+    glowColor: 'shadow-indigo-500/20'
+  },
   default: {
     icon: Bell,
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-500/10',
+    color: 'text-neutral-600',
+    bgColor: 'bg-neutral-500/10',
     borderColor: 'border-slate-500/20',
     glowColor: 'shadow-slate-500/20'
   }
@@ -142,6 +151,7 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<'priority' | 'recent' | 'archived'>('priority');
   const [loading, setLoading] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [showPreferences, setShowPreferences] = useState(false);
   const supabase = createClient();
 
   const toggleGroup = (groupName: string) => {
@@ -274,30 +284,39 @@ export default function NotificationsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="relative">
-                    <Bell className="w-8 h-8 text-slate-700" />
+                    <Bell className="w-8 h-8 text-neutral-700" />
                     {unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 animate-pulse">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-blue-500 to-accent-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 animate-pulse">
                         <span className="text-[10px] font-bold text-white">{unreadCount}</span>
                       </div>
                     )}
                   </div>
-                  <h1 className="text-3xl font-bold text-slate-900">Notifications</h1>
+                  <h1 className="text-3xl font-bold text-neutral-900">Notifications</h1>
                 </div>
-                <p className="text-sm text-slate-600 flex items-center gap-2">
+                <p className="text-sm text-neutral-600 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-500" />
                   Stay in sync with your team's activity
                 </p>
               </div>
-              {unreadCount > 0 && (
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={markAllAsRead}
-                  className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105"
+                  onClick={() => setShowPreferences(true)}
+                  className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-neutral-700 bg-white/80 backdrop-blur-xl border border-neutral-200 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-slate-500/10 hover:scale-105 hover:border-neutral-300"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <Check className="w-4 h-4 relative z-10" />
-                  <span className="relative z-10">Mark all read</span>
+                  <Settings className="w-4 h-4" />
+                  <span>Preferences</span>
                 </button>
-              )}
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-accent-500 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/30 hover:scale-105"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <Check className="w-4 h-4 relative z-10" />
+                    <span className="relative z-10">Mark all read</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -311,11 +330,11 @@ export default function NotificationsPage() {
                 className={`relative px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   activeTab === 'priority'
                     ? 'text-white'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 {activeTab === 'priority' && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg"></div>
+                  <div className="absolute inset-0 bg-accent-500 rounded-xl shadow-lg"></div>
                 )}
                 <span className="relative z-10 flex items-center gap-2">
                   <Star className="w-4 h-4" />
@@ -327,11 +346,11 @@ export default function NotificationsPage() {
                 className={`relative px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   activeTab === 'recent'
                     ? 'text-white'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 {activeTab === 'recent' && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg"></div>
+                  <div className="absolute inset-0 bg-accent-500 rounded-xl shadow-lg"></div>
                 )}
                 <span className="relative z-10 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
@@ -343,11 +362,11 @@ export default function NotificationsPage() {
                 className={`relative px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   activeTab === 'archived'
                     ? 'text-white'
-                    : 'text-slate-600 hover:text-slate-900'
+                    : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 {activeTab === 'archived' && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg"></div>
+                  <div className="absolute inset-0 bg-accent-500 rounded-xl shadow-lg"></div>
                 )}
                 <span className="relative z-10 flex items-center gap-2">
                   <Archive className="w-4 h-4" />
@@ -365,7 +384,7 @@ export default function NotificationsPage() {
               <div className="absolute inset-0 border-4 border-blue-200 rounded-full animate-ping opacity-20"></div>
               <div className="absolute inset-0 border-4 border-t-blue-600 border-r-purple-600 border-b-pink-600 border-l-blue-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-slate-500 font-medium">Loading your notifications...</p>
+            <p className="text-neutral-500 font-medium">Loading your notifications...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="relative overflow-hidden rounded-3xl">
@@ -378,9 +397,9 @@ export default function NotificationsPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full opacity-20 blur-2xl"></div>
                 <Bell className="relative w-20 h-20 text-slate-300" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">All caught up!</h3>
-              <p className="text-slate-500 mb-1">No {activeTab} notifications</p>
-              <p className="text-sm text-slate-400">
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">All caught up!</h3>
+              <p className="text-neutral-500 mb-1">No {activeTab} notifications</p>
+              <p className="text-sm text-neutral-400">
                 {activeTab === 'priority' && "High priority items will appear here when they need your attention"}
                 {activeTab === 'recent' && "Recent updates from your team will show up here"}
                 {activeTab === 'archived' && "Your archived notifications will be stored here"}
@@ -397,13 +416,13 @@ export default function NotificationsPage() {
                   className="group flex items-center gap-3 w-full text-left px-2 py-1 rounded-lg hover:bg-white/50 transition-colors"
                 >
                   {collapsedGroups.has(groupName) ? (
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                    <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                    <ChevronDown className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
                   )}
-                  <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">{groupName}</h2>
+                  <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">{groupName}</h2>
                   <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent"></div>
-                  <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-medium text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
                     {groupNotifications.length}
                   </span>
                 </button>
@@ -447,7 +466,7 @@ export default function NotificationsPage() {
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-4 mb-2">
-                                    <h3 className="font-semibold text-slate-900 leading-tight">
+                                    <h3 className="font-semibold text-neutral-900 leading-tight">
                                       {notification.title}
                                     </h3>
                                     {isHighPriority && (
@@ -459,19 +478,19 @@ export default function NotificationsPage() {
                                   </div>
 
                                   {notification.message && (
-                                    <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                                    <p className="text-sm text-neutral-600 mb-3 line-clamp-2">
                                       {notification.message}
                                     </p>
                                   )}
 
                                   {/* Metadata */}
-                                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                                    <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100/80 backdrop-blur-sm font-medium">
+                                  <div className="flex items-center gap-3 text-xs text-neutral-500">
+                                    <span className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-neutral-100/80 backdrop-blur-sm font-medium">
                                       <Clock className="w-3 h-3" />
                                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                                     </span>
                                     {notification.entity_title && (
-                                      <span className="px-2 py-1 rounded-md bg-slate-100/80 backdrop-blur-sm truncate max-w-[200px]">
+                                      <span className="px-2 py-1 rounded-md bg-neutral-100/80 backdrop-blur-sm truncate max-w-[200px]">
                                         {notification.entity_title}
                                       </span>
                                     )}
@@ -538,6 +557,13 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
+
+      {/* Notification Preferences Modal */}
+      <NotificationPreferencesModal
+        isOpen={showPreferences}
+        onClose={() => setShowPreferences(false)}
+        userEmail={user?.email || ''}
+      />
     </div>
   );
 }

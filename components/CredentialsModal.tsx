@@ -123,7 +123,7 @@ Please change your password after first login.
                 </div>
                 <button
                   onClick={() => copyToClipboard(credentials.password, 'Password')}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all flex items-center gap-2"
+                  className="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-purple-700 transition-all flex items-center gap-2"
                 >
                   {copiedField === 'Password' ? (
                     <Check className="w-4 h-4" />
@@ -167,7 +167,7 @@ Please change your password after first login.
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               onClick={copyAllCredentials}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-accent-500 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
             >
               <Copy className="w-4 h-4" />
               Copy All Credentials

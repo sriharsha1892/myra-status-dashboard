@@ -43,7 +43,7 @@ interface ActivityFeedProps {
 
 const ACTIVITY_ICONS = {
   meeting: { icon: Calendar, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  ticket: { icon: MessageSquare, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' },
+  ticket: { icon: MessageSquare, color: 'from-purple-500 to-accent-600', bg: 'bg-accent-50', border: 'border-accent-200' },
   note: { icon: Lightbulb, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
   user_event: { icon: User, color: 'from-green-500 to-green-600', bg: 'bg-green-50', border: 'border-green-200' },
 };
@@ -118,7 +118,7 @@ export default function ActivityFeed({ activities, users = [], organization, onA
           <div className="flex gap-2">
             <button
               onClick={() => onAddActivity('meeting')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-accent-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
             >
               <Calendar className="w-4 h-4" />
               Log Meeting
@@ -159,7 +159,7 @@ function SmartEmptyState({ users, organization, onAddActivity }: { users?: any[]
     <div className="space-y-6">
       {/* Main Empty State Card */}
       <div className="text-center py-16 px-8 rounded-3xl backdrop-blur-xl bg-gradient-to-br from-blue-50/80 to-purple-50/80 border border-white/60 shadow-xl">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-accent-600 flex items-center justify-center shadow-lg">
           <Calendar className="w-10 h-10 text-white" />
         </div>
 
@@ -179,7 +179,7 @@ function SmartEmptyState({ users, organization, onAddActivity }: { users?: any[]
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => onAddActivity('meeting')}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium shadow-lg shadow-accent-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
             >
               <Calendar className="w-5 h-5" />
               Log First Meeting
@@ -221,7 +221,7 @@ function SmartEmptyState({ users, organization, onAddActivity }: { users?: any[]
         </div>
 
         <div className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center mb-4">
             <Lightbulb className="w-6 h-6 text-white" />
           </div>
           <h4 className="font-semibold text-gray-900 mb-2">Capture Insights</h4>

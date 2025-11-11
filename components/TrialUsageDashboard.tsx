@@ -191,14 +191,14 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
         <div className="relative backdrop-blur-xl bg-white/70 dark:bg-slate-900/40 border border-white/20 rounded-3xl p-6 shadow-xl">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold bg-accent-500 bg-clip-text text-transparent">
                 {trialOrgName || trialInfo?.org_name || 'Trial Usage Dashboard'}
               </h2>
               <div className="flex items-center gap-4 mt-2">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                   trialInfo?.status === 'active'
                     ? 'bg-green-500/20 text-green-700 border border-green-500/30'
-                    : 'bg-slate-500/20 text-slate-700 border border-slate-500/30'
+                    : 'bg-neutral-500/20 text-neutral-700 border border-slate-500/30'
                 }`}>
                   {trialInfo?.status || 'Unknown'}
                 </span>
@@ -217,10 +217,10 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
               </div>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+              <div className="text-3xl font-bold text-neutral-900 dark:text-white">
                 {stats.totalActivities}
               </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="text-sm text-neutral-600 dark:text-neutral-400">
                 Total Activities
               </div>
             </div>
@@ -266,13 +266,13 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
             <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
               <Activity className="w-5 h-5 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
               Recent Activity
             </h3>
           </div>
 
           {stats.recentActivities.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-neutral-500">
               No recent activities
             </div>
           ) : (
@@ -280,21 +280,21 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
               {stats.recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-3 p-3 rounded-xl backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-slate-200/30 hover:border-purple-500/30 transition-all"
+                  className="flex items-start gap-3 p-3 rounded-xl backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-neutral-200/30 hover:border-purple-500/30 transition-all"
                 >
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                    <h4 className="text-sm font-medium text-neutral-900 dark:text-white truncate">
                       {activity.title}
                     </h4>
                     {activity.description && (
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 line-clamp-1">
                         {activity.description}
                       </p>
                     )}
                   </div>
                   <RelativeTime
                     date={activity.created_at}
-                    className="text-xs text-slate-500 flex-shrink-0"
+                    className="text-xs text-neutral-500 flex-shrink-0"
                   />
                 </div>
               ))}
@@ -327,8 +327,8 @@ function StatCard({
       border: 'border-blue-500/30',
     },
     purple: {
-      bg: 'from-purple-500/20 to-purple-600/20',
-      text: 'text-purple-600',
+      bg: 'from-purple-500/20 to-accent-600/20',
+      text: 'text-accent-600',
       border: 'border-purple-500/30',
     },
     green: {
@@ -369,10 +369,10 @@ function StatCard({
           <div className={`text-3xl font-bold ${config.text}`}>
             {value.toLocaleString()}
           </div>
-          <div className="text-sm text-slate-600 dark:text-slate-400">
+          <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {title}
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-neutral-500">
             vs. previous 7 days
           </div>
         </div>

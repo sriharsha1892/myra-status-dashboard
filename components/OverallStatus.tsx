@@ -26,13 +26,13 @@ export default function OverallStatus({ status, totalProviders, operationalCount
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">All Systems Operational</h3>
-              <p className="text-sm text-slate-600">All {totalProviders} LLM providers are running normally</p>
+              <h3 className="text-lg font-semibold text-neutral-900">All Systems Operational</h3>
+              <p className="text-sm text-neutral-600">All {totalProviders} LLM providers are running normally</p>
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-emerald-600">{operationalCount}/{totalProviders}</div>
-            <div className="text-xs text-slate-500">providers healthy</div>
+            <div className="text-xs text-neutral-500">providers healthy</div>
           </div>
         </div>
       </div>
@@ -124,17 +124,17 @@ export default function OverallStatus({ status, totalProviders, operationalCount
           </div>
           <div className="flex-1">
             <h3 className={`text-xl font-bold ${config.titleColor} mb-1`}>{config.title}</h3>
-            <p className="text-slate-700 mb-3">{config.description}</p>
+            <p className="text-neutral-700 mb-3">{config.description}</p>
             <div className="flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="font-semibold text-slate-900">{issueCount}</span>
-                <span className="text-slate-600">provider{issueCount !== 1 ? 's' : ''} affected</span>
+                <span className="font-semibold text-neutral-900">{issueCount}</span>
+                <span className="text-neutral-600">provider{issueCount !== 1 ? 's' : ''} affected</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                <span className="font-semibold text-slate-900">{operationalCount}</span>
-                <span className="text-slate-600">operational</span>
+                <span className="font-semibold text-neutral-900">{operationalCount}</span>
+                <span className="text-neutral-600">operational</span>
               </div>
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function OverallStatus({ status, totalProviders, operationalCount
           <div className={`text-3xl font-bold ${config.titleColor}`}>
             {operationalCount}/{totalProviders}
           </div>
-          <div className="text-xs text-slate-600 mt-1">
+          <div className="text-xs text-neutral-600 mt-1">
             {Math.round((operationalCount / totalProviders) * 100)}% healthy
           </div>
         </div>

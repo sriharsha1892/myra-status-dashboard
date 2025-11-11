@@ -34,7 +34,7 @@ export default function PasswordReminderBanner({ userEmail }: PasswordReminderBa
   }
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 p-4 mb-6 rounded-lg shadow-sm">
+    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-neutral-200 p-4 mb-6 rounded-lg shadow-sm">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0">
           <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">

@@ -153,11 +153,11 @@ export default function AtRiskCustomers() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">At-Risk Customers</h2>
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200">
+        <h2 className="text-lg font-semibold text-neutral-900 mb-4">At-Risk Customers</h2>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-20 bg-neutral-100 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -166,22 +166,22 @@ export default function AtRiskCustomers() {
 
   if (atRiskOrgs.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">At-Risk Customers</h2>
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200">
+        <h2 className="text-lg font-semibold text-neutral-900 mb-4">At-Risk Customers</h2>
         <div className="text-center py-8">
-          <p className="text-sm text-slate-600">No at-risk customers found</p>
-          <p className="text-xs text-slate-500 mt-1">All customers are healthy (score ≥ 70)</p>
+          <p className="text-sm text-neutral-600">No at-risk customers found</p>
+          <p className="text-xs text-neutral-500 mt-1">All customers are healthy (score ≥ 70)</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      <div className="px-6 py-4 border-b border-slate-200">
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200">
+      <div className="px-6 py-4 border-b border-neutral-200">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">At-Risk Customers</h2>
-          <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          <h2 className="text-lg font-semibold text-neutral-900">At-Risk Customers</h2>
+          <span className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
             Top 5 Priority
           </span>
         </div>
@@ -197,7 +197,7 @@ export default function AtRiskCustomers() {
             <div
               key={organization.id}
               onClick={() => router.push(`/support/organizations/${organization.id}/health`)}
-              className="px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+              className="px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-4">
                 {/* Rank Badge */}
@@ -212,16 +212,16 @@ export default function AtRiskCustomers() {
                 {/* Organization Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-slate-900 truncate">
+                    <h3 className="text-sm font-semibold text-neutral-900 truncate">
                       {organization.name}
                     </h3>
                     {organization.status === 'trial' && (
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded uppercase">
+                      <span className="px-2 py-0.5 bg-accent-100 text-accent-700 text-xs font-medium rounded uppercase">
                         Trial
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-600">
+                  <div className="flex items-center gap-3 text-xs text-neutral-600">
                     <span>{health.metrics.issues.length} issue{health.metrics.issues.length !== 1 ? 's' : ''}</span>
                     {criticalIssuesCount > 0 && (
                       <span className="text-red-600 font-medium">
@@ -246,7 +246,7 @@ export default function AtRiskCustomers() {
                       </span>
                     )}
                   </div>
-                  <div className={`w-24 h-1.5 rounded-full overflow-hidden bg-slate-200`}>
+                  <div className={`w-24 h-1.5 rounded-full overflow-hidden bg-neutral-200`}>
                     <div
                       className={`h-full ${getHealthColor(score)} transition-all duration-300`}
                       style={{ width: `${score}%` }}
@@ -259,7 +259,7 @@ export default function AtRiskCustomers() {
         })}
       </div>
 
-      <div className="px-6 py-3 border-t border-slate-200 bg-slate-50">
+      <div className="px-6 py-3 border-t border-neutral-200 bg-neutral-50">
         <button
           onClick={() => router.push('/support/organizations')}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"

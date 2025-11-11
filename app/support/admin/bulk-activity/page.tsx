@@ -55,7 +55,7 @@ export default function BulkActivityPage() {
       return;
     }
 
-    if (user && role?.toLowerCase() !== 'admin') {
+    if (user && role !== 'Admin') {
       toast.error('Admin access required');
       router.push('/support/dashboard');
       return;
@@ -215,21 +215,21 @@ export default function BulkActivityPage() {
   const totalEntries = Object.values(orgActivities).reduce((sum, entries) => sum + entries.length, 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-neutral-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push('/support/dashboard')}
-            className="mb-4 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+            className="mb-4 flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </button>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Bulk Activity Entry</h1>
-              <p className="text-slate-600 mt-1">Add historical activity notes for multiple trial organizations</p>
+              <h1 className="text-3xl font-bold text-neutral-900">Bulk Activity Entry</h1>
+              <p className="text-neutral-600 mt-1">Add historical activity notes for multiple trial organizations</p>
             </div>
             {totalEntries > 0 && (
               <button
@@ -246,13 +246,13 @@ export default function BulkActivityPage() {
 
         {/* Add Organization Dropdown */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <label className="block text-sm font-semibold text-slate-900 mb-3">
+          <label className="block text-sm font-semibold text-neutral-900 mb-3">
             Select Organization to Add Activities
           </label>
           <select
             value=""
             onChange={(e) => e.target.value && addOrg(e.target.value)}
-            className="w-full h-12 px-4 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full h-12 px-4 bg-white border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Choose an organization...</option>
             {orgs.filter(org => !selectedOrgs.includes(org.org_id)).map(org => (
@@ -267,8 +267,8 @@ export default function BulkActivityPage() {
         {selectedOrgs.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-12 text-center">
             <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Organizations Selected</h3>
-            <p className="text-slate-600">Select an organization above to start adding activity notes</p>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Organizations Selected</h3>
+            <p className="text-neutral-600">Select an organization above to start adding activity notes</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -282,7 +282,7 @@ export default function BulkActivityPage() {
               return (
                 <div key={orgId} className="bg-white rounded-xl shadow-md overflow-hidden">
                   {/* Org Header */}
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+                  <div className="bg-accent-500 px-6 py-4 flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-bold text-white">{org.org_name}</h3>
                       {org.org_domain && <p className="text-sm text-blue-100">{org.org_domain}</p>}
@@ -300,7 +300,7 @@ export default function BulkActivityPage() {
                   <div className="p-6">
                     <div className="space-y-4">
                       {entries.map((entry, index) => (
-                        <div key={entry.id} className="flex gap-4 items-start p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <div key={entry.id} className="flex gap-4 items-start p-4 bg-neutral-50 rounded-lg border border-neutral-200">
                           <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
                             {index + 1}
                           </div>
@@ -308,23 +308,23 @@ export default function BulkActivityPage() {
                           <div className="flex-1 grid grid-cols-12 gap-4">
                             {/* Date */}
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-slate-700 mb-1">Date *</label>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1">Date *</label>
                               <input
                                 type="date"
                                 value={entry.date}
                                 onChange={(e) => updateEntry(orgId, entry.id, 'date', e.target.value)}
                                 max={format(new Date(), 'yyyy-MM-dd')}
-                                className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-10 px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
 
                             {/* Category */}
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-slate-700 mb-1">Category *</label>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1">Category *</label>
                               <select
                                 value={entry.category}
                                 onChange={(e) => updateEntry(orgId, entry.id, 'category', e.target.value)}
-                                className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-10 px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select...</option>
                                 {ACTIVITY_CATEGORIES.map(cat => (
@@ -335,11 +335,11 @@ export default function BulkActivityPage() {
 
                             {/* Trial User */}
                             <div className="col-span-2">
-                              <label className="block text-xs font-medium text-slate-700 mb-1">Trial User</label>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1">Trial User</label>
                               <select
                                 value={entry.trialUserId}
                                 onChange={(e) => updateEntry(orgId, entry.id, 'trialUserId', e.target.value)}
-                                className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-10 px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">None</option>
                                 {orgTrialUsers.map(user => (
@@ -352,13 +352,13 @@ export default function BulkActivityPage() {
 
                             {/* Note Text */}
                             <div className="col-span-5">
-                              <label className="block text-xs font-medium text-slate-700 mb-1">Activity Note *</label>
+                              <label className="block text-xs font-medium text-neutral-700 mb-1">Activity Note *</label>
                               <input
                                 type="text"
                                 value={entry.noteText}
                                 onChange={(e) => updateEntry(orgId, entry.id, 'noteText', e.target.value)}
                                 placeholder="What happened?"
-                                className="w-full h-10 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full h-10 px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
 

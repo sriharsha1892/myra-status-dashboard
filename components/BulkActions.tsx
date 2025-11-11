@@ -68,7 +68,7 @@ export default function BulkActions({
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className="fixed top-20 left-1/2 -translate-x-1/2 z-50"
         >
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-2xl px-6 py-4 flex items-center space-x-6">
+          <div className="bg-accent-500 text-white rounded-lg shadow-2xl px-6 py-4 flex items-center space-x-6">
             {/* Selection count */}
             <div className="flex items-center space-x-2">
               <motion.div

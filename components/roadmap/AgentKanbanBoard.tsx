@@ -77,7 +77,7 @@ const LIFECYCLE_PHASES: Array<{
   bgColor: string;
   borderColor: string;
 }> = [
-  { id: 'concept', label: 'Concept', color: 'text-slate-600', bgColor: 'bg-slate-50', borderColor: 'border-slate-200' },
+  { id: 'concept', label: 'Concept', color: 'text-neutral-600', bgColor: 'bg-neutral-50', borderColor: 'border-neutral-200' },
   { id: 'under_build', label: 'Under Build', color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
   { id: 'testing', label: 'Testing', color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
   { id: 'live', label: 'Live', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
@@ -469,8 +469,8 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center flex-wrap gap-4 sm:gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-900">Total</span>
-              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">{summaryCounts.total}</span>
+              <span className="font-semibold text-neutral-900">Total</span>
+              <span className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 font-medium">{summaryCounts.total}</span>
             </div>
             <div className="h-4 w-px bg-slate-300" />
             {LIFECYCLE_PHASES.map(phase => (
@@ -484,13 +484,13 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+          <div className="flex items-center gap-2 bg-neutral-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('kanban')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 viewMode === 'kanban'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
               <LayoutGrid className="w-4 h-4 inline-block mr-1" />
@@ -500,8 +500,8 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 viewMode === 'table'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
               <TableIcon className="w-4 h-4 inline-block mr-1" />
@@ -515,18 +515,18 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
       <div className="space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search roadmap… (title, agent, version)"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 bg-white/80 backdrop-blur-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
             >
               <X className="w-4 h-4" />
             </button>
@@ -535,14 +535,14 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
 
         {/* Filter Chips */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="w-4 h-4 text-slate-400" />
+          <Filter className="w-4 h-4 text-neutral-400" />
 
           {/* Goal Filter */}
           {uniqueGoals.length > 0 && (
             <select
               value={selectedGoal}
               onChange={(e) => setSelectedGoal(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Goals</option>
               {uniqueGoals.map(goal => (
@@ -556,7 +556,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
             <select
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Areas</option>
               {uniqueAreas.map(area => (
@@ -584,7 +584,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
             <select
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Owners</option>
               {uniqueOwners.map(owner => (
@@ -602,7 +602,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
                 setSelectedVersion('all');
                 setSelectedOwner('all');
               }}
-              className="px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-neutral-100 text-xs font-medium text-neutral-600 hover:bg-neutral-200 transition-colors"
             >
               Clear filters
             </button>
@@ -629,7 +629,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className={`text-sm font-semibold ${phase.color}`}>{phase.label}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{itemsByPhase[phase.id].length} items</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">{itemsByPhase[phase.id].length} items</p>
                 </div>
                 <button
                   onClick={() => setAddingToPhase(phase.id)}
@@ -658,7 +658,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
                       }
                     }}
                     placeholder="Task title… (Enter to save, Shift+Enter for another, Esc to cancel)"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isCreating}
                   />
                   <div className="flex items-center gap-2">
@@ -674,7 +674,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
                         setAddingToPhase(null);
                         setNewTaskTitle('');
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-slate-200 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-neutral-100 text-neutral-600 text-xs font-medium hover:bg-neutral-200 transition-colors"
                     >
                       Cancel
                     </button>
@@ -689,7 +689,7 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
                     <div className={`w-12 h-12 mx-auto rounded-xl ${phase.bgColor} ${phase.borderColor} border-2 flex items-center justify-center mb-3`}>
                       <Plus className={`w-6 h-6 ${phase.color}`} />
                     </div>
-                    <p className="text-xs text-slate-500 mb-2">No tasks yet</p>
+                    <p className="text-xs text-neutral-500 mb-2">No tasks yet</p>
                     <button
                       onClick={() => setAddingToPhase(phase.id)}
                       className={`text-xs ${phase.color} hover:underline`}
@@ -736,9 +736,9 @@ export default function AgentKanbanBoard({ items, onRefresh, users = [] }: Agent
       {/* Table View (placeholder) */}
       {viewMode === 'table' && (
         <div className="backdrop-blur-xl bg-white/70 border border-white/40 rounded-2xl p-8 text-center">
-          <TableIcon className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Table View</h3>
-          <p className="text-sm text-slate-600">Table view coming soon. Use Kanban for now.</p>
+          <TableIcon className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">Table View</h3>
+          <p className="text-sm text-neutral-600">Table view coming soon. Use Kanban for now.</p>
         </div>
       )}
 
@@ -804,7 +804,7 @@ function KanbanCard({
       className={`group bg-white rounded-lg border p-3 cursor-pointer transition-all duration-150 ${
         PRIORITY_COLORS[item.priority]
       } ${
-        isFocused ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md border-slate-200'
+        isFocused ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md border-neutral-200'
       }`}
     >
       {/* Title */}
@@ -819,16 +819,16 @@ function KanbanCard({
             if (e.key === 'Escape') onEditCancel();
           }}
           onBlur={onEditSave}
-          className="w-full px-2 py-1 text-sm font-medium text-slate-900 border border-blue-500 rounded focus:outline-none"
+          className="w-full px-2 py-1 text-sm font-medium text-neutral-900 border border-blue-500 rounded focus:outline-none"
         />
       ) : (
-        <h4 className="text-sm font-medium text-slate-900 mb-2 line-clamp-2">{item.title}</h4>
+        <h4 className="text-sm font-medium text-neutral-900 mb-2 line-clamp-2">{item.title}</h4>
       )}
 
       {/* Metadata */}
       <div className="flex items-center gap-2 flex-wrap mb-2">
         {/* Agent Tag */}
-        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+        <span className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs font-medium">
           {agentName}
         </span>
 
@@ -852,7 +852,7 @@ function KanbanCard({
 
       {/* Owner */}
       {item.assigned_to && (
-        <div className="text-xs text-slate-600 mb-2">
+        <div className="text-xs text-neutral-600 mb-2">
           <span className="opacity-60">Owner:</span> {item.assigned_to}
         </div>
       )}
@@ -870,23 +870,23 @@ function KanbanCard({
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
+        <div className="mt-3 pt-3 border-t border-neutral-200 space-y-2">
           {item.rationale && (
             <div>
-              <p className="text-xs font-medium text-slate-700 mb-1">Rationale</p>
-              <p className="text-xs text-slate-600">{item.rationale}</p>
+              <p className="text-xs font-medium text-neutral-700 mb-1">Rationale</p>
+              <p className="text-xs text-neutral-600">{item.rationale}</p>
             </div>
           )}
           {item.description && (
             <div>
-              <p className="text-xs font-medium text-slate-700 mb-1">Description</p>
-              <p className="text-xs text-slate-600">{item.description}</p>
+              <p className="text-xs font-medium text-neutral-700 mb-1">Description</p>
+              <p className="text-xs text-neutral-600">{item.description}</p>
             </div>
           )}
           {item.target_date && (
             <div>
-              <p className="text-xs font-medium text-slate-700 mb-1">Target Date</p>
-              <p className="text-xs text-slate-600">{new Date(item.target_date).toLocaleDateString()}</p>
+              <p className="text-xs font-medium text-neutral-700 mb-1">Target Date</p>
+              <p className="text-xs text-neutral-600">{new Date(item.target_date).toLocaleDateString()}</p>
             </div>
           )}
         </div>
@@ -899,7 +899,7 @@ function KanbanCard({
             e.stopPropagation();
             onEdit('title');
           }}
-          className="text-xs text-slate-600 hover:text-blue-600"
+          className="text-xs text-neutral-600 hover:text-blue-600"
           title="Edit (or press E)"
         >
           <Edit2 className="w-3 h-3" />
@@ -949,9 +949,9 @@ function CommandPalette({
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center pt-[20vh]">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center gap-3">
-          <Command className="w-5 h-5 text-slate-400" />
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex items-center gap-3">
+          <Command className="w-5 h-5 text-neutral-400" />
           <input
             type="text"
             value={searchQuery}
@@ -960,7 +960,7 @@ function CommandPalette({
             autoFocus
             className="flex-1 text-base border-none focus:outline-none"
           />
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -972,13 +972,13 @@ function CommandPalette({
                 cmd.action();
                 onClose();
               }}
-              className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 text-sm transition-colors"
+              className="w-full text-left px-4 py-3 rounded-lg hover:bg-neutral-100 text-sm transition-colors"
             >
               {cmd.label}
             </button>
           ))}
           {filteredCommands.length === 0 && (
-            <div className="text-center py-8 text-sm text-slate-500">
+            <div className="text-center py-8 text-sm text-neutral-500">
               No commands found
             </div>
           )}

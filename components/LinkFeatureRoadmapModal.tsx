@@ -200,7 +200,7 @@ export default function LinkFeatureRoadmapModal({
                           </span>
                         )}
                         {mode === 'roadmap' && item.votes !== undefined && (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                          <span className="px-2 py-1 bg-accent-100 text-purple-800 rounded">
                             {item.votes} votes
                           </span>
                         )}

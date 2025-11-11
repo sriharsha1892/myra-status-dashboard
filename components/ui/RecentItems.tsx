@@ -101,22 +101,22 @@ export function RecentItemsWidget() {
     switch (type) {
       case 'trial': return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'ticket': return 'bg-green-50 text-green-700 border-green-200';
-      case 'user': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'user': return 'bg-accent-50 text-accent-700 border-accent-200';
       case 'report': return 'bg-orange-50 text-orange-700 border-orange-200';
-      default: return 'bg-slate-50 text-slate-700 border-slate-200';
+      default: return 'bg-neutral-50 text-neutral-700 border-neutral-200';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+    <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">Recent Items</h3>
+          <Clock className="w-4 h-4 text-neutral-500" />
+          <h3 className="text-sm font-semibold text-neutral-900">Recent Items</h3>
         </div>
         <button
           onClick={() => clearRecentItems()}
-          className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
+          className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
         >
           Clear all
         </button>
@@ -126,22 +126,22 @@ export function RecentItemsWidget() {
         {items.map(item => (
           <div
             key={item.id}
-            className="group flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+            className="group flex items-center gap-2 p-2 rounded-lg hover:bg-neutral-50 transition-colors"
           >
             <Link href={item.url} className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded border font-medium ${getTypeColor(item.type)}`}>
                   {getTypeLabel(item.type)}
                 </span>
-                <span className="text-sm text-slate-900 truncate">{item.title}</span>
+                <span className="text-sm text-neutral-900 truncate">{item.title}</span>
               </div>
             </Link>
             <button
               onClick={() => removeItem(item.id)}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded transition-all"
+              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-neutral-200 rounded transition-all"
               title="Remove from recent"
             >
-              <X className="w-3 h-3 text-slate-500" />
+              <X className="w-3 h-3 text-neutral-500" />
             </button>
           </div>
         ))}

@@ -180,7 +180,7 @@ export default function MentionTextEditor({
                   return;
                 }
 
-                popup = tippy('body', {
+                const instances = tippy('body', {
                   getReferenceClientRect: props.clientRect,
                   appendTo: () => document.body,
                   content: component.element,
@@ -188,7 +188,9 @@ export default function MentionTextEditor({
                   interactive: true,
                   trigger: 'manual',
                   placement: 'bottom-start',
+                  zIndex: 9999, // Ensure it appears above modals
                 });
+                popup = Array.isArray(instances) ? instances[0] : instances;
               },
               onUpdate: (props: any) => {
                 component.updateProps(props);
@@ -219,6 +221,7 @@ export default function MentionTextEditor({
       }),
     ],
     content,
+    immediatelyRender: false, // Fix SSR hydration mismatch
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none',
@@ -283,16 +286,16 @@ export default function MentionTextEditor({
   }
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+    <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
       {/* Enhanced Toolbar */}
       {showToolbar && (
-        <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-slate-200 bg-slate-50">
+        <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-neutral-200 bg-neutral-50">
           {/* Text Formatting */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('bold') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('bold') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Bold (Ctrl+B)"
           >
@@ -301,8 +304,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('italic') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('italic') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Italic (Ctrl+I)"
           >
@@ -311,8 +314,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('underline') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('underline') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Underline (Ctrl+U)"
           >
@@ -325,8 +328,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('bulletList') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('bulletList') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Bullet List"
           >
@@ -335,8 +338,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('orderedList') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('orderedList') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Numbered List"
           >
@@ -354,22 +357,22 @@ export default function MentionTextEditor({
                 setLinkUrl(previousUrl || '');
                 setShowLinkInput(!showLinkInput);
               }}
-              className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-                editor.isActive('link') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+              className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+                editor.isActive('link') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
               }`}
               title="Insert Link"
             >
               <LinkIcon className="w-4 h-4" />
             </button>
             {showLinkInput && (
-              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 w-64">
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-neutral-200 rounded-lg shadow-lg p-3 w-64">
                 <div className="flex items-center gap-2">
                   <input
                     type="url"
                     value={linkUrl}
                     onChange={(e) => setLinkUrl(e.target.value)}
                     placeholder="https://example.com"
-                    className="flex-1 px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 text-sm border border-neutral-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyDown={(e) => e.key === 'Enter' && setLink()}
                     autoFocus
                   />
@@ -388,8 +391,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('table') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('table') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Insert Table (3x3)"
           >
@@ -400,8 +403,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('codeBlock') ? 'bg-slate-200 text-blue-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('codeBlock') ? 'bg-neutral-200 text-blue-600' : 'text-neutral-600'
             }`}
             title="Code Block"
           >
@@ -412,8 +415,8 @@ export default function MentionTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHighlight().run()}
-            className={`p-2 rounded hover:bg-slate-200 transition-colors ${
-              editor.isActive('highlight') ? 'bg-slate-200 text-yellow-600' : 'text-slate-600'
+            className={`p-2 rounded hover:bg-neutral-200 transition-colors ${
+              editor.isActive('highlight') ? 'bg-neutral-200 text-yellow-600' : 'text-neutral-600'
             }`}
             title="Highlight Text"
           >
@@ -425,19 +428,19 @@ export default function MentionTextEditor({
             <button
               type="button"
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="p-2 rounded hover:bg-slate-200 transition-colors text-slate-600"
+              className="p-2 rounded hover:bg-neutral-200 transition-colors text-neutral-600"
               title="Text Color"
             >
               <Palette className="w-4 h-4" />
             </button>
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-neutral-200 rounded-lg shadow-lg p-2">
                 <div className="grid grid-cols-5 gap-1">
                   {['#000000', '#64748b', '#ef4444', '#f59e0b', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff'].map((color) => (
                     <button
                       key={color}
                       onClick={() => setTextColor(color)}
-                      className="w-6 h-6 rounded border-2 border-slate-200 hover:border-blue-500 transition-colors"
+                      className="w-6 h-6 rounded border-2 border-neutral-200 hover:border-blue-500 transition-colors"
                       style={{ backgroundColor: color }}
                       title={color}
                     />
@@ -450,7 +453,7 @@ export default function MentionTextEditor({
           <div className="flex-1" />
 
           {/* Mentions Hint */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-500">
             <AtSign className="w-3.5 h-3.5" />
             <span>@ mention</span>
           </div>
@@ -464,8 +467,8 @@ export default function MentionTextEditor({
 
       {/* Footer with Actions */}
       {onSubmit && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-slate-200 bg-slate-50">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-200 bg-neutral-50">
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Markdown supported</span>
           </div>
@@ -475,7 +478,7 @@ export default function MentionTextEditor({
                 type="button"
                 onClick={handleCancel}
                 disabled={isSubmitting}
-                className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>

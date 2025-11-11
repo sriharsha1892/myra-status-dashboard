@@ -13,7 +13,6 @@ import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';
 import ServiceDependencies from '@/components/ServiceDependencies';
 import ActiveIncidentsTimeline from '@/components/ActiveIncidentsTimeline';
-import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
 
@@ -687,9 +686,6 @@ function StatusPageContent() {
                   })()}
                 </div>
               )}
-
-                {/* Announcements */}
-                <AnnouncementBanner />
               </>
             );
           })()}

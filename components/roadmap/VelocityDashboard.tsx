@@ -101,16 +101,16 @@ export default function VelocityDashboard() {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-slate-200 p-6">
+      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-neutral-200 p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center animate-pulse">
             <TrendingUp className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">Team Velocity</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Team Velocity</h2>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-16 bg-neutral-100 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function VelocityDashboard() {
   if (!metrics) return null;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-slate-200 p-6">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-neutral-200 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -128,8 +128,8 @@ export default function VelocityDashboard() {
             <TrendingUp className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Team Velocity</h2>
-            <p className="text-xs text-slate-500">Last 7 days</p>
+            <h2 className="text-sm font-semibold text-neutral-900">Team Velocity</h2>
+            <p className="text-xs text-neutral-500">Last 7 days</p>
           </div>
         </div>
 
@@ -139,7 +139,7 @@ export default function VelocityDashboard() {
             ? 'bg-emerald-50 text-emerald-700'
             : metrics.velocityTrend < 0
             ? 'bg-red-50 text-red-700'
-            : 'bg-slate-50 text-slate-700'
+            : 'bg-neutral-50 text-neutral-700'
         }`}>
           {metrics.velocityTrend > 0 ? (
             <TrendingUp className="w-3.5 h-3.5" strokeWidth={2} />
@@ -157,39 +157,39 @@ export default function VelocityDashboard() {
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-2 gap-3 mb-5">
         {/* Total Hours */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-neutral-200">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-blue-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Total Hours</span>
+            <span className="text-xs font-medium text-neutral-600">Total Hours</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.totalHoursLogged.toFixed(1)}h</p>
+          <p className="text-2xl font-bold text-neutral-900">{metrics.totalHoursLogged.toFixed(1)}h</p>
         </div>
 
         {/* Items Completed */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-neutral-200">
           <div className="flex items-center gap-2 mb-2">
             <Target className="w-4 h-4 text-emerald-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Completed</span>
+            <span className="text-xs font-medium text-neutral-600">Completed</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.itemsCompleted}</p>
+          <p className="text-2xl font-bold text-neutral-900">{metrics.itemsCompleted}</p>
         </div>
 
         {/* Avg Completion Time */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-neutral-200">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className="w-4 h-4 text-purple-600" strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Avg Time</span>
+            <Zap className="w-4 h-4 text-accent-600" strokeWidth={2} />
+            <span className="text-xs font-medium text-neutral-600">Avg Time</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{metrics.avgCompletionTime.toFixed(1)}h</p>
+          <p className="text-2xl font-bold text-neutral-900">{metrics.avgCompletionTime.toFixed(1)}h</p>
         </div>
 
         {/* Stale Items */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-neutral-200">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className={`w-4 h-4 ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-400'}`} strokeWidth={2} />
-            <span className="text-xs font-medium text-slate-600">Stale</span>
+            <AlertCircle className={`w-4 h-4 ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-neutral-400'}`} strokeWidth={2} />
+            <span className="text-xs font-medium text-neutral-600">Stale</span>
           </div>
-          <p className={`text-2xl font-bold ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+          <p className={`text-2xl font-bold ${metrics.staleItemsCount > 0 ? 'text-amber-600' : 'text-neutral-900'}`}>
             {metrics.staleItemsCount}
           </p>
         </div>
@@ -199,8 +199,8 @@ export default function VelocityDashboard() {
       {metrics.topContributors.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Users className="w-4 h-4 text-slate-600" strokeWidth={2} />
-            <h3 className="text-xs font-semibold text-slate-900">Top Contributors</h3>
+            <Users className="w-4 h-4 text-neutral-600" strokeWidth={2} />
+            <h3 className="text-xs font-semibold text-neutral-900">Top Contributors</h3>
           </div>
 
           <div className="space-y-2">
@@ -213,9 +213,9 @@ export default function VelocityDashboard() {
                   {/* Rank Badge */}
                   <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
                     index === 0 ? 'bg-amber-100 text-amber-700' :
-                    index === 1 ? 'bg-slate-100 text-slate-700' :
+                    index === 1 ? 'bg-neutral-100 text-neutral-700' :
                     index === 2 ? 'bg-orange-100 text-orange-700' :
-                    'bg-slate-50 text-slate-600'
+                    'bg-neutral-50 text-neutral-600'
                   }`}>
                     {index + 1}
                   </div>
@@ -223,12 +223,12 @@ export default function VelocityDashboard() {
                   {/* Name + Hours */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-slate-900 truncate">{contributor.name}</span>
-                      <span className="text-xs font-bold text-slate-700 ml-2">{contributor.hours.toFixed(1)}h</span>
+                      <span className="text-xs font-medium text-neutral-900 truncate">{contributor.name}</span>
+                      <span className="text-xs font-bold text-neutral-700 ml-2">{contributor.hours.toFixed(1)}h</span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           index === 0 ? 'bg-gradient-to-r from-amber-400 to-orange-500' :
@@ -249,7 +249,7 @@ export default function VelocityDashboard() {
 
       {/* Alerts Section */}
       {(metrics.staleItemsCount > 0 || metrics.overdueItemsCount > 0) && (
-        <div className="mt-5 pt-4 border-t border-slate-200">
+        <div className="mt-5 pt-4 border-t border-neutral-200">
           <div className="space-y-2">
             {metrics.staleItemsCount > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">

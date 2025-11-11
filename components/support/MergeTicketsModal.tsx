@@ -100,8 +100,8 @@ export function MergeTicketsModal({
     <Modal isOpen={isOpen} onClose={onClose} size="large">
       <div className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
-            <GitMerge className="w-5 h-5 text-purple-600" />
+          <div className="w-10 h-10 bg-accent-50 rounded-lg flex items-center justify-center">
+            <GitMerge className="w-5 h-5 text-accent-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Merge Duplicate Tickets</h2>
@@ -126,7 +126,7 @@ export function MergeTicketsModal({
                     type="checkbox"
                     checked={shouldMerge}
                     onChange={(e) => setShouldMerge(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-accent-600 border-gray-300 rounded focus:ring-purple-500"
                   />
                 </div>
                 <div className="flex-1">
@@ -147,9 +147,9 @@ export function MergeTicketsModal({
                   <h3 className="text-sm font-semibold text-gray-900">Tickets</h3>
 
                   {/* Target Ticket (Parent) */}
-                  <div className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg">
+                  <div className="p-4 border-2 border-accent-200 bg-accent-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-purple-600 text-white">Parent Ticket</Badge>
+                      <Badge className="bg-accent-600 text-white">Parent Ticket</Badge>
                       <span className="text-sm font-semibold text-gray-900">
                         {targetTicket.ticket_number}
                       </span>
@@ -213,17 +213,17 @@ export function MergeTicketsModal({
                     </div>
 
                     {/* Ticket Numbers */}
-                    <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <GitMerge className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                    <div className="flex items-center gap-3 p-3 bg-accent-50 border border-accent-200 rounded-lg">
+                      <GitMerge className="w-5 h-5 text-accent-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-purple-900">
                           Both ticket numbers will be preserved
                         </p>
-                        <p className="text-xs text-purple-700">
+                        <p className="text-xs text-accent-700">
                           {targetTicket.ticket_number} will show "merged from {currentTicket.ticket_number}"
                         </p>
                       </div>
-                      <Check className="w-5 h-5 text-purple-600" />
+                      <Check className="w-5 h-5 text-accent-600" />
                     </div>
                   </div>
                 </div>
@@ -265,7 +265,7 @@ export function MergeTicketsModal({
             onClick={handleConfirm}
             disabled={loading}
             leftIcon={shouldMerge ? <GitMerge className="w-4 h-4" /> : undefined}
-            className={shouldMerge ? 'bg-purple-600 hover:bg-purple-700' : ''}
+            className={shouldMerge ? 'bg-accent-600 hover:bg-purple-700' : ''}
           >
             {shouldMerge ? 'Merge & Link' : 'Link Only'}
           </Button>

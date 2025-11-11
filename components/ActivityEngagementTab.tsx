@@ -120,7 +120,7 @@ export default function ActivityEngagementTab({
   const getColorClasses = (color: string) => {
     const colors: Record<string, string> = {
       blue: 'bg-blue-50 text-blue-700 border-blue-200',
-      purple: 'bg-purple-50 text-purple-700 border-purple-200',
+      purple: 'bg-accent-50 text-accent-700 border-accent-200',
       orange: 'bg-orange-50 text-orange-700 border-orange-200',
     };
     return colors[color] || 'bg-gray-50 text-gray-700 border-gray-200';
@@ -151,7 +151,7 @@ export default function ActivityEngagementTab({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onAddActivity('meeting')}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+            className="flex items-center gap-2 px-4 py-2 bg-accent-500 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
           >
             <Plus className="w-4 h-4" />
             Log Activity

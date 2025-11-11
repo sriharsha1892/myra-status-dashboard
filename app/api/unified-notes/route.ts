@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { formatErrorForAPI } from '@/lib/errorHandler';
 
 /**
  * GET /api/unified-notes
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching notes:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch notes' },
+      formatErrorForAPI(error, 'api_call'),
       { status: 500 }
     );
   }
@@ -146,39 +147,39 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // Create notifications for feature proposals (notify all admins)
+    // Create notifications for feature proposals (notify admin@myra.ai)
+    // TODO: Make this configurable in settings later
     if (entity_type === 'feature_proposal') {
       try {
-        // Fetch all admin users from Supabase Auth
+        // Fetch the admin@myra.ai user
         const { data: { users: allUsers }, error: usersError } = await supabase.auth.admin.listUsers();
 
         if (!usersError && allUsers) {
-          const adminUsers = allUsers.filter(u => u.user_metadata?.role === 'Admin');
+          const targetAdmin = allUsers.find(u => u.email === 'admin@myra.ai');
 
-          // Create notifications for each admin
-          const adminNotifications = adminUsers
-            .filter(admin => admin.id !== user.id) // Don't notify the proposer
-            .map(admin => ({
-              user_id: admin.id,
+          if (targetAdmin && targetAdmin.id !== user.id) {
+            // Get proposer's name
+            const proposerName = user.user_metadata?.name || user.email || 'Someone';
+
+            // Create notification for admin@myra.ai
+            await supabase.from('notifications').insert({
+              user_id: targetAdmin.id,
               entity_type: 'feature_proposal',
               entity_id: data.id,
               entity_title: entity_title || 'Feature Proposal',
               notification_type: 'feature_proposal',
               actor_id: user.id,
-              title: `New Feature Proposal`,
+              title: `New Feature Proposal from ${proposerName}`,
               message: plain_text?.substring(0, 200) || '',
-              action_url: `/support/feature-proposals/${data.id}`,
-              priority_score: 80, // High priority for feature proposals
+              action_url: `/support/feature-proposals`,
+              priority_score: 85, // High priority for feature proposals
               thread_key: `feature_proposal:${data.id}`,
               status: 'unread'
-            }));
-
-          if (adminNotifications.length > 0) {
-            await supabase.from('notifications').insert(adminNotifications);
+            });
           }
         }
       } catch (notifError) {
-        console.error('Error creating feature proposal notifications:', notifError);
+        console.error('Error creating feature proposal notification:', notifError);
         // Don't fail the note creation if notifications fail
       }
     }
@@ -211,7 +212,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating note:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create note' },
+      formatErrorForAPI(error, 'note_create'),
       { status: 500 }
     );
   }

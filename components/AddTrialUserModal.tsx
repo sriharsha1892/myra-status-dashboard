@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { formatErrorForToast } from '@/lib/errorHandler';
 
 interface AddTrialUserModalProps {
   orgId: string;
@@ -69,13 +70,7 @@ export default function AddTrialUserModal({
       onSuccess();
     } catch (error: any) {
       console.error('Error adding trial user:', error);
-
-      // Check if error is due to duplicate email
-      if (error.message && error.message.includes('duplicate')) {
-        toast.error('A user with this email already exists in this organization');
-      } else {
-        toast.error(error.message || 'Failed to add trial user');
-      }
+      toast.error(formatErrorForToast(error, 'user_create', true));
     } finally {
       setLoading(false);
     }
@@ -211,7 +206,7 @@ export default function AddTrialUserModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

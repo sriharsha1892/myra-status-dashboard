@@ -10,6 +10,10 @@ import LinkedItemsDisplay from './LinkedItemsDisplay';
 import LinkFeatureRoadmapModal from './LinkFeatureRoadmapModal';
 import RoadmapTimelineView from './RoadmapTimelineView';
 import AdminRoadmapDashboard from './AdminRoadmapDashboard';
+import QuickStats from './roadmap/QuickStats';
+import { GridSkeleton, StatsSkeleton } from './roadmap/RoadmapSkeleton';
+import KeyboardShortcuts from './roadmap/KeyboardShortcuts';
+import { STATUS_CONFIG, PRIORITY_CONFIG, ANIMATIONS } from '@/lib/roadmap/constants';
 
 interface RoadmapItem {
   id: string;
@@ -24,25 +28,17 @@ interface RoadmapItem {
   created_at: string;
   updated_at: string;
   linked_feature_count?: number;
+  progress_percentage?: number;
+  blocked_by_ids?: string[] | null;
+  blocks_ids?: string[] | null;
+  label_ids?: string[] | null;
+  milestone_id?: string | null;
+  linked_features?: string[] | null;
 }
 
 interface ProductRoadmapTabEnhancedProps {
   orgId: string;
 }
-
-const STATUS_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  planned: { icon: '📋', color: 'blue', label: 'Planned' },
-  in_progress: { icon: '🚀', color: 'yellow', label: 'In Progress' },
-  completed: { icon: '✅', color: 'green', label: 'Completed' },
-  cancelled: { icon: '⛔', color: 'gray', label: 'Cancelled' },
-};
-
-const PRIORITY_CONFIG: { [key: string]: { icon: string; color: string; label: string } } = {
-  low: { icon: '🟢', color: 'green', label: 'Low' },
-  medium: { icon: '🟡', color: 'yellow', label: 'Medium' },
-  high: { icon: '🔴', color: 'red', label: 'High' },
-  critical: { icon: '🚨', color: 'red', label: 'Critical' },
-};
 
 type ViewType = 'list' | 'kanban' | 'timeline';
 
@@ -212,7 +208,7 @@ export default function ProductRoadmapTabEnhanced({ orgId }: ProductRoadmapTabEn
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -258,7 +254,7 @@ export default function ProductRoadmapTabEnhanced({ orgId }: ProductRoadmapTabEn
             onClick={() => setShowAdminDashboard(!showAdminDashboard)}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               showAdminDashboard
-                ? 'bg-purple-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-300'
             }`}
           >

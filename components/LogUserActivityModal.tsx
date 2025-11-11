@@ -253,7 +253,7 @@ export default function LogUserActivityModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
             >
               {loading ? 'Logging...' : 'Log Activity'}
             </button>

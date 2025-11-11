@@ -15,9 +15,15 @@ import {
   X,
   FolderOpen,
   Bell,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  FileText,
+  User,
+  MessageCircle
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
+import CustomerSupportChat from '@/components/CustomerSupportChat';
+import { LoadingProvider } from '@/lib/loading';
 
 export default function SupportLayout({
   children,
@@ -55,9 +61,9 @@ export default function SupportLayout({
   // Show loading state while checking auth
   if (!mounted || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30 animate-pulse">
+          <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center shadow-md animate-pulse">
             <svg
               className="w-6 h-6 text-white"
               fill="none"
@@ -71,7 +77,7 @@ export default function SupportLayout({
               <circle cx="6" cy="12" r="1.5" fill="currentColor" opacity="0.9"/>
             </svg>
           </div>
-          <p className="text-sm text-slate-600 font-medium">Loading...</p>
+          <p className="text-sm text-neutral-600 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -80,9 +86,9 @@ export default function SupportLayout({
   // Show loading state if authenticated but still on login page (during redirect)
   if (user && pathname === '/support/login') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center shadow-md">
             <svg
               className="w-6 h-6 text-white animate-spin"
               fill="none"
@@ -93,7 +99,7 @@ export default function SupportLayout({
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </div>
-          <p className="text-sm text-slate-600 font-medium">Signing in...</p>
+          <p className="text-sm text-neutral-600 font-medium">Signing in...</p>
         </div>
       </div>
     );
@@ -101,40 +107,47 @@ export default function SupportLayout({
 
   // Show login page without sidebar
   if (!user) {
-    return <>{children}</>;
+    return (
+      <LoadingProvider>
+        {children}
+        {/* Customer Support Chat Widget - Available to everyone including anonymous visitors */}
+        <CustomerSupportChat />
+      </LoadingProvider>
+    );
   }
 
   // Show authenticated pages with sidebar
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Hamburger Button - Mobile Only */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
-      >
-        {mobileMenuOpen ? (
-          <X className="w-5 h-5" strokeWidth={2} />
-        ) : (
-          <Menu className="w-5 h-5" strokeWidth={2} />
+    <LoadingProvider>
+      <div className="flex h-screen bg-neutral-50">
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
         )}
-      </button>
 
-      {/* Modern Sidebar */}
-      <aside className={`w-64 bg-white border-r border-slate-200 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        {/* Hamburger Button - Mobile Only */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 transition-colors"
+        >
+          {mobileMenuOpen ? (
+            <X className="w-5 h-5" strokeWidth={2} />
+          ) : (
+            <Menu className="w-5 h-5" strokeWidth={2} />
+          )}
+        </button>
+
+      {/* Glassmorphism Sidebar - Asana-inspired */}
+      <aside className={`w-64 bg-white/95 backdrop-blur-xl backdrop-saturate-180 border-r border-neutral-200/80 flex flex-col fixed lg:static inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:transform-none shadow-glass ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        {/* Logo Header */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200">
+        {/* Logo Header - No gradients */}
+        <div className="h-16 px-5 flex items-center justify-between border-b border-neutral-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center shrink-0 shadow-md">
               <svg
                 className="w-6 h-6 text-white"
                 fill="none"
@@ -164,7 +177,7 @@ export default function SupportLayout({
                 <path d="M11 10.5 L7.5 8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.3"/>
               </svg>
             </div>
-            <span className="text-base font-semibold text-slate-900">
+            <span className="text-base font-semibold text-neutral-900">
               myRA AI
             </span>
           </div>
@@ -177,11 +190,11 @@ export default function SupportLayout({
               href="/support/dashboard"
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname === '/support/dashboard'
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
               }`}
             >
-              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === '/support/dashboard' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Dashboard</span>
             </Link>
 
@@ -189,11 +202,11 @@ export default function SupportLayout({
               href="/support/notifications"
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname === '/support/notifications'
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
               }`}
             >
-              <Bell className={`w-5 h-5 shrink-0 ${pathname === '/support/notifications' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <Bell className={`w-5 h-5 shrink-0 ${pathname === '/support/notifications' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Notifications</span>
             </Link>
 
@@ -201,11 +214,11 @@ export default function SupportLayout({
               href="/support/trials"
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname?.startsWith('/support/trials')
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
               }`}
             >
-              <Building2 className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/trials') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <Building2 className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/trials') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Trial Orgs</span>
             </Link>
 
@@ -213,62 +226,103 @@ export default function SupportLayout({
               href="/support/reports"
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 pathname === '/support/reports'
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
               }`}
             >
-              <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <BarChart3 className={`w-5 h-5 shrink-0 ${pathname === '/support/reports' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Reports</span>
             </Link>
 
             <Link
-              href="/support/documents"
+              href="/support/resources"
               className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                pathname === '/support/documents'
-                  ? 'text-slate-900 bg-slate-900/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                pathname === '/support/resources'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
               }`}
             >
-              <Sparkles className={`w-5 h-5 shrink-0 ${pathname === '/support/documents' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+              <Sparkles className={`w-5 h-5 shrink-0 ${pathname === '/support/resources' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Resources</span>
             </Link>
 
-            {/* Users - Admin only */}
-            {role?.toLowerCase() === 'admin' && (
+            {/* Tickets - All users */}
+            <Link
+              href="/support/tickets"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname?.startsWith('/support/tickets')
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              <MessageSquare className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/tickets') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+              <span>Tickets</span>
+            </Link>
+
+            {/* Users - Admin and Super Admin only */}
+            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
               <Link
                 href="/support/users"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   pathname === '/support/users'
-                    ? 'text-slate-900 bg-slate-900/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                 }`}
               >
-                <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+                <Users2 className={`w-5 h-5 shrink-0 ${pathname === '/support/users' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
                 <span>Users</span>
               </Link>
             )}
 
-            {/* Roadmap - Admin only */}
-            {role?.toLowerCase() === 'admin' && (
+            {/* Roadmap - Admin and Super Admin only */}
+            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
               <Link
                 href="/support/admin/roadmap"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap')
-                    ? 'text-slate-900 bg-slate-900/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                 }`}
               >
-                <Map className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap') ? 'text-slate-900' : 'text-slate-400'}`} strokeWidth={2} />
+                <Map className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/roadmap') || pathname?.startsWith('/support/trials/roadmap') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
                 <span>Roadmap</span>
               </Link>
             )}
+
+            {/* Customer Support - Super Admin only */}
+            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
+              <Link
+                href="/support/admin/customer-support"
+                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  pathname?.startsWith('/support/admin/customer-support')
+                    ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                <MessageCircle className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/customer-support') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+                <span>Customer Support</span>
+              </Link>
+            )}
+
           </div>
 
-          {/* Sign Out Button - Prominent placement */}
-          <div className="mt-auto pt-4 border-t border-slate-200">
+          {/* Profile & Sign Out - Bottom Section */}
+          <div className="mt-auto pt-4 border-t border-neutral-200 space-y-1">
+            <Link
+              href="/support/profile"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/support/profile'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              <User className={`w-5 h-5 shrink-0 ${pathname === '/support/profile' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+              <span>Profile</span>
+            </Link>
+
             <button
               onClick={() => signOut()}
-              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full text-slate-600 hover:text-red-600 hover:bg-red-50"
+              className="flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 w-full text-neutral-600 hover:text-red-600 hover:bg-red-50"
             >
               <LogOut className="w-5 h-5 shrink-0" strokeWidth={2} />
               <span>Sign Out</span>
@@ -277,17 +331,17 @@ export default function SupportLayout({
         </nav>
 
         {/* User Profile */}
-        <div className="p-3 border-t border-slate-200">
-          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="p-3 border-t border-neutral-200">
+          <div className="p-2.5 bg-white/70 backdrop-blur-sm rounded-lg border border-neutral-200">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-accent-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
                 {user?.email?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-900 truncate">
+                <p className="text-xs font-medium text-neutral-900 truncate">
                   {user?.email?.split('@')[0] || 'Admin'}
                 </p>
-                <p className="text-[10px] text-slate-500 truncate">Team</p>
+                <p className="text-[10px] text-neutral-500 truncate">Team</p>
               </div>
             </div>
           </div>
@@ -299,6 +353,10 @@ export default function SupportLayout({
 
       {/* Feedback Widget - Always visible for all logged-in users */}
       <FeedbackWidget userId={user?.id} />
-    </div>
+
+      {/* Customer Support Chat Widget - Available to everyone */}
+      <CustomerSupportChat />
+      </div>
+    </LoadingProvider>
   );
 }

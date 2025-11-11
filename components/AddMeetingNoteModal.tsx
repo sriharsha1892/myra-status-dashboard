@@ -454,7 +454,7 @@ export default function AddMeetingNoteModal({
                   <button
                     type="button"
                     onClick={loadSuggestions}
-                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition flex items-center gap-1"
+                    className="px-3 py-1 bg-accent-100 text-accent-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition flex items-center gap-1"
                     title={`Load ${ACTION_ITEM_SUGGESTIONS[selectedMeetingType].length} suggested action items for ${MEETING_TYPES.find((t) => t.value === selectedMeetingType)?.label}`}
                   >
                     <svg

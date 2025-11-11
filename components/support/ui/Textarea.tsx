@@ -17,25 +17,31 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={id}
-            className="text-sm font-medium text-gray-700"
+            className="text-sm font-medium text-neutral-900"
           >
             {label}
-            {props.required && <span className="text-error ml-1">*</span>}
+            {props.required && <span className="text-red-600 ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           id={id}
           className={clsx(
-            // Enterprise design: matches Input styling, resizable vertically
-            'px-3 py-2 min-h-[80px] text-sm rounded-md border bg-white transition-all duration-150 ease-out appearance-none',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500',
+            // Asana-inspired: clean, minimal, comfortable
+            'px-3 py-2 min-h-[80px] text-sm text-neutral-900 bg-white border border-neutral-300 rounded-lg',
+            'placeholder:text-neutral-400',
+            // Focus state with accent color
+            'focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20',
+            // Transitions
+            'transition-all duration-200',
+            // Disabled state
+            'disabled:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-500',
+            // Vertical resize only
             'resize-y',
+            // Error state
             error
-              ? 'border-red-300 focus:border-error focus:ring-error'
-              : 'border-gray-300',
+              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
+              : 'border-neutral-300',
             className
           )}
           {...props}
@@ -43,8 +49,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {(error || helperText) && (
           <p
             className={clsx(
-              'text-xs leading-relaxed',
-              error ? 'text-error' : 'text-gray-500'
+              'text-xs',
+              error ? 'text-red-600' : 'text-neutral-500'
             )}
           >
             {error || helperText}

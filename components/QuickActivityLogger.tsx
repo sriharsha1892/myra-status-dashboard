@@ -8,6 +8,7 @@ import {
   Clock, AlertCircle, CheckCircle2, AlertTriangle, Lightbulb,
   Phone, PhoneOff, Calendar, ShieldAlert, MessageCircle, X
 } from 'lucide-react';
+import MentionTextEditor from '@/components/MentionTextEditor';
 
 interface ActivityTemplate {
   id: string;
@@ -32,7 +33,7 @@ const ICON_MAP: Record<string, any> = {
 
 const COLOR_MAP: Record<string, string> = {
   blue: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
-  purple: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+  purple: 'bg-accent-50 text-accent-700 border-accent-200 hover:bg-accent-100',
   green: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100',
   yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
   indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
@@ -122,11 +123,11 @@ export default function QuickActivityLogger({ trialOrgId, onActivityLogged }: Qu
     <>
       {/* Quick Action Buttons */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-slate-900">Quick Log Activity</h3>
+        <h3 className="text-sm font-semibold text-neutral-900">Quick Log Activity</h3>
 
         {Object.entries(categoryGroups).map(([category, categoryTemplates]) => (
           <div key={category}>
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">
               {category}
             </h4>
             <div className="grid grid-cols-2 gap-2">
@@ -163,10 +164,10 @@ export default function QuickActivityLogger({ trialOrgId, onActivityLogged }: Qu
                   </div>
                 )}
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">
+                  <h3 className="text-lg font-semibold text-neutral-900">
                     {selectedTemplate.default_description}
                   </h3>
-                  <p className="text-sm text-slate-500">Add details below</p>
+                  <p className="text-sm text-neutral-500">Add details below</p>
                 </div>
               </div>
               <button
@@ -175,37 +176,38 @@ export default function QuickActivityLogger({ trialOrgId, onActivityLogged }: Qu
                   setSelectedTemplate(null);
                   setDetails('');
                 }}
-                className="p-1 hover:bg-slate-100 rounded"
+                className="p-1 hover:bg-neutral-100 rounded"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5 text-neutral-400" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Details
                 </label>
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add any relevant details..."
-                />
+                <div className="rounded-xl backdrop-blur-sm bg-white border border-neutral-300">
+                  <MentionTextEditor
+                    content={details}
+                    onChange={(html) => setDetails(html)}
+                    placeholder="Add any relevant details..."
+                    minHeight={120}
+                  />
+                </div>
               </div>
 
               {/* Special fields based on activity type */}
               {selectedTemplate.name === 'questions_asked' && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Number of questions
                   </label>
                   <input
                     type="number"
                     value={metadata.count || ''}
                     onChange={(e) => setMetadata({ ...metadata, count: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 5"
                   />
                 </div>
@@ -213,14 +215,14 @@ export default function QuickActivityLogger({ trialOrgId, onActivityLogged }: Qu
 
               {selectedTemplate.name === 'report_generated' && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Report title
                   </label>
                   <input
                     type="text"
                     value={metadata.report_title || ''}
                     onChange={(e) => setMetadata({ ...metadata, report_title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Market Analysis Report"
                   />
                 </div>
@@ -233,7 +235,7 @@ export default function QuickActivityLogger({ trialOrgId, onActivityLogged }: Qu
                     setSelectedTemplate(null);
                     setDetails('');
                   }}
-                  className="flex-1 px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="flex-1 px-4 py-2 text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

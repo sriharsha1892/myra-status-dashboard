@@ -47,6 +47,12 @@ export default function LabelManager({ orgId, selectedLabelIds, onLabelsChange }
   const fetchLabels = async () => {
     setLoading(true);
     try {
+      if (!orgId) {
+        console.warn('LabelManager: orgId is undefined, cannot fetch labels');
+        setLabels([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('roadmap_labels')
         .select('*')

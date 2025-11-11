@@ -52,7 +52,7 @@ interface InternalUser {
 }
 
 const CATEGORY_CONFIG = {
-  first_login: { label: 'First Login', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  first_login: { label: 'First Login', color: 'bg-accent-100 text-accent-700 border-accent-200' },
   question: { label: 'Question', color: 'bg-blue-100 text-blue-700 border-blue-200' },
   issue: { label: 'Issue', color: 'bg-red-100 text-red-700 border-red-200' },
   success: { label: 'Success', color: 'bg-green-100 text-green-700 border-green-200' },

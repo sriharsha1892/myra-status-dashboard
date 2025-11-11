@@ -236,12 +236,12 @@ export default function NotificationsBell() {
             className={`relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-200 ${
               unreadCount > 0
                 ? 'bg-blue-600 hover:bg-blue-700'
-                : 'bg-white hover:bg-slate-50 border-2 border-slate-200'
+                : 'bg-white hover:bg-neutral-50 border-2 border-neutral-200'
             }`}
             title="Drag to move • Click to open"
           >
             <svg
-              className={`w-6 h-6 ${unreadCount > 0 ? 'text-white' : 'text-slate-600'}`}
+              className={`w-6 h-6 ${unreadCount > 0 ? 'text-white' : 'text-neutral-600'}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -263,7 +263,7 @@ export default function NotificationsBell() {
           {/* Dropdown Panel - Positioned relative to widget */}
           {showDropdown && (
             <div
-              className="absolute top-16 right-0 w-[340px] bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden"
+              className="absolute top-16 right-0 w-[340px] bg-white rounded-lg shadow-2xl border border-neutral-200 overflow-hidden"
               style={{ maxHeight: 'calc(100vh - 100px)' }}
             >
               {/* Minimal Top Border - No Header */}
@@ -271,7 +271,7 @@ export default function NotificationsBell() {
 
               {/* Compact Action Bar */}
               <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-xs font-semibold text-neutral-700">
                   {unreadCount > 0 ? `${unreadCount} new` : 'All caught up'}
                 </span>
                 <div className="flex items-center gap-1">
@@ -288,7 +288,7 @@ export default function NotificationsBell() {
                       setShowDropdown(false);
                       setShowPreferences(true);
                     }}
-                    className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-all"
+                    className="p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50 rounded transition-all"
                     title="Settings"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -304,15 +304,15 @@ export default function NotificationsBell() {
                 {loading ? (
                   <div className="p-4 text-center">
                     <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-[11px] text-slate-500">Loading...</p>
+                    <p className="text-[11px] text-neutral-500">Loading...</p>
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className="p-6 text-center">
                     <svg className="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-[11px] text-slate-500">No new notifications</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Maximum productivity mode activated</p>
+                    <p className="text-[11px] text-neutral-500">No new notifications</p>
+                    <p className="text-[10px] text-neutral-400 mt-1">Maximum productivity mode activated</p>
                   </div>
                 ) : (
                   <div className="py-1">
@@ -321,7 +321,7 @@ export default function NotificationsBell() {
                         key={notification.notification_id}
                         className={`relative group border-b border-slate-50 transition-all ${
                           notification.read
-                            ? 'bg-white hover:bg-slate-50'
+                            ? 'bg-white hover:bg-neutral-50'
                             : 'bg-blue-50/50 hover:bg-blue-50'
                         }`}
                       >
@@ -334,13 +334,13 @@ export default function NotificationsBell() {
                               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-[11px] text-slate-900 font-medium leading-tight mb-1">
+                              <p className="text-[11px] text-neutral-900 font-medium leading-tight mb-1">
                                 {notification.org_activity_notes.trial_organizations.org_name}
                               </p>
-                              <p className="text-[10px] text-slate-600 leading-tight line-clamp-2">
+                              <p className="text-[10px] text-neutral-600 leading-tight line-clamp-2">
                                 {getNotificationText(notification)}
                               </p>
-                              <p className="text-[9px] text-slate-400 mt-1">
+                              <p className="text-[9px] text-neutral-400 mt-1">
                                 {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                               </p>
                             </div>
@@ -353,7 +353,7 @@ export default function NotificationsBell() {
                             e.stopPropagation();
                             markAsRead([notification.notification_id]);
                           }}
-                          className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded opacity-0 group-hover:opacity-100 transition-all"
+                          className="absolute top-2 right-2 p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-all"
                           title="Dismiss"
                         >
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

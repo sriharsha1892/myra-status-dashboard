@@ -359,7 +359,7 @@ export default function ImportDemoLogPage() {
                 <div className="text-sm text-gray-600">Valid Rows</div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="text-2xl font-bold text-purple-600">{summary.uniqueOrgs}</div>
+                <div className="text-2xl font-bold text-accent-600">{summary.uniqueOrgs}</div>
                 <div className="text-sm text-gray-600">Unique Orgs</div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -465,9 +465,9 @@ export default function ImportDemoLogPage() {
                 <div className="text-2xl font-bold text-green-600">{importStats.usersCreated}</div>
                 <div className="text-sm text-green-700">Users Created</div>
               </div>
-              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                <div className="text-2xl font-bold text-purple-600">{importStats.activitiesLogged}</div>
-                <div className="text-sm text-purple-700">Activities Logged</div>
+              <div className="bg-accent-50 rounded-lg p-4 border border-accent-200">
+                <div className="text-2xl font-bold text-accent-600">{importStats.activitiesLogged}</div>
+                <div className="text-sm text-accent-700">Activities Logged</div>
               </div>
             </div>
 

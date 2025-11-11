@@ -37,7 +37,7 @@ export default function Breadcrumbs({ items, separator }: BreadcrumbsProps) {
   if (breadcrumbItems.length === 0) return null;
 
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-600">
+    <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
       {/* Home icon */}
       <Link
         href="/support/dashboard"

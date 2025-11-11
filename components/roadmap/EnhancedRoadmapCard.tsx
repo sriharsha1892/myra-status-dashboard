@@ -40,8 +40,8 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
       case 'completed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'in_progress': return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'planned': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'cancelled': return 'bg-slate-50 text-slate-700 border-slate-200';
-      default: return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'cancelled': return 'bg-neutral-50 text-neutral-700 border-neutral-200';
+      default: return 'bg-accent-50 text-accent-700 border-accent-200';
     }
   };
 
@@ -51,13 +51,13 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
       case 'critical': return 'text-red-600';
       case 'high': return 'text-orange-600';
       case 'medium': return 'text-amber-600';
-      default: return 'text-slate-600';
+      default: return 'text-neutral-600';
     }
   };
 
   return (
     <div
-      className="group relative bg-white rounded-lg border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 overflow-hidden"
+      className="group relative bg-white rounded-lg border border-neutral-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 overflow-hidden"
     >
       {/* Stale indicator bar */}
       {isStale && (
@@ -71,7 +71,7 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
             onClick={onClick}
             className="flex-1 text-left group-hover:text-blue-600 transition-colors duration-200"
           >
-            <h3 className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight">
+            <h3 className="text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors leading-tight">
               {item.title}
             </h3>
           </button>
@@ -84,12 +84,12 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
         {/* Time Tracking Section */}
         <div className="grid grid-cols-3 gap-2 mb-2">
           {/* Estimated */}
-          <div className="bg-slate-50 rounded p-1.5 border border-slate-200">
+          <div className="bg-neutral-50 rounded p-1.5 border border-neutral-200">
             <div className="flex items-center gap-1 mb-0.5">
-              <Clock className="w-3 h-3 text-slate-400" strokeWidth={2} />
-              <span className="text-[9px] text-slate-600 font-medium uppercase tracking-wide">Est</span>
+              <Clock className="w-3 h-3 text-neutral-400" strokeWidth={2} />
+              <span className="text-[9px] text-neutral-600 font-medium uppercase tracking-wide">Est</span>
             </div>
-            <p className="text-sm font-bold text-slate-900">
+            <p className="text-sm font-bold text-neutral-900">
               {item.estimated_hours ? `${item.estimated_hours}h` : '-'}
             </p>
           </div>
@@ -123,10 +123,10 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
           </div>
 
           {/* Progress */}
-          <div className="bg-purple-50 rounded p-1.5 border border-purple-200">
+          <div className="bg-accent-50 rounded p-1.5 border border-accent-200">
             <div className="flex items-center gap-1 mb-0.5">
-              <TrendingUp className="w-3 h-3 text-purple-600" strokeWidth={2} />
-              <span className="text-[9px] text-purple-700 font-medium uppercase tracking-wide">Prog</span>
+              <TrendingUp className="w-3 h-3 text-accent-600" strokeWidth={2} />
+              <span className="text-[9px] text-accent-700 font-medium uppercase tracking-wide">Prog</span>
             </div>
             <p className="text-sm font-bold text-purple-900">
               {item.progress_percentage ?? 0}%
@@ -136,7 +136,7 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
 
         {/* Progress Bar */}
         <div className="mb-2">
-          <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
               style={{ width: `${item.progress_percentage ?? 0}%` }}
@@ -145,7 +145,7 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
         </div>
 
         {/* Metadata Row */}
-        <div className="flex items-center justify-between text-[10px] text-slate-600 mb-2">
+        <div className="flex items-center justify-between text-[10px] text-neutral-600 mb-2">
           <div className="flex items-center gap-3">
             {item.assigned_to && (
               <div className="flex items-center gap-1.5">
@@ -169,8 +169,8 @@ export default function EnhancedRoadmapCard({ item, onClick }: EnhancedRoadmapCa
         </div>
 
         {/* Last Activity + Edit Button - Always Visible */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center justify-between pt-3 border-t border-neutral-200">
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
             {isStale && (
               <div className="flex items-center gap-1 text-amber-600 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" strokeWidth={2} />

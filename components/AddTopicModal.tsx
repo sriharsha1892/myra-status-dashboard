@@ -15,7 +15,7 @@ interface AddTopicModalProps {
 
 const TOPIC_STATUSES = [
   { value: 'exploring', label: 'Exploring', color: 'bg-blue-100 text-blue-700' },
-  { value: 'implementing', label: 'Implementing', color: 'bg-purple-100 text-purple-700' },
+  { value: 'implementing', label: 'Implementing', color: 'bg-accent-100 text-accent-700' },
   { value: 'implemented', label: 'Implemented', color: 'bg-green-100 text-green-700' },
   { value: 'blocked', label: 'Blocked', color: 'bg-red-100 text-red-700' },
   { value: 'abandoned', label: 'Abandoned', color: 'bg-gray-100 text-gray-700' },

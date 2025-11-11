@@ -132,7 +132,7 @@ export default function SupportQueriesTab({ orgId }: SupportQueriesTabProps) {
     const colors: { [key: string]: string } = {
       general_support: 'text-blue-600 bg-blue-50',
       security_related: 'text-red-600 bg-red-50',
-      functionality_related: 'text-purple-600 bg-purple-50',
+      functionality_related: 'text-accent-600 bg-accent-50',
       onboard_more_users: 'text-green-600 bg-green-50',
       technical_guidance: 'text-orange-600 bg-orange-50',
       other: 'text-gray-600 bg-gray-50',
@@ -179,7 +179,7 @@ export default function SupportQueriesTab({ orgId }: SupportQueriesTabProps) {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

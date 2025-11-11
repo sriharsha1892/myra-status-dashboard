@@ -198,7 +198,7 @@ export default function UsersPage() {
     );
   }
 
-  if (!user || (role?.toLowerCase() !== 'admin' && role !== 'Team')) {
+  if (!user || (role !== 'Admin' && role !== 'Team')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-sm text-gray-500">Unauthorized access</div>

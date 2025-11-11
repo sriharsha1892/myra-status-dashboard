@@ -17,8 +17,8 @@ export default function IncidentTimeline({ incidents, providerName, providerColo
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-slate-600 font-medium">No Recent Incidents</p>
-        <p className="text-sm text-slate-500 mt-1">{providerName} has been running smoothly</p>
+        <p className="text-neutral-600 font-medium">No Recent Incidents</p>
+        <p className="text-sm text-neutral-500 mt-1">{providerName} has been running smoothly</p>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function IncidentTimeline({ incidents, providerName, providerColo
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <div className={`w-2 h-2 rounded-full ${getStatusColor(incident.status)}`} />
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
                     {incident.status.replace('_', ' ')}
                   </span>
                 </div>
@@ -78,7 +78,7 @@ export default function IncidentTimeline({ incidents, providerName, providerColo
                   <span className={`text-xs px-2 py-1 rounded-full border ${getImpactStyle(incident.impact)}`}>
                     {incident.impact} Impact
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-neutral-500">
                     {new Date(incident.created_at).toLocaleString()}
                   </span>
                 </div>
@@ -89,16 +89,16 @@ export default function IncidentTimeline({ incidents, providerName, providerColo
             {incident.incident_updates && incident.incident_updates.length > 0 && (
               <div className="space-y-2 mt-4">
                 {incident.incident_updates.slice(0, 2).map((update, idx) => (
-                  <div key={idx} className="bg-slate-50/50 rounded-lg p-3">
+                  <div key={idx} className="bg-neutral-50/50 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-slate-700 uppercase">
+                      <span className="text-xs font-medium text-neutral-700 uppercase">
                         {update.status}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-neutral-500">
                         {new Date(update.created_at).toLocaleTimeString()}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600">{update.body}</p>
+                    <p className="text-sm text-neutral-600">{update.body}</p>
                   </div>
                 ))}
               </div>

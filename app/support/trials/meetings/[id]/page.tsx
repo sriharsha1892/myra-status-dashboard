@@ -8,6 +8,7 @@ import { format, isPast, isToday } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import MentionTextEditor from '@/components/MentionTextEditor';
 
 interface ActionItem {
   description: string;
@@ -360,18 +361,21 @@ export default function MeetingDetailPage({ params }: { params: { id: string } }
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Meeting Summary</label>
                   {editing ? (
-                    <textarea
-                      value={editableMeeting.meeting_summary || ''}
-                      onChange={(e) =>
-                        setEditableMeeting({ ...editableMeeting, meeting_summary: e.target.value })
-                      }
-                      rows={4}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+                      <MentionTextEditor
+                        content={editableMeeting.meeting_summary || ''}
+                        onChange={(html) =>
+                          setEditableMeeting({ ...editableMeeting, meeting_summary: html })
+                        }
+                        placeholder="Meeting summary..."
+                        minHeight={120}
+                      />
+                    </div>
                   ) : (
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {meeting.meeting_summary || 'No summary provided'}
-                    </p>
+                    <div
+                      className="text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: meeting.meeting_summary || 'No summary provided' }}
+                    />
                   )}
                 </div>
 
@@ -379,18 +383,21 @@ export default function MeetingDetailPage({ params }: { params: { id: string } }
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Pain Points Discussed</label>
                   {editing ? (
-                    <textarea
-                      value={editableMeeting.pain_points_discussed || ''}
-                      onChange={(e) =>
-                        setEditableMeeting({ ...editableMeeting, pain_points_discussed: e.target.value })
-                      }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+                      <MentionTextEditor
+                        content={editableMeeting.pain_points_discussed || ''}
+                        onChange={(html) =>
+                          setEditableMeeting({ ...editableMeeting, pain_points_discussed: html })
+                        }
+                        placeholder="Pain points discussed..."
+                        minHeight={100}
+                      />
+                    </div>
                   ) : (
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {meeting.pain_points_discussed || 'No pain points recorded'}
-                    </p>
+                    <div
+                      className="text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: meeting.pain_points_discussed || 'No pain points recorded' }}
+                    />
                   )}
                 </div>
 
@@ -398,18 +405,21 @@ export default function MeetingDetailPage({ params }: { params: { id: string } }
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Objections Raised</label>
                   {editing ? (
-                    <textarea
-                      value={editableMeeting.objections_raised || ''}
-                      onChange={(e) =>
-                        setEditableMeeting({ ...editableMeeting, objections_raised: e.target.value })
-                      }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+                      <MentionTextEditor
+                        content={editableMeeting.objections_raised || ''}
+                        onChange={(html) =>
+                          setEditableMeeting({ ...editableMeeting, objections_raised: html })
+                        }
+                        placeholder="Objections raised..."
+                        minHeight={100}
+                      />
+                    </div>
                   ) : (
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {meeting.objections_raised || 'No objections recorded'}
-                    </p>
+                    <div
+                      className="text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: meeting.objections_raised || 'No objections recorded' }}
+                    />
                   )}
                 </div>
 
@@ -417,18 +427,21 @@ export default function MeetingDetailPage({ params }: { params: { id: string } }
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Positive Signals</label>
                   {editing ? (
-                    <textarea
-                      value={editableMeeting.positive_signals || ''}
-                      onChange={(e) =>
-                        setEditableMeeting({ ...editableMeeting, positive_signals: e.target.value })
-                      }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+                      <MentionTextEditor
+                        content={editableMeeting.positive_signals || ''}
+                        onChange={(html) =>
+                          setEditableMeeting({ ...editableMeeting, positive_signals: html })
+                        }
+                        placeholder="Positive signals..."
+                        minHeight={100}
+                      />
+                    </div>
                   ) : (
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {meeting.positive_signals || 'No positive signals recorded'}
-                    </p>
+                    <div
+                      className="text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: meeting.positive_signals || 'No positive signals recorded' }}
+                    />
                   )}
                 </div>
               </div>

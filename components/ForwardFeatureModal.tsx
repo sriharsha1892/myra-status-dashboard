@@ -105,7 +105,7 @@ export default function ForwardFeatureModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-accent-500 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-white">Forward Feature Request</h2>
             <p className="text-sm text-blue-100 mt-1">Connect "{featureTitle}" to a roadmap item</p>
@@ -212,7 +212,7 @@ export default function ForwardFeatureModal({
           <button
             onClick={handleForward}
             disabled={loading || !selectedRoadmapId || !contextNotes.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 transition-all"
+            className="px-4 py-2 text-sm font-medium text-white bg-accent-500 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 transition-all"
           >
             {loading ? 'Forwarding...' : 'Forward to Admin'}
           </button>

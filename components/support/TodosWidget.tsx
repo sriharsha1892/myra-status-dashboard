@@ -9,6 +9,7 @@ import {
   Flag, ChevronDown, ChevronRight, Loader2, AtSign, Users
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { handleError } from '@/lib/utils/errorHandler';
 
 interface Todo {
   todo_id: string;
@@ -55,6 +56,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearchQuery, setMentionSearchQuery] = useState('');
+  const [mentionType, setMentionType] = useState<'user' | 'org'>('user');
   const [cursorPosition, setCursorPosition] = useState(0);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -78,63 +80,37 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
   const fetchMyTodos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_todos')
-        .select(`
-          *,
-          trial_organizations(org_name)
-        `)
-        .eq('user_id', userId)
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
+      const response = await fetch('/api/todos?type=my');
+      const data = await response.json();
 
-      if (error) throw error;
-      setMyTodos(data || []);
+      if (!response.ok) {
+        console.error('Error fetching my todos:', data.error);
+        setMyTodos([]);
+        return;
+      }
+
+      setMyTodos(data.todos || []);
     } catch (error: any) {
-      console.error('Error fetching my todos:', error);
+      console.error('Error fetching my todos:', error?.message || error);
+      setMyTodos([]);
     }
   };
 
   const fetchMentionedTodos = async () => {
     try {
-      // Get todos where current user is mentioned
-      const { data: mentions, error: mentionsError } = await supabase
-        .from('todo_mentions')
-        .select('todo_id, is_read')
-        .eq('mentioned_user_id', userId);
+      const response = await fetch('/api/todos?type=mentioned');
+      const data = await response.json();
 
-      if (mentionsError) throw mentionsError;
-
-      if (!mentions || mentions.length === 0) {
+      if (!response.ok) {
+        console.error('Error fetching mentioned todos:', data.error);
         setMentionedTodos([]);
         return;
       }
 
-      const todoIds = mentions.map(m => m.todo_id);
-
-      const { data: todos, error: todosError } = await supabase
-        .from('user_todos')
-        .select(`
-          *,
-          trial_organizations(org_name)
-        `)
-        .in('todo_id', todoIds)
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: false });
-
-      if (todosError) throw todosError;
-
-      // Add is_mentioned flag and is_read status
-      const todosWithMentions = (todos || []).map(todo => ({
-        ...todo,
-        is_mentioned: true,
-        is_read: mentions.find(m => m.todo_id === todo.todo_id)?.is_read || false,
-      }));
-
-      setMentionedTodos(todosWithMentions as any);
+      setMentionedTodos(data.todos || []);
     } catch (error: any) {
-      console.error('Error fetching mentioned todos:', error);
+      console.error('Error fetching mentioned todos:', error?.message || error);
+      setMentionedTodos([]);
     }
   };
 
@@ -177,6 +153,12 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
     return matches ? matches.map(m => m.slice(1).toLowerCase()) : [];
   };
 
+  const extractOrgMentions = (text: string): string[] => {
+    const orgRegex = /#([\w-]+)/g;
+    const matches = text.match(orgRegex);
+    return matches ? matches.map(m => m.slice(1).toLowerCase()) : [];
+  };
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const position = e.target.selectionStart || 0;
@@ -184,14 +166,28 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
     setNewTodo({ ...newTodo, title: value });
     setCursorPosition(position);
 
-    // Check if user is typing @ mention
+    // Check if user is typing @ mention or # org
     const beforeCursor = value.slice(0, position);
     const lastAtIndex = beforeCursor.lastIndexOf('@');
+    const lastHashIndex = beforeCursor.lastIndexOf('#');
 
-    if (lastAtIndex !== -1) {
+    // Determine which symbol is closer to cursor
+    if (lastAtIndex > lastHashIndex && lastAtIndex !== -1) {
+      // @ mention for users
       const afterAt = beforeCursor.slice(lastAtIndex + 1);
-      if (!afterAt.includes(' ')) {
+      if (!afterAt.includes(' ') && !afterAt.includes('#')) {
         setMentionSearchQuery(afterAt.toLowerCase());
+        setMentionType('user');
+        setShowMentionDropdown(true);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else if (lastHashIndex > lastAtIndex && lastHashIndex !== -1) {
+      // # mention for orgs
+      const afterHash = beforeCursor.slice(lastHashIndex + 1);
+      if (!afterHash.includes(' ') && !afterHash.includes('@')) {
+        setMentionSearchQuery(afterHash.toLowerCase());
+        setMentionType('org');
         setShowMentionDropdown(true);
       } else {
         setShowMentionDropdown(false);
@@ -201,18 +197,27 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
     }
   };
 
-  const insertMention = (username: string) => {
+  const insertMention = (name: string) => {
     const title = newTodo.title;
     const beforeCursor = title.slice(0, cursorPosition);
     const afterCursor = title.slice(cursorPosition);
-    const lastAtIndex = beforeCursor.lastIndexOf('@');
 
-    const newTitle =
-      title.slice(0, lastAtIndex) +
-      `@${username} ` +
-      afterCursor;
+    if (mentionType === 'user') {
+      const lastAtIndex = beforeCursor.lastIndexOf('@');
+      const newTitle =
+        title.slice(0, lastAtIndex) +
+        `@${name} ` +
+        afterCursor;
+      setNewTodo({ ...newTodo, title: newTitle });
+    } else {
+      const lastHashIndex = beforeCursor.lastIndexOf('#');
+      const newTitle =
+        title.slice(0, lastHashIndex) +
+        `#${name} ` +
+        afterCursor;
+      setNewTodo({ ...newTodo, title: newTitle });
+    }
 
-    setNewTodo({ ...newTodo, title: newTitle });
     setShowMentionDropdown(false);
     titleInputRef.current?.focus();
   };
@@ -224,51 +229,56 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
     }
 
     try {
-      // Create the todo
-      const { data: todoData, error: todoError } = await supabase
-        .from('user_todos')
-        .insert({
-          user_id: userId,
-          ...newTodo,
-          related_org_id: newTodo.related_org_id || null,
-          due_date: newTodo.due_date || null,
-        })
-        .select()
-        .single();
+      // Extract org mentions and find org_id
+      let resolvedOrgId = newTodo.related_org_id;
+      const orgMentions = extractOrgMentions(newTodo.title);
 
-      if (todoError) throw todoError;
+      if (orgMentions.length > 0 && !resolvedOrgId) {
+        // Use the first org mention to set the related_org_id
+        const orgMention = orgMentions[0];
+        const matchedOrg = organizations.find(org =>
+          org.org_name.toLowerCase().replace(/\s+/g, '-') === orgMention ||
+          org.org_name.toLowerCase() === orgMention.replace(/-/g, ' ')
+        );
 
-      // Extract mentions and create mention records
-      const mentions = extractMentions(newTodo.title);
-      if (mentions.length > 0 && todoData) {
-        const mentionedUserIds = teamMembers
-          .filter(member => mentions.includes(member.username))
-          .map(member => member.user_id);
-
-        if (mentionedUserIds.length > 0) {
-          const mentionRecords = mentionedUserIds.map(mentionedUserId => ({
-            todo_id: todoData.todo_id,
-            mentioned_user_id: mentionedUserId,
-            mentioned_by_user_id: userId,
-          }));
-
-          const { error: mentionError } = await supabase
-            .from('todo_mentions')
-            .insert(mentionRecords);
-
-          if (mentionError) {
-            console.error('Error creating mentions:', mentionError);
-          }
+        if (matchedOrg) {
+          resolvedOrgId = matchedOrg.org_id;
         }
       }
+
+      // Extract user mentions and get their IDs
+      const mentions = extractMentions(newTodo.title);
+      const mentionedUserIds = teamMembers
+        .filter(member => mentions.includes(member.username))
+        .map(member => member.user_id);
+
+      // Create todo with mentions using the RPC function (handles permissions correctly)
+      const { data: todoData, error: todoError } = await supabase.rpc('create_todo_with_mentions', {
+        p_user_id: userId,
+        p_title: newTodo.title,
+        p_todo_type: newTodo.todo_type,
+        p_priority: newTodo.priority,
+        p_due_date: newTodo.due_date || null,
+        p_related_org_id: resolvedOrgId || null,
+        p_mentioned_user_ids: mentionedUserIds,
+      });
+
+      if (todoError) throw todoError;
 
       toast.success('Todo added');
       setNewTodo({ title: '', todo_type: 'task', priority: 'normal', due_date: '', related_org_id: '' });
       setShowAddForm(false);
       fetchAllData();
     } catch (error: any) {
-      console.error('Error adding todo:', error);
-      toast.error('Failed to add todo');
+      handleError(error, {
+        context: 'adding todo',
+        additionalContext: {
+          todoTitle: newTodo.title,
+          todoType: newTodo.todo_type,
+          priority: newTodo.priority,
+        }
+      });
+      toast.error(error.message || 'Failed to create todo. Please try again.');
     }
   };
 
@@ -322,10 +332,10 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'demo': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'follow_up': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'follow_up': return 'bg-accent-50 text-accent-700 border-accent-200';
       case 'feedback': return 'bg-green-50 text-green-700 border-green-200';
       case 'meeting': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      default: return 'bg-slate-50 text-slate-700 border-slate-200';
+      default: return 'bg-neutral-50 text-neutral-700 border-neutral-200';
     }
   };
 
@@ -334,7 +344,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
       case 'urgent': return 'text-red-600';
       case 'high': return 'text-orange-600';
       case 'normal': return 'text-blue-600';
-      default: return 'text-slate-600';
+      default: return 'text-neutral-600';
     }
   };
 
@@ -343,13 +353,18 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
     member.full_name.toLowerCase().includes(mentionSearchQuery)
   );
 
+  const filteredOrgs = organizations.filter(org =>
+    org.org_name.toLowerCase().includes(mentionSearchQuery) ||
+    org.org_name.toLowerCase().replace(/\s+/g, '-').includes(mentionSearchQuery)
+  );
+
   const currentTodos = activeTab === 'my' ? myTodos : mentionedTodos;
   const activeTodos = currentTodos.filter(t => t.status !== 'completed');
   const completedTodos = currentTodos.filter(t => t.status === 'completed');
   const unreadMentionCount = mentionedTodos.filter((t: any) => !t.is_read && t.status !== 'completed').length;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
+    <div className="bg-white rounded-xl border border-neutral-200 p-5">
       {/* Header with Tabs */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1">
@@ -358,7 +373,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               activeTab === 'my'
                 ? 'bg-blue-100 text-blue-700'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
             My Todos
@@ -367,15 +382,15 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
             onClick={() => setActiveTab('mentioned')}
             className={`relative px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               activeTab === 'mentioned'
-                ? 'bg-purple-100 text-purple-700'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-accent-100 text-accent-700'
+                : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
             <div className="flex items-center gap-1.5">
               <AtSign className="w-3 h-3" />
               <span>Mentioned</span>
               {unreadMentionCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-purple-600 text-white text-[10px] font-bold rounded-full">
+                <span className="ml-1 px-1.5 py-0.5 bg-accent-600 text-white text-[10px] font-bold rounded-full">
                   {unreadMentionCount}
                 </span>
               )}
@@ -392,30 +407,49 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
       {/* Add Form */}
       {showAddForm && activeTab === 'my' && (
-        <div className="mb-4 p-3 bg-slate-50 rounded-lg space-y-2">
+        <div className="mb-4 p-3 bg-neutral-50 rounded-lg space-y-2">
           <div className="relative">
             <input
               ref={titleInputRef}
               type="text"
               value={newTodo.title}
               onChange={handleTitleChange}
-              placeholder="What needs to be done? (use @username to mention)"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="What needs to be done? (use @username or #org-name)"
+              className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             {/* Mention Autocomplete Dropdown */}
-            {showMentionDropdown && filteredMembers.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+            {showMentionDropdown && mentionType === 'user' && filteredMembers.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                 {filteredMembers.slice(0, 5).map((member) => (
                   <button
                     key={member.user_id}
                     onClick={() => insertMention(member.username)}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 flex items-center gap-2"
                   >
-                    <Users className="w-3 h-3 text-slate-400" />
+                    <Users className="w-3 h-3 text-neutral-400" />
                     <div>
-                      <div className="font-medium text-slate-900">@{member.username}</div>
-                      <div className="text-xs text-slate-500">{member.full_name}</div>
+                      <div className="font-medium text-neutral-900">@{member.username}</div>
+                      <div className="text-xs text-neutral-500">{member.full_name}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Org Mention Autocomplete Dropdown */}
+            {showMentionDropdown && mentionType === 'org' && filteredOrgs.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                {filteredOrgs.slice(0, 5).map((org) => (
+                  <button
+                    key={org.org_id}
+                    onClick={() => insertMention(org.org_name.toLowerCase().replace(/\s+/g, '-'))}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 flex items-center gap-2"
+                  >
+                    <Building2 className="w-3 h-3 text-neutral-400" />
+                    <div>
+                      <div className="font-medium text-neutral-900">#{org.org_name.toLowerCase().replace(/\s+/g, '-')}</div>
+                      <div className="text-xs text-neutral-500">{org.org_name}</div>
                     </div>
                   </button>
                 ))}
@@ -427,7 +461,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
             <select
               value={newTodo.todo_type}
               onChange={(e) => setNewTodo({ ...newTodo, todo_type: e.target.value as any })}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 text-xs border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="task">Task</option>
               <option value="demo">Demo</option>
@@ -439,7 +473,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
             <select
               value={newTodo.priority}
               onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value as any })}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 text-xs border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="low">Low</option>
               <option value="normal">Normal</option>
@@ -448,24 +482,19 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div>
             <input
               type="date"
               value={newTodo.due_date}
               onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-xs border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Due date (optional)"
             />
+          </div>
 
-            <select
-              value={newTodo.related_org_id}
-              onChange={(e) => setNewTodo({ ...newTodo, related_org_id: e.target.value })}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">No org</option>
-              {organizations.map(org => (
-                <option key={org.org_id} value={org.org_id}>{org.org_name}</option>
-              ))}
-            </select>
+          {/* Org selection via #mention in title */}
+          <div className="text-xs text-neutral-500 italic">
+            Tip: Use #org-name in the title to link to an organization
           </div>
 
           <button
@@ -481,11 +510,11 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
       <div className="space-y-2">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
           </div>
         ) : activeTodos.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-500">
               {activeTab === 'my' ? 'No active todos' : 'No mentions yet'}
             </p>
           </div>
@@ -495,8 +524,8 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
               key={todo.todo_id}
               className={`flex items-start gap-2 p-2 rounded-lg group ${
                 activeTab === 'mentioned' && !(todo as any).is_read
-                  ? 'bg-purple-50 hover:bg-purple-100 border border-purple-200'
-                  : 'hover:bg-slate-50'
+                  ? 'bg-accent-50 hover:bg-accent-100 border border-accent-200'
+                  : 'hover:bg-neutral-50'
               }`}
               onClick={() => {
                 if (activeTab === 'mentioned' && !(todo as any).is_read) {
@@ -508,23 +537,23 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
                 onClick={() => toggleTodoStatus(todo.todo_id, todo.status)}
                 className="mt-0.5 flex-shrink-0"
               >
-                <Circle className="w-4 h-4 text-slate-400 hover:text-blue-600" strokeWidth={2} />
+                <Circle className="w-4 h-4 text-neutral-400 hover:text-blue-600" strokeWidth={2} />
               </button>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <p className="text-xs font-medium text-slate-900">{todo.title}</p>
+                  <p className="text-xs font-medium text-neutral-900">{todo.title}</p>
                   <span className={`px-1.5 py-0.5 text-[10px] font-medium border rounded ${getTypeColor(todo.todo_type)}`}>
                     {todo.todo_type.replace('_', ' ')}
                   </span>
                   {activeTab === 'mentioned' && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-medium border rounded bg-purple-50 text-purple-700 border-purple-200">
+                    <span className="px-1.5 py-0.5 text-[10px] font-medium border rounded bg-accent-50 text-accent-700 border-accent-200">
                       mentioned
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 flex-wrap">
+                <div className="flex items-center gap-2 text-[10px] text-neutral-500 flex-wrap">
                   {todo.due_date && (
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
@@ -548,7 +577,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
               {activeTab === 'my' && (
                 <button
                   onClick={() => deleteTodo(todo.todo_id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-red-600 transition-all"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -560,10 +589,10 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
       {/* Completed Todos Toggle */}
       {completedTodos.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-200">
+        <div className="mt-4 pt-4 border-t border-neutral-200">
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 font-medium"
+            className="flex items-center gap-2 text-xs text-neutral-600 hover:text-neutral-900 font-medium"
           >
             {showCompleted ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             <span>Completed ({completedTodos.length})</span>
@@ -574,7 +603,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
               {completedTodos.map(todo => (
                 <div
                   key={todo.todo_id}
-                  className="flex items-start gap-2 p-2 hover:bg-slate-50 rounded-lg group opacity-60"
+                  className="flex items-start gap-2 p-2 hover:bg-neutral-50 rounded-lg group opacity-60"
                 >
                   <button
                     onClick={() => toggleTodoStatus(todo.todo_id, todo.status)}
@@ -584,13 +613,13 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
                   </button>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-900 line-through">{todo.title}</p>
+                    <p className="text-xs font-medium text-neutral-900 line-through">{todo.title}</p>
                   </div>
 
                   {activeTab === 'my' && (
                     <button
                       onClick={() => deleteTodo(todo.todo_id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-red-600 transition-all"
                     >
                       <X className="w-3 h-3" />
                     </button>

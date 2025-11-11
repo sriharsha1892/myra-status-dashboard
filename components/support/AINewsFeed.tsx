@@ -106,11 +106,11 @@ export default function AINewsFeed() {
       case 'b2b-ai':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'enterprise':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-accent-50 text-accent-700 border-accent-200';
       case 'research':
         return 'bg-amber-50 text-amber-700 border-amber-200';
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-200';
+        return 'bg-neutral-50 text-neutral-700 border-neutral-200';
     }
   };
 
@@ -148,18 +148,18 @@ export default function AINewsFeed() {
 
   if (loading) {
     return (
-      <div className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-slate-200 p-6">
+      <div className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-neutral-200 p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" strokeWidth={1.5} />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">AI & LLM Updates</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">AI & LLM Updates</h2>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-slate-100 rounded w-full" />
+              <div className="h-4 bg-neutral-200 rounded w-3/4 mb-2" />
+              <div className="h-3 bg-neutral-100 rounded w-full" />
             </div>
           ))}
         </div>
@@ -168,7 +168,7 @@ export default function AINewsFeed() {
   }
 
   return (
-    <div className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-slate-200 p-6 overflow-hidden">
+    <div className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl border border-neutral-200 p-6 overflow-hidden">
       {/* Subtle pattern overlay */}
       <div className="absolute inset-0 opacity-[0.03]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
@@ -182,13 +182,13 @@ export default function AINewsFeed() {
               <Sparkles className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">AI & LLM Updates</h2>
-              <p className="text-xs text-slate-500">Latest from the AI frontier</p>
+              <h2 className="text-sm font-semibold text-neutral-900">AI & LLM Updates</h2>
+              <p className="text-xs text-neutral-500">Latest from the AI frontier</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 px-2 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200/50">
+          <div className="flex items-center gap-1 px-2 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-neutral-200/50">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-xs text-slate-600 font-medium">Live</span>
+            <span className="text-xs text-neutral-600 font-medium">Live</span>
           </div>
         </div>
 
@@ -200,7 +200,7 @@ export default function AINewsFeed() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block relative bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-slate-200/50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+              className="group block relative bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-neutral-200/50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Impact indicator */}
@@ -219,19 +219,19 @@ export default function AINewsFeed() {
                   <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded border ${getCategoryColor(item.category)}`}>
                     {getCategoryLabel(item.category)}
                   </span>
-                  <span className="text-xs text-slate-500">{getRelativeTime(item.date)}</span>
+                  <span className="text-xs text-neutral-500">{getRelativeTime(item.date)}</span>
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-900 mb-1.5 group-hover:text-blue-600 transition-colors duration-200 leading-snug">
+                <h3 className="text-sm font-semibold text-neutral-900 mb-1.5 group-hover:text-blue-600 transition-colors duration-200 leading-snug">
                   {item.title}
                 </h3>
 
-                <p className="text-xs text-slate-600 mb-2.5 leading-relaxed line-clamp-2">
+                <p className="text-xs text-neutral-600 mb-2.5 leading-relaxed line-clamp-2">
                   {item.summary}
                 </p>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-medium">{item.source}</span>
+                  <span className="text-xs text-neutral-500 font-medium">{item.source}</span>
                   <div className="flex items-center gap-1 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <span className="text-xs font-medium">Read more</span>
                     <ExternalLink className="w-3 h-3" strokeWidth={2} />
@@ -245,7 +245,7 @@ export default function AINewsFeed() {
         {/* View More Link */}
         <button
           onClick={() => window.open('https://news.ycombinator.com/news', '_blank')}
-          className="mt-4 w-full py-2.5 px-4 bg-white/60 backdrop-blur-sm hover:bg-white border border-slate-200/50 hover:border-blue-300 rounded-lg text-sm text-slate-700 hover:text-blue-600 font-medium transition-all duration-200 flex items-center justify-center gap-2 group"
+          className="mt-4 w-full py-2.5 px-4 bg-white/60 backdrop-blur-sm hover:bg-white border border-neutral-200/50 hover:border-blue-300 rounded-lg text-sm text-neutral-700 hover:text-blue-600 font-medium transition-all duration-200 flex items-center justify-center gap-2 group"
         >
           <Zap className="w-4 h-4 group-hover:text-blue-600 transition-colors duration-200" strokeWidth={1.5} />
           <span>Browse more AI news</span>

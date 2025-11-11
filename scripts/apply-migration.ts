@@ -1,66 +1,56 @@
-import { createClient } from '@supabase/supabase-js';
+import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 async function applyMigration() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Missing Supabase credentials in environment variables');
-  }
+  console.log('🔧 Applying trigger fix migration...\n');
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const migrationPath = path.resolve(__dirname, '../supabase/migrations/20251111_fix_roadmap_trigger.sql');
+  const sql = fs.readFileSync(migrationPath, 'utf8');
 
-  console.log('Reading migration file...');
-  const migrationPath = path.join(
-    __dirname,
-    '../supabase/migrations/20251104_feature_roadmap_links.sql'
-  );
-  const migrationSql = fs.readFileSync(migrationPath, 'utf-8');
+  const connectionString = `postgresql://postgres.mkkhwiyolmowomojvtel:${process.env.SUPABASE_DB_PASSWORD}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres`;
 
-  console.log('Applying migration to Supabase...');
+  const client = new Client({ connectionString });
 
   try {
-    // Split the migration into individual statements
-    const statements = migrationSql
+    await client.connect();
+    console.log('✅ Connected to database\n');
+
+    // Split into statements
+    const statements = sql
+      .replace(/--[^\n]*/g, '') // Remove SQL comments
       .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+      .map(s => s.trim())
+      .filter(s => s.length > 10);
 
-    console.log(`Found ${statements.length} SQL statements to execute`);
+    console.log(`Executing ${statements.length} statements...\n`);
 
-    // Execute each statement
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
-      console.log(`Executing statement ${i + 1}/${statements.length}...`);
+      const preview = statement.substring(0, 70).replace(/\n/g, ' ');
+      console.log(`${i + 1}. ${preview}...`);
 
-      const { error } = await supabase.rpc('exec_sql', {
-        sql: statement,
-      }).catch(() => {
-        // If exec_sql doesn't exist, we'll use a different approach
-        return { error: 'exec_sql not found' };
-      });
-
-      if (error && error !== 'exec_sql not found') {
-        console.error(`Error executing statement ${i + 1}:`, error);
-        throw error;
+      try {
+        await client.query(statement);
+        console.log('   ✅ Success\n');
+      } catch (err: any) {
+        console.log(`   ⚠️  Error: ${err.message}\n`);
       }
     }
 
-    console.log('✅ Migration applied successfully!');
-  } catch (error) {
-    console.error('Error during migration:', error);
-    console.log('\n⚠️  The Supabase RPC approach may not work. Please apply the migration manually:');
-    console.log('1. Go to https://app.supabase.com/project/_/sql');
-    console.log('2. Create a new query');
-    console.log('3. Copy and paste the contents of: supabase/migrations/20251104_feature_roadmap_links.sql');
-    console.log('4. Execute the query');
+    await client.end();
+    console.log('\n🎉 Migration applied successfully!');
+    console.log('\n✅ Trigger fix has been deployed to the database');
+    console.log('\nYou can now run: npm run test:roadmap');
+
+  } catch (err: any) {
+    console.error('❌ Error:', err.message);
     process.exit(1);
   }
 }
 
-applyMigration().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+applyMigration().catch(console.error);

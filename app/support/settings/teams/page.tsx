@@ -31,7 +31,7 @@ export default function TeamsIntegrationPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || (role?.toLowerCase() !== 'admin' && role !== 'Team'))) {
+    if (!authLoading && (!user || (role !== 'Admin' && role !== 'Team'))) {
       router.push('/support/dashboard');
     }
   }, [user, authLoading, role, router]);

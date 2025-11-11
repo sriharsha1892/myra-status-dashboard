@@ -154,9 +154,14 @@ export default function TicketDetailPage() {
 
       if (error) throw error;
       setTicket(data);
-    } catch (error) {
-      console.error('Error fetching ticket:', error);
-      toast.error('Failed to load ticket');
+    } catch (error: any) {
+      const { handleError } = await import('@/lib/utils/errorHandler');
+      handleError(error, {
+        context: 'fetching ticket',
+        additionalContext: {
+          ticketId,
+        }
+      });
     } finally {
       setLoading(false);
     }

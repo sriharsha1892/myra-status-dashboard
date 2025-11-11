@@ -87,7 +87,7 @@ export default function TrialExtensionsTab({ orgId, currentTrialExpiry }: TrialE
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -123,13 +123,13 @@ export default function TrialExtensionsTab({ orgId, currentTrialExpiry }: TrialE
         </div>
 
         {currentTrialExpiry && (
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+          <div className="bg-gradient-to-br from-accent-50 to-purple-100 rounded-xl p-4 border border-accent-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-accent-600 flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-purple-700 font-medium">Current Expiry</p>
+                <p className="text-xs text-accent-700 font-medium">Current Expiry</p>
                 <p className="text-sm font-bold text-purple-900">
                   {format(new Date(currentTrialExpiry), 'MMM dd, yyyy')}
                 </p>

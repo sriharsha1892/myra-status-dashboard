@@ -58,18 +58,18 @@ type RoadmapItem = {
 type ViewMode = 'kanban' | 'list' | 'analytics';
 
 const STATUS_COLORS = {
-  suggested: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', dot: 'bg-purple-500' },
+  suggested: { bg: 'bg-accent-50', border: 'border-accent-200', text: 'text-accent-700', dot: 'bg-accent-500' },
   planned: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500' },
   in_progress: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
   completed: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500' },
-  cancelled: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600', dot: 'bg-slate-400' },
+  cancelled: { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-600', dot: 'bg-slate-400' },
 };
 
 const PRIORITY_COLORS = {
   critical: { bg: 'bg-red-100', text: 'text-red-700', icon: 'text-red-600' },
   high: { bg: 'bg-orange-100', text: 'text-orange-700', icon: 'text-orange-600' },
   medium: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'text-yellow-600' },
-  low: { bg: 'bg-slate-100', text: 'text-slate-600', icon: 'text-slate-500' },
+  low: { bg: 'bg-neutral-100', text: 'text-neutral-600', icon: 'text-neutral-500' },
 };
 
 const CHART_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#94a3b8'];
@@ -393,10 +393,10 @@ export default function AdminRoadmapPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="flex items-center gap-3">
           <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-          <span className="text-sm text-slate-600">Loading roadmap...</span>
+          <span className="text-sm text-neutral-600">Loading roadmap...</span>
         </div>
       </div>
     );
@@ -405,10 +405,10 @@ export default function AdminRoadmapPage() {
   const allowedRoles = ['admin', 'account manager'];
   if (!user || !role || !allowedRoles.includes(role.toLowerCase())) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Access Denied</h2>
-          <p className="text-sm text-slate-600">You must be an admin or account manager to view this page.</p>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-2">Access Denied</h2>
+          <p className="text-sm text-neutral-600">You must be an admin or account manager to view this page.</p>
         </div>
       </div>
     );
@@ -419,9 +419,9 @@ export default function AdminRoadmapPage() {
   };
 
   return (
-    <main className="flex-1 flex flex-col h-screen bg-slate-50 overflow-hidden">
+    <main className="flex-1 flex flex-col h-screen bg-neutral-50 overflow-hidden">
       {/* Header - Enhanced Design */}
-      <header className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b border-blue-700 px-8 py-6 flex-shrink-0">
+      <header className="bg-accent-500 border-b border-blue-700 px-8 py-6 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -476,9 +476,9 @@ export default function AdminRoadmapPage() {
               onChange={(e) => setSelectedVersion(e.target.value)}
               className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
             >
-              <option value="all" className="text-slate-900">All Versions</option>
+              <option value="all" className="text-neutral-900">All Versions</option>
               {uniqueVersions.map((version) => (
-                <option key={version} value={version} className="text-slate-900">
+                <option key={version} value={version} className="text-neutral-900">
                   {version}
                 </option>
               ))}
@@ -492,9 +492,9 @@ export default function AdminRoadmapPage() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
             >
-              <option value="all" className="text-slate-900">All Categories</option>
+              <option value="all" className="text-neutral-900">All Categories</option>
               {uniqueCategories.map((category) => (
-                <option key={category} value={category} className="text-slate-900">
+                <option key={category} value={category} className="text-neutral-900">
                   {category}
                 </option>
               ))}
@@ -508,9 +508,9 @@ export default function AdminRoadmapPage() {
               onChange={(e) => setSelectedGoal(e.target.value)}
               className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
             >
-              <option value="all" className="text-slate-900">All Goals</option>
+              <option value="all" className="text-neutral-900">All Goals</option>
               {uniqueGoals.map((goal) => (
-                <option key={goal} value={goal} className="text-slate-900">
+                <option key={goal} value={goal} className="text-neutral-900">
                   {goal}
                 </option>
               ))}
@@ -524,9 +524,9 @@ export default function AdminRoadmapPage() {
               onChange={(e) => setSelectedArea(e.target.value)}
               className="h-11 px-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-sm text-white focus:outline-none focus:bg-white/30 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all"
             >
-              <option value="all" className="text-slate-900">All Areas</option>
+              <option value="all" className="text-neutral-900">All Areas</option>
               {uniqueAreas.map((area) => (
-                <option key={area} value={area} className="text-slate-900">
+                <option key={area} value={area} className="text-neutral-900">
                   {area}
                 </option>
               ))}
@@ -608,7 +608,7 @@ export default function AdminRoadmapPage() {
                   key={status}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, status)}
-                  className="flex flex-col bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden min-h-0"
+                  className="flex flex-col bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-neutral-200 shadow-sm overflow-hidden min-h-0"
                 >
                   {/* Column Header - Gradient Design */}
                   <div className={`px-5 py-4 border-b-2 ${colors.border} ${colors.bg}`}>
@@ -630,7 +630,7 @@ export default function AdminRoadmapPage() {
                     {items.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-40 text-center">
                         <Circle className="w-10 h-10 text-slate-300 mb-2" />
-                        <p className="text-sm font-medium text-slate-400">No items</p>
+                        <p className="text-sm font-medium text-neutral-400">No items</p>
                       </div>
                     ) : (
                       items.map((item) => (
@@ -665,11 +665,11 @@ export default function AdminRoadmapPage() {
                           </div>
 
                           {/* Title & Description */}
-                          <h4 className="text-sm font-bold text-slate-900 mb-2 line-clamp-2 leading-snug">
+                          <h4 className="text-sm font-bold text-neutral-900 mb-2 line-clamp-2 leading-snug">
                             {item.title}
                           </h4>
                           {item.description && (
-                            <p className="text-xs text-slate-600 mb-3 line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-neutral-600 mb-3 line-clamp-2 leading-relaxed">
                               {item.description}
                             </p>
                           )}
@@ -691,7 +691,7 @@ export default function AdminRoadmapPage() {
                           )}
 
                           {/* Metadata */}
-                          <div className="flex items-center gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
+                          <div className="flex items-center gap-3 text-xs text-neutral-500 pt-2 border-t border-slate-100">
                             {item.owner && (
                               <div className="flex items-center gap-1.5">
                                 <User className="w-3.5 h-3.5" />
@@ -713,7 +713,7 @@ export default function AdminRoadmapPage() {
                           {/* Source Badge */}
                           {item.source_type === 'feature_request' && item.source_org_name && (
                             <div className="mt-3 pt-2 border-t border-slate-100">
-                              <span className="text-xs text-slate-500 font-medium">
+                              <span className="text-xs text-neutral-500 font-medium">
                                 From: {item.source_org_name}
                               </span>
                             </div>
@@ -729,34 +729,34 @@ export default function AdminRoadmapPage() {
         )}
 
         {viewMode === 'list' && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-neutral-50 border-b border-neutral-200">
                 <tr>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Proposer</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Goal</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Area</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Item</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Rationale</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Version</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Assigned To</th>
-                  <th className="text-left text-xs font-semibold text-slate-700 px-6 py-3">Status</th>
-                  <th className="text-right text-xs font-semibold text-slate-700 px-6 py-3">Actions</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Proposer</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Goal</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Area</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Item</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Rationale</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Version</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Assigned To</th>
+                  <th className="text-left text-xs font-semibold text-neutral-700 px-6 py-3">Status</th>
+                  <th className="text-right text-xs font-semibold text-neutral-700 px-6 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-slate-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-neutral-500">
                       No roadmap items found
                     </td>
                   </tr>
                 ) : (
                   filteredItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
+                    <tr key={item.id} className="hover:bg-neutral-50 transition-colors group">
                       {/* Proposer */}
                       <td className="px-6 py-4">
-                        <span className="text-sm text-slate-900">{item.proposer || '-'}</span>
+                        <span className="text-sm text-neutral-900">{item.proposer || '-'}</span>
                       </td>
 
                       {/* Goal */}
@@ -780,21 +780,21 @@ export default function AdminRoadmapPage() {
                       {/* Item (title + description) */}
                       <td className="px-6 py-4">
                         <div className="max-w-xs">
-                          <p className="text-sm font-medium text-slate-900 line-clamp-1">{item.title}</p>
+                          <p className="text-sm font-medium text-neutral-900 line-clamp-1">{item.title}</p>
                           {item.description && (
-                            <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">{item.description}</p>
+                            <p className="text-xs text-neutral-600 mt-0.5 line-clamp-1">{item.description}</p>
                           )}
                         </div>
                       </td>
 
                       {/* Rationale */}
                       <td className="px-6 py-4">
-                        <p className="text-sm text-slate-600 line-clamp-2 max-w-xs">{item.rationale || '-'}</p>
+                        <p className="text-sm text-neutral-600 line-clamp-2 max-w-xs">{item.rationale || '-'}</p>
                       </td>
 
                       {/* Version */}
                       <td className="px-6 py-4">
-                        <span className="text-sm text-slate-900">{item.version_planned || item.version || '-'}</span>
+                        <span className="text-sm text-neutral-900">{item.version_planned || item.version || '-'}</span>
                       </td>
 
                       {/* Assigned To (multiple badges) */}
@@ -830,9 +830,9 @@ export default function AdminRoadmapPage() {
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleEditItem(item)}
-                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                            className="p-1.5 hover:bg-neutral-100 rounded transition-colors"
                           >
-                            <Edit3 className="w-4 h-4 text-slate-600" />
+                            <Edit3 className="w-4 h-4 text-neutral-600" />
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
@@ -854,33 +854,33 @@ export default function AdminRoadmapPage() {
           <div className="space-y-6">
             {/* Overview Cards */}
             <div className="grid grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <Circle className="w-5 h-5 text-slate-400" />
-                  <span className="text-xs font-medium text-slate-500">Total Items</span>
+                  <Circle className="w-5 h-5 text-neutral-400" />
+                  <span className="text-xs font-medium text-neutral-500">Total Items</span>
                 </div>
-                <p className="text-3xl font-bold text-slate-900">{filteredItems.length}</p>
+                <p className="text-3xl font-bold text-neutral-900">{filteredItems.length}</p>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
                 <div className="flex items-center justify-between mb-3">
                   <Loader2 className="w-5 h-5 text-amber-500" />
-                  <span className="text-xs font-medium text-slate-500">In Progress</span>
+                  <span className="text-xs font-medium text-neutral-500">In Progress</span>
                 </div>
-                <p className="text-3xl font-bold text-slate-900">{statusCounts.in_progress}</p>
+                <p className="text-3xl font-bold text-neutral-900">{statusCounts.in_progress}</p>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
                 <div className="flex items-center justify-between mb-3">
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="text-xs font-medium text-slate-500">Completed</span>
+                  <span className="text-xs font-medium text-neutral-500">Completed</span>
                 </div>
-                <p className="text-3xl font-bold text-slate-900">{statusCounts.completed}</p>
+                <p className="text-3xl font-bold text-neutral-900">{statusCounts.completed}</p>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
                 <div className="flex items-center justify-between mb-3">
                   <TrendingUp className="w-5 h-5 text-blue-500" />
-                  <span className="text-xs font-medium text-slate-500">Completion Rate</span>
+                  <span className="text-xs font-medium text-neutral-500">Completion Rate</span>
                 </div>
-                <p className="text-3xl font-bold text-slate-900">
+                <p className="text-3xl font-bold text-neutral-900">
                   {filteredItems.length > 0 ? Math.round((statusCounts.completed / filteredItems.length) * 100) : 0}%
                 </p>
               </div>
@@ -889,8 +889,8 @@ export default function AdminRoadmapPage() {
             {/* Charts */}
             <div className="grid grid-cols-2 gap-6">
               {/* Status Distribution */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-sm font-semibold text-slate-900 mb-6">Status Distribution</h3>
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+                <h3 className="text-sm font-semibold text-neutral-900 mb-6">Status Distribution</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -913,8 +913,8 @@ export default function AdminRoadmapPage() {
               </div>
 
               {/* Priority Breakdown */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-sm font-semibold text-slate-900 mb-6">Priority Breakdown</h3>
+              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+                <h3 className="text-sm font-semibold text-neutral-900 mb-6">Priority Breakdown</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={priorityChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -928,22 +928,22 @@ export default function AdminRoadmapPage() {
             </div>
 
             {/* Upcoming Deadlines */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold text-slate-900 mb-4">Upcoming Deadlines</h3>
+            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <h3 className="text-sm font-semibold text-neutral-900 mb-4">Upcoming Deadlines</h3>
               {upcomingDeadlines.length === 0 ? (
-                <p className="text-sm text-slate-500 py-8 text-center">No upcoming deadlines</p>
+                <p className="text-sm text-neutral-500 py-8 text-center">No upcoming deadlines</p>
               ) : (
                 <div className="space-y-3">
                   {upcomingDeadlines.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div key={item.id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                        <p className="text-sm font-medium text-neutral-900">{item.title}</p>
                         <div className="flex items-center gap-3 mt-1">
                           <span className={`text-xs ${PRIORITY_COLORS[item.priority].text}`}>
                             {item.priority} priority
                           </span>
                           {item.owner && (
-                            <span className="text-xs text-slate-500">• {item.owner}</span>
+                            <span className="text-xs text-neutral-500">• {item.owner}</span>
                           )}
                         </div>
                       </div>
@@ -952,7 +952,7 @@ export default function AdminRoadmapPage() {
                           ? 'text-red-600'
                           : isBefore(new Date(item.due_date!), addDays(new Date(), 7))
                           ? 'text-amber-600'
-                          : 'text-slate-600'
+                          : 'text-neutral-600'
                       }`}>
                         {format(new Date(item.due_date!), 'MMM d, yyyy')}
                       </div>
@@ -970,8 +970,8 @@ export default function AdminRoadmapPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">
+            <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-neutral-900">
                 {editingItem ? 'Edit Roadmap Item' : 'New Roadmap Item'}
               </h3>
               <button
@@ -980,9 +980,9 @@ export default function AdminRoadmapPage() {
                   setEditingItem(null);
                   resetForm();
                 }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-slate-600" />
+                <X className="w-5 h-5 text-neutral-600" />
               </button>
             </div>
 
@@ -990,7 +990,7 @@ export default function AdminRoadmapPage() {
             <div className="p-6 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                <label className="block text-sm font-semibold text-neutral-900 mb-2">
                   Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -998,14 +998,14 @@ export default function AdminRoadmapPage() {
                   value={newItem.title}
                   onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                   placeholder="e.g., Add dark mode support"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   autoFocus
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                <label className="block text-sm font-semibold text-neutral-900 mb-2">
                   Description
                 </label>
                 <textarea
@@ -1013,9 +1013,9 @@ export default function AdminRoadmapPage() {
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   rows={4}
                   placeholder="Provide context, requirements, and any relevant details..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-neutral-500">
                   Tip: Use **bold**, *italic*, and `code` for formatting
                 </p>
               </div>
@@ -1024,11 +1024,11 @@ export default function AdminRoadmapPage() {
               <div className="grid grid-cols-3 gap-5">
                 {/* Priority */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Priority</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Priority</label>
                   <select
                     value={newItem.priority}
                     onChange={(e) => setNewItem({ ...newItem, priority: e.target.value as any })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -1039,11 +1039,11 @@ export default function AdminRoadmapPage() {
 
                 {/* Status */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Status</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Status</label>
                   <select
                     value={newItem.status}
                     onChange={(e) => setNewItem({ ...newItem, status: e.target.value as any })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     disabled={role?.toLowerCase() === 'account manager' && !editingItem}
                   >
                     {role?.toLowerCase() === 'account manager' && <option value="suggested">Suggested</option>}
@@ -1058,13 +1058,13 @@ export default function AdminRoadmapPage() {
                     )}
                   </select>
                   {role?.toLowerCase() === 'account manager' && !editingItem && (
-                    <p className="mt-1 text-xs text-slate-500">Account Managers can suggest features for review</p>
+                    <p className="mt-1 text-xs text-neutral-500">Account Managers can suggest features for review</p>
                   )}
                 </div>
 
                 {/* Owner - User Dropdown */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Assign To</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Assign To</label>
                   <select
                     value={newItem.owner_id}
                     onChange={(e) => {
@@ -1075,7 +1075,7 @@ export default function AdminRoadmapPage() {
                         owner: selectedUser?.name || ''
                       });
                     }}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   >
                     <option value="">Unassigned</option>
                     {users.map((user) => (
@@ -1091,24 +1091,24 @@ export default function AdminRoadmapPage() {
               <div className="grid grid-cols-3 gap-5">
                 {/* Version */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Version</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Version</label>
                   <input
                     type="text"
                     value={newItem.version}
                     onChange={(e) => setNewItem({ ...newItem, version: e.target.value })}
                     placeholder="e.g., v1, v2, v2.1"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
-                  <p className="mt-1 text-xs text-slate-500">Target release version</p>
+                  <p className="mt-1 text-xs text-neutral-500">Target release version</p>
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Category</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Category</label>
                   <select
                     value={newItem.category}
                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   >
                     <option value="">Select Category</option>
                     <option value="Product">Product</option>
@@ -1120,24 +1120,24 @@ export default function AdminRoadmapPage() {
                     <option value="Performance">Performance</option>
                     <option value="Security">Security</option>
                   </select>
-                  <p className="mt-1 text-xs text-slate-500">Feature type or department</p>
+                  <p className="mt-1 text-xs text-neutral-500">Feature type or department</p>
                 </div>
 
                 {/* Due Date */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Due Date</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Due Date</label>
                   <input
                     type="date"
                     value={newItem.due_date}
                     onChange={(e) => setNewItem({ ...newItem, due_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
               </div>
 
               {/* Notes/Comments */}
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                <label className="block text-sm font-semibold text-neutral-900 mb-2">
                   Notes & Comments
                 </label>
                 <textarea
@@ -1145,38 +1145,38 @@ export default function AdminRoadmapPage() {
                   onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
                   rows={4}
                   placeholder="Add implementation notes, technical details, blockers, or discussion points..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-neutral-500">
                   Detailed notes for team collaboration and context
                 </p>
               </div>
 
               {/* Spreadsheet Fields Section */}
-              <div className="pt-4 border-t border-slate-200">
-                <h4 className="text-sm font-bold text-slate-900 mb-4">Roadmap Details</h4>
+              <div className="pt-4 border-t border-neutral-200">
+                <h4 className="text-sm font-bold text-neutral-900 mb-4">Roadmap Details</h4>
 
                 {/* Two Column Layout - Row 1 */}
                 <div className="grid grid-cols-2 gap-5 mb-5">
                   {/* Proposer */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Proposer</label>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">Proposer</label>
                     <input
                       type="text"
                       value={newItem.proposer}
                       onChange={(e) => setNewItem({ ...newItem, proposer: e.target.value })}
                       placeholder="Person who proposed this"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
                   </div>
 
                   {/* Goal */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Goal</label>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">Goal</label>
                     <select
                       value={newItem.goal}
                       onChange={(e) => setNewItem({ ...newItem, goal: e.target.value })}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       <option value="">Select Goal</option>
                       <option value="Addtl. Functionality">Addtl. Functionality</option>
@@ -1195,66 +1195,66 @@ export default function AdminRoadmapPage() {
                 <div className="grid grid-cols-2 gap-5 mb-5">
                   {/* Area */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Area</label>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">Area</label>
                     <input
                       type="text"
                       value={newItem.area}
                       onChange={(e) => setNewItem({ ...newItem, area: e.target.value })}
                       placeholder="e.g., Dashboards, Sharing, API, Support..."
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
-                    <p className="mt-1 text-xs text-slate-500">Dashboards, Sharing, API, IP security, Support, Language Selection, etc.</p>
+                    <p className="mt-1 text-xs text-neutral-500">Dashboards, Sharing, API, IP security, Support, Language Selection, etc.</p>
                   </div>
 
                   {/* Version Planned */}
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Version Planned</label>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">Version Planned</label>
                     <input
                       type="text"
                       value={newItem.version_planned}
                       onChange={(e) => setNewItem({ ...newItem, version_planned: e.target.value })}
                       placeholder="e.g., V2, V3"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Assigned To */}
                 <div className="mb-5">
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Assigned To</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Assigned To</label>
                   <input
                     type="text"
                     value={newItem.assigned_to}
                     onChange={(e) => setNewItem({ ...newItem, assigned_to: e.target.value })}
                     placeholder="e.g., Harsha,Abin (comma-separated)"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
-                  <p className="mt-1 text-xs text-slate-500">Enter multiple names separated by commas</p>
+                  <p className="mt-1 text-xs text-neutral-500">Enter multiple names separated by commas</p>
                 </div>
 
                 {/* Rationale */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">Rationale</label>
+                  <label className="block text-sm font-semibold text-neutral-900 mb-2">Rationale</label>
                   <textarea
                     value={newItem.rationale}
                     onChange={(e) => setNewItem({ ...newItem, rationale: e.target.value })}
                     rows={3}
                     placeholder="Why does this item matter?"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex gap-3">
+            <div className="sticky bottom-0 bg-neutral-50 border-t border-neutral-200 px-6 py-4 flex gap-3">
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingItem(null);
                   resetForm();
                 }}
-                className="flex-1 h-11 px-4 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors"
+                className="flex-1 h-11 px-4 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-100 font-medium transition-colors"
               >
                 Cancel
               </button>

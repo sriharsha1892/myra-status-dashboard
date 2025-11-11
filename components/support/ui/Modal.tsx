@@ -46,9 +46,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Enterprise backdrop: subtle blur */}
+      {/* Glassmorphism backdrop - signature of the new design */}
       <div
-        className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-150 animate-fadeIn"
+        className="fixed inset-0 bg-black/30 backdrop-blur-md transition-opacity duration-200 animate-fadeIn"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -57,19 +57,21 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className={clsx(
-            // Enterprise design: clean shadows, rounded corners, smooth scale animation
-            'relative w-full rounded-xl bg-white shadow-xl transition-all duration-150 animate-scaleIn',
+            // Asana-inspired modal: clean, layered shadows, glassmorphism
+            'relative w-full rounded-xl bg-white/95 backdrop-blur-lg backdrop-saturate-180',
+            'shadow-glass-lg border border-neutral-200/80',
+            'transition-all duration-200 animate-scaleIn',
             sizeStyles[size]
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
+          {/* Header with hairline border */}
           {title && (
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+            <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+              <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
+                className="text-neutral-400 hover:text-neutral-600 transition-colors duration-200 rounded-lg p-1 hover:bg-neutral-100"
                 aria-label="Close modal"
               >
                 <svg
@@ -87,12 +89,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
             </div>
           )}
 
-          {/* Body */}
-          <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">{children}</div>
+          {/* Body with comfortable spacing */}
+          <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+            {children}
+          </div>
 
-          {/* Footer */}
+          {/* Footer with hairline border */}
           {footer && (
-            <div className="border-t border-gray-200 px-6 py-4">{footer}</div>
+            <div className="border-t border-neutral-200 px-6 py-4 bg-neutral-50/50 rounded-b-xl">
+              {footer}
+            </div>
           )}
         </div>
       </div>

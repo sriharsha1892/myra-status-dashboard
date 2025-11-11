@@ -80,8 +80,8 @@ export default function TeamsConfigPanel() {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-purple-600" />
+        <div className="w-10 h-10 bg-accent-100 rounded-lg flex items-center justify-center">
+          <MessageSquare className="w-5 h-5 text-accent-600" />
         </div>
         <div>
           <h3 className="text-base font-semibold text-gray-900">Microsoft Teams Integration</h3>
@@ -159,7 +159,7 @@ export default function TeamsConfigPanel() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full h-11 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+          className="w-full h-11 bg-accent-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Configuration'}
         </button>

@@ -96,7 +96,7 @@ export default function CustomFieldsEditor({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
           Custom Fields
         </h3>
         <button
@@ -119,8 +119,8 @@ export default function CustomFieldsEditor({
 
       {/* Fields Display/Edit */}
       {Object.keys(fields).length === 0 && !editMode ? (
-        <div className="text-center py-8 rounded-xl backdrop-blur-sm bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200/30">
-          <p className="text-sm text-slate-500">No custom fields yet</p>
+        <div className="text-center py-8 rounded-xl backdrop-blur-sm bg-neutral-50/50 dark:bg-slate-800/50 border border-neutral-200/30">
+          <p className="text-sm text-neutral-500">No custom fields yet</p>
           <button
             onClick={() => setEditMode(true)}
             className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -133,19 +133,19 @@ export default function CustomFieldsEditor({
           {Object.entries(fields).map(([key, value]) => (
             <div
               key={key}
-              className="flex items-center gap-3 p-3 rounded-xl backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-slate-200/30 hover:border-blue-500/30 transition-all"
+              className="flex items-center gap-3 p-3 rounded-xl backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-neutral-200/30 hover:border-blue-500/30 transition-all"
             >
               <div className="flex-1 grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                     Key
                   </div>
-                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                  <div className="text-sm font-medium text-neutral-900 dark:text-white">
                     {key}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  <div className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                     Value
                   </div>
                   {editMode ? (
@@ -153,10 +153,10 @@ export default function CustomFieldsEditor({
                       type="text"
                       value={value}
                       onChange={(e) => handleUpdateField(key, e.target.value)}
-                      className="w-full px-2 py-1 text-sm rounded-lg backdrop-blur-sm bg-white/50 dark:bg-slate-700/50 border border-slate-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full px-2 py-1 text-sm rounded-lg backdrop-blur-sm bg-white/50 dark:bg-slate-700/50 border border-neutral-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                   ) : (
-                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                    <div className="text-sm text-neutral-700 dark:text-slate-300">
                       {String(value)}
                     </div>
                   )}
@@ -180,7 +180,7 @@ export default function CustomFieldsEditor({
         <div className="p-4 rounded-xl backdrop-blur-sm bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/30">
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-neutral-700 dark:text-slate-300 mb-1">
                 Key
               </label>
               <input
@@ -188,11 +188,11 @@ export default function CustomFieldsEditor({
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
                 placeholder="e.g., industry"
-                className="w-full px-3 py-2 text-sm rounded-lg backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border border-slate-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full px-3 py-2 text-sm rounded-lg backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border border-neutral-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-neutral-700 dark:text-slate-300 mb-1">
                 Value
               </label>
               <input
@@ -200,7 +200,7 @@ export default function CustomFieldsEditor({
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
                 placeholder="e.g., Healthcare"
-                className="w-full px-3 py-2 text-sm rounded-lg backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border border-slate-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full px-3 py-2 text-sm rounded-lg backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border border-neutral-200/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />
             </div>
             <button
@@ -218,7 +218,7 @@ export default function CustomFieldsEditor({
         <button
           onClick={handleSave}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent-500 text-white font-medium shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 transition-all"
         >
           <Save className="w-4 h-4" />
           {loading ? 'Saving...' : 'Save Custom Fields'}

@@ -143,7 +143,7 @@ export default function SignupPage() {
           style={{ animation: 'liquidMove 20s ease-in-out infinite' }}
         ></div>
         <div
-          className="absolute top-0 -right-4 w-72 h-72 bg-gradient-to-br from-purple-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70"
+          className="absolute top-0 -right-4 w-72 h-72 bg-gradient-to-br from-accent-400 to-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-70"
           style={{ animation: 'liquidMove 25s ease-in-out infinite reverse' }}
         ></div>
         <div
@@ -156,7 +156,7 @@ export default function SignupPage() {
       <div className="relative w-full max-w-lg">
         {/* Logo & Title */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl mb-4 shadow-2xl shadow-blue-600/30">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl mb-4 shadow-2xl shadow-accent-500/30">
             <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
@@ -249,11 +249,11 @@ export default function SignupPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="relative w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700
+                    className="relative w-full h-12 bg-accent-500 hover:from-blue-700 hover:to-indigo-700
                              active:scale-[0.98] disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed
                              text-white text-sm font-semibold rounded-xl
                              transition-all duration-200 ease-out
-                             shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 disabled:shadow-none
+                             shadow-lg shadow-accent-500/30 hover:shadow-xl hover:shadow-blue-600/40 disabled:shadow-none
                              flex items-center justify-center gap-2 mt-8 overflow-hidden group"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>

@@ -18,6 +18,9 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<'AM' | 'Team' | 'Admin' | null>(null);
+  const [userParentCompany, setUserParentCompany] = useState<string>('Mordor Intelligence');
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = useState<boolean>(false);
   const router = useRouter();
 
   // Lazy initialize Supabase client only on client-side
@@ -30,12 +33,45 @@ export function useAuth(): UseAuthReturn {
     return supabaseRef.current;
   };
 
+  // Fetch user role and details from users table
+  const fetchUserDetails = async (userId: string) => {
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('users')
+        .select('role, parent_company, is_super_admin')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!error && data) {
+        // Map database roles to expected types
+        let mappedRole: 'AM' | 'Team' | 'Admin' | null = null;
+        if (data.role?.toLowerCase().includes('admin')) {
+          mappedRole = 'Admin';
+        } else if (data.role?.toLowerCase() === 'account_manager') {
+          mappedRole = 'AM';
+        } else if (data.role?.toLowerCase() === 'viewer') {
+          mappedRole = 'Team';
+        }
+
+        setUserRole(mappedRole);
+        setUserParentCompany(data.parent_company || 'Mordor Intelligence');
+        setUserIsSuperAdmin(data.is_super_admin || false);
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+    }
+  };
+
   useEffect(() => {
     const supabase = getSupabase();
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserDetails(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -44,6 +80,13 @@ export function useAuth(): UseAuthReturn {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserDetails(session.user.id);
+      } else {
+        setUserRole(null);
+        setUserParentCompany('Mordor Intelligence');
+        setUserIsSuperAdmin(false);
+      }
       setLoading(false);
     });
 
@@ -76,17 +119,13 @@ export function useAuth(): UseAuthReturn {
     router.push('/support/login');
   };
 
-  const role = user?.user_metadata?.role || null;
-  const parent_company = user?.user_metadata?.parent_company || 'Mordor Intelligence';
-  const is_super_admin = user?.user_metadata?.is_super_admin || false;
-
   return {
     user,
     loading,
     signIn,
     signOut,
-    role,
-    parent_company,
-    is_super_admin,
+    role: userRole,
+    parent_company: userParentCompany,
+    is_super_admin: userIsSuperAdmin,
   };
 }

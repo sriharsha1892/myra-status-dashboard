@@ -186,7 +186,7 @@ export default function OrgUsersTab({ orgId }: OrgUsersTabProps) {
                   <td className="px-6 py-4">
                     <button
                       onClick={() => handleOpenPasswordModal(user)}
-                      className="inline-block px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition"
+                      className="inline-block px-3 py-1 bg-accent-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition"
                       title="Set or reset password"
                     >
                       🔑 Password

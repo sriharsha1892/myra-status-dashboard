@@ -237,26 +237,26 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
     switch (priority) {
       case 'high': return 'bg-red-50 text-red-700 border-red-200';
       case 'medium': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'low': return 'bg-slate-50 text-slate-700 border-slate-200';
+      case 'low': return 'bg-neutral-50 text-neutral-700 border-neutral-200';
     }
   };
 
   if (loading) {
     return (
-      <div className="relative bg-white rounded-xl border border-slate-200 p-6">
+      <div className="relative bg-white rounded-xl border border-neutral-200 p-6">
         <div className="flex items-center gap-2.5 mb-5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-            <Brain className="w-4 h-4 text-purple-600 animate-pulse" strokeWidth={1.5} />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-100 to-blue-100 flex items-center justify-center">
+            <Brain className="w-4 h-4 text-accent-600 animate-pulse" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Smart Recommendations</h2>
-            <p className="text-xs text-slate-500">Analyzing your data...</p>
+            <h2 className="text-sm font-semibold text-neutral-900">Smart Recommendations</h2>
+            <p className="text-xs text-neutral-500">Analyzing your data...</p>
           </div>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-20 bg-slate-100 rounded-lg" />
+              <div className="h-20 bg-neutral-100 rounded-lg" />
             </div>
           ))}
         </div>
@@ -266,36 +266,36 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
 
   if (recommendations.length === 0) {
     return (
-      <div className="relative bg-white rounded-xl border border-slate-200 p-6">
+      <div className="relative bg-white rounded-xl border border-neutral-200 p-6">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-emerald-600" strokeWidth={1.5} />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900">Smart Recommendations</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Smart Recommendations</h2>
         </div>
         <div className="text-center py-8">
-          <p className="text-sm text-slate-600">All systems optimal. No urgent actions needed.</p>
+          <p className="text-sm text-neutral-600">All systems optimal. No urgent actions needed.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50 rounded-xl border border-slate-200 p-6">
+    <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50 rounded-xl border border-neutral-200 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center shadow-sm">
-            <Brain className="w-4 h-4 text-purple-600" strokeWidth={1.5} />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-100 to-blue-100 flex items-center justify-center shadow-sm">
+            <Brain className="w-4 h-4 text-accent-600" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Smart Recommendations</h2>
-            <p className="text-xs text-slate-500">AI-powered insights from your data</p>
+            <h2 className="text-sm font-semibold text-neutral-900">Smart Recommendations</h2>
+            <p className="text-xs text-neutral-500">AI-powered insights from your data</p>
           </div>
         </div>
         <button
           onClick={analyzeAndRecommend}
-          className="px-2.5 py-1 bg-white/60 backdrop-blur-sm hover:bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:text-purple-600 transition-all duration-200"
+          className="px-2.5 py-1 bg-white/60 backdrop-blur-sm hover:bg-white border border-neutral-200 rounded-lg text-xs font-medium text-neutral-700 hover:text-accent-600 transition-all duration-200"
         >
           Refresh
         </button>
@@ -307,7 +307,7 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
           <button
             key={rec.id}
             onClick={() => rec.actionUrl && router.push(rec.actionUrl)}
-            className="group w-full text-left p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
+            className="group w-full text-left p-4 rounded-xl bg-white/80 backdrop-blur-sm border border-neutral-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200"
             style={{ animationDelay: `${index * 50}ms` }}
             disabled={!rec.actionUrl}
           >
@@ -322,7 +322,7 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors duration-200">
+                  <h3 className="text-sm font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors duration-200">
                     {rec.title}
                   </h3>
                   {rec.priority === 'high' && (
@@ -332,13 +332,13 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
                   )}
                 </div>
 
-                <p className="text-xs text-slate-600 mb-2 leading-relaxed">
+                <p className="text-xs text-neutral-600 mb-2 leading-relaxed">
                   {rec.description}
                 </p>
 
                 <div className="flex items-center justify-between">
                   {rec.metric && (
-                    <span className="inline-flex items-center px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-xs font-medium text-slate-700">
+                    <span className="inline-flex items-center px-2 py-0.5 bg-neutral-100 border border-neutral-200 rounded text-xs font-medium text-neutral-700">
                       {rec.metric}
                     </span>
                   )}
@@ -353,13 +353,13 @@ export default function SmartRecommendations({ userId, role }: { userId?: string
 
                 {/* Confidence indicator */}
                 <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1 bg-neutral-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-500"
                       style={{ width: `${rec.confidence}%` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 font-medium">{rec.confidence}%</span>
+                  <span className="text-xs text-neutral-500 font-medium">{rec.confidence}%</span>
                 </div>
               </div>
             </div>

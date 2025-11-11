@@ -38,7 +38,7 @@ const STAGE_COLORS: Record<string, string> = {
   invited: 'bg-gray-100 text-gray-700',
   low_activity: 'bg-blue-100 text-blue-700',
   active: 'bg-green-100 text-green-700',
-  power_user: 'bg-purple-100 text-purple-700',
+  power_user: 'bg-accent-100 text-accent-700',
   dormant: 'bg-gray-100 text-gray-600',
 };
 

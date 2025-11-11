@@ -117,18 +117,18 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
       case 'maintenance':
         return {
           bg: 'from-slate-50 via-white to-gray-50',
-          border: 'border-slate-200',
-          iconBg: 'bg-slate-100',
-          iconText: 'text-slate-600',
-          badge: 'bg-slate-100 text-slate-700 border-slate-200'
+          border: 'border-neutral-200',
+          iconBg: 'bg-neutral-100',
+          iconText: 'text-neutral-600',
+          badge: 'bg-neutral-100 text-neutral-700 border-neutral-200'
         };
       default:
         return {
           bg: 'from-purple-50 via-white to-pink-50',
-          border: 'border-purple-200',
-          iconBg: 'bg-purple-100',
-          iconText: 'text-purple-600',
-          badge: 'bg-purple-100 text-purple-700 border-purple-200'
+          border: 'border-accent-200',
+          iconBg: 'bg-accent-100',
+          iconText: 'text-accent-600',
+          badge: 'bg-accent-100 text-accent-700 border-accent-200'
         };
     }
   };
@@ -147,11 +147,11 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
             <Megaphone className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.5} />
           </div>
-          <h2 className="text-xs font-semibold text-slate-900">What's New</h2>
+          <h2 className="text-xs font-semibold text-neutral-900">What's New</h2>
         </div>
         {role === 'admin' && (
           <button
-            onClick={() => router.push('/support/admin/announcements')}
+            onClick={() => router.push('/support/resources')}
             className="flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
           >
             Manage
@@ -175,7 +175,7 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
                 onClick={() => dismissAnnouncement(announcement.id)}
                 className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-white/50 rounded transition-all"
               >
-                <X className="w-3 h-3 text-slate-400 hover:text-slate-600" strokeWidth={2} />
+                <X className="w-3 h-3 text-neutral-400 hover:text-neutral-600" strokeWidth={2} />
               </button>
 
               <div className="flex items-start gap-2">
@@ -189,7 +189,7 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-slate-900 leading-snug">
+                    <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
                       {announcement.title}
                     </h3>
                     <span className={`px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide border rounded ${colors.badge}`}>
@@ -197,11 +197,11 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-600 leading-relaxed mb-1.5">
+                  <p className="text-[11px] text-neutral-600 leading-relaxed mb-1.5">
                     {announcement.content}
                   </p>
 
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-2 text-[10px] text-neutral-500">
                     <span>{formatDistanceToNow(new Date(announcement.created_at), { addSuffix: true })}</span>
                     {announcement.priority !== 'normal' && (
                       <>

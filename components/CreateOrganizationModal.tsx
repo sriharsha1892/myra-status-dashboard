@@ -4,6 +4,9 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import MentionTextEditor from '@/components/MentionTextEditor';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
 
 interface SalesPOC {
   id: string;
@@ -23,7 +26,7 @@ interface CreateOrganizationModalProps {
   onSuccess: () => void;
 }
 
-const DOMAINS = ['TMT', 'NEO', 'AF&B', 'E&C', 'HC', 'AAD'];
+const DOMAINS = ['TMT', 'NEO', 'AF&B', 'E&C', 'HC', 'AAD', 'Unassigned'];
 const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'];
 
 export default function CreateOrganizationModal({
@@ -87,7 +90,20 @@ export default function CreateOrganizationModal({
       setAccountManagers(managers || []);
     } catch (error: any) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load sales POCs and account managers');
+
+      // Get current user for error reporting
+      const { data: { user } } = await supabase.auth.getUser();
+      const errorDetails = getErrorMessage(error, 'api_call');
+
+      // Show error with report option
+      showErrorWithReport(
+        error,
+        'api_call',
+        errorDetails.message,
+        errorDetails.suggestion,
+        user?.email,
+        user?.id
+      );
     }
   };
 
@@ -133,7 +149,20 @@ export default function CreateOrganizationModal({
       onSuccess();
     } catch (error: any) {
       console.error('Error creating organization:', error);
-      toast.error(error.message || 'Failed to create organization');
+
+      // Get current user for error reporting
+      const { data: { user } } = await supabase.auth.getUser();
+      const errorDetails = getErrorMessage(error, 'trial_org_create');
+
+      // Show error with report option for better support
+      showErrorWithReport(
+        error,
+        'trial_org_create',
+        errorDetails.message,
+        errorDetails.suggestion,
+        user?.email,
+        user?.id
+      );
     } finally {
       setLoading(false);
     }
@@ -286,13 +315,14 @@ export default function CreateOrganizationModal({
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Description
             </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add any additional details about this organization..."
-              rows={3}
-              className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
+            <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
+              <MentionTextEditor
+                content={description}
+                onChange={(html) => setDescription(html)}
+                placeholder="Add any additional details about this organization..."
+                minHeight={100}
+              />
+            </div>
           </div>
 
           {/* Trial Status Info */}
@@ -317,7 +347,7 @@ export default function CreateOrganizationModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 h-10 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

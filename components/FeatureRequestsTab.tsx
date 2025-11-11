@@ -99,7 +99,7 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
       case 'blue':
         return 'text-blue-600 bg-blue-50 border-blue-200';
       case 'purple':
-        return 'text-purple-600 bg-purple-50 border-purple-200';
+        return 'text-accent-600 bg-accent-50 border-accent-200';
       case 'yellow':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'orange':
@@ -153,7 +153,7 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -266,7 +266,7 @@ export default function FeatureRequestsTab({ orgId }: FeatureRequestsTabProps) {
                           setShowForwardModal(true);
                         }}
                         title="Forward to admin with context"
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium text-xs transition-all"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent-100 hover:bg-purple-200 text-accent-700 font-medium text-xs transition-all"
                       >
                         <ArrowUp className="w-3 h-3" /> Forward
                       </button>

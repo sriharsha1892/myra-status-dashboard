@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import toast, { Toaster } from 'react-hot-toast';
 import { format } from 'date-fns';
+import MentionTextEditor from '@/components/MentionTextEditor';
 
 type DemoEvent = Database['public']['Tables']['demo_events']['Row'];
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
@@ -257,37 +258,40 @@ export default function DemoDetailPage() {
           {/* Demo Observations */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Demo Observations</h3>
-            <textarea
-              value={editedDemo.demo_observations}
-              onChange={(e) => setEditedDemo({ ...editedDemo, demo_observations: e.target.value })}
-              placeholder="Notes from the demo session..."
-              rows={6}
-              className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+              <MentionTextEditor
+                content={editedDemo.demo_observations}
+                onChange={(html) => setEditedDemo({ ...editedDemo, demo_observations: html })}
+                placeholder="Notes from the demo session..."
+                minHeight={150}
+              />
+            </div>
           </div>
 
           {/* Pain Points */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Pain Points Identified</h3>
-            <textarea
-              value={editedDemo.pain_points}
-              onChange={(e) => setEditedDemo({ ...editedDemo, pain_points: e.target.value })}
-              placeholder="Key pain points discussed during the demo..."
-              rows={6}
-              className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+              <MentionTextEditor
+                content={editedDemo.pain_points}
+                onChange={(html) => setEditedDemo({ ...editedDemo, pain_points: html })}
+                placeholder="Key pain points discussed during the demo..."
+                minHeight={150}
+              />
+            </div>
           </div>
 
           {/* Next Steps */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Next Steps</h3>
-            <textarea
-              value={editedDemo.next_steps}
-              onChange={(e) => setEditedDemo({ ...editedDemo, next_steps: e.target.value })}
-              placeholder="Action items and follow-up tasks..."
-              rows={6}
-              className="w-full px-4 py-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="rounded-xl backdrop-blur-sm bg-white/50 border border-gray-200/50">
+              <MentionTextEditor
+                content={editedDemo.next_steps}
+                onChange={(html) => setEditedDemo({ ...editedDemo, next_steps: html })}
+                placeholder="Action items and follow-up tasks..."
+                minHeight={150}
+              />
+            </div>
           </div>
 
           {/* Rating (only if completed) */}
@@ -327,7 +331,7 @@ export default function DemoDetailPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 h-11 px-6 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

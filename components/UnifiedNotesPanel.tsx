@@ -172,7 +172,7 @@ export default function UnifiedNotesPanel({
           </div>
 
           {selectedNoteType === 'feature_proposal' && (
-            <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="mt-3 p-3 bg-accent-50 border border-accent-200 rounded-lg">
               <p className="text-xs text-purple-900">
                 <strong>Feature Proposals</strong> will notify all admins and appear in the Feature Proposals page.
               </p>
