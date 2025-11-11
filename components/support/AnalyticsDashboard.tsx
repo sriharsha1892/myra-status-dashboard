@@ -810,22 +810,33 @@ export default function AnalyticsDashboard({ organizations, teamMembers, current
 
               {/* Preview of upcoming features */}
               <div className="grid grid-cols-3 gap-3 mt-8">
-                {[
-                  { label: 'Trial Start', icon: Users, color: 'blue' },
-                  { label: 'Engagement', icon: Activity, color: 'purple' },
-                  { label: 'Conversion', icon: CheckCircle2, color: 'green' }
-                ].map((item, index) => (
-                  <motion.div
-                    key={item.label}
-                    className={`p-3 rounded-lg bg-${item.color}-50 border border-${item.color}-200`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                  >
-                    <item.icon className={`w-5 h-5 text-${item.color}-600 mx-auto mb-1`} />
-                    <div className={`text-xs font-medium text-${item.color}-700`}>{item.label}</div>
-                  </motion.div>
-                ))}
+                <motion.div
+                  className="p-3 rounded-lg bg-blue-50 border border-blue-200"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Users className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                  <div className="text-xs font-medium text-blue-700">Trial Start</div>
+                </motion.div>
+                <motion.div
+                  className="p-3 rounded-lg bg-purple-50 border border-purple-200"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Activity className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+                  <div className="text-xs font-medium text-purple-700">Engagement</div>
+                </motion.div>
+                <motion.div
+                  className="p-3 rounded-lg bg-green-50 border border-green-200"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                  <div className="text-xs font-medium text-green-700">Conversion</div>
+                </motion.div>
               </div>
             </div>
           </div>
