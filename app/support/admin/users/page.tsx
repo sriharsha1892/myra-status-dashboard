@@ -25,7 +25,7 @@ interface User {
 const ROLES = [
   { value: 'Admin', label: 'Admin' },
   { value: 'Team', label: 'Team' },
-  { value: 'AM', label: 'Account Manager' },
+  { value: 'Account Manager', label: 'Account Manager' },
 ];
 
 export default function UsersPage() {
