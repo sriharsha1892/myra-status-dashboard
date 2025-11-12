@@ -51,11 +51,34 @@ Please change your password after first login.
     toast.success('All credentials copied!');
   };
 
+  const handleResendEmail = async () => {
+    try {
+      const response = await fetch('/api/admin/users/resend-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email,
+          name: credentials.name,
+          password: credentials.password,
+          role: credentials.role,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to resend invitation');
+      }
+
+      toast.success(`Invitation email resent to ${credentials.email}!`);
+    } catch (error) {
+      toast.error('Failed to resend invitation email');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl relative">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-t-2xl relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -68,7 +91,7 @@ Please change your password after first login.
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">User Created Successfully!</h2>
-              <p className="text-green-50 text-sm mt-1">
+              <p className="text-blue-50 text-sm mt-1">
                 {credentials.emailSent ? (
                   <>
                     ✅ Invitation email sent to {credentials.email}
@@ -175,13 +198,20 @@ Please change your password after first login.
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button
               onClick={copyAllCredentials}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-accent-500 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all font-semibold shadow-lg"
             >
               <Copy className="w-4 h-4" />
-              Copy All Credentials
+              Copy All
+            </button>
+            <button
+              onClick={handleResendEmail}
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-accent-500 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-lg"
+            >
+              <Mail className="w-4 h-4" />
+              Resend Email
             </button>
             <button
               onClick={onClose}

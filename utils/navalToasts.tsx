@@ -49,16 +49,19 @@ function getRandomQuote(quotes: string[]): string {
 
 function showNavalToast(message: string, quote: string) {
   toast.success(
-    <div className="flex flex-col gap-1">
-      <div className="font-semibold text-sm">{message}</div>
-      <div className="text-xs opacity-75 italic">"{quote}"</div>
+    <div className="flex flex-col gap-1.5">
+      <div className="font-semibold text-sm text-white">{message}</div>
+      <div className="text-xs text-green-50 italic">"{quote}"</div>
     </div>,
     {
       duration: 3500,
       icon: <Sparkles className="w-5 h-5" />,
       style: {
-        background: '#10b981',
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.98) 0%, rgba(5, 150, 105, 0.98) 100%)',
         color: '#fff',
+        border: '1px solid rgba(134, 239, 172, 0.3)',
+        boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.2), 0 10px 10px -5px rgba(16, 185, 129, 0.1)',
+        backdropFilter: 'blur(8px)',
       },
     }
   );
@@ -319,15 +322,18 @@ export function showErrorToast(message: string, options?: { customQuote?: string
   const quotes = [...navalQuotes, ...elonQuotes];
 
   toast.error(
-    <div className="flex flex-col gap-1">
-      <div className="font-semibold text-sm">{message}</div>
-      <div className="text-xs opacity-75 italic">"{options?.customQuote || getRandomQuote(quotes)}"</div>
+    <div className="flex flex-col gap-1.5">
+      <div className="font-semibold text-sm text-white">{message}</div>
+      <div className="text-xs text-red-50 italic">"{options?.customQuote || getRandomQuote(quotes)}"</div>
     </div>,
     {
       duration: 4000,
       style: {
-        background: '#ef4444',
+        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.98) 0%, rgba(220, 38, 38, 0.98) 100%)',
         color: '#fff',
+        border: '1px solid rgba(252, 165, 165, 0.3)',
+        boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.2), 0 10px 10px -5px rgba(239, 68, 68, 0.1)',
+        backdropFilter: 'blur(8px)',
       },
     }
   );

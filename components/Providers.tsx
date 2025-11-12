@@ -11,29 +11,31 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <Toaster
         position="top-right"
         containerStyle={{
-          top: 80,
+          top: 20,
           right: 20,
           zIndex: 99999,
         }}
         toastOptions={{
           duration: 5000,
           style: {
-            background: '#fff',
+            background: 'rgba(255, 255, 255, 0.98)',
             color: '#0f172a',
             padding: '16px 20px',
             borderRadius: '12px',
             border: '1px solid #e2e8f0',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             maxWidth: '500px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
+            backdropFilter: 'blur(8px)',
           },
           success: {
             duration: 4000,
             style: {
-              background: '#f0fdf4',
+              background: 'rgba(240, 253, 244, 0.98)',
               border: '1px solid #86efac',
+              boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04)',
             },
             iconTheme: {
               primary: '#10b981',
@@ -43,8 +45,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           error: {
             duration: 6000,
             style: {
-              background: '#fef2f2',
+              background: 'rgba(254, 242, 242, 0.98)',
               border: '1px solid #fca5a5',
+              boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.1), 0 10px 10px -5px rgba(239, 68, 68, 0.04)',
             },
             iconTheme: {
               primary: '#ef4444',
@@ -54,8 +57,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           loading: {
             duration: Infinity,
             style: {
-              background: '#fef3c7',
+              background: 'rgba(254, 243, 199, 0.98)',
               border: '1px solid #fde047',
+              boxShadow: '0 20px 25px -5px rgba(245, 158, 11, 0.1), 0 10px 10px -5px rgba(245, 158, 11, 0.04)',
             },
             iconTheme: {
               primary: '#f59e0b',
