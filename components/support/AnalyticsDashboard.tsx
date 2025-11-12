@@ -842,6 +842,8 @@ export default function AnalyticsDashboard({ organizations, teamMembers, current
           </div>
         </motion.div>
       )}
+    </AnimatePresence>
+      </div>
     </div>
   );
 }
