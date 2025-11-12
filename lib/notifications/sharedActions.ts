@@ -92,7 +92,7 @@ export async function notifyAllSuperAdmins(params: {
   entity_type: 'note' | 'ticket' | 'roadmap_item' | 'meeting' | 'trial_org';
   entity_id: string;
   entity_title: string;
-  notification_type: 'mention' | 'assigned' | 'comment' | 'status_change' | 'issue_linked' | 'watching_update';
+  notification_type: 'mention' | 'assigned' | 'comment' | 'status_change' | 'issue_linked' | 'watching_update' | 'trial_expiring' | 'support_ticket' | 'error_report' | 'new_note' | 'feature_proposal' | 'issue';
   title: string;
   message: string;
   action_url: string;

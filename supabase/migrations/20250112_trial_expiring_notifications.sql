@@ -14,7 +14,12 @@ ALTER TABLE notifications ADD CONSTRAINT notifications_notification_type_check
     'status_change',
     'issue_linked',
     'watching_update',
-    'trial_expiring'
+    'trial_expiring',
+    'support_ticket',
+    'error_report',
+    'new_note',
+    'feature_proposal',
+    'issue'
   ));
 
 -- 2. Add tracking column to trial_organizations to prevent duplicate notifications
