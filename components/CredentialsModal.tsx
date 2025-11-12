@@ -12,6 +12,7 @@ interface CredentialsModalProps {
     email: string;
     password: string;
     role: string;
+    emailSent?: boolean;
   };
 }
 
@@ -67,7 +68,17 @@ Please change your password after first login.
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">User Created Successfully!</h2>
-              <p className="text-green-50 text-sm mt-1">Share these credentials with {credentials.name}</p>
+              <p className="text-green-50 text-sm mt-1">
+                {credentials.emailSent ? (
+                  <>
+                    ✅ Invitation email sent to {credentials.email}
+                  </>
+                ) : (
+                  <>
+                    Share these credentials with {credentials.name}
+                  </>
+                )}
+              </p>
             </div>
           </div>
         </div>
@@ -183,24 +194,45 @@ Please change your password after first login.
           {/* Instructions */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-2">Next Steps</h4>
-            <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1.5">
-              <li className="flex items-start gap-2">
-                <span className="text-amber-600 dark:text-amber-400">1.</span>
-                <span>Copy the credentials using the "Copy All" button</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-600 dark:text-amber-400">2.</span>
-                <span>Share them with {credentials.name} via Slack, Email, or Teams</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-600 dark:text-amber-400">3.</span>
-                <span>User can login immediately - no waiting for emails!</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-600 dark:text-amber-400">4.</span>
-                <span>Recommend changing password after first login</span>
-              </li>
-            </ul>
+            {credentials.emailSent ? (
+              <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">✅</span>
+                  <span><strong>Invitation email sent!</strong> {credentials.name} will receive their credentials at {credentials.email}</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">📧</span>
+                  <span>The email includes login link, credentials, and instructions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">🔐</span>
+                  <span>User can login immediately - account is already activated!</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">💡</span>
+                  <span>Optional: You can also share credentials manually (Copy All button above)</span>
+                </li>
+              </ul>
+            ) : (
+              <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">1.</span>
+                  <span>Copy the credentials using the "Copy All" button</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">2.</span>
+                  <span>Share them with {credentials.name} via Slack, Email, or Teams</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">3.</span>
+                  <span>User can login immediately - no waiting for emails!</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 dark:text-amber-400">4.</span>
+                  <span>Recommend changing password after first login</span>
+                </li>
+              </ul>
+            )}
           </div>
         </div>
       </div>

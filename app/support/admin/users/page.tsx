@@ -126,12 +126,20 @@ export default function UsersPage() {
 
       const data = await response.json();
 
+      // Show success message with email status
+      if (data.emailSent) {
+        toast.success(`User created! Invitation email sent to ${formData.email}`);
+      } else {
+        toast.success('User created! Save credentials to share with them.');
+      }
+
       // Store credentials and show credentials modal
       setNewUserCredentials({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role,
+        emailSent: data.emailSent,
       });
 
       setShowAddModal(false);
