@@ -18,8 +18,11 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Get all users from Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    // Get all users from the users table (has full_name populated correctly)
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, email, full_name, role')
+      .order('full_name', { ascending: true });
 
     if (error) {
       console.error('Error fetching account managers:', error);
@@ -30,15 +33,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Map to dropdown format
-    const managers = data.users.map(user => ({
+    const managers = (data || []).map(user => ({
       user_id: user.id,
       email: user.email || '',
-      full_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
-      role: user.user_metadata?.role || 'Team',
+      full_name: user.full_name || user.email?.split('@')[0] || 'Unknown',
+      role: user.role || 'Team',
     }));
-
-    // Sort by name
-    managers.sort((a, b) => a.full_name.localeCompare(b.full_name));
 
     return NextResponse.json({ managers });
   } catch (error) {
