@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirm } from '@/hooks/useConfirm';
 import { createClient } from '@/lib/supabase/client';
+import { authenticatedFetch } from '@/lib/api-client';
 import toast, { Toaster } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import Breadcrumbs from '@/components/Breadcrumbs';
@@ -64,7 +65,7 @@ export default function UsersPage() {
     try {
       // Add cache-busting query parameter and aggressive no-cache headers
       const cacheBuster = `?t=${Date.now()}`;
-      const response = await fetch(`/api/admin/users${cacheBuster}`, {
+      const response = await authenticatedFetch(`/api/admin/users${cacheBuster}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -125,9 +126,8 @@ export default function UsersPage() {
     setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole }),
       });
 
@@ -159,9 +159,8 @@ export default function UsersPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: newUser.email,
           name: newUser.name,
@@ -210,9 +209,8 @@ export default function UsersPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
 
