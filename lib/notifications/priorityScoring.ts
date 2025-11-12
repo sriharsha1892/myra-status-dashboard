@@ -5,7 +5,7 @@
  */
 
 export interface NotificationContext {
-  notificationType: 'mention' | 'assigned' | 'comment' | 'status_change' | 'issue_linked' | 'watching_update';
+  notificationType: 'mention' | 'assigned' | 'comment' | 'status_change' | 'issue_linked' | 'watching_update' | 'trial_expiring';
   entityType: 'note' | 'ticket' | 'roadmap_item' | 'meeting' | 'trial_org';
   actorId?: string;
   createdAt: Date;
@@ -23,11 +23,12 @@ export interface NotificationContext {
  * Base priority scores by notification type
  */
 const BASE_PRIORITY: Record<NotificationContext['notificationType'], number> = {
-  assigned: 70,      // Being assigned is high priority
-  mention: 60,       // Direct mentions are important
-  issue_linked: 55,  // Issue linking needs attention
-  status_change: 50, // Status changes are informational
-  comment: 45,       // Comments are lower priority
+  trial_expiring: 80, // Critical - trial ending soon
+  assigned: 70,       // Being assigned is high priority
+  mention: 60,        // Direct mentions are important
+  issue_linked: 55,   // Issue linking needs attention
+  status_change: 50,  // Status changes are informational
+  comment: 45,        // Comments are lower priority
   watching_update: 40 // Background updates
 };
 
