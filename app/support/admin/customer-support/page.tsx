@@ -70,7 +70,7 @@ export default function CustomerSupportDashboard() {
 
       console.log('User role check:', { role: userData?.role, is_super_admin: userData?.is_super_admin });
 
-      const isAdmin = userData?.role?.toLowerCase().includes('admin');
+      const isAdmin = userData?.role === 'Admin';
       const isSuperAdmin = userData?.is_super_admin === true;
 
       if (!isAdmin && !isSuperAdmin) {

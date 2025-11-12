@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, FileText, CheckCircle, AlertCircle, Edit3, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -50,9 +51,8 @@ export default function BulkImportModal({ isOpen, onClose, orgId, onImported }: 
 
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/timeline/import', {
+      const response = await authenticatedFetch('/api/timeline/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           org_id: orgId,
           raw_text: rawText,
@@ -85,9 +85,8 @@ export default function BulkImportModal({ isOpen, onClose, orgId, onImported }: 
     setIsProcessing(true);
 
     try {
-      const response = await fetch('/api/timeline/import/confirm', {
+      const response = await authenticatedFetch('/api/timeline/import/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           org_id: orgId,
           events: parsedEvents,

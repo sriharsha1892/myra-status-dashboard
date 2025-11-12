@@ -17,7 +17,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'Admin' | 'Sales Admin' | 'Research Admin' | 'Account Manager' | 'Product' | 'Prodgain User' | 'Team';
+  role: 'Admin' | 'Account Manager';
   status: 'Active' | 'Invited' | 'Pending';
   created_at: string;
   last_sign_in_at: string | null;
@@ -25,7 +25,7 @@ interface User {
   is_super_admin: boolean;
 }
 
-const ROLES = ['Admin', 'Sales Admin', 'Research Admin', 'Account Manager', 'Product', 'Prodgain User', 'Team'] as const;
+const ROLES = ['Admin', 'Account Manager'] as const;
 const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'] as const;
 
 export default function UsersPage() {
@@ -36,7 +36,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newUser, setNewUser] = useState({ email: '', name: '', password: '', role: 'Team' as const, parent_company: 'Mordor Intelligence' as const });
+  const [newUser, setNewUser] = useState({ email: '', name: '', password: '', role: 'Account Manager' as const, parent_company: 'Mordor Intelligence' as const });
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -68,8 +68,11 @@ export default function UsersPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
+    } else if (!authLoading && user && role?.toLowerCase() === 'account manager') {
+      // Account Managers cannot access user management
+      router.push('/support/dashboard');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
     // BYPASS: Allow admin@myra.ai (JWT metadata caching workaround)

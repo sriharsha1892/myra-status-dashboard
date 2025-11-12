@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/api-auth-middleware';
 
 /**
  * GET /api/account-managers
  * Returns list of all users for account manager dropdown
+ * Requires authentication
  */
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,

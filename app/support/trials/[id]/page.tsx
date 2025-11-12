@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { differenceInDays, format } from 'date-fns';
+import { authenticatedFetch } from '@/lib/api-client';
 import {
   Building2,
   Users,
@@ -197,8 +198,8 @@ export default function TrialOrgPage() {
 
       setActivities(allActivities);
 
-      // Fetch account managers via API (bypasses RLS)
-      const managersResponse = await fetch('/api/account-managers');
+      // Fetch account managers via API (bypasses RLS, requires auth)
+      const managersResponse = await authenticatedFetch('/api/account-managers');
       const { managers } = await managersResponse.json();
 
       setAccountManagers(managers || []);

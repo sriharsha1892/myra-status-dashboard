@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { authenticatedFetch } from '@/lib/api-client';
 
 export interface FeatureRoadmapLink {
   id: string;
@@ -44,7 +45,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
           `/api/feature-roadmap-links?orgId=${orgId}&roadmapId=${roadmapId}`
         );
         if (!response.ok) throw new Error('Failed to fetch linked features');
@@ -64,7 +65,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
           `/api/feature-roadmap-links?orgId=${orgId}&featureId=${featureId}`
         );
         if (!response.ok) throw new Error('Failed to fetch linked roadmap items');
@@ -89,9 +90,8 @@ export function useFeatureRoadmapLinks(orgId: string) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/feature-roadmap-links', {
+        const response = await authenticatedFetch('/api/feature-roadmap-links', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orgId,
             featureId,
@@ -117,7 +117,7 @@ export function useFeatureRoadmapLinks(orgId: string) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
+        const response = await authenticatedFetch(
           `/api/feature-roadmap-links?orgId=${orgId}&featureId=${featureId}&roadmapId=${roadmapId}`,
           { method: 'DELETE' }
         );

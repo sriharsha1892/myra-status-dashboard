@@ -11,6 +11,7 @@ import {
   Loader2,
   ChevronRight,
 } from 'lucide-react';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface InsightsViewProps {
   orgId: string;
@@ -56,8 +57,8 @@ export default function InsightsView({ orgId }: InsightsViewProps) {
     setLoading(true);
     try {
       const [painPointsRes, learningsRes] = await Promise.all([
-        fetch(`/api/pain-points?limit=50`),
-        fetch(`/api/learnings?limit=50`),
+        authenticatedFetch(`/api/pain-points?limit=50`),
+        authenticatedFetch(`/api/learnings?limit=50`),
       ]);
 
       const painPointsData = await painPointsRes.json();

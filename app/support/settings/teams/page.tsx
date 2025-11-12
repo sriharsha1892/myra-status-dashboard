@@ -31,13 +31,13 @@ export default function TeamsIntegrationPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || (role !== 'Admin' && role !== 'Team'))) {
+    if (!authLoading && (!user || role !== 'Admin')) {
       router.push('/support/dashboard');
     }
   }, [user, authLoading, role, router]);
 
   useEffect(() => {
-    if (user && (role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'team')) {
+    if (user && role?.toLowerCase() === 'admin') {
       fetchConfig();
     }
   }, [user, role]);

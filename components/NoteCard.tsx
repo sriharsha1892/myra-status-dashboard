@@ -5,6 +5,7 @@ import { MessageSquare, Reply, Edit2, Trash2, MoreVertical, Eye, EyeOff, Lock } 
 import RelativeTime from './ui/RelativeTime';
 import UnifiedNoteEditor from './UnifiedNoteEditor';
 import { toast } from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Note {
   id: string;
@@ -63,7 +64,7 @@ export default function NoteCard({
   const fetchReplies = async () => {
     setLoadingReplies(true);
     try {
-      const response = await fetch(`/api/unified-notes/${note.id}/replies`);
+      const response = await authenticatedFetch(`/api/unified-notes/${note.id}/replies`);
       if (!response.ok) throw new Error('Failed to fetch replies');
       const data = await response.json();
       setReplies(data.replies || []);
@@ -78,7 +79,7 @@ export default function NoteCard({
     if (!confirm('Are you sure you want to delete this note?')) return;
 
     try {
-      const response = await fetch(`/api/unified-notes/${note.id}`, {
+      const response = await authenticatedFetch(`/api/unified-notes/${note.id}`, {
         method: 'DELETE'
       });
 

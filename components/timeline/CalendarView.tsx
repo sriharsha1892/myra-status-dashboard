@@ -10,6 +10,7 @@ import {
   Circle,
 } from 'lucide-react';
 import EventDetailPanel from './EventDetailPanel';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface CalendarViewProps {
   orgId: string;
@@ -65,7 +66,7 @@ export default function CalendarView({ orgId, filters, refreshTrigger }: Calenda
         queryParams.append('search', filters.search);
       }
 
-      const response = await fetch(`/api/timeline/events?${queryParams}`);
+      const response = await authenticatedFetch(`/api/timeline/events?${queryParams}`);
       const result = await response.json();
 
       if (result.success) {

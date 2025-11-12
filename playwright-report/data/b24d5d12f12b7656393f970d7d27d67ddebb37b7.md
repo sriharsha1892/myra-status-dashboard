@@ -1,0 +1,97 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e19]: myRA AI
+      - navigation [ref=e20]:
+        - generic [ref=e21]:
+          - link "Dashboard" [ref=e22] [cursor=pointer]:
+            - /url: /support/dashboard
+            - img [ref=e23]
+            - generic [ref=e28]: Dashboard
+          - link "Notifications" [ref=e29] [cursor=pointer]:
+            - /url: /support/notifications
+            - img [ref=e30]
+            - generic [ref=e33]: Notifications
+          - link "Trial Orgs" [ref=e34] [cursor=pointer]:
+            - /url: /support/trials
+            - img [ref=e35]
+            - generic [ref=e39]: Trial Orgs
+          - link "Reports" [ref=e40] [cursor=pointer]:
+            - /url: /support/reports
+            - img [ref=e41]
+            - generic [ref=e43]: Reports
+          - link "Resources" [ref=e44] [cursor=pointer]:
+            - /url: /support/resources
+            - img [ref=e45]
+            - generic [ref=e47]: Resources
+          - link "Tickets" [ref=e48] [cursor=pointer]:
+            - /url: /support/tickets
+            - img [ref=e49]
+            - generic [ref=e51]: Tickets
+          - link "Users" [ref=e52] [cursor=pointer]:
+            - /url: /support/users
+            - img [ref=e53]
+            - generic [ref=e57]: Users
+          - link "Roadmap" [ref=e58] [cursor=pointer]:
+            - /url: /support/admin/roadmap
+            - img [ref=e59]
+            - generic [ref=e61]: Roadmap
+          - link "Customer Support" [ref=e62] [cursor=pointer]:
+            - /url: /support/admin/customer-support
+            - img [ref=e63]
+            - generic [ref=e65]: Customer Support
+        - generic [ref=e66]:
+          - link "Profile" [ref=e67] [cursor=pointer]:
+            - /url: /support/profile
+            - img [ref=e68]
+            - generic [ref=e71]: Profile
+          - button "Sign Out" [ref=e72] [cursor=pointer]:
+            - img [ref=e73]
+            - generic [ref=e76]: Sign Out
+      - generic [ref=e79]:
+        - generic [ref=e80]: A
+        - generic [ref=e81]:
+          - paragraph [ref=e82]: admin
+          - paragraph [ref=e83]: Team
+    - main [ref=e84]:
+      - generic [ref=e85]:
+        - generic [ref=e89]:
+          - button [ref=e90] [cursor=pointer]:
+            - img [ref=e91]
+          - generic [ref=e93]:
+            - img [ref=e95]
+            - generic [ref=e97]:
+              - heading "Text Intel Parser" [level=1] [ref=e98]
+              - paragraph [ref=e99]: Extract trial data from emails, notes, and calls
+        - generic [ref=e101]:
+          - generic [ref=e103]:
+            - generic [ref=e104]:
+              - generic [ref=e105]: Source Type
+              - generic [ref=e106]:
+                - button "Meeting" [ref=e107] [cursor=pointer]
+                - button "Email" [ref=e108] [cursor=pointer]
+                - button "Call" [ref=e109] [cursor=pointer]
+            - 'textbox "Paste your meeting notes, email, or call summary here... Example: Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks." [ref=e110]':
+              - /placeholder: "Paste your meeting notes, email, or call summary here...  Example: Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks."
+            - generic [ref=e111]:
+              - generic [ref=e112]: 0 chars · 0 words
+              - button "Parse with AI" [disabled] [ref=e113]:
+                - img [ref=e114]
+                - text: Parse with AI
+          - generic [ref=e117]:
+            - img [ref=e118]
+            - paragraph [ref=e121]: No data parsed yet
+            - paragraph [ref=e122]: Paste text on the left and click "Parse with AI"
+    - button "Give feedback" [ref=e123] [cursor=pointer]:
+      - img [ref=e124]
+    - button "Open support chat" [ref=e126] [cursor=pointer]:
+      - img [ref=e127]
+  - button "Open Next.js Dev Tools" [ref=e135] [cursor=pointer]:
+    - img [ref=e136]
+  - alert [ref=e139]
+```

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { requireAdmin } from '@/lib/api-auth-middleware';
 
 const OVERRIDES_FILE = path.join(process.cwd(), 'data', 'provider-overrides.json');
 
@@ -60,8 +61,10 @@ function writeOverrides(overrides: ProviderOverride[]) {
 }
 
 // GET - Fetch all overrides
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication (file system access)
+    await requireAdmin(request);
     const overrides = readOverrides();
     return NextResponse.json({
       success: true,
@@ -79,6 +82,8 @@ export async function GET() {
 // POST - Create/update override
 export async function POST(request: NextRequest) {
   try {
+    // Require admin authentication (file system write)
+    await requireAdmin(request);
     const body = await request.json();
     const { providerId, status, message, overrideUntil, updatedBy } = body;
 
@@ -124,6 +129,8 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove override
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin authentication (file system write)
+    await requireAdmin(request);
     const { searchParams } = new URL(request.url);
     const providerId = searchParams.get('providerId');
 

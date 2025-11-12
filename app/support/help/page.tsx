@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import MentionTextEditor from '@/components/MentionTextEditor';
 import { Upload, X, FileText, Image as ImageIcon, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Attachment {
   name: string;
@@ -103,9 +104,8 @@ export default function HelpPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/support-tickets', {
+      const response = await authenticatedFetch('/api/support-tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject,
           description,

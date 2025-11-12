@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface NotificationPreferences {
   email?: string;
@@ -44,9 +45,8 @@ export default function NotificationSettings({ isOpen, onClose, providers }: Not
       localStorage.setItem('notificationPreferences', JSON.stringify(preferences));
 
       // Call backend API
-      await fetch('/api/notifications/configure', {
+      await authenticatedFetch('/api/notifications/configure', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
       });
 

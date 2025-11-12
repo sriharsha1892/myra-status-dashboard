@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import RelativeTime from './ui/RelativeTime';
 import { toast } from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Notification {
   id: string;
@@ -49,7 +50,7 @@ export default function ActivitySidebar({ isOpen, onClose }: ActivitySidebarProp
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/unified-notifications?category=${activeTab}&limit=50`);
+      const response = await authenticatedFetch(`/api/unified-notifications?category=${activeTab}&limit=50`);
       if (!response.ok) throw new Error('Failed to fetch notifications');
 
       const data = await response.json();
@@ -69,9 +70,8 @@ export default function ActivitySidebar({ isOpen, onClose }: ActivitySidebarProp
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(`/api/unified-notifications/${notificationId}`, {
+      const response = await authenticatedFetch(`/api/unified-notifications/${notificationId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'read' })
       });
 
@@ -90,9 +90,8 @@ export default function ActivitySidebar({ isOpen, onClose }: ActivitySidebarProp
 
   const archiveNotification = async (notificationId: string, reason?: string) => {
     try {
-      const response = await fetch(`/api/unified-notifications/${notificationId}`, {
+      const response = await authenticatedFetch(`/api/unified-notifications/${notificationId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'archived',
           archived_reason: reason
@@ -113,7 +112,7 @@ export default function ActivitySidebar({ isOpen, onClose }: ActivitySidebarProp
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const response = await fetch(`/api/unified-notifications/${notificationId}`, {
+      const response = await authenticatedFetch(`/api/unified-notifications/${notificationId}`, {
         method: 'DELETE'
       });
 

@@ -25,7 +25,6 @@ interface User {
 
 const ROLES = [
   { value: 'Admin', label: 'Admin' },
-  { value: 'Team', label: 'Team' },
   { value: 'Account Manager', label: 'Account Manager' },
 ];
 
@@ -41,7 +40,7 @@ export default function UsersPage() {
     email: '',
     password: '',
     name: '',
-    role: 'Team',
+    role: 'Account Manager',
   });
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

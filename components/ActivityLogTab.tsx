@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import MentionTextEditor from '@/components/MentionTextEditor';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface ActivityLogTabProps {
   orgId: string;
@@ -173,9 +174,8 @@ export default function ActivityLogTab({ orgId }: ActivityLogTabProps) {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/activity-notes', {
+      const response = await authenticatedFetch('/api/activity-notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           org_id: orgId,
           trial_user_id: selectedTrialUser || null,

@@ -11,16 +11,14 @@ import { createClient } from '@supabase/supabase-js';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user via session (more reliable for SSR)
+    // Get authenticated user (getUser() validates auth token with server)
     const supabase = await createServerClient();
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (sessionError || !session?.user) {
-      console.error('[/api/todos] No session found:', sessionError?.message || 'No session');
+    if (userError || !user) {
+      console.error('[/api/todos] Authentication failed:', userError?.message || 'No user');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const user = session.user;
 
     // Create admin client to bypass RLS
     const supabaseAdmin = createClient(

@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api-auth-middleware';
 
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const supabase = await createClient();
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');
@@ -59,6 +62,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const supabase = await createClient();
     const body = await request.json();
     const { orgId, featureId, roadmapId, linkType, notes } = body;
@@ -93,6 +98,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const supabase = await createClient();
     const searchParams = request.nextUrl.searchParams;
     const orgId = searchParams.get('orgId');

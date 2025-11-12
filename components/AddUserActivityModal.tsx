@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { Sparkles, Zap, User, Type, FileText } from 'lucide-react';
 import MentionTextEditor from '@/components/MentionTextEditor';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface TrialUser {
   user_id: string;
@@ -104,9 +105,8 @@ export default function AddUserActivityModal({
     setParsing(true);
     try {
       // Call parser API endpoint
-      const response = await fetch('/api/parse-activity', {
+      const response = await authenticatedFetch('/api/parse-activity', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: parserInput,
           org_id: orgId,

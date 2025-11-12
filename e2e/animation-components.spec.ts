@@ -6,8 +6,8 @@ test.describe('Animation Components Integration', () => {
     await page.goto('/support/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // Look for card elements
-    const cards = page.locator('.rounded-xl, .rounded-lg, [class*="card"]');
+    // Look for card elements within main content (avoid hamburger menu)
+    const cards = page.locator('main .rounded-xl, main .rounded-lg, main [class*="card"]');
 
     if (await cards.count() > 0) {
       const firstCard = cards.first();
@@ -32,7 +32,7 @@ test.describe('Animation Components Integration', () => {
     await page.goto('/support/dashboard');
     await page.waitForLoadState('networkidle');
 
-    const cards = page.locator('.rounded-xl, .rounded-lg').first();
+    const cards = page.locator('main .rounded-xl, main .rounded-lg').first();
 
     if (await cards.count() > 0) {
       // Rapid hover on/off
@@ -87,7 +87,7 @@ test.describe('Animation Components Integration', () => {
     await page.goto('/support/dashboard');
     await page.waitForLoadState('networkidle');
 
-    const elements = page.locator('button, a, .hover\\:shadow').first();
+    const elements = page.locator('main button, main a, main .hover\\:shadow').first();
 
     if (await elements.count() > 0) {
       // Hover to trigger chromatic shift
@@ -121,12 +121,12 @@ test.describe('Animation Components Integration', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for animated background elements
-    const backgroundElements = page.locator('[class*="absolute"], [class*="pointer-events-none"]').first();
+    const backgroundElements = page.locator('main [class*="absolute"], main [class*="pointer-events-none"]').first();
 
     // These elements should exist but not interfere with interactions
     if (await backgroundElements.count() > 0) {
-      // Try to interact with a foreground element
-      const interactiveElement = page.locator('button, a, input').first();
+      // Try to interact with a foreground element within main
+      const interactiveElement = page.locator('main button, main a, main input').first();
 
       if (await interactiveElement.count() > 0) {
         await interactiveElement.click();
@@ -168,8 +168,8 @@ test.describe('Animation Components Integration', () => {
       await page.goto(pagePath);
       await page.waitForLoadState('networkidle');
 
-      // Brief interaction on each page
-      const element = page.locator('button, a, .hover\\:shadow').first();
+      // Brief interaction on each page (within main content)
+      const element = page.locator('main button, main a, main .hover\\:shadow').first();
       if (await element.count() > 0) {
         await element.hover();
         await page.waitForTimeout(200);
@@ -256,7 +256,7 @@ test.describe('Animation Components - Performance', () => {
     await page.goto('/support/dashboard');
     await page.waitForLoadState('networkidle');
 
-    const cards = page.locator('.rounded-xl, .rounded-lg').first();
+    const cards = page.locator('main .rounded-xl, main .rounded-lg').first();
 
     if (await cards.count() > 0) {
       // Perform many interactions

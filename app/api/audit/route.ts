@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuditLogs, getAuditStats } from '@/lib/audit-log';
+import { requireAdmin } from '@/lib/api-auth-middleware';
 
 export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication (sensitive audit logs)
+    await requireAdmin(request);
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const organization = searchParams.get('organization') as 'prodgain' | 'mordor' | null;

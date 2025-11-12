@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { handleError } from '@/lib/utils/errorHandler';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Todo {
   todo_id: string;
@@ -80,7 +81,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
   const fetchMyTodos = async () => {
     try {
-      const response = await fetch('/api/todos?type=my');
+      const response = await authenticatedFetch('/api/todos?type=my');
       const data = await response.json();
 
       if (!response.ok) {
@@ -98,7 +99,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
   const fetchMentionedTodos = async () => {
     try {
-      const response = await fetch('/api/todos?type=mentioned');
+      const response = await authenticatedFetch('/api/todos?type=mentioned');
       const data = await response.json();
 
       if (!response.ok) {
@@ -130,7 +131,7 @@ export default function TodosWidget({ userId }: TodosWidgetProps) {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await fetch('/api/account-managers');
+      const response = await authenticatedFetch('/api/account-managers');
       const data = await response.json();
 
       if (data.managers) {

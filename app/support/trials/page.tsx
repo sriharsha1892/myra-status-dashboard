@@ -14,6 +14,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import NavalLoadingBar from '@/components/NavalLoadingBar';
 import { showTrialUpdatedToast, showBulkActionToast, showExportSuccessToast } from '@/utils/navalToasts';
 import { createAccountManagerMap, resolveAccountManagerName, getInitials } from '@/lib/utils/accountManagerUtils';
+import { authenticatedFetch } from '@/lib/api-client';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
@@ -95,10 +96,8 @@ export default function TrialOrganizationsPage() {
           trial_users(current_stage)
         `);
 
-      // If Account Manager: only show their orgs
-      if (role?.toLowerCase() === 'account_manager') {
-        query = query.eq('account_manager_id', user?.id);
-      }
+      // Account Managers can see all trials in their company (not just assigned ones)
+      // No need to filter by account_manager_id
 
       // If not super admin: filter by parent company
       if (!is_super_admin && parent_company) {
@@ -133,8 +132,8 @@ export default function TrialOrganizationsPage() {
 
   const fetchAccountManagers = async () => {
     try {
-      // Fetch from API to bypass RLS issues
-      const response = await fetch('/api/account-managers');
+      // Fetch from API to bypass RLS issues (with authentication)
+      const response = await authenticatedFetch('/api/account-managers');
       const { managers } = await response.json();
 
       if (!managers) {

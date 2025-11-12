@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PROVIDERS } from '@/lib/providers';
 import { Provider } from '@/lib/types';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface ProviderOverride {
   providerId: string;
@@ -30,7 +31,7 @@ export default function ProviderStatusOverride() {
 
   const fetchActiveOverrides = async () => {
     try {
-      const response = await fetch('/api/provider-overrides');
+      const response = await authenticatedFetch('/api/provider-overrides');
       const data = await response.json();
       if (data.success) {
         setActiveOverrides(data.overrides || []);
@@ -47,11 +48,8 @@ export default function ProviderStatusOverride() {
     setError('');
 
     try {
-      const response = await fetch('/api/provider-overrides', {
+      const response = await authenticatedFetch('/api/provider-overrides', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           providerId: selectedProvider,
           status,
@@ -86,7 +84,7 @@ export default function ProviderStatusOverride() {
     }
 
     try {
-      const response = await fetch(`/api/provider-overrides?providerId=${providerId}`, {
+      const response = await authenticatedFetch(`/api/provider-overrides?providerId=${providerId}`, {
         method: 'DELETE',
       });
 

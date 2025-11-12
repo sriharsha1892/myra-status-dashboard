@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { authenticatedFetch } from '@/lib/api-client';
 
 type TrialUser = {
   user_id: string;
@@ -137,7 +138,7 @@ export default function BulkEditPage() {
 
   async function loadAccountManagers() {
     try {
-      const response = await fetch('/api/account-managers');
+      const response = await authenticatedFetch('/api/account-managers');
       if (!response.ok) throw new Error('Failed to fetch account managers');
 
       const data = await response.json();

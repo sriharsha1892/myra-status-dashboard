@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Copy, Check, Mail, MessageSquare, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface CredentialsModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ Please change your password after first login.
 
   const handleResendEmail = async () => {
     try {
-      const response = await fetch('/api/admin/users/resend-invite', {
+      const response = await authenticatedFetch('/api/admin/users/resend-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         org_id,
         org_name,
         trial_end_date,
-        account_manager,
+        account_manager_id,
         org_lifecycle_stage
       `)
       .eq('trial_end_date', targetDate)
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
         const { data: accountManager, error: userError } = await supabase
           .from('users')
           .select('id, email, full_name')
-          .eq('id', trial.account_manager)
+          .eq('id', trial.account_manager_id)
           .single();
 
         if (userError || !accountManager) {

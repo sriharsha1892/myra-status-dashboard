@@ -3,6 +3,8 @@
  * Helper functions for managing shared notifications across multiple users
  */
 
+import { authenticatedFetch } from '@/lib/api-client';
+
 /**
  * Mark a notification thread as complete
  * When one admin handles a shared notification, all admins see it as completed
@@ -16,9 +18,8 @@ export async function markNotificationThreadComplete(
   completionNote?: string
 ): Promise<{ success: boolean; message?: string; handler?: string; error?: string }> {
   try {
-    const response = await fetch(`/api/unified-notifications/${notificationId}`, {
+    const response = await authenticatedFetch(`/api/unified-notifications/${notificationId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mark_thread_complete: true,
         completion_note: completionNote
@@ -57,9 +58,8 @@ export async function markNotificationRead(
   notificationId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/unified-notifications/${notificationId}`, {
+    const response = await authenticatedFetch(`/api/unified-notifications/${notificationId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'read' })
     });
 
@@ -100,7 +100,7 @@ export async function notifyAllSuperAdmins(params: {
 }): Promise<{ success: boolean; count?: number; error?: string }> {
   try {
     // First, get all super admin IDs from the API
-    const usersResponse = await fetch('/api/admin/users');
+    const usersResponse = await authenticatedFetch('/api/admin/users');
     const usersData = await usersResponse.json();
 
     if (!usersResponse.ok) {
@@ -123,9 +123,8 @@ export async function notifyAllSuperAdmins(params: {
     }
 
     // Send notification
-    const response = await fetch('/api/unified-notifications', {
+    const response = await authenticatedFetch('/api/unified-notifications', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...params,
         mentioned_user_ids: superAdminIds,

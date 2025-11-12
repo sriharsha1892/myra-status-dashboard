@@ -31,11 +31,14 @@ export default function AdminRoadmapPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
+    } else if (!authLoading && user && role?.toLowerCase() === 'account manager') {
+      // Account Managers cannot access roadmap
+      router.push('/support/dashboard');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, role, router]);
 
   useEffect(() => {
-    if (user && (role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'team')) {
+    if (user && role?.toLowerCase() === 'admin') {
       fetchOrganizations();
     }
   }, [user, role, companyFilter]);

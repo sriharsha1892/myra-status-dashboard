@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api-auth-middleware';
 
 // In-memory storage (in production, this would be a database)
 let subscriptions: Map<string, {
@@ -12,6 +13,8 @@ let subscriptions: Map<string, {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const body = await request.json();
     const { email, services, notifyOnDegraded, notifyOnOutage, notifyOnRecovery } = body;
 
@@ -49,6 +52,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 

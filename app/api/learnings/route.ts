@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAuth } from '@/lib/api-auth-middleware';
 
 /**
  * GET /api/learnings
  * Fetch learnings with optional filters
+ * Requires authentication
  */
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    await requireAuth(request);
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
 

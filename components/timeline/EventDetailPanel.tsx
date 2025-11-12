@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface EventDetailPanelProps {
   eventId: string | null;
@@ -106,7 +107,7 @@ export default function EventDetailPanel({
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/timeline/events/${eventId}`);
+      const response = await authenticatedFetch(`/api/timeline/events/${eventId}`);
       const result = await response.json();
 
       if (result.success && result.data) {
@@ -140,9 +141,8 @@ export default function EventDetailPanel({
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/timeline/events/${eventId}`, {
+      const response = await authenticatedFetch(`/api/timeline/events/${eventId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
@@ -182,7 +182,7 @@ export default function EventDetailPanel({
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/timeline/events/${eventId}`, {
+      const response = await authenticatedFetch(`/api/timeline/events/${eventId}`, {
         method: 'DELETE',
       });
 

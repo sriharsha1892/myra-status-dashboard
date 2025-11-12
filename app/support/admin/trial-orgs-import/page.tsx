@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { format, parse, isValid } from 'date-fns';
 import toast from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface User {
   id: string;
@@ -66,16 +67,16 @@ export default function TrialOrgsImportPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await authenticatedFetch('/api/admin/users');
       const data = await response.json();
 
       if (data.users) {
         const activeUsers = data.users.filter((u: User) => u.status === 'Active');
         setUsers(activeUsers);
 
-        // Filter account managers (AM role or Account Manager role)
+        // Filter account managers
         const ams = activeUsers.filter((u: User) =>
-          u.role === 'Account Manager' || u.role === 'AM' || u.role === 'Sales Admin'
+          u.role === 'Account Manager'
         );
         setAccountManagers(ams);
       }

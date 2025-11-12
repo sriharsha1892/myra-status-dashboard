@@ -10,6 +10,7 @@ import {
   User,
 } from 'lucide-react';
 import EventDetailPanel from './EventDetailPanel';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface BoardViewProps {
   orgId: string;
@@ -72,7 +73,7 @@ export default function BoardView({ orgId, filters, refreshTrigger }: BoardViewP
         queryParams.append('search', filters.search);
       }
 
-      const response = await fetch(`/api/timeline/events?${queryParams}`);
+      const response = await authenticatedFetch(`/api/timeline/events?${queryParams}`);
       const result = await response.json();
 
       if (result.success) {

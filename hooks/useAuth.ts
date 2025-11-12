@@ -44,14 +44,12 @@ export function useAuth(): UseAuthReturn {
         .maybeSingle();
 
       if (!error && data) {
-        // Map database roles to expected types
+        // Map database roles to expected types (Admin, Account Manager)
         let mappedRole: 'AM' | 'Team' | 'Admin' | null = null;
-        if (data.role?.toLowerCase().includes('admin')) {
+        if (data.role === 'Admin') {
           mappedRole = 'Admin';
-        } else if (data.role?.toLowerCase() === 'account_manager') {
+        } else if (data.role === 'Account Manager') {
           mappedRole = 'AM';
-        } else if (data.role?.toLowerCase() === 'viewer') {
-          mappedRole = 'Team';
         }
 
         setUserRole(mappedRole);

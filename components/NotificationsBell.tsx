@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Notification {
   notification_id: string;
@@ -135,7 +136,7 @@ export default function NotificationsBell() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications');
+      const response = await authenticatedFetch('/api/notifications');
       const data = await response.json();
 
       if (data.notifications) {
@@ -151,9 +152,8 @@ export default function NotificationsBell() {
 
   const markAsRead = async (notificationIds: string[]) => {
     try {
-      await fetch('/api/notifications', {
+      await authenticatedFetch('/api/notifications', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notification_ids: notificationIds }),
       });
 

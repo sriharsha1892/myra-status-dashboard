@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 import {
   ArrowLeft,
   Clock,
@@ -199,9 +200,8 @@ export default function TicketDetailPage() {
 
   const handleCalendarEventSaved = async (event: any) => {
     try {
-      const response = await fetch('/api/calendar/events', {
+      const response = await authenticatedFetch('/api/calendar/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ticketId,
           title: event.title,
@@ -388,7 +388,7 @@ export default function TicketDetailPage() {
 
             <div className="flex items-center gap-3">
               <WatchButton ticketId={ticketId} />
-              {(role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin') && (
+              {role?.toLowerCase() === 'admin' && (
                 <>
                   <button
                     onClick={() => setShowLinkModal(true)}
@@ -462,7 +462,7 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Add Comment Form */}
-              {(role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin') && (
+              {role?.toLowerCase() === 'admin' && (
                 <CommentForm
                   ticketId={ticketId}
                   onCommentAdded={handleCommentAdded}

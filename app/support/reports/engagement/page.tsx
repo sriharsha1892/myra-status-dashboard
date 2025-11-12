@@ -14,6 +14,7 @@ import dynamic from 'next/dynamic';
 import { ChartEmptyState } from '@/components/charts/ChartEmptyState';
 import { useLoading } from '@/lib/loading';
 import { LoadingOverlay } from '@/components/loading';
+import { authenticatedFetch } from '@/lib/api-client';
 
 // Lazy load Recharts components (no individual loading states)
 const LineChart = dynamic(() => import('recharts').then(mod => ({ default: mod.LineChart })), { ssr: false });
@@ -134,8 +135,8 @@ export default function EngagementReportPage() {
     setLoading(true);
     startLoading();
     try {
-      // Fetch account managers via API (bypasses RLS)
-      const response = await fetch('/api/account-managers');
+      // Fetch account managers via API (bypasses RLS, requires auth)
+      const response = await authenticatedFetch('/api/account-managers');
       const { managers } = await response.json();
 
       // Filter for Account Manager role (note: API returns "Account Manager" with space, not underscore)

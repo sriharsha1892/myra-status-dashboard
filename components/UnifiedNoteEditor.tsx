@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Send, MessageSquare } from 'lucide-react';
 import MentionTextEditor from './MentionTextEditor';
 import { toast } from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface UnifiedNoteEditorProps {
   entityType: 'trial_org' | 'meeting' | 'roadmap_item' | 'ticket' | 'todo' | 'standalone';
@@ -54,9 +55,8 @@ export default function UnifiedNoteEditor({
       }
 
       // Create note via API
-      const response = await fetch('/api/unified-notes', {
+      const response = await authenticatedFetch('/api/unified-notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entity_type: entityType,
           entity_id: entityId || null,

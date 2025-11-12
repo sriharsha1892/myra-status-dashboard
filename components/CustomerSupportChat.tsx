@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Paperclip, Loader2, CheckCircle2, Smile } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface Message {
   id: string;
@@ -160,9 +161,8 @@ export default function CustomerSupportChat() {
     setLoadingMessageIndex(0);
 
     try {
-      const response = await fetch('/api/customer-support', {
+      const response = await authenticatedFetch('/api/customer-support', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
           email,
