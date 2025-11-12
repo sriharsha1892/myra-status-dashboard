@@ -5,7 +5,9 @@ import { sendTrialExpiringEmail } from '@/lib/email/resend';
 /**
  * Trial Expiring Cron Job
  *
- * Runs daily at 9 AM via Vercel Cron
+ * Runs daily at 9:00 AM IST (Indian Standard Time) via Vercel Cron
+ * Schedule: 30 3 * * * (3:30 AM UTC = 9:00 AM IST)
+ *
  * Checks for trials expiring in 2 days and sends notifications
  *
  * Security: Requires CRON_SECRET header to prevent unauthorized access
@@ -32,7 +34,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const now = new Date();
+    const istTime = new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      dateStyle: 'full',
+      timeStyle: 'long'
+    }).format(now);
+
     console.log('⏰ Running trial expiring cron job...');
+    console.log(`🇮🇳 IST Time: ${istTime}`);
 
     // 2. Create Supabase admin client
     const supabase = createClient(
