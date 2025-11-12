@@ -47,15 +47,15 @@ export default function UsersPage() {
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [newUserCredentials, setNewUserCredentials] = useState<any>(null);
 
-  // Generate a smart, branded password
+  // Generate a smart, branded password (must include "myRA")
   const generatePassword = () => {
     const firstName = formData.name.split(' ')[0] || 'User';
     const year = new Date().getFullYear();
     const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
-    const password = `${firstName}@${year}!${randomChars}`;
+    const password = `${firstName}@myRA${year}!${randomChars}`;
     setFormData({ ...formData, password });
     setShowPassword(true);
-    toast.success('Password generated!');
+    toast.success('Password generated! (includes "myRA" as required)');
   };
 
   // Copy password to clipboard
