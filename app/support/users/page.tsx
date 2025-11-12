@@ -11,6 +11,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { showUserCreatedToast, showUserDeletedToast, showUserUpdatedToast } from '@/utils/navalToasts';
+import CredentialsModal from '@/components/CredentialsModal';
 
 interface User {
   id: string;
@@ -35,16 +36,34 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showSignupLinkModal, setShowSignupLinkModal] = useState(false);
-  const [signupLink, setSignupLink] = useState('');
-  const [newUser, setNewUser] = useState({ email: '', name: '', role: 'Team' as const, parent_company: 'Mordor Intelligence' as const });
+  const [newUser, setNewUser] = useState({ email: '', name: '', password: '', role: 'Team' as const, parent_company: 'Mordor Intelligence' as const });
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [newUserCredentials, setNewUserCredentials] = useState<any>(null);
 
   // Debounce search query for better performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const supabase = createClient();
+
+  // Generate a smart, branded password (must include "myRA")
+  const generatePassword = () => {
+    const firstName = newUser.name.split(' ')[0] || 'User';
+    const year = new Date().getFullYear();
+    const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const password = `${firstName}@myRA${year}!${randomChars}`;
+    setNewUser({ ...newUser, password });
+    setShowPassword(true);
+    toast.success('Password generated! (includes "myRA" as required)');
+  };
+
+  // Copy password to clipboard
+  const copyPassword = () => {
+    navigator.clipboard.writeText(newUser.password);
+    toast.success('Password copied to clipboard!');
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -153,8 +172,8 @@ export default function UsersPage() {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.email || !newUser.name) {
-      toast.error('Please fill all fields');
+    if (!newUser.email || !newUser.name || !newUser.password) {
+      toast.error('Please fill all fields including password');
       return;
     }
 
@@ -164,6 +183,7 @@ export default function UsersPage() {
         body: JSON.stringify({
           email: newUser.email,
           name: newUser.name,
+          password: newUser.password,
           role: newUser.role,
           parent_company: newUser.parent_company,
         }),
@@ -171,24 +191,33 @@ export default function UsersPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create signup link');
+        throw new Error(data.error || 'Failed to create user');
       }
 
       const data = await response.json();
 
-      // Show the signup link in a modal
-      setSignupLink(data.signupUrl);
-      setShowSignupLinkModal(true);
-      setShowAddModal(false);
+      // Show success message with email status
+      if (data.emailSent) {
+        toast.success(`User created! Invitation email sent to ${newUser.email}`);
+      } else {
+        toast.success('User created! Save credentials to share with them.');
+      }
 
-      showUserCreatedToast(newUser.name, {
-        customMessage: `${newUser.name} invited! Share the signup link.`,
-        customQuote: 'Play long-term games with long-term people'
+      // Store credentials and show credentials modal
+      setNewUserCredentials({
+        name: newUser.name,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+        emailSent: data.emailSent,
       });
 
-      setNewUser({ email: '', name: '', role: 'Team', parent_company: 'Mordor Intelligence' });
+      setShowAddModal(false);
+      setShowCredentialsModal(true);
+      setNewUser({ email: '', name: '', password: '', role: 'Team', parent_company: 'Mordor Intelligence' });
+      fetchUsers();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create signup link');
+      toast.error(error.message || 'Failed to create user');
     }
   };
 
@@ -580,6 +609,41 @@ export default function UsersPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Temporary Password</label>
+                <div className="flex gap-2">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="Minimum 6 characters"
+                    className="flex-1 h-11 px-4 text-sm bg-white border-2 border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={generatePassword}
+                    disabled={!newUser.name}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    title={!newUser.name ? "Enter name first" : "Generate password"}
+                  >
+                    Generate
+                  </button>
+                  {newUser.password && (
+                    <button
+                      type="button"
+                      onClick={copyPassword}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-all"
+                      title="Copy password"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  You'll share this password with the user directly. Click Generate for a smart password like "John@myRA2025!A3x"
+                </p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Role</label>
                 <select
                   value={newUser.role}
@@ -628,78 +692,16 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Signup Link Modal */}
-      {showSignupLinkModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 animate-[scaleIn_0.3s_ease-out]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Signup Link Generated</h3>
-                  <p className="text-sm text-gray-600">Share this link with the user</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSignupLinkModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-blue-900 mb-1">How it works</p>
-                  <p className="text-sm text-blue-700">
-                    Copy this link and share it with the user (via email, Slack, etc.). When they click it, they'll set their password and be automatically logged in. The link expires in 7 days.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">Signup Link</label>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={signupLink}
-                  readOnly
-                  className="flex-1 h-12 px-4 text-sm bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-700 font-mono focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <button
-                  onClick={handleCopySignupLink}
-                  className="h-12 px-6 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-accent-500/20 hover:shadow-xl hover:shadow-accent-500/30 flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Copy
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowSignupLinkModal(false)}
-                className="flex-1 h-11 bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl transition-all"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Credentials Modal */}
+      {newUserCredentials && (
+        <CredentialsModal
+          isOpen={showCredentialsModal}
+          onClose={() => {
+            setShowCredentialsModal(false);
+            setNewUserCredentials(null);
+          }}
+          credentials={newUserCredentials}
+        />
       )}
 
       {/* Confirm Dialog */}
