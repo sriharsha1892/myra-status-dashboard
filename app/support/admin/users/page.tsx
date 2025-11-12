@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
 import CredentialsModal from '@/components/CredentialsModal';
+import { authenticatedFetch } from '@/lib/api-client';
 
 interface User {
   id: string;
@@ -84,7 +85,7 @@ export default function UsersPage() {
     try {
       // Fetch all users from auth.users via admin API
       // API returns users with roles from user_metadata
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'GET',
       });
 
@@ -108,9 +109,8 @@ export default function UsersPage() {
 
     try {
       // Create user via API route
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -159,9 +159,8 @@ export default function UsersPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: selectedUser.id,
           role: formData.role,
@@ -191,9 +190,8 @@ export default function UsersPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await authenticatedFetch('/api/admin/users', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
 
