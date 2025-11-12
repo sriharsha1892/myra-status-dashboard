@@ -71,12 +71,12 @@ export async function GET(request: NextRequest) {
         org_name,
         trial_end_date,
         account_manager,
-        status
+        org_lifecycle_stage
       `)
       .eq('trial_end_date', targetDate)
       .is('expiring_notified_at', null)
-      .neq('status', 'converted')
-      .neq('status', 'churned');
+      .neq('org_lifecycle_stage', 'converted')
+      .neq('org_lifecycle_stage', 'churned');
 
     if (queryError) {
       console.error('❌ Error querying trials:', queryError);
