@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -17,11 +17,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Fetch the note
     const { data: note, error: noteError } = await supabase
       .from('unified_notes')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('deleted', false)
       .single();
 
@@ -40,7 +42,7 @@ export async function GET(
       const { data: repliesData } = await supabase
         .from('unified_notes')
         .select('*')
-        .eq('thread_root_id', params.id)
+        .eq('thread_root_id', id)
         .eq('deleted', false)
         .order('created_at', { ascending: true });
 
@@ -72,7 +74,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -82,6 +84,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { content, plain_text } = body;
 
@@ -96,7 +99,7 @@ export async function PATCH(
     const { data: existingNote } = await supabase
       .from('unified_notes')
       .select('content, plain_text, created_by')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!existingNote) {
@@ -116,7 +119,7 @@ export async function PATCH(
 
     // Save to edit history
     await supabase.from('note_edit_history').insert({
-      note_id: params.id,
+      note_id: id,
       previous_content: existingNote.content,
       previous_plain_text: existingNote.plain_text,
       edited_by: user.id
@@ -133,7 +136,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('unified_notes')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('created_by', user.id)
       .select()
       .single();
@@ -160,7 +163,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -170,6 +173,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Soft delete (only creator can delete)
     const { data, error } = await supabase
       .from('unified_notes')
@@ -178,7 +183,7 @@ export async function DELETE(
         deleted_at: new Date().toISOString(),
         deleted_by: user.id
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('created_by', user.id)
       .select()
       .single();

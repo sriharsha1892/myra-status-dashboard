@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 // PATCH - Edit activity note
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -14,7 +14,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const noteId = params.id;
+    const { id } = await params;
+    const noteId = id;
     const body = await request.json();
     const { note_text, note_category, trial_user_id, linked_roadmap_id } = body;
 
@@ -62,7 +63,7 @@ export async function PATCH(
 // DELETE - Soft delete activity note
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -72,7 +73,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const noteId = params.id;
+    const { id } = await params;
+    const noteId = id;
 
     // Check if user owns this note
     const { data: existingNote, error: fetchError } = await supabase

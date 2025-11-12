@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -23,6 +23,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { status, archived_reason, mark_thread_complete, completion_note } = body;
 
@@ -37,7 +38,7 @@ export async function PATCH(
     const { data: notification, error: fetchError } = await supabase
       .from('notifications')
       .select('thread_key, user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError) throw fetchError;
@@ -113,7 +114,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('notifications')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .select()
       .single();
@@ -147,7 +148,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -157,11 +158,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Delete notification (only if it belongs to the user)
     const { error } = await supabase
       .from('notifications')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id);
 
     if (error) throw error;

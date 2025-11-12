@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -17,11 +17,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     // Fetch all replies in this thread (Linear-style flat)
     const { data: replies, error } = await supabase
       .from('unified_notes')
       .select('*')
-      .eq('thread_root_id', params.id)
+      .eq('thread_root_id', id)
       .eq('deleted', false)
       .order('created_at', { ascending: true });
 
