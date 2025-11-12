@@ -257,7 +257,7 @@ export async function sendAccountManagerInvitationEmail({
       from: emailConfig.from,
       to: [to],
       replyTo: emailConfig.replyTo,
-      subject: `🎉 Welcome to MyRA AI - Your Account is Ready!`,
+      subject: `Welcome to MyRA AI - Your Account is Ready`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -270,7 +270,7 @@ export async function sendAccountManagerInvitationEmail({
 
             <!-- Header with gradient -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 40px; color: white; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);">
-              <h1 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700;">🎉 Welcome to MyRA AI!</h1>
+              <h1 style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700;">Welcome to MyRA AI</h1>
               <p style="margin: 0; font-size: 18px; opacity: 0.95;">
                 Your trial management account is ready
               </p>
@@ -290,7 +290,7 @@ export async function sendAccountManagerInvitationEmail({
             <!-- Credentials box -->
             <div style="background: linear-gradient(135deg, #f8fafc 0%, #e5e7eb 100%); border: 2px solid #3b82f6; border-radius: 12px; padding: 30px; margin-bottom: 25px;">
               <h2 style="margin: 0 0 20px 0; font-size: 20px; color: #1e3a8a; text-align: center;">
-                🔐 Your Login Credentials
+                Your Login Credentials
               </h2>
 
               <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px;">
@@ -306,20 +306,20 @@ export async function sendAccountManagerInvitationEmail({
               </div>
 
               <p style="margin: 0; font-size: 13px; color: #6b7280; text-align: center;">
-                💡 <em>Save these credentials in a secure location</em>
+                <em>Save these credentials in a secure location</em>
               </p>
             </div>
 
             <!-- Login button -->
             <div style="text-align: center; margin-bottom: 30px;">
               <a href="${emailConfig.appUrl}/support/login" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
-                🚀 Login to MyRA AI
+                Login to MyRA AI
               </a>
             </div>
 
             <!-- What you can do -->
             <div style="background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-              <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #1a202c;">✨ What you can do:</h3>
+              <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #1a202c;">What you can do:</h3>
               <ul style="margin: 0; padding-left: 20px; color: #4a5568; line-height: 1.8;">
                 <li>Manage your assigned trial organizations</li>
                 <li>Track engagement scores and trial timelines</li>
@@ -332,7 +332,7 @@ export async function sendAccountManagerInvitationEmail({
             <!-- Security note -->
             <div style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
               <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.6;">
-                <strong>🔒 Security Tip:</strong> Please change your password after your first login by going to your Profile Settings.
+                <strong>Security Tip:</strong> Please change your password after your first login by going to your Profile Settings.
               </p>
             </div>
 
@@ -349,7 +349,7 @@ export async function sendAccountManagerInvitationEmail({
             <!-- Footer -->
             <div style="text-align: center; padding-top: 30px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                Welcome to the team! 🎉
+                Welcome to the team!
               </p>
               <p style="margin: 0 0 10px 0; color: #9ca3af; font-size: 12px;">
                 MyRA AI - Trial Management Platform
