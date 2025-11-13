@@ -47,6 +47,7 @@ export default function DiscussionDetailPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -227,6 +228,43 @@ export default function DiscussionDetailPage() {
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId: string) => {
+    setDeletingReplyId(replyId);
+    try {
+      // Get auth headers
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        toast.error('You must be logged in to delete');
+        return;
+      }
+
+      const response = await fetch(`/api/resources/discussions/${replyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete reply');
+      }
+
+      toast.success('Reply deleted successfully');
+      // Refresh replies list
+      fetchReplies();
+    } catch (error: any) {
+      console.error('Error deleting reply:', error);
+      toast.error(error.message || 'Failed to delete reply');
+    } finally {
+      setDeletingReplyId(null);
     }
   };
 
@@ -423,15 +461,33 @@ export default function DiscussionDetailPage() {
                     />
 
                     {/* Author & Meta */}
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold text-xs">
-                          {getInitials(reply.author_name)}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold text-xs">
+                            {getInitials(reply.author_name)}
+                          </div>
+                          <span className="font-medium text-gray-700">{reply.author_name}</span>
                         </div>
-                        <span className="font-medium text-gray-700">{reply.author_name}</span>
+                        <span>•</span>
+                        <span>{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</span>
                       </div>
-                      <span>•</span>
-                      <span>{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</span>
+
+                      {/* Delete Reply Button (author or admin only) */}
+                      {(currentUserId === reply.author_id || isAdmin) && (
+                        <button
+                          onClick={() => handleDeleteReply(reply.id)}
+                          disabled={deletingReplyId === reply.id}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete reply"
+                        >
+                          {deletingReplyId === reply.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

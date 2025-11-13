@@ -49,6 +49,7 @@ export default function QuestionDetailPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -262,6 +263,44 @@ export default function QuestionDetailPage() {
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleDeleteAnswer = async (answerId: string) => {
+    setDeletingAnswerId(answerId);
+    try {
+      // Get auth headers
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        toast.error('You must be logged in to delete');
+        return;
+      }
+
+      const response = await fetch(`/api/resources/discussions/${answerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete answer');
+      }
+
+      toast.success('Answer deleted successfully');
+      // Refresh answers and question (in case accepted answer was deleted)
+      fetchAnswers();
+      fetchQuestion();
+    } catch (error: any) {
+      console.error('Error deleting answer:', error);
+      toast.error(error.message || 'Failed to delete answer');
+    } finally {
+      setDeletingAnswerId(null);
     }
   };
 
@@ -482,16 +521,34 @@ export default function QuestionDetailPage() {
                         <span>{formatDistanceToNow(new Date(answer.created_at), { addSuffix: true })}</span>
                       </div>
 
-                      {/* Accept Answer Button (only for question author and if no accepted answer yet) */}
-                      {isQuestionAuthor && !question.has_accepted_answer && !answer.is_accepted_answer && (
-                        <button
-                          onClick={() => handleAcceptAnswer(answer.id)}
-                          className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Accept Answer
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {/* Accept Answer Button (only for question author and if no accepted answer yet) */}
+                        {isQuestionAuthor && !question.has_accepted_answer && !answer.is_accepted_answer && (
+                          <button
+                            onClick={() => handleAcceptAnswer(answer.id)}
+                            className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Accept Answer
+                          </button>
+                        )}
+
+                        {/* Delete Answer Button (author or admin only) */}
+                        {(currentUserId === answer.author_id || isAdmin) && (
+                          <button
+                            onClick={() => handleDeleteAnswer(answer.id)}
+                            disabled={deletingAnswerId === answer.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete answer"
+                          >
+                            {deletingAnswerId === answer.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
