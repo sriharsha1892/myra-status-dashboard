@@ -526,7 +526,7 @@ export default function EnterpriseCommandCenter() {
                     <p className="text-[10px] text-neutral-600">Trial insights & metrics</p>
                   </button>
 
-                  {role?.toLowerCase() === 'admin' && (
+                  {role?.toLowerCase() === 'admin' && is_super_admin && (
                     <>
                       <button
                         onClick={() => router.push('/support/admin/roadmap')}

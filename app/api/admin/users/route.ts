@@ -41,18 +41,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get is_super_admin status from users table
+    const { data: usersTableData, error: usersTableError } = await supabaseAdmin
+      .from('users')
+      .select('id, is_super_admin, full_name, role as db_role, parent_company as db_parent_company');
+
+    if (usersTableError) {
+      console.error('Error fetching users table data:', usersTableError);
+    }
+
+    // Create a map of user id to is_super_admin status
+    const superAdminMap = new Map(
+      usersTableData?.map(u => [u.id, {
+        is_super_admin: u.is_super_admin || false,
+        full_name: u.full_name,
+        db_role: u.db_role,
+        db_parent_company: u.db_parent_company
+      }]) || []
+    );
+
     // Return users with their metadata
-    let users = data.users.map(user => ({
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
-      role: user.user_metadata?.role || 'Team',
-      status: user.email_confirmed_at ? 'Active' : 'Invited',
-      created_at: user.created_at,
-      last_sign_in_at: user.last_sign_in_at,
-      parent_company: user.user_metadata?.parent_company || 'Mordor Intelligence',
-      is_super_admin: user.user_metadata?.is_super_admin || false,
-    }));
+    let users = data.users.map(user => {
+      const dbData = superAdminMap.get(user.id);
+      return {
+        id: user.id,
+        email: user.email,
+        name: dbData?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+        role: dbData?.db_role || user.user_metadata?.role || 'Team',
+        status: user.email_confirmed_at ? 'Active' : 'Invited',
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        parent_company: dbData?.db_parent_company || user.user_metadata?.parent_company || 'Mordor Intelligence',
+        is_super_admin: dbData?.is_super_admin || false,
+      };
+    });
 
     // Filter by company if not super admin
     const adminMetadata = { is_super_admin, parent_company };

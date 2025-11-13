@@ -9,26 +9,33 @@ import { createClient } from '@/lib/supabase/client';
 import ProductRoadmapTabEnhanced from '@/components/ProductRoadmapTabEnhanced';
 
 export default function RoadmapPage() {
-  const { user, loading: authLoading, role } = useAuth();
+  const { user, loading: authLoading, role, is_super_admin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orgId, setOrgId] = useState<string>('');
   const [selectedOrg, setSelectedOrg] = useState<any>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/support/login');
+    } else if (!authLoading && user && role?.toLowerCase() === 'account manager') {
+      // Account Managers cannot access roadmap
+      router.push('/support/dashboard');
+    } else if (!authLoading && user && role?.toLowerCase() === 'admin' && !is_super_admin) {
+      // Regular admins cannot access roadmap - only super admins
+      router.push('/support/dashboard');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, role, is_super_admin, router]);
 
   useEffect(() => {
-    if (user && (role?.toLowerCase() === 'team' || role?.toLowerCase() === 'admin')) {
+    if (user && is_super_admin) {
       fetchOrganizations();
     }
-  }, [user, role]);
+  }, [user, is_super_admin]);
 
   const fetchOrganizations = async () => {
     setLoading(true);
@@ -88,12 +95,12 @@ export default function RoadmapPage() {
     );
   }
 
-  if (!user || (role?.toLowerCase() !== 'team' && role !== 'Admin')) {
+  if (!user || !is_super_admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-sm text-gray-600">You don't have permission to view this page.</p>
+          <p className="text-sm text-gray-600">Only super admins can access the roadmap.</p>
         </div>
       </div>
     );

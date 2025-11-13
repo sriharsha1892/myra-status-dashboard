@@ -34,8 +34,11 @@ export default function AdminRoadmapPage() {
     } else if (!authLoading && user && role?.toLowerCase() === 'account manager') {
       // Account Managers cannot access roadmap
       router.push('/support/dashboard');
+    } else if (!authLoading && user && role?.toLowerCase() === 'admin' && !is_super_admin) {
+      // Regular admins cannot access roadmap - only super admins
+      router.push('/support/dashboard');
     }
-  }, [user, authLoading, role, router]);
+  }, [user, authLoading, role, is_super_admin, router]);
 
   useEffect(() => {
     if (user && role?.toLowerCase() === 'admin') {
@@ -87,12 +90,12 @@ export default function AdminRoadmapPage() {
     );
   }
 
-  if (!user || (role !== 'Admin' && role?.toLowerCase() !== 'team')) {
+  if (!user || !is_super_admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-sm text-gray-600">You don't have permission to view this page.</p>
+          <p className="text-sm text-gray-600">Only super admins can access the roadmap.</p>
         </div>
       </div>
     );
