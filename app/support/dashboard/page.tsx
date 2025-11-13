@@ -537,7 +537,7 @@ export default function EnterpriseCommandCenter() {
                         <p className="text-[10px] text-neutral-600">Product planning</p>
                       </button>
                       <button
-                        onClick={() => router.push('/support/admin/announcements')}
+                        onClick={() => router.push('/support/resources')}
                         className="group relative bg-neutral-50 hover:bg-neutral-100 rounded-lg p-3 border border-transparent hover:border-neutral-200 transition-all duration-200 text-left"
                       >
                         <Sparkles className="w-4 h-4 text-accent-600 mb-1.5" strokeWidth={1.5} />

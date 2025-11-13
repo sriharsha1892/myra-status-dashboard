@@ -1,0 +1,152 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e19]: myRA AI
+      - navigation [ref=e20]:
+        - generic [ref=e21]:
+          - link "Dashboard" [ref=e22] [cursor=pointer]:
+            - /url: /support/dashboard
+            - img [ref=e23]
+            - generic [ref=e28]: Dashboard
+          - link "Notifications" [ref=e29] [cursor=pointer]:
+            - /url: /support/notifications
+            - img [ref=e30]
+            - generic [ref=e33]: Notifications
+          - link "Trial Orgs" [ref=e34] [cursor=pointer]:
+            - /url: /support/trials
+            - img [ref=e35]
+            - generic [ref=e39]: Trial Orgs
+          - link "Reports" [ref=e40] [cursor=pointer]:
+            - /url: /support/reports
+            - img [ref=e41]
+            - generic [ref=e43]: Reports
+          - link "Resources" [ref=e44] [cursor=pointer]:
+            - /url: /support/resources
+            - img [ref=e45]
+            - generic [ref=e47]: Resources
+          - link "Tickets" [ref=e48] [cursor=pointer]:
+            - /url: /support/tickets
+            - img [ref=e49]
+            - generic [ref=e51]: Tickets
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
+            - /url: /support/profile
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - main [ref=e72]:
+        - generic [ref=e73]:
+          - navigation [ref=e74]:
+            - link "Dashboard" [ref=e75] [cursor=pointer]:
+              - /url: /support/dashboard
+              - img [ref=e76]
+            - generic [ref=e79]:
+              - img [ref=e80]
+              - link "Dashboard" [ref=e82] [cursor=pointer]:
+                - /url: /support/dashboard
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - generic [ref=e86]: Trial Organizations
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - heading "Trial Organizations" [level=2] [ref=e89]
+              - paragraph [ref=e90]: Manage and track trial organizations
+            - button "Bulk Edit All" [ref=e92] [cursor=pointer]:
+              - img [ref=e93]
+              - generic [ref=e95]: Bulk Edit All
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - paragraph [ref=e101]: Active Trials
+                - paragraph [ref=e102]: "0"
+              - img [ref=e104]
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - paragraph [ref=e109]: Hot Leads
+                - paragraph [ref=e110]: "0"
+                - paragraph [ref=e111]: Engagement > 75%
+              - img [ref=e113]
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: At Risk
+                - paragraph [ref=e119]: "0"
+                - paragraph [ref=e120]: Engagement < 30%
+              - img [ref=e122]
+          - generic [ref=e125]:
+            - button "Add New Trial Guided form" [ref=e126] [cursor=pointer]:
+              - img [ref=e128]
+              - generic [ref=e130]:
+                - heading "Add New Trial" [level=4] [ref=e131]
+                - paragraph [ref=e132]: Guided form
+              - img [ref=e133]
+            - button "Parse Text AI Extract from emails & notes" [ref=e135] [cursor=pointer]:
+              - img [ref=e137]
+              - generic [ref=e139]:
+                - generic [ref=e140]:
+                  - heading "Parse Text" [level=4] [ref=e141]
+                  - generic [ref=e142]: AI
+                - paragraph [ref=e143]: Extract from emails & notes
+              - img [ref=e144]
+            - button "Import CSV Bulk upload from spreadsheet" [ref=e146] [cursor=pointer]:
+              - img [ref=e148]
+              - generic [ref=e150]:
+                - heading "Import CSV" [level=4] [ref=e151]
+                - paragraph [ref=e152]: Bulk upload from spreadsheet
+              - img [ref=e153]
+          - generic [ref=e155]:
+            - textbox "Search organizations..." [ref=e157]
+            - combobox [ref=e158]:
+              - option "All Stages" [selected]
+              - option "Prospect"
+              - option "Demo Scheduled"
+              - option "Trial Active"
+              - option "Converted"
+              - option "Churned"
+          - generic [ref=e159]:
+            - img [ref=e161]
+            - heading "No organizations found" [level=3] [ref=e163]
+            - paragraph [ref=e164]: Try adjusting your search or filters
+    - button "Give feedback" [ref=e165] [cursor=pointer]:
+      - img [ref=e166]
+    - button "Open support chat" [ref=e168] [cursor=pointer]:
+      - img [ref=e169]
+  - generic:
+    - generic [ref=e172]:
+      - generic [ref=e173]: Failed to load organizations
+      - button [ref=e174] [cursor=pointer]:
+        - img [ref=e175]
+    - generic [ref=e178]:
+      - generic [ref=e179]: Failed to load organizations
+      - button [ref=e180] [cursor=pointer]:
+        - img [ref=e181]
+    - generic [ref=e184]:
+      - generic [ref=e185]: Failed to load organizations
+      - button [ref=e186] [cursor=pointer]:
+        - img [ref=e187]
+  - generic [ref=e194] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e195]:
+      - img [ref=e196]
+    - generic [ref=e199]:
+      - button "Open issues overlay" [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e202]: "0"
+          - generic [ref=e203]: "1"
+        - generic [ref=e204]: Issue
+      - button "Collapse issues badge" [ref=e205]:
+        - img [ref=e206]
+  - alert [ref=e208]
+```

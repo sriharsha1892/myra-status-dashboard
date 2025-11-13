@@ -464,7 +464,7 @@ export default function CustomerSupportChat() {
           {/* Footer */}
           <div className="px-5 py-3 bg-gray-50 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              We'll get back to you as soon as we can (probably within a few days)
+              We'll respond faster than you can say "enterprise SaaS dashboard" (usually within 24 hours)
             </p>
           </div>
         </div>

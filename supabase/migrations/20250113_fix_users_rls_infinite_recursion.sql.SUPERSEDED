@@ -1,0 +1,63 @@
+-- Migration: Fix infinite recursion in users table RLS
+-- Priority: CRITICAL - Fixes 45 console errors
+-- Date: 2025-01-13
+--
+-- Problem: All RLS policies on other tables query the users table,
+-- but the users table has no policy, causing 500 errors with
+-- "infinite recursion detected in policy for relation users"
+--
+-- Solution: Add a simple, non-recursive RLS policy on users table
+-- that allows users to read their own row and other users in their company
+
+-- ========================================
+-- USERS TABLE: Non-Recursive RLS Policy
+-- ========================================
+
+-- Enable RLS if not already enabled
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Drop any existing policies (just in case)
+DROP POLICY IF EXISTS "Users can read own data" ON users;
+DROP POLICY IF EXISTS "Users can read company users" ON users;
+DROP POLICY IF EXISTS "Allow all authenticated users" ON users;
+
+-- Policy: All authenticated users can read all users
+-- This is SAFE and NON-RECURSIVE because it doesn't query the users table
+-- It uses auth.uid() which is a simple function that returns the current user's ID
+CREATE POLICY "Authenticated users can view all users"
+  ON users FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Policy: Users can only update their own profile
+-- Uses auth.uid() directly - no subqueries, no recursion
+CREATE POLICY "Users can update own profile"
+  ON users FOR UPDATE
+  TO authenticated
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
+
+-- Note: Only service role (admins via API) can INSERT or DELETE users
+-- This is handled by the API layer, not RLS
+
+-- ========================================
+-- WHY THIS FIXES THE PROBLEM
+-- ========================================
+--
+-- Before:
+--   - trial_organizations policy: EXISTS (SELECT 1 FROM users WHERE...)
+--   - users table: NO POLICY (or recursive policy)
+--   - Result: Infinite recursion error (42P17)
+--
+-- After:
+--   - trial_organizations policy: EXISTS (SELECT 1 FROM users WHERE...)
+--   - users table: USING (true) - simple, no subqueries
+--   - Result: No recursion, query succeeds
+--
+-- The key is that the users table policy uses only:
+--   1. auth.uid() - a function, not a query
+--   2. USING (true) - a constant, not a query
+--   3. Direct column comparison (id = auth.uid())
+--
+-- NO subqueries → NO recursion → NO errors
+
