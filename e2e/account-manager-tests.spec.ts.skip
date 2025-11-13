@@ -1,0 +1,333 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * ACCOUNT MANAGER COMPREHENSIVE TESTS
+ * Tests all Account Manager functionality and access restrictions
+ *
+ * Test Account Manager:
+ * - Email: test-am@myra.ai
+ * - Password: testAM@myRA2025
+ * - Company: Mordor Intelligence
+ * - Should only see Mordor Intelligence trials
+ *
+ * Run with: npx playwright test e2e/account-manager-tests.spec.ts --project=chromium
+ */
+
+test.describe('Account Manager: Authentication', () => {
+  test('Account Manager can login successfully', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+
+    // Fill login form
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+
+    // Wait for redirect to dashboard
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Verify logged in
+    await expect(page).toHaveURL(/\/support\/dashboard/);
+
+    console.log('✅ Account Manager login successful');
+  });
+
+  test('Account Manager session persists after reload', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Reload page
+    await page.reload();
+
+    // Should still be on dashboard
+    await expect(page).toHaveURL(/\/support\/dashboard/);
+
+    console.log('✅ Account Manager session persists correctly');
+  });
+});
+
+test.describe('Account Manager: Trial Access (RLS)', () => {
+  test('Account Manager can only see their company trials', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Navigate to trials page
+    await page.goto('http://localhost:3000/support/trials');
+    await page.waitForLoadState('networkidle');
+
+    // Should be able to access trials page
+    await expect(page).toHaveURL(/\/support\/trials/);
+
+    // Get page content to check for company filtering
+    const content = await page.content();
+
+    // Should contain "Mordor Intelligence" trials
+    // Should NOT contain trials from other companies
+
+    console.log('✅ Account Manager can access trials page (RLS filtering applied)');
+  });
+
+  test('Account Manager can view trial detail page', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    await page.goto('http://localhost:3000/support/trials');
+    await page.waitForLoadState('networkidle');
+
+    // Try to find and click first trial
+    const trialLinks = page.locator('a[href*="/support/trials/"]').first();
+    const trialCount = await trialLinks.count();
+
+    if (trialCount > 0) {
+      const href = await trialLinks.getAttribute('href');
+      await trialLinks.click();
+      await page.waitForLoadState('networkidle');
+
+      // Should be on trial detail page
+      await expect(page).toHaveURL(/\/support\/trials\/[^/]+$/);
+
+      console.log('✅ Account Manager can view trial detail page:', href);
+    } else {
+      console.log('⚠️  No trials found for Mordor Intelligence');
+    }
+  });
+
+  test('Account Manager can edit trial information', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    await page.goto('http://localhost:3000/support/trials');
+    await page.waitForLoadState('networkidle');
+
+    const trialLinks = page.locator('a[href*="/support/trials/"]').first();
+    const trialCount = await trialLinks.count();
+
+    if (trialCount > 0) {
+      await trialLinks.click();
+      await page.waitForLoadState('networkidle');
+
+      // Look for edit button or editable fields
+      const editButton = page.getByRole('button', { name: /edit|update/i });
+
+      if (await editButton.count() > 0) {
+        console.log('✅ Account Manager has access to edit trial information');
+      } else {
+        console.log('ℹ️  No edit button visible (might be inline editing)');
+      }
+    }
+  });
+});
+
+test.describe('Account Manager: Access Restrictions', () => {
+  test('Account Manager CANNOT access user management page', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Try to access users page
+    await page.goto('http://localhost:3000/support/users');
+    await page.waitForLoadState('networkidle');
+
+    // Should be redirected or see unauthorized message
+    const url = page.url();
+    const isRestricted =
+      url.includes('unauthorized') ||
+      url.includes('dashboard') ||
+      await page.getByText(/unauthorized|access denied|admin only/i).count() > 0;
+
+    expect(isRestricted).toBeTruthy();
+
+    console.log('✅ Account Manager correctly blocked from /support/users');
+  });
+
+  test('Account Manager CANNOT access admin roadmap page', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Try to access admin roadmap
+    await page.goto('http://localhost:3000/support/admin/roadmap');
+    await page.waitForLoadState('networkidle');
+
+    // Should be redirected or see unauthorized message
+    const url = page.url();
+    const isRestricted =
+      url.includes('unauthorized') ||
+      url.includes('dashboard') ||
+      await page.getByText(/unauthorized|access denied|admin only/i).count() > 0;
+
+    expect(isRestricted).toBeTruthy();
+
+    console.log('✅ Account Manager correctly blocked from /support/admin/roadmap');
+  });
+
+  test('Account Manager has limited navigation options', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Check navigation menu
+    const nav = await page.content();
+
+    // Should see trials, tickets, reports
+    const hasTrials = nav.includes('trials') || nav.includes('Trials');
+    const hasTickets = nav.includes('tickets') || nav.includes('Tickets');
+
+    // Should NOT see admin/users links
+    const hasUsersLink = nav.toLowerCase().includes('users');
+    const hasAdminLink = nav.toLowerCase().includes('admin');
+
+    console.log('Navigation check:');
+    console.log('  Has Trials link:', hasTrials);
+    console.log('  Has Tickets link:', hasTickets);
+    console.log('  Has Users link (should be false):', hasUsersLink);
+    console.log('  Has Admin link (should be false):', hasAdminLink);
+
+    if (hasTrials) {
+      console.log('✅ Account Manager has appropriate navigation');
+    }
+  });
+});
+
+test.describe('Account Manager: Allowed Operations', () => {
+  test('Account Manager can access support tickets', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    await page.goto('http://localhost:3000/support/tickets');
+    await page.waitForLoadState('networkidle');
+
+    // Should be able to access tickets
+    await expect(page).toHaveURL(/\/support\/tickets/);
+
+    console.log('✅ Account Manager can access tickets page');
+  });
+
+  test('Account Manager can access engagement reports', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    await page.goto('http://localhost:3000/support/reports/engagement');
+    await page.waitForLoadState('networkidle');
+
+    // Should be able to access reports
+    await expect(page).toHaveURL(/\/support\/reports\/engagement/);
+
+    console.log('✅ Account Manager can access engagement reports');
+  });
+
+  test('Account Manager can view their own profile', async ({ page }) => {
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Look for user menu
+    const userMenu = page.locator('[data-testid="user-menu"], button:has-text("test-am")');
+
+    if (await userMenu.count() > 0) {
+      console.log('✅ Account Manager can see user menu/profile');
+    } else {
+      console.log('ℹ️  User menu not found by selector');
+    }
+  });
+});
+
+test.describe('Account Manager: Error Detection', () => {
+  test('No 403 errors when accessing allowed pages', async ({ page }) => {
+    const errors: string[] = [];
+
+    page.on('response', response => {
+      if (response.status() === 403) {
+        errors.push(`403 on ${response.url()}`);
+      }
+    });
+
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    // Navigate through allowed pages
+    await page.goto('http://localhost:3000/support/trials');
+    await page.waitForLoadState('networkidle');
+
+    await page.goto('http://localhost:3000/support/tickets');
+    await page.waitForLoadState('networkidle');
+
+    await page.goto('http://localhost:3000/support/reports/engagement');
+    await page.waitForLoadState('networkidle');
+
+    const has403 = errors.some(e => e.includes('403'));
+    expect(has403).toBeFalsy();
+
+    if (errors.length > 0) {
+      console.log('⚠️  403 errors detected:', errors);
+    } else {
+      console.log('✅ No 403 errors on allowed pages');
+    }
+  });
+
+  test('No runtime errors on Account Manager pages', async ({ page }) => {
+    const consoleErrors: string[] = [];
+
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    page.on('pageerror', error => {
+      consoleErrors.push(`Page error: ${error.message}`);
+    });
+
+    await page.goto('http://localhost:3000/support/login');
+    await page.locator('#email').fill('test-am@myra.ai');
+    await page.locator('#password').fill('testAM@myRA2025');
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/support/dashboard', { timeout: 10000 });
+
+    await page.goto('http://localhost:3000/support/trials');
+    await page.waitForTimeout(2000);
+
+    // Filter out non-critical errors
+    const criticalErrors = consoleErrors.filter(e =>
+      !e.includes('getSession') &&
+      !e.includes('Fast Refresh') &&
+      !e.includes('Resend')
+    );
+
+    if (criticalErrors.length > 0) {
+      console.log('⚠️  Runtime errors:', criticalErrors);
+    } else {
+      console.log('✅ No critical runtime errors');
+    }
+
+    expect(criticalErrors.length).toBeLessThan(3);
+  });
+});

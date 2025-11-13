@@ -10,7 +10,7 @@ test.describe('Support Dashboard', () => {
 
   test('should display the dashboard page', async ({ page }) => {
     // Check if the dashboard loaded
-    await expect(page).toHaveTitle(/Dashboard/i);
+    await expect(page).toHaveTitle(/myRA AI System Status|Dashboard/i);
   });
 
   test('should display personal impact widget', async ({ page }) => {

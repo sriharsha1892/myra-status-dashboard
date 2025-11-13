@@ -254,6 +254,7 @@ export interface Database {
           org_domain: string | null
           account_manager: string | null
           org_lifecycle_stage: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned'
+          trial_status: 'requested' | 'approved' | 'in_progress' | 'active' | 'extended' | 'completed' | 'closed' | null
           trial_start_date: string | null
           trial_end_date: string | null
           engagement_score: number
@@ -268,6 +269,7 @@ export interface Database {
           org_domain?: string | null
           account_manager?: string | null
           org_lifecycle_stage?: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned'
+          trial_status?: 'requested' | 'approved' | 'in_progress' | 'active' | 'extended' | 'completed' | 'closed' | null
           trial_start_date?: string | null
           trial_end_date?: string | null
           engagement_score?: number

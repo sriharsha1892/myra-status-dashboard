@@ -690,6 +690,7 @@ export default function TrialOrganizationsPage() {
                     return (
                       <div
                         key={org.org_id}
+                        data-testid="org-card"
                         className={`group relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-gray-200/50 shadow-lg ${getStageGradient(org.org_lifecycle_stage)} ${getStageShadow(org.org_lifecycle_stage)} hover:shadow-xl min-h-[320px] flex flex-col`}
                         style={{
                           backdropFilter: 'blur(8px)',

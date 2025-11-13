@@ -165,7 +165,7 @@ test.describe('Navigation Between Fixed Pages', () => {
   test('Can navigate between dashboard, reports, and users', async ({ page }) => {
     // Start at dashboard
     await page.goto('/support/dashboard', { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL('**/dashboard');
+    await expect(page).toHaveURL(/\/support\/dashboard/);
 
     // Check dashboard rendered
     const dashboardContent = await page.locator('body').textContent();
@@ -173,17 +173,17 @@ test.describe('Navigation Between Fixed Pages', () => {
 
     // Navigate to reports
     await page.goto('/support/reports', { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL('**/reports');
+    await expect(page).toHaveURL(/\/support\/reports/);
 
     // Navigate to users
     await page.goto('/support/users', { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL('**/users');
+    await expect(page).toHaveURL(/\/support\/users/);
   });
 
   test('Can navigate to trials section pages', async ({ page }) => {
     // Navigate to trials
     await page.goto('/support/trials', { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL('**/trials');
+    await expect(page).toHaveURL(/\/support\/trials/);
 
     // Navigate to roadmap
     await page.goto('/support/trials/roadmap', { waitUntil: 'networkidle' });
