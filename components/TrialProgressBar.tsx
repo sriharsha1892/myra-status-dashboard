@@ -1,4 +1,4 @@
-import { TrendingUp, Zap, Bell } from 'lucide-react';
+import { TrendingUp, Zap, AlertCircle } from 'lucide-react';
 
 interface TrialProgressBarProps {
   trialStartDate: string | null;
@@ -40,7 +40,7 @@ export function TrialProgressBar({
     } else if (engagementScore >= 40 || daysSinceActivity <= 7) {
       return { icon: Zap, label: 'On track', color: 'text-blue-600', gradient: 'from-blue-400 to-blue-600' };
     } else {
-      return { icon: Bell, label: 'Needs attention', color: 'text-amber-600', gradient: 'from-amber-400 to-amber-600' };
+      return { icon: AlertCircle, label: 'Needs attention', color: 'text-amber-600', gradient: 'from-amber-400 to-amber-600' };
     }
   };
 
@@ -72,12 +72,11 @@ export function TrialProgressBar({
       </div>
 
       {/* Status text */}
-      <div className="text-xs text-gray-500 flex items-center justify-between">
-        <span>Growth: {percentComplete}%</span>
-        {remainingDays > 0 && (
+      {remainingDays > 0 && (
+        <div className="text-xs text-gray-500 text-right">
           <span>{remainingDays} day{remainingDays !== 1 ? 's' : ''} remaining</span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
