@@ -33,886 +33,113 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - main [ref=e86]:
-        - generic [ref=e87]:
-          - navigation [ref=e88]:
-            - link "Dashboard" [ref=e89] [cursor=pointer]:
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - main [ref=e72]:
+        - generic [ref=e73]:
+          - navigation [ref=e74]:
+            - link "Dashboard" [ref=e75] [cursor=pointer]:
               - /url: /support/dashboard
-              - img [ref=e90]
-            - generic [ref=e93]:
-              - img [ref=e94]
-              - link "Dashboard" [ref=e96] [cursor=pointer]:
+              - img [ref=e76]
+            - generic [ref=e79]:
+              - img [ref=e80]
+              - link "Dashboard" [ref=e82] [cursor=pointer]:
                 - /url: /support/dashboard
-            - generic [ref=e97]:
-              - img [ref=e98]
-              - generic [ref=e100]: Trial Organizations
-          - generic [ref=e101]:
-            - generic [ref=e102]:
-              - heading "Trial Organizations" [level=2] [ref=e103]
-              - paragraph [ref=e104]: Manage and track trial organizations
-            - button "Bulk Edit All" [ref=e106] [cursor=pointer]:
-              - img [ref=e107]
-              - generic [ref=e109]: Bulk Edit All
-        - generic [ref=e110]:
-          - generic [ref=e111]:
-            - generic [ref=e113]:
-              - generic [ref=e114]:
-                - paragraph [ref=e115]: Active Trials
-                - paragraph [ref=e116]: "30"
-              - img [ref=e118]
-            - generic [ref=e121]:
-              - generic [ref=e122]:
-                - paragraph [ref=e123]: Hot Leads
-                - paragraph [ref=e124]: "18"
-                - paragraph [ref=e125]: Engagement > 75%
-              - img [ref=e127]
-            - generic [ref=e130]:
-              - generic [ref=e131]:
-                - paragraph [ref=e132]: At Risk
-                - paragraph [ref=e133]: "7"
-                - paragraph [ref=e134]: Engagement < 30%
-              - img [ref=e136]
-          - generic [ref=e139]:
-            - button "Add New Trial Guided form" [ref=e140] [cursor=pointer]:
-              - img [ref=e142]
-              - generic [ref=e144]:
-                - heading "Add New Trial" [level=4] [ref=e145]
-                - paragraph [ref=e146]: Guided form
-              - img [ref=e147]
-            - button "Parse Text AI Extract from emails & notes" [ref=e149] [cursor=pointer]:
-              - img [ref=e151]
-              - generic [ref=e153]:
-                - generic [ref=e154]:
-                  - heading "Parse Text" [level=4] [ref=e155]
-                  - generic [ref=e156]: AI
-                - paragraph [ref=e157]: Extract from emails & notes
-              - img [ref=e158]
-            - button "Import CSV Bulk upload from spreadsheet" [ref=e160] [cursor=pointer]:
-              - img [ref=e162]
-              - generic [ref=e164]:
-                - heading "Import CSV" [level=4] [ref=e165]
-                - paragraph [ref=e166]: Bulk upload from spreadsheet
-              - img [ref=e167]
-          - generic [ref=e169]:
-            - textbox "Search organizations..." [ref=e171]
-            - combobox [ref=e172]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - generic [ref=e86]: Trial Organizations
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - heading "Trial Organizations" [level=2] [ref=e89]
+              - paragraph [ref=e90]: Manage and track trial organizations
+            - button "Bulk Edit All" [ref=e92] [cursor=pointer]:
+              - img [ref=e93]
+              - generic [ref=e95]: Bulk Edit All
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e99]:
+              - generic [ref=e100]:
+                - paragraph [ref=e101]: Active Trials
+                - paragraph [ref=e102]: "0"
+              - img [ref=e104]
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - paragraph [ref=e109]: Hot Leads
+                - paragraph [ref=e110]: "0"
+                - paragraph [ref=e111]: Engagement > 75%
+              - img [ref=e113]
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: At Risk
+                - paragraph [ref=e119]: "0"
+                - paragraph [ref=e120]: Engagement < 30%
+              - img [ref=e122]
+          - generic [ref=e125]:
+            - button "Add New Trial Guided form" [ref=e126] [cursor=pointer]:
+              - img [ref=e128]
+              - generic [ref=e130]:
+                - heading "Add New Trial" [level=4] [ref=e131]
+                - paragraph [ref=e132]: Guided form
+              - img [ref=e133]
+            - button "Parse Text AI Extract from emails & notes" [ref=e135] [cursor=pointer]:
+              - img [ref=e137]
+              - generic [ref=e139]:
+                - generic [ref=e140]:
+                  - heading "Parse Text" [level=4] [ref=e141]
+                  - generic [ref=e142]: AI
+                - paragraph [ref=e143]: Extract from emails & notes
+              - img [ref=e144]
+            - button "Import CSV Bulk upload from spreadsheet" [ref=e146] [cursor=pointer]:
+              - img [ref=e148]
+              - generic [ref=e150]:
+                - heading "Import CSV" [level=4] [ref=e151]
+                - paragraph [ref=e152]: Bulk upload from spreadsheet
+              - img [ref=e153]
+          - generic [ref=e155]:
+            - textbox "Search organizations..." [ref=e157]
+            - combobox [ref=e158]:
               - option "All Stages" [selected]
               - option "Prospect"
               - option "Demo Scheduled"
               - option "Trial Active"
               - option "Converted"
               - option "Churned"
-            - combobox [ref=e173]:
-              - option "All Companies" [selected]
-              - option "MI - Mordor Intelligence"
-              - option "GMI"
-          - generic [ref=e174]:
-            - generic [ref=e175]:
-              - checkbox [ref=e177] [cursor=pointer]
-              - generic [ref=e178]:
-                - generic [ref=e179]:
-                  - generic [ref=e181]: D
-                  - generic [ref=e182]:
-                    - heading "DataViz Solutions" [level=3] [ref=e183]
-                    - paragraph [ref=e184]: dataviz.co
-                - generic [ref=e185]:
-                  - generic [ref=e188]: Customer
-                  - generic [ref=e190]: No activity yet
-                - generic [ref=e193]: Expired
-                - generic [ref=e194]:
-                  - img [ref=e196]
-                  - generic [ref=e198]:
-                    - generic [ref=e199]: Unassigned
-                    - generic [ref=e200]: Account Manager
-              - button "View Details" [ref=e202] [cursor=pointer]:
-                - generic [ref=e203]: View Details
-                - img [ref=e204]
-            - generic [ref=e206]:
-              - checkbox [ref=e208] [cursor=pointer]
-              - generic [ref=e209]:
-                - generic [ref=e210]:
-                  - generic [ref=e212]: I
-                  - generic [ref=e213]:
-                    - heading "Innovation Labs" [level=3] [ref=e214]
-                    - paragraph [ref=e215]: innovationlabs.ai
-                - generic [ref=e216]:
-                  - generic [ref=e219]: Trial Pending
-                  - generic [ref=e221]: No activity yet
-                - generic [ref=e222]:
-                  - img [ref=e224]
-                  - generic [ref=e226]:
-                    - generic [ref=e227]: Unassigned
-                    - generic [ref=e228]: Account Manager
-              - button "View Details" [ref=e230] [cursor=pointer]:
-                - generic [ref=e231]: View Details
-                - img [ref=e232]
-            - generic [ref=e234]:
-              - checkbox [ref=e236] [cursor=pointer]
-              - generic [ref=e237]:
-                - generic [ref=e238]:
-                  - generic [ref=e240]: G
-                  - generic [ref=e241]:
-                    - heading "Global Enterprises" [level=3] [ref=e242]
-                    - paragraph [ref=e243]: globalent.com
-                - generic [ref=e244]:
-                  - generic [ref=e247]: Trial Active
-                  - generic [ref=e249]: No activity yet
-                - generic [ref=e252]: 9 days remaining
-                - generic [ref=e253]:
-                  - img [ref=e255]
-                  - generic [ref=e257]:
-                    - generic [ref=e258]: Unassigned
-                    - generic [ref=e259]: Account Manager
-              - button "View Details" [ref=e261] [cursor=pointer]:
-                - generic [ref=e262]: View Details
-                - img [ref=e263]
-            - generic [ref=e265]:
-              - checkbox [ref=e267] [cursor=pointer]
-              - generic [ref=e268]:
-                - generic [ref=e269]:
-                  - generic [ref=e271]: T
-                  - generic [ref=e272]:
-                    - heading "TechStart Inc" [level=3] [ref=e273]
-                    - paragraph [ref=e274]: techstart.io
-                - generic [ref=e275]:
-                  - generic [ref=e278]: Trial Active
-                  - generic [ref=e280]: No activity yet
-                - generic [ref=e283]: 15 days remaining
-                - generic [ref=e284]:
-                  - img [ref=e286]
-                  - generic [ref=e288]:
-                    - generic [ref=e289]: Unassigned
-                    - generic [ref=e290]: Account Manager
-              - button "View Details" [ref=e292] [cursor=pointer]:
-                - generic [ref=e293]: View Details
-                - img [ref=e294]
-            - generic [ref=e296]:
-              - checkbox [ref=e298] [cursor=pointer]
-              - generic [ref=e299]:
-                - generic [ref=e300]:
-                  - generic [ref=e302]: A
-                  - generic [ref=e303]:
-                    - heading "Acme Corporation" [level=3] [ref=e304]
-                    - paragraph [ref=e305]: acme.com
-                - generic [ref=e306]:
-                  - generic [ref=e309]: Trial Active
-                  - generic [ref=e311]: No activity yet
-                - generic [ref=e314]: 22 days remaining
-                - generic [ref=e315]:
-                  - img [ref=e317]
-                  - generic [ref=e319]:
-                    - generic [ref=e320]: Unassigned
-                    - generic [ref=e321]: Account Manager
-              - button "View Details" [ref=e323] [cursor=pointer]:
-                - generic [ref=e324]: View Details
-                - img [ref=e325]
-            - generic [ref=e327]:
-              - checkbox [ref=e329] [cursor=pointer]
-              - generic [ref=e330]:
-                - generic [ref=e331]:
-                  - generic [ref=e333]: C
-                  - generic [ref=e334]:
-                    - heading "Cereal Docks" [level=3] [ref=e335]
-                    - paragraph [ref=e336]: No domain
-                - generic [ref=e337]:
-                  - generic [ref=e340]: Trial Active
-                  - generic [ref=e342]: No activity yet
-                - generic [ref=e345]: Expired
-                - generic [ref=e346]:
-                  - generic [ref=e348]: SB
-                  - generic [ref=e349]:
-                    - generic [ref=e350]: Satish Boini
-                    - generic [ref=e351]: Account Manager
-              - button "View Details" [ref=e353] [cursor=pointer]:
-                - generic [ref=e354]: View Details
-                - img [ref=e355]
-            - generic [ref=e357]:
-              - checkbox [ref=e359] [cursor=pointer]
-              - generic [ref=e360]:
-                - generic [ref=e361]:
-                  - generic [ref=e363]: U
-                  - generic [ref=e364]:
-                    - heading "Unit Consulting" [level=3] [ref=e365]
-                    - paragraph [ref=e366]: No domain
-                - generic [ref=e367]:
-                  - generic [ref=e370]: Trial Pending
-                  - generic [ref=e372]: No activity yet
-                - generic [ref=e373]:
-                  - generic [ref=e375]: SB
-                  - generic [ref=e376]:
-                    - generic [ref=e377]: Satish Boini
-                    - generic [ref=e378]: Account Manager
-              - button "View Details" [ref=e380] [cursor=pointer]:
-                - generic [ref=e381]: View Details
-                - img [ref=e382]
-            - generic [ref=e384]:
-              - checkbox [ref=e386] [cursor=pointer]
-              - generic [ref=e387]:
-                - generic [ref=e388]:
-                  - generic [ref=e390]: A
-                  - generic [ref=e391]:
-                    - heading "Andeco" [level=3] [ref=e392]
-                    - paragraph [ref=e393]: No domain
-                - generic [ref=e394]:
-                  - generic [ref=e397]: Trial Active
-                  - generic [ref=e399]: No activity yet
-                - generic [ref=e400]:
-                  - generic [ref=e402]: S
-                  - generic [ref=e403]:
-                    - generic [ref=e404]: Satyanath
-                    - generic [ref=e405]: Account Manager
-              - button "View Details" [ref=e407] [cursor=pointer]:
-                - generic [ref=e408]: View Details
-                - img [ref=e409]
-            - generic [ref=e411]:
-              - checkbox [ref=e413] [cursor=pointer]
-              - generic [ref=e414]:
-                - generic [ref=e415]:
-                  - generic [ref=e417]: C
-                  - generic [ref=e418]:
-                    - heading "CircleK" [level=3] [ref=e419]
-                    - paragraph [ref=e420]: No domain
-                - generic [ref=e421]:
-                  - generic [ref=e424]: Trial Active
-                  - generic [ref=e426]: No activity yet
-                - generic [ref=e429]: 2 days left
-                - generic [ref=e430]:
-                  - generic [ref=e432]: "N"
-                  - generic [ref=e433]:
-                    - generic [ref=e434]: Nikita
-                    - generic [ref=e435]: Account Manager
-              - button "View Details" [ref=e437] [cursor=pointer]:
-                - generic [ref=e438]: View Details
-                - img [ref=e439]
-            - generic [ref=e441]:
-              - checkbox [ref=e443] [cursor=pointer]
-              - generic [ref=e444]:
-                - generic [ref=e445]:
-                  - generic [ref=e447]: B
-                  - generic [ref=e448]:
-                    - heading "BP-Castrol" [level=3] [ref=e449]
-                    - paragraph [ref=e450]: No domain
-                - generic [ref=e451]:
-                  - generic [ref=e454]: Trial Active
-                  - generic [ref=e456]: No activity yet
-                - generic [ref=e459]: 2 days left
-                - generic [ref=e460]:
-                  - generic [ref=e462]: K
-                  - generic [ref=e463]:
-                    - generic [ref=e464]: Kartheek
-                    - generic [ref=e465]: Account Manager
-              - button "View Details" [ref=e467] [cursor=pointer]:
-                - generic [ref=e468]: View Details
-                - img [ref=e469]
-            - generic [ref=e471]:
-              - checkbox [ref=e473] [cursor=pointer]
-              - generic [ref=e474]:
-                - generic [ref=e475]:
-                  - generic [ref=e477]: S
-                  - generic [ref=e478]:
-                    - heading "Sony" [level=3] [ref=e479]
-                    - paragraph [ref=e480]: No domain
-                - generic [ref=e481]:
-                  - generic [ref=e484]: Trial Pending
-                  - generic [ref=e486]: No activity yet
-                - generic [ref=e489]: 2 days left
-                - generic [ref=e490]:
-                  - generic [ref=e492]: K
-                  - generic [ref=e493]:
-                    - generic [ref=e494]: Krati
-                    - generic [ref=e495]: Account Manager
-              - button "View Details" [ref=e497] [cursor=pointer]:
-                - generic [ref=e498]: View Details
-                - img [ref=e499]
-            - generic [ref=e501]:
-              - checkbox [ref=e503] [cursor=pointer]
-              - generic [ref=e504]:
-                - generic [ref=e505]:
-                  - generic [ref=e507]: A
-                  - generic [ref=e508]:
-                    - heading "ABB" [level=3] [ref=e509]
-                    - paragraph [ref=e510]: No domain
-                - generic [ref=e511]:
-                  - generic [ref=e514]: Trial Active
-                  - generic [ref=e516]: No activity yet
-                - generic [ref=e519]: 2 days left
-                - generic [ref=e520]:
-                  - generic [ref=e522]: S
-                  - generic [ref=e523]:
-                    - generic [ref=e524]: Sudeshana
-                    - generic [ref=e525]: Account Manager
-              - button "View Details" [ref=e527] [cursor=pointer]:
-                - generic [ref=e528]: View Details
-                - img [ref=e529]
-            - generic [ref=e531]:
-              - checkbox [ref=e533] [cursor=pointer]
-              - generic [ref=e534]:
-                - generic [ref=e535]:
-                  - generic [ref=e537]: S
-                  - generic [ref=e538]:
-                    - heading "Synarchy" [level=3] [ref=e539]
-                    - paragraph [ref=e540]: No domain
-                - generic [ref=e541]:
-                  - generic [ref=e544]: Trial Active
-                  - generic [ref=e546]: No activity yet
-                - generic [ref=e549]: 0 days left
-                - generic [ref=e550]:
-                  - generic [ref=e552]: RD
-                  - generic [ref=e553]:
-                    - generic [ref=e554]: Rupak Dalapathi
-                    - generic [ref=e555]: Account Manager
-              - button "View Details" [ref=e557] [cursor=pointer]:
-                - generic [ref=e558]: View Details
-                - img [ref=e559]
-            - generic [ref=e561]:
-              - checkbox [ref=e563] [cursor=pointer]
-              - generic [ref=e564]:
-                - generic [ref=e565]:
-                  - generic [ref=e567]: E
-                  - generic [ref=e568]:
-                    - heading "Emami" [level=3] [ref=e569]
-                    - paragraph [ref=e570]: No domain
-                - generic [ref=e571]:
-                  - generic [ref=e574]: Trial Active
-                  - generic [ref=e576]: No activity yet
-                - generic [ref=e579]: 2 days left
-                - generic [ref=e580]:
-                  - generic [ref=e582]: K
-                  - generic [ref=e583]:
-                    - generic [ref=e584]: Kartheek
-                    - generic [ref=e585]: Account Manager
-              - button "View Details" [ref=e587] [cursor=pointer]:
-                - generic [ref=e588]: View Details
-                - img [ref=e589]
-            - generic [ref=e591]:
-              - checkbox [ref=e593] [cursor=pointer]
-              - generic [ref=e594]:
-                - generic [ref=e595]:
-                  - generic [ref=e597]: G
-                  - generic [ref=e598]:
-                    - heading "Givaudan" [level=3] [ref=e599]
-                    - paragraph [ref=e600]: E&C
-                - generic [ref=e601]:
-                  - generic [ref=e604]: Trial Active
-                  - generic [ref=e606]: Active 6 days ago
-                - generic [ref=e609]: 8 days remaining
-                - generic [ref=e610]:
-                  - generic [ref=e612]: K
-                  - generic [ref=e613]:
-                    - generic [ref=e614]: Kartheek
-                    - generic [ref=e615]: Account Manager
-              - button "View Details" [ref=e617] [cursor=pointer]:
-                - generic [ref=e618]: View Details
-                - img [ref=e619]
-            - generic [ref=e621]:
-              - checkbox [ref=e623] [cursor=pointer]
-              - generic [ref=e624]:
-                - generic [ref=e625]:
-                  - generic [ref=e627]: H
-                  - generic [ref=e628]:
-                    - heading "HAUSMANN AROMATIC" [level=3] [ref=e629]
-                    - paragraph [ref=e630]: AF&B
-                - generic [ref=e631]:
-                  - generic [ref=e634]: Customer
-                  - generic [ref=e636]: Active about 1 month ago
-                - generic [ref=e639]: 48 days remaining
-                - generic [ref=e640]:
-                  - generic [ref=e642]: SB
-                  - generic [ref=e643]:
-                    - generic [ref=e644]: Satish Boini
-                    - generic [ref=e645]: Account Manager
-              - button "View Details" [ref=e647] [cursor=pointer]:
-                - generic [ref=e648]: View Details
-                - img [ref=e649]
-            - generic [ref=e651]:
-              - checkbox [ref=e653] [cursor=pointer]
-              - generic [ref=e654]:
-                - generic [ref=e655]:
-                  - generic [ref=e657]: B
-                  - generic [ref=e658]:
-                    - heading "Brinsa S.A." [level=3] [ref=e659]
-                    - paragraph [ref=e660]: No domain
-                - generic [ref=e661]:
-                  - generic [ref=e664]: Trial Active
-                  - generic [ref=e666]: Active 27 days ago
-                - generic [ref=e669]: 2 days left
-                - generic [ref=e670]:
-                  - generic [ref=e672]: K
-                  - generic [ref=e673]:
-                    - generic [ref=e674]: Kartheek
-                    - generic [ref=e675]: Account Manager
-              - button "View Details" [ref=e677] [cursor=pointer]:
-                - generic [ref=e678]: View Details
-                - img [ref=e679]
-            - generic [ref=e681]:
-              - checkbox [ref=e683] [cursor=pointer]
-              - generic [ref=e684]:
-                - generic [ref=e685]:
-                  - generic [ref=e687]: "N"
-                  - generic [ref=e688]:
-                    - heading "Novonesis" [level=3] [ref=e689]
-                    - paragraph [ref=e690]: AF&B
-                - generic [ref=e691]:
-                  - generic [ref=e694]: Trial Pending
-                  - generic [ref=e696]: Active in 1 day
-                - generic [ref=e697]:
-                  - generic [ref=e699]: SB
-                  - generic [ref=e700]:
-                    - generic [ref=e701]: Satish Boini
-                    - generic [ref=e702]: Account Manager
-              - button "View Details" [ref=e704] [cursor=pointer]:
-                - generic [ref=e705]: View Details
-                - img [ref=e706]
-            - generic [ref=e708]:
-              - checkbox [ref=e710] [cursor=pointer]
-              - generic [ref=e711]:
-                - generic [ref=e712]:
-                  - generic [ref=e714]: F
-                  - generic [ref=e715]:
-                    - heading "Foremost Farms" [level=3] [ref=e716]
-                    - paragraph [ref=e717]: AF&B
-                - generic [ref=e718]:
-                  - generic [ref=e721]: Trial Active
-                  - generic [ref=e723]: Active 7 days ago
-                - generic [ref=e726]: 8 days remaining
-                - generic [ref=e727]:
-                  - generic [ref=e729]: SB
-                  - generic [ref=e730]:
-                    - generic [ref=e731]: Satish Boini
-                    - generic [ref=e732]: Account Manager
-              - button "View Details" [ref=e734] [cursor=pointer]:
-                - generic [ref=e735]: View Details
-                - img [ref=e736]
-            - generic [ref=e738]:
-              - checkbox [ref=e740] [cursor=pointer]
-              - generic [ref=e741]:
-                - generic [ref=e742]:
-                  - generic [ref=e744]: S
-                  - generic [ref=e745]:
-                    - heading "Schneider Electric" [level=3] [ref=e746]
-                    - paragraph [ref=e747]: E&C
-                - generic [ref=e748]:
-                  - generic [ref=e751]: Trial Active
-                  - generic [ref=e753]: Active 7 days ago
-                - generic [ref=e756]: 15 days remaining
-                - generic [ref=e757]:
-                  - generic [ref=e759]: S
-                  - generic [ref=e760]:
-                    - generic [ref=e761]: Satyanath
-                    - generic [ref=e762]: Account Manager
-              - button "View Details" [ref=e764] [cursor=pointer]:
-                - generic [ref=e765]: View Details
-                - img [ref=e766]
-            - generic [ref=e768]:
-              - checkbox [ref=e770] [cursor=pointer]
-              - generic [ref=e771]:
-                - generic [ref=e772]:
-                  - generic [ref=e774]: T
-                  - generic [ref=e775]:
-                    - heading "Tony Blair Institute for Global Change (TBI)" [level=3] [ref=e776]
-                    - paragraph [ref=e777]: HC
-                - generic [ref=e778]:
-                  - generic [ref=e781]: Trial Active
-                  - generic [ref=e783]: Active 9 days ago
-                - generic [ref=e786]: 13 days remaining
-                - generic [ref=e787]:
-                  - generic [ref=e789]: "N"
-                  - generic [ref=e790]:
-                    - generic [ref=e791]: Nikita
-                    - generic [ref=e792]: Account Manager
-              - button "View Details" [ref=e794] [cursor=pointer]:
-                - generic [ref=e795]: View Details
-                - img [ref=e796]
-            - generic [ref=e798]:
-              - checkbox [ref=e800] [cursor=pointer]
-              - generic [ref=e801]:
-                - generic [ref=e802]:
-                  - generic [ref=e804]: K
-                  - generic [ref=e805]:
-                    - heading "Kemin" [level=3] [ref=e806]
-                    - paragraph [ref=e807]: HC
-                - generic [ref=e808]:
-                  - generic [ref=e811]: Trial Pending
-                  - generic [ref=e813]: Active 9 days ago
-                - generic [ref=e816]: 8 days remaining
-                - generic [ref=e817]:
-                  - generic [ref=e819]: K
-                  - generic [ref=e820]:
-                    - generic [ref=e821]: Kartheek
-                    - generic [ref=e822]: Account Manager
-              - button "View Details" [ref=e824] [cursor=pointer]:
-                - generic [ref=e825]: View Details
-                - img [ref=e826]
-            - generic [ref=e828]:
-              - checkbox [ref=e830] [cursor=pointer]
-              - generic [ref=e831]:
-                - generic [ref=e832]:
-                  - generic [ref=e834]: V
-                  - generic [ref=e835]:
-                    - heading "Vanderlande" [level=3] [ref=e836]
-                    - paragraph [ref=e837]: AAD
-                - generic [ref=e838]:
-                  - generic [ref=e841]: Trial Active
-                  - generic [ref=e843]: Active 13 days ago
-                - generic [ref=e846]: 17 days remaining
-                - generic [ref=e847]:
-                  - generic [ref=e849]: K
-                  - generic [ref=e850]:
-                    - generic [ref=e851]: Krati
-                    - generic [ref=e852]: Account Manager
-              - button "View Details" [ref=e854] [cursor=pointer]:
-                - generic [ref=e855]: View Details
-                - img [ref=e856]
-            - generic [ref=e858]:
-              - checkbox [ref=e860] [cursor=pointer]
-              - generic [ref=e861]:
-                - generic [ref=e862]:
-                  - generic [ref=e864]: B
-                  - generic [ref=e865]:
-                    - heading "BASF" [level=3] [ref=e866]
-                    - paragraph [ref=e867]: E&C
-                - generic [ref=e868]:
-                  - generic [ref=e871]: Trial Active
-                  - generic [ref=e873]: Active 14 days ago
-                - generic [ref=e876]: 17 days remaining
-                - generic [ref=e877]:
-                  - generic [ref=e879]: K
-                  - generic [ref=e880]:
-                    - generic [ref=e881]: Kartheek
-                    - generic [ref=e882]: Account Manager
-              - button "View Details" [ref=e884] [cursor=pointer]:
-                - generic [ref=e885]: View Details
-                - img [ref=e886]
-            - generic [ref=e888]:
-              - checkbox [ref=e890] [cursor=pointer]
-              - generic [ref=e891]:
-                - generic [ref=e892]:
-                  - generic [ref=e894]: G
-                  - generic [ref=e895]:
-                    - heading "GCC Makers" [level=3] [ref=e896]
-                    - paragraph [ref=e897]: TMT
-                - generic [ref=e898]:
-                  - generic [ref=e901]: Trial Active
-                  - generic [ref=e903]: Active 15 days ago
-                - generic [ref=e906]: Expired
-                - generic [ref=e907]:
-                  - generic [ref=e909]: S
-                  - generic [ref=e910]:
-                    - generic [ref=e911]: Sudeshana
-                    - generic [ref=e912]: Account Manager
-              - button "View Details" [ref=e914] [cursor=pointer]:
-                - generic [ref=e915]: View Details
-                - img [ref=e916]
-            - generic [ref=e918]:
-              - checkbox [ref=e920] [cursor=pointer]
-              - generic [ref=e921]:
-                - generic [ref=e922]:
-                  - generic [ref=e924]: M
-                  - generic [ref=e925]:
-                    - heading "Mérieux NutriSciences" [level=3] [ref=e926]
-                    - paragraph [ref=e927]: HC
-                - generic [ref=e928]:
-                  - generic [ref=e931]: Trial Active
-                  - generic [ref=e933]: Active 22 days ago
-                - generic [ref=e936]: 2 days left
-                - generic [ref=e937]:
-                  - generic [ref=e939]: K
-                  - generic [ref=e940]:
-                    - generic [ref=e941]: Krati
-                    - generic [ref=e942]: Account Manager
-              - button "View Details" [ref=e944] [cursor=pointer]:
-                - generic [ref=e945]: View Details
-                - img [ref=e946]
-            - generic [ref=e948]:
-              - checkbox [ref=e950] [cursor=pointer]
-              - generic [ref=e951]:
-                - generic [ref=e952]:
-                  - generic [ref=e954]: J
-                  - generic [ref=e955]:
-                    - heading "JK Cements" [level=3] [ref=e956]
-                    - paragraph [ref=e957]: E&C
-                - generic [ref=e958]:
-                  - generic [ref=e961]: Trial Active
-                  - generic [ref=e963]: Active about 1 month ago
-                - generic [ref=e966]: 14 days remaining
-                - generic [ref=e967]:
-                  - generic [ref=e969]: S
-                  - generic [ref=e970]:
-                    - generic [ref=e971]: Satyanath
-                    - generic [ref=e972]: Account Manager
-              - button "View Details" [ref=e974] [cursor=pointer]:
-                - generic [ref=e975]: View Details
-                - img [ref=e976]
-            - generic [ref=e978]:
-              - checkbox [ref=e980] [cursor=pointer]
-              - generic [ref=e981]:
-                - generic [ref=e982]:
-                  - generic [ref=e984]: W
-                  - generic [ref=e985]:
-                    - heading "Wipak Global" [level=3] [ref=e986]
-                    - paragraph [ref=e987]: TMT
-                - generic [ref=e988]:
-                  - generic [ref=e991]: Trial Active
-                  - generic [ref=e993]: Active about 1 month ago
-                - generic [ref=e996]: 7 days left
-                - generic [ref=e997]:
-                  - generic [ref=e999]: S
-                  - generic [ref=e1000]:
-                    - generic [ref=e1001]: Sudeshana
-                    - generic [ref=e1002]: Account Manager
-              - button "View Details" [ref=e1004] [cursor=pointer]:
-                - generic [ref=e1005]: View Details
-                - img [ref=e1006]
-            - generic [ref=e1008]:
-              - checkbox [ref=e1010] [cursor=pointer]
-              - generic [ref=e1011]:
-                - generic [ref=e1012]:
-                  - generic [ref=e1014]: F
-                  - generic [ref=e1015]:
-                    - heading "Focal Point SA" [level=3] [ref=e1016]
-                    - paragraph [ref=e1017]: AF&B
-                - generic [ref=e1018]:
-                  - generic [ref=e1021]: Trial Active
-                  - generic [ref=e1023]: Active 30 days ago
-                - generic [ref=e1026]: 7 days left
-                - generic [ref=e1027]:
-                  - generic [ref=e1029]: SB
-                  - generic [ref=e1030]:
-                    - generic [ref=e1031]: Satish Boini
-                    - generic [ref=e1032]: Account Manager
-              - button "View Details" [ref=e1034] [cursor=pointer]:
-                - generic [ref=e1035]: View Details
-                - img [ref=e1036]
-            - generic [ref=e1038]:
-              - checkbox [ref=e1040] [cursor=pointer]
-              - generic [ref=e1041]:
-                - generic [ref=e1042]:
-                  - generic [ref=e1044]: A
-                  - generic [ref=e1045]:
-                    - heading "Almarai" [level=3] [ref=e1046]
-                    - paragraph [ref=e1047]: AF&B
-                - generic [ref=e1048]:
-                  - generic [ref=e1051]: Trial Active
-                  - generic [ref=e1053]: Active 30 days ago
-                - generic [ref=e1056]: 8 days remaining
-                - generic [ref=e1057]:
-                  - generic [ref=e1059]: SB
-                  - generic [ref=e1060]:
-                    - generic [ref=e1061]: Satish Boini
-                    - generic [ref=e1062]: Account Manager
-              - button "View Details" [ref=e1064] [cursor=pointer]:
-                - generic [ref=e1065]: View Details
-                - img [ref=e1066]
-            - generic [ref=e1068]:
-              - checkbox [ref=e1070] [cursor=pointer]
-              - generic [ref=e1071]:
-                - generic [ref=e1072]:
-                  - generic [ref=e1074]: W
-                  - generic [ref=e1075]:
-                    - heading "Wacker" [level=3] [ref=e1076]
-                    - paragraph [ref=e1077]: E&C
-                - generic [ref=e1078]:
-                  - generic [ref=e1081]: Trial Active
-                  - generic [ref=e1083]: Active 15 days ago
-                - generic [ref=e1086]: 14 days remaining
-                - generic [ref=e1087]:
-                  - generic [ref=e1089]: S
-                  - generic [ref=e1090]:
-                    - generic [ref=e1091]: Satyanath
-                    - generic [ref=e1092]: Account Manager
-              - button "View Details" [ref=e1094] [cursor=pointer]:
-                - generic [ref=e1095]: View Details
-                - img [ref=e1096]
-            - generic [ref=e1098]:
-              - checkbox [ref=e1100] [cursor=pointer]
-              - generic [ref=e1101]:
-                - generic [ref=e1102]:
-                  - generic [ref=e1104]: E
-                  - generic [ref=e1105]:
-                    - heading "ENEOS Corporation" [level=3] [ref=e1106]
-                    - paragraph [ref=e1107]: No domain
-                - generic [ref=e1108]:
-                  - generic [ref=e1111]: Trial Active
-                  - generic [ref=e1113]: Active about 1 month ago
-                - generic [ref=e1116]: 17 days remaining
-                - generic [ref=e1117]:
-                  - generic [ref=e1119]: S
-                  - generic [ref=e1120]:
-                    - generic [ref=e1121]: Satyanath
-                    - generic [ref=e1122]: Account Manager
-              - button "View Details" [ref=e1124] [cursor=pointer]:
-                - generic [ref=e1125]: View Details
-                - img [ref=e1126]
-            - generic [ref=e1128]:
-              - checkbox [ref=e1130] [cursor=pointer]
-              - generic [ref=e1131]:
-                - generic [ref=e1132]:
-                  - generic [ref=e1134]: T
-                  - generic [ref=e1135]:
-                    - heading "Trouw Nutrition" [level=3] [ref=e1136]
-                    - paragraph [ref=e1137]: AF&B
-                - generic [ref=e1138]:
-                  - generic [ref=e1141]: Trial Active
-                  - generic [ref=e1143]: Active 28 days ago
-                - generic [ref=e1146]: 2 days left
-                - generic [ref=e1147]:
-                  - generic [ref=e1149]: K
-                  - generic [ref=e1150]:
-                    - generic [ref=e1151]: Kartheek
-                    - generic [ref=e1152]: Account Manager
-              - button "View Details" [ref=e1154] [cursor=pointer]:
-                - generic [ref=e1155]: View Details
-                - img [ref=e1156]
-            - generic [ref=e1158]:
-              - checkbox [ref=e1160] [cursor=pointer]
-              - generic [ref=e1161]:
-                - generic [ref=e1162]:
-                  - generic [ref=e1164]: I
-                  - generic [ref=e1165]:
-                    - heading "Ikea" [level=3] [ref=e1166]
-                    - paragraph [ref=e1167]: NEO
-                - generic [ref=e1168]:
-                  - generic [ref=e1171]: Trial Pending
-                  - generic [ref=e1173]: Active about 1 month ago
-                - generic [ref=e1174]:
-                  - generic [ref=e1176]: KK
-                  - generic [ref=e1177]:
-                    - generic [ref=e1178]: Kirandeep Kaur
-                    - generic [ref=e1179]: Account Manager
-              - button "View Details" [ref=e1181] [cursor=pointer]:
-                - generic [ref=e1182]: View Details
-                - img [ref=e1183]
-            - generic [ref=e1185]:
-              - checkbox [ref=e1187] [cursor=pointer]
-              - generic [ref=e1188]:
-                - generic [ref=e1189]:
-                  - generic [ref=e1191]: A
-                  - generic [ref=e1192]:
-                    - heading "AM Capital" [level=3] [ref=e1193]
-                    - paragraph [ref=e1194]: No domain
-                - generic [ref=e1195]:
-                  - generic [ref=e1198]: Trial Active
-                  - generic [ref=e1200]: Active about 1 month ago
-                - generic [ref=e1203]: Expired
-                - generic [ref=e1204]:
-                  - generic [ref=e1206]: KK
-                  - generic [ref=e1207]:
-                    - generic [ref=e1208]: Kirandeep Kaur
-                    - generic [ref=e1209]: Account Manager
-              - button "View Details" [ref=e1211] [cursor=pointer]:
-                - generic [ref=e1212]: View Details
-                - img [ref=e1213]
-            - generic [ref=e1215]:
-              - checkbox [ref=e1217] [cursor=pointer]
-              - generic [ref=e1218]:
-                - generic [ref=e1219]:
-                  - generic [ref=e1221]: H
-                  - generic [ref=e1222]:
-                    - heading "H&H Group" [level=3] [ref=e1223]
-                    - paragraph [ref=e1224]: AF&B
-                - generic [ref=e1225]:
-                  - generic [ref=e1228]: Trial Active
-                  - generic [ref=e1230]: Active about 1 month ago
-                - generic [ref=e1233]: 0 days left
-                - generic [ref=e1234]:
-                  - generic [ref=e1236]: K
-                  - generic [ref=e1237]:
-                    - generic [ref=e1238]: Kartheek
-                    - generic [ref=e1239]: Account Manager
-              - button "View Details" [ref=e1241] [cursor=pointer]:
-                - generic [ref=e1242]: View Details
-                - img [ref=e1243]
-            - generic [ref=e1245]:
-              - checkbox [ref=e1247] [cursor=pointer]
-              - generic [ref=e1248]:
-                - generic [ref=e1249]:
-                  - generic [ref=e1251]: S
-                  - generic [ref=e1252]:
-                    - heading "SALIC" [level=3] [ref=e1253]
-                    - paragraph [ref=e1254]: AF&B
-                - generic [ref=e1255]:
-                  - generic [ref=e1258]: Trial Active
-                  - generic [ref=e1260]: Active about 1 month ago
-                - generic [ref=e1263]: 48 days remaining
-                - generic [ref=e1264]:
-                  - generic [ref=e1266]: SB
-                  - generic [ref=e1267]:
-                    - generic [ref=e1268]: Satish Boini
-                    - generic [ref=e1269]: Account Manager
-              - button "View Details" [ref=e1271] [cursor=pointer]:
-                - generic [ref=e1272]: View Details
-                - img [ref=e1273]
-            - generic [ref=e1275]:
-              - checkbox [ref=e1277] [cursor=pointer]
-              - generic [ref=e1278]:
-                - generic [ref=e1279]:
-                  - generic [ref=e1281]: H
-                  - generic [ref=e1282]:
-                    - heading "Huawei" [level=3] [ref=e1283]
-                    - paragraph [ref=e1284]: No domain
-                - generic [ref=e1285]:
-                  - generic [ref=e1288]: Trial Pending
-                  - generic [ref=e1290]: Active about 2 months ago
-                - generic [ref=e1293]: Expired
-                - generic [ref=e1294]:
-                  - generic [ref=e1296]: S
-                  - generic [ref=e1297]:
-                    - generic [ref=e1298]: Sudeshana
-                    - generic [ref=e1299]: Account Manager
-              - button "View Details" [ref=e1301] [cursor=pointer]:
-                - generic [ref=e1302]: View Details
-                - img [ref=e1303]
-            - generic [ref=e1305]:
-              - checkbox [ref=e1307] [cursor=pointer]
-              - generic [ref=e1308]:
-                - generic [ref=e1309]:
-                  - generic [ref=e1311]: M
-                  - generic [ref=e1312]:
-                    - heading "Maruti Suzuki India Limited" [level=3] [ref=e1313]
-                    - paragraph [ref=e1314]: AAD
-                - generic [ref=e1315]:
-                  - generic [ref=e1318]: Trial Active
-                  - generic [ref=e1320]: Active about 1 month ago
-                - generic [ref=e1323]: 1 days left
-                - generic [ref=e1324]:
-                  - generic [ref=e1326]: RD
-                  - generic [ref=e1327]:
-                    - generic [ref=e1328]: Rupak Dalapathi
-                    - generic [ref=e1329]: Account Manager
-              - button "View Details" [ref=e1331] [cursor=pointer]:
-                - generic [ref=e1332]: View Details
-                - img [ref=e1333]
-    - button "Give feedback" [ref=e1335] [cursor=pointer]:
-      - img [ref=e1336]
-    - button "Open support chat" [ref=e1338] [cursor=pointer]:
-      - img [ref=e1339]
-  - button "Open Next.js Dev Tools" [ref=e1347] [cursor=pointer]:
-    - img [ref=e1348]
-  - alert [ref=e1351]
+          - generic [ref=e159]:
+            - img [ref=e161]
+            - heading "No organizations found" [level=3] [ref=e163]
+            - paragraph [ref=e164]: Try adjusting your search or filters
+    - button "Give feedback" [ref=e165] [cursor=pointer]:
+      - img [ref=e166]
+    - button "Open support chat" [ref=e168] [cursor=pointer]:
+      - img [ref=e169]
+  - generic:
+    - generic:
+      - generic:
+        - generic: Failed to load organizations
+        - button:
+          - img
+  - generic [ref=e176] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e177]:
+      - img [ref=e178]
+    - generic [ref=e181]:
+      - button "Open issues overlay" [ref=e182]:
+        - generic [ref=e183]:
+          - generic [ref=e184]: "0"
+          - generic [ref=e185]: "1"
+        - generic [ref=e186]: Issue
+      - button "Collapse issues badge" [ref=e187]:
+        - img [ref=e188]
+  - alert [ref=e190]
 ```

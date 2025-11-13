@@ -33,130 +33,118 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - generic [ref=e85]:
-        - generic [ref=e88]:
-          - generic [ref=e89]:
-            - heading "All Tickets" [level=1] [ref=e90]
-            - paragraph [ref=e91]: 3 tickets
-          - button "New Ticket" [ref=e92] [cursor=pointer]:
-            - img [ref=e93]
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - heading "All Tickets" [level=1] [ref=e76]
+            - paragraph [ref=e77]: 3 tickets
+          - button "New Ticket" [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
             - text: New Ticket
-        - generic [ref=e94]:
-          - generic [ref=e96]:
-            - generic [ref=e97]:
-              - img [ref=e98]
-              - textbox "Search tickets by number, description, organization, user..." [ref=e101]
-            - button "Filters" [ref=e102] [cursor=pointer]:
-              - img [ref=e103]
+        - generic [ref=e80]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - textbox "Search tickets by number, description, organization, user..." [ref=e87]
+            - button "Filters" [ref=e88] [cursor=pointer]:
+              - img [ref=e89]
               - text: Filters
-              - img [ref=e105]
-          - generic [ref=e107]:
-            - generic [ref=e112]:
-              - button [ref=e115] [cursor=pointer]:
-                - generic [ref=e116]:
-                  - generic [ref=e117]:
-                    - img [ref=e119]
-                    - generic [ref=e122]:
-                      - generic [ref=e123]: MYR-0030
-                      - generic [ref=e124]: general
-                  - generic [ref=e125]: medium
-                - heading [level=3] [ref=e126]
-                - generic [ref=e127]:
-                  - generic [ref=e128]:
-                    - img [ref=e129]
-                    - generic [ref=e133]: Customer
-                  - generic [ref=e134]:
-                    - img [ref=e135]
-                    - generic [ref=e138]: Test User
-                - generic [ref=e139]:
-                  - generic [ref=e140]:
-                    - img [ref=e141]
+              - img [ref=e91]
+          - generic [ref=e93]:
+            - generic [ref=e98]:
+              - button [ref=e101] [cursor=pointer]:
+                - generic [ref=e102]:
+                  - generic [ref=e103]:
+                    - img [ref=e105]
+                    - generic [ref=e108]:
+                      - generic [ref=e109]: MYR-0030
+                      - generic [ref=e110]: general
+                  - generic [ref=e111]: medium
+                - heading [level=3] [ref=e112]
+                - generic [ref=e113]:
+                  - generic [ref=e114]:
+                    - img [ref=e115]
+                    - generic [ref=e119]: Customer
+                  - generic [ref=e120]:
+                    - img [ref=e121]
+                    - generic [ref=e124]: Test User
+                - generic [ref=e125]:
+                  - generic [ref=e126]:
+                    - img [ref=e127]
                     - text: open
+                  - generic [ref=e129]:
+                    - img [ref=e130]
+                    - generic [ref=e133]: 3 days ago
+              - img
+            - generic [ref=e138]:
+              - 'button "MYR-0029 general medium <div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Test message from automated test - 2025-11-10T10:36:49.536Z</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> Test User</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:test.1762771009539@example.com\" style=\"color: #3b82f6;\">test.1762771009539@example.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div> Customer Test User open 3 days ago" [ref=e141] [cursor=pointer]':
+                - generic [ref=e142]:
                   - generic [ref=e143]:
-                    - img [ref=e144]
-                    - generic [ref=e147]: 2 days ago
-              - img
-            - generic [ref=e152]:
-              - 'button "MYR-0029 general medium <div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Test message from automated test - 2025-11-10T10:36:49.536Z</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> Test User</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:test.1762771009539@example.com\" style=\"color: #3b82f6;\">test.1762771009539@example.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div> Customer Test User open 2 days ago" [ref=e155] [cursor=pointer]':
-                - generic [ref=e156]:
-                  - generic [ref=e157]:
-                    - img [ref=e159]
-                    - generic [ref=e162]:
-                      - generic [ref=e163]: MYR-0029
-                      - generic [ref=e164]: general
-                  - generic [ref=e165]: medium
-                - 'heading "<div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Test message from automated test - 2025-11-10T10:36:49.536Z</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> Test User</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:test.1762771009539@example.com\" style=\"color: #3b82f6;\">test.1762771009539@example.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div>" [level=3] [ref=e166]'
-                - generic [ref=e167]:
-                  - generic [ref=e168]:
-                    - img [ref=e169]
-                    - generic [ref=e173]: Customer
-                  - generic [ref=e174]:
-                    - img [ref=e175]
-                    - generic [ref=e178]: Test User
-                - generic [ref=e179]:
-                  - generic [ref=e180]:
-                    - img [ref=e181]
+                    - img [ref=e145]
+                    - generic [ref=e148]:
+                      - generic [ref=e149]: MYR-0029
+                      - generic [ref=e150]: general
+                  - generic [ref=e151]: medium
+                - 'heading "<div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Test message from automated test - 2025-11-10T10:36:49.536Z</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> Test User</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:test.1762771009539@example.com\" style=\"color: #3b82f6;\">test.1762771009539@example.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div>" [level=3] [ref=e152]'
+                - generic [ref=e153]:
+                  - generic [ref=e154]:
+                    - img [ref=e155]
+                    - generic [ref=e159]: Customer
+                  - generic [ref=e160]:
+                    - img [ref=e161]
+                    - generic [ref=e164]: Test User
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - img [ref=e167]
                     - text: open
+                  - generic [ref=e169]:
+                    - img [ref=e170]
+                    - generic [ref=e173]: 3 days ago
+              - img
+            - generic [ref=e178]:
+              - 'button "MYR-0028 general medium <div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Everything will be fine, relax!</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> No one</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:u2@little.com\" style=\"color: #3b82f6;\">u2@little.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div> Customer No one open 3 days ago" [ref=e181] [cursor=pointer]':
+                - generic [ref=e182]:
                   - generic [ref=e183]:
-                    - img [ref=e184]
-                    - generic [ref=e187]: 2 days ago
-              - img
-            - generic [ref=e192]:
-              - 'button "MYR-0028 general medium <div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Everything will be fine, relax!</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> No one</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:u2@little.com\" style=\"color: #3b82f6;\">u2@little.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div> Customer No one open 2 days ago" [ref=e195] [cursor=pointer]':
-                - generic [ref=e196]:
-                  - generic [ref=e197]:
-                    - img [ref=e199]
-                    - generic [ref=e202]:
-                      - generic [ref=e203]: MYR-0028
-                      - generic [ref=e204]: general
-                  - generic [ref=e205]: medium
-                - 'heading "<div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Everything will be fine, relax!</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> No one</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:u2@little.com\" style=\"color: #3b82f6;\">u2@little.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div>" [level=3] [ref=e206]'
-                - generic [ref=e207]:
-                  - generic [ref=e208]:
-                    - img [ref=e209]
-                    - generic [ref=e213]: Customer
-                  - generic [ref=e214]:
-                    - img [ref=e215]
-                    - generic [ref=e218]: No one
-                - generic [ref=e219]:
-                  - generic [ref=e220]:
-                    - img [ref=e221]
+                    - img [ref=e185]
+                    - generic [ref=e188]:
+                      - generic [ref=e189]: MYR-0028
+                      - generic [ref=e190]: general
+                  - generic [ref=e191]: medium
+                - 'heading "<div style=\"font-family: system-ui, -apple-system, sans-serif;\"> <p style=\"font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">Everything will be fine, relax!</p> </div> <hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;\"> <div style=\"background: #f9fafb; padding: 12px; border-radius: 6px; font-size: 13px;\"> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Customer:</strong> No one</p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Email:</strong> <a href=\"mailto:u2@little.com\" style=\"color: #3b82f6;\">u2@little.com</a></p> <p style=\"margin: 4px 0;\"><strong style=\"color: #6b7280;\">Source:</strong> Customer Chat Widget</p> </div>" [level=3] [ref=e192]'
+                - generic [ref=e193]:
+                  - generic [ref=e194]:
+                    - img [ref=e195]
+                    - generic [ref=e199]: Customer
+                  - generic [ref=e200]:
+                    - img [ref=e201]
+                    - generic [ref=e204]: No one
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - img [ref=e207]
                     - text: open
-                  - generic [ref=e223]:
-                    - img [ref=e224]
-                    - generic [ref=e227]: 2 days ago
+                  - generic [ref=e209]:
+                    - img [ref=e210]
+                    - generic [ref=e213]: 3 days ago
               - img
-    - button "Give feedback" [ref=e228] [cursor=pointer]:
-      - img [ref=e229]
-    - button "Open support chat" [ref=e231] [cursor=pointer]:
-      - img [ref=e232]
-  - button "Open Next.js Dev Tools" [ref=e240] [cursor=pointer]:
-    - img [ref=e241]
-  - alert [ref=e244]
+    - button "Give feedback" [ref=e214] [cursor=pointer]:
+      - img [ref=e215]
+    - button "Open support chat" [ref=e217] [cursor=pointer]:
+      - img [ref=e218]
+  - button "Open Next.js Dev Tools" [ref=e226] [cursor=pointer]:
+    - img [ref=e227]
+  - alert [ref=e230]
 ```

@@ -33,65 +33,62 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - generic [ref=e85]:
-        - generic [ref=e89]:
-          - button [ref=e90] [cursor=pointer]:
-            - img [ref=e91]
-          - generic [ref=e93]:
-            - img [ref=e95]
-            - generic [ref=e97]:
-              - heading "Text Intel Parser" [level=1] [ref=e98]
-              - paragraph [ref=e99]: Extract trial data from emails, notes, and calls
-        - generic [ref=e101]:
-          - generic [ref=e103]:
-            - generic [ref=e104]:
-              - generic [ref=e105]: Source Type
-              - generic [ref=e106]:
-                - button "Meeting" [ref=e107] [cursor=pointer]
-                - button "Email" [ref=e108] [cursor=pointer]
-                - button "Call" [ref=e109] [cursor=pointer]
-            - 'textbox "Paste your meeting notes, email, or call summary here... Example: Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks." [ref=e110]':
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e75]:
+          - button [ref=e76] [cursor=pointer]:
+            - img [ref=e77]
+          - generic [ref=e79]:
+            - img [ref=e81]
+            - generic [ref=e83]:
+              - heading "Text Intel Parser" [level=1] [ref=e84]
+              - paragraph [ref=e85]: Extract trial data from emails, notes, and calls
+        - generic [ref=e87]:
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - generic [ref=e91]: Source Type
+              - generic [ref=e92]:
+                - button "Meeting" [ref=e93] [cursor=pointer]
+                - button "Email" [ref=e94] [cursor=pointer]
+                - button "Call" [ref=e95] [cursor=pointer]
+            - 'textbox "Paste your meeting notes, email, or call summary here... Example: Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks." [ref=e96]':
               - /placeholder: "Paste your meeting notes, email, or call summary here...  Example: Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks."
-            - generic [ref=e111]:
-              - generic [ref=e112]: 0 chars · 0 words
-              - button "Parse with AI" [disabled] [ref=e113]:
-                - img [ref=e114]
+            - generic [ref=e97]:
+              - generic [ref=e98]: 0 chars · 0 words
+              - button "Parse with AI" [disabled] [ref=e99]:
+                - img [ref=e100]
                 - text: Parse with AI
-          - generic [ref=e117]:
-            - img [ref=e118]
-            - paragraph [ref=e121]: No data parsed yet
-            - paragraph [ref=e122]: Paste text on the left and click "Parse with AI"
-    - button "Give feedback" [ref=e123] [cursor=pointer]:
-      - img [ref=e124]
-    - button "Open support chat" [ref=e126] [cursor=pointer]:
-      - img [ref=e127]
-  - button "Open Next.js Dev Tools" [ref=e135] [cursor=pointer]:
-    - img [ref=e136]
-  - alert [ref=e139]
+          - generic [ref=e103]:
+            - img [ref=e104]
+            - paragraph [ref=e107]: No data parsed yet
+            - paragraph [ref=e108]: Paste text on the left and click "Parse with AI"
+    - button "Give feedback" [ref=e109] [cursor=pointer]:
+      - img [ref=e110]
+    - button "Open support chat" [ref=e112] [cursor=pointer]:
+      - img [ref=e113]
+  - generic [ref=e120] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e121]:
+      - img [ref=e122]
+    - generic [ref=e125]:
+      - button "Open issues overlay" [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: "0"
+          - generic [ref=e129]: "1"
+        - generic [ref=e130]: Issue
+      - button "Collapse issues badge" [ref=e131]:
+        - img [ref=e132]
+  - alert [ref=e134]: Text Intel Parser
 ```

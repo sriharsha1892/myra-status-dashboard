@@ -33,345 +33,256 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - generic [ref=e88]:
-        - generic [ref=e90]:
-          - img [ref=e93]
-          - generic [ref=e96]:
-            - heading "Welcome! Consider changing your password" [level=3] [ref=e97]
-            - paragraph [ref=e98]: For security, we recommend changing your temporary password to something memorable and secure.
-            - generic [ref=e99]:
-              - button "Change Password" [ref=e100] [cursor=pointer]:
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - generic [ref=e74]:
+        - generic [ref=e76]:
+          - img [ref=e79]
+          - generic [ref=e82]:
+            - heading "Welcome! Consider changing your password" [level=3] [ref=e83]
+            - paragraph [ref=e84]: For security, we recommend changing your temporary password to something memorable and secure.
+            - generic [ref=e85]:
+              - button "Change Password" [ref=e86] [cursor=pointer]:
                 - text: Change Password
-                - img [ref=e101]
-              - button "Remind me later" [ref=e103] [cursor=pointer]
-          - button "Dismiss" [ref=e104] [cursor=pointer]:
-            - img [ref=e105]
-        - generic [ref=e108]:
-          - heading "Good morning, admin" [level=1] [ref=e109]
-          - paragraph [ref=e110]: Thursday, November 13, 2025 · 12:39 AM
-        - generic [ref=e111]:
-          - generic [ref=e116]:
-            - button "Active Trials 30" [ref=e118] [cursor=pointer]:
-              - generic [ref=e119]:
-                - img [ref=e121]
+                - img [ref=e87]
+              - button "Remind me later" [ref=e89] [cursor=pointer]
+          - button "Dismiss" [ref=e90] [cursor=pointer]:
+            - img [ref=e91]
+        - generic [ref=e94]:
+          - heading "Good morning, admin" [level=1] [ref=e95]
+          - paragraph [ref=e96]: Thursday, November 13, 2025 · 8:46 AM
+        - generic [ref=e97]:
+          - generic [ref=e102]:
+            - button "Active Trials —" [ref=e104] [cursor=pointer]:
+              - generic [ref=e105]:
+                - img [ref=e107]
+                - img [ref=e111]
+              - generic [ref=e113]:
+                - generic [ref=e114]: Active Trials
+                - generic [ref=e115]: —
+            - img
+          - generic [ref=e120]:
+            - button "Critical —" [ref=e122] [cursor=pointer]:
+              - generic [ref=e123]:
                 - img [ref=e125]
-              - generic [ref=e127]:
-                - generic [ref=e128]: Active Trials
-                - generic [ref=e129]: "30"
+                - img [ref=e128]
+              - generic [ref=e130]:
+                - generic [ref=e131]: Critical
+                - generic [ref=e132]: —
             - img
-          - generic [ref=e134]:
-            - button "Critical —" [ref=e136] [cursor=pointer]:
-              - generic [ref=e137]:
-                - img [ref=e139]
+          - generic [ref=e137]:
+            - button "Open Tickets 3" [ref=e139] [cursor=pointer]:
+              - generic [ref=e140]:
                 - img [ref=e142]
-              - generic [ref=e144]:
-                - generic [ref=e145]: Critical
-                - generic [ref=e146]: —
+                - img [ref=e145]
+              - generic [ref=e147]:
+                - generic [ref=e148]: Open Tickets
+                - generic [ref=e149]: "3"
             - img
-          - generic [ref=e151]:
-            - button "Open Tickets 3" [ref=e153] [cursor=pointer]:
-              - generic [ref=e154]:
-                - img [ref=e156]
-                - img [ref=e159]
-              - generic [ref=e161]:
-                - generic [ref=e162]: Open Tickets
-                - generic [ref=e163]: "3"
+          - generic [ref=e154]:
+            - generic [ref=e156]:
+              - img [ref=e159]
+              - generic [ref=e163]:
+                - generic [ref=e164]: Ending Soon
+                - generic [ref=e165]: —
             - img
-          - generic [ref=e168]:
-            - generic [ref=e170]:
-              - generic [ref=e171]:
-                - img [ref=e173]
-                - generic [ref=e177]: 7D
-              - generic [ref=e178]:
-                - generic [ref=e179]: Ending Soon
-                - generic [ref=e180]: "12"
+          - generic [ref=e170]:
+            - button "Total Orgs —" [ref=e172] [cursor=pointer]:
+              - generic [ref=e173]:
+                - img [ref=e175]
+                - img [ref=e179]
+              - generic [ref=e181]:
+                - generic [ref=e182]: Total Orgs
+                - generic [ref=e183]: —
             - img
-          - generic [ref=e185]:
-            - button "Total Orgs 39" [ref=e187] [cursor=pointer]:
-              - generic [ref=e188]:
-                - img [ref=e190]
-                - img [ref=e194]
-              - generic [ref=e196]:
-                - generic [ref=e197]: Total Orgs
-                - generic [ref=e198]: "39"
+          - generic [ref=e188]:
+            - button "Total Tickets 3" [ref=e190] [cursor=pointer]:
+              - generic [ref=e191]:
+                - img [ref=e193]
+                - img [ref=e196]
+              - generic [ref=e198]:
+                - generic [ref=e199]: Total Tickets
+                - generic [ref=e200]: "3"
             - img
-          - generic [ref=e203]:
-            - button "Total Tickets 3" [ref=e205] [cursor=pointer]:
-              - generic [ref=e206]:
-                - img [ref=e208]
-                - img [ref=e211]
-              - generic [ref=e213]:
-                - generic [ref=e214]: Total Tickets
-                - generic [ref=e215]: "3"
-            - img
-        - generic [ref=e216]:
-          - generic [ref=e217]:
-            - generic [ref=e218]:
-              - generic [ref=e219]:
-                - generic [ref=e220]:
-                  - img [ref=e222]
-                  - heading "Recent Activity" [level=2] [ref=e224]
-                - button "View all" [ref=e225] [cursor=pointer]:
+        - generic [ref=e201]:
+          - generic [ref=e202]:
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - generic [ref=e205]:
+                  - img [ref=e207]
+                  - heading "Recent Activity" [level=2] [ref=e209]
+                - button "View all" [ref=e210] [cursor=pointer]:
                   - text: View all
-                  - img [ref=e226]
-              - generic [ref=e228]:
-                - button "Test message with file attachment 2 days ago" [ref=e229] [cursor=pointer]:
-                  - generic [ref=e230]:
-                    - generic [ref=e231]:
-                      - paragraph [ref=e233]: Test message with file attachment
-                      - paragraph [ref=e234]: 2 days ago
-                    - img [ref=e235]
-                - button "Test message from automated test - 2025-11-10T10:36:49.536Z 2 days ago" [ref=e237] [cursor=pointer]:
-                  - generic [ref=e238]:
-                    - generic [ref=e239]:
-                      - paragraph [ref=e241]: Test message from automated test - 2025-11-10T10:36:49.536Z
-                      - paragraph [ref=e242]: 2 days ago
-                    - img [ref=e243]
-                - button "Everything will be fine, relax! 2 days ago" [ref=e245] [cursor=pointer]:
-                  - generic [ref=e246]:
-                    - generic [ref=e247]:
-                      - paragraph [ref=e249]: Everything will be fine, relax!
-                      - paragraph [ref=e250]: 2 days ago
-                    - img [ref=e251]
-            - generic [ref=e253]:
-              - generic [ref=e254]:
-                - img [ref=e256]
-                - heading "Quick Actions" [level=2] [ref=e258]
-              - generic [ref=e259]:
-                - button "Trial Organizations Manage active trials" [ref=e260] [cursor=pointer]:
-                  - img [ref=e261]
-                  - paragraph [ref=e265]: Trial Organizations
-                  - paragraph [ref=e266]: Manage active trials
-                - button "Support Tickets View all tickets" [ref=e267] [cursor=pointer]:
+                  - img [ref=e211]
+              - generic [ref=e213]:
+                - button "Test message with file attachment 3 days ago" [ref=e214] [cursor=pointer]:
+                  - generic [ref=e215]:
+                    - generic [ref=e216]:
+                      - paragraph [ref=e218]: Test message with file attachment
+                      - paragraph [ref=e219]: 3 days ago
+                    - img [ref=e220]
+                - button "Test message from automated test - 2025-11-10T10:36:49.536Z 3 days ago" [ref=e222] [cursor=pointer]:
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - paragraph [ref=e226]: Test message from automated test - 2025-11-10T10:36:49.536Z
+                      - paragraph [ref=e227]: 3 days ago
+                    - img [ref=e228]
+                - button "Everything will be fine, relax! 3 days ago" [ref=e230] [cursor=pointer]:
+                  - generic [ref=e231]:
+                    - generic [ref=e232]:
+                      - paragraph [ref=e234]: Everything will be fine, relax!
+                      - paragraph [ref=e235]: 3 days ago
+                    - img [ref=e236]
+            - generic [ref=e238]:
+              - generic [ref=e239]:
+                - img [ref=e241]
+                - heading "Quick Actions" [level=2] [ref=e243]
+              - generic [ref=e244]:
+                - button "Trial Organizations Manage active trials" [ref=e245] [cursor=pointer]:
+                  - img [ref=e246]
+                  - paragraph [ref=e250]: Trial Organizations
+                  - paragraph [ref=e251]: Manage active trials
+                - button "Support Tickets View all tickets" [ref=e252] [cursor=pointer]:
+                  - img [ref=e253]
+                  - paragraph [ref=e256]: Support Tickets
+                  - paragraph [ref=e257]: View all tickets
+                - button "Analytics Trial insights & metrics" [ref=e258] [cursor=pointer]:
+                  - img [ref=e259]
+                  - paragraph [ref=e262]: Analytics
+                  - paragraph [ref=e263]: Trial insights & metrics
+          - generic [ref=e264]:
+            - generic [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e267]:
                   - img [ref=e268]
-                  - paragraph [ref=e271]: Support Tickets
-                  - paragraph [ref=e272]: View all tickets
-                - button "Analytics Trial insights & metrics" [ref=e273] [cursor=pointer]:
-                  - img [ref=e274]
-                  - paragraph [ref=e277]: Analytics
-                  - paragraph [ref=e278]: Trial insights & metrics
-                - button "Roadmap Product planning" [ref=e279] [cursor=pointer]:
-                  - img [ref=e280]
-                  - paragraph [ref=e284]: Roadmap
-                  - paragraph [ref=e285]: Product planning
-                - button "Announcements Manage updates" [ref=e286] [cursor=pointer]:
-                  - img [ref=e287]
-                  - paragraph [ref=e289]: Announcements
-                  - paragraph [ref=e290]: Manage updates
-          - generic [ref=e291]:
-            - generic [ref=e292]:
-              - generic [ref=e293]:
-                - generic [ref=e294]:
-                  - img [ref=e295]
-                  - heading "Your Impact" [level=2] [ref=e297]
-                - generic [ref=e298]:
-                  - generic [ref=e299]:
-                    - generic [ref=e300]: "30"
-                    - generic [ref=e301]: Active
-                  - generic [ref=e302]:
-                    - generic [ref=e303]: —
-                    - generic [ref=e304]: Closed
-                  - generic [ref=e305]:
-                    - generic [ref=e306]: "13"
-                    - generic [ref=e307]: Urgent
-                - generic [ref=e309]:
-                  - img [ref=e310]
-                  - generic [ref=e312]:
-                    - paragraph [ref=e313]: "\"If you need inspiring words, don't start a startup.\""
-                    - paragraph [ref=e314]: — Elon
-              - generic [ref=e315]:
-                - generic [ref=e316]:
-                  - generic [ref=e317]:
-                    - img [ref=e318]
-                    - heading "What Needs Attention" [level=2] [ref=e320]
-                  - generic [ref=e321]: Priority Focus
-                - generic [ref=e322]:
-                  - button "BP-Castrol trial expires in 2 days Critical window to convert Send extension offer" [ref=e323] [cursor=pointer]:
-                    - generic [ref=e324]:
-                      - img [ref=e326]
-                      - generic [ref=e328]:
-                        - paragraph [ref=e329]: BP-Castrol trial expires in 2 days
-                        - generic [ref=e330]:
-                          - paragraph [ref=e331]: Critical window to convert
-                          - generic [ref=e332]:
-                            - text: Send extension offer
-                            - img [ref=e333]
-                  - button "Sony trial expires in 2 days Critical window to convert Send extension offer" [ref=e335] [cursor=pointer]:
-                    - generic [ref=e336]:
-                      - img [ref=e338]
-                      - generic [ref=e340]:
-                        - paragraph [ref=e341]: Sony trial expires in 2 days
-                        - generic [ref=e342]:
-                          - paragraph [ref=e343]: Critical window to convert
-                          - generic [ref=e344]:
-                            - text: Send extension offer
-                            - img [ref=e345]
-                  - button "Maruti Suzuki India Limited trial expires in 1 day Critical window to convert Send extension offer" [ref=e347] [cursor=pointer]:
-                    - generic [ref=e348]:
-                      - img [ref=e350]
-                      - generic [ref=e352]:
-                        - paragraph [ref=e353]: Maruti Suzuki India Limited trial expires in 1 day
-                        - generic [ref=e354]:
-                          - paragraph [ref=e355]: Critical window to convert
-                          - generic [ref=e356]:
-                            - text: Send extension offer
-                            - img [ref=e357]
-                  - button "CircleK trial expires in 2 days Critical window to convert Send extension offer" [ref=e359] [cursor=pointer]:
-                    - generic [ref=e360]:
-                      - img [ref=e362]
-                      - generic [ref=e364]:
-                        - paragraph [ref=e365]: CircleK trial expires in 2 days
-                        - generic [ref=e366]:
-                          - paragraph [ref=e367]: Critical window to convert
-                          - generic [ref=e368]:
-                            - text: Send extension offer
-                            - img [ref=e369]
-                  - button "ABB trial expires in 2 days Critical window to convert Send extension offer" [ref=e371] [cursor=pointer]:
-                    - generic [ref=e372]:
-                      - img [ref=e374]
-                      - generic [ref=e376]:
-                        - paragraph [ref=e377]: ABB trial expires in 2 days
-                        - generic [ref=e378]:
-                          - paragraph [ref=e379]: Critical window to convert
-                          - generic [ref=e380]:
-                            - text: Send extension offer
-                            - img [ref=e381]
-                  - button "Emami trial expires in 2 days Critical window to convert Send extension offer" [ref=e383] [cursor=pointer]:
-                    - generic [ref=e384]:
-                      - img [ref=e386]
-                      - generic [ref=e388]:
-                        - paragraph [ref=e389]: Emami trial expires in 2 days
-                        - generic [ref=e390]:
-                          - paragraph [ref=e391]: Critical window to convert
-                          - generic [ref=e392]:
-                            - text: Send extension offer
-                            - img [ref=e393]
-                  - button "Mérieux NutriSciences trial expires in 2 days Critical window to convert Send extension offer" [ref=e395] [cursor=pointer]:
-                    - generic [ref=e396]:
-                      - img [ref=e398]
-                      - generic [ref=e400]:
-                        - paragraph [ref=e401]: Mérieux NutriSciences trial expires in 2 days
-                        - generic [ref=e402]:
-                          - paragraph [ref=e403]: Critical window to convert
-                          - generic [ref=e404]:
-                            - text: Send extension offer
-                            - img [ref=e405]
-                  - button "Synarchy trial expires in 0 days Critical window to convert Send extension offer" [ref=e407] [cursor=pointer]:
-                    - generic [ref=e408]:
-                      - img [ref=e410]
-                      - generic [ref=e412]:
-                        - paragraph [ref=e413]: Synarchy trial expires in 0 days
-                        - generic [ref=e414]:
-                          - paragraph [ref=e415]: Critical window to convert
-                          - generic [ref=e416]:
-                            - text: Send extension offer
-                            - img [ref=e417]
-                - paragraph [ref=e420]: "\"Focus is more about saying no to the good ideas than saying yes to the great ones\""
-            - generic [ref=e421]:
-              - generic [ref=e422]:
-                - generic [ref=e423]:
-                  - button "My Todos" [ref=e424] [cursor=pointer]
-                  - button "Mentioned" [ref=e425] [cursor=pointer]:
-                    - generic [ref=e426]:
-                      - img [ref=e427]
-                      - generic [ref=e430]: Mentioned
-                - button [ref=e431] [cursor=pointer]:
-                  - img [ref=e432]
-              - generic [ref=e433]:
-                - generic [ref=e434]:
-                  - button [ref=e435] [cursor=pointer]:
-                    - img [ref=e436]
-                  - generic [ref=e438]:
-                    - generic [ref=e439]:
-                      - paragraph [ref=e440]: "@abin.zacharia is a hardworking guy"
-                      - generic [ref=e441]: task
-                    - generic [ref=e442]:
-                      - generic [ref=e443]:
-                        - img [ref=e444]
-                        - generic [ref=e446]: Nov 11
-                      - img [ref=e448]
-                  - button [ref=e450] [cursor=pointer]:
-                    - img [ref=e451]
-                - generic [ref=e454]:
-                  - button [ref=e455] [cursor=pointer]:
-                    - img [ref=e456]
-                  - generic [ref=e458]:
-                    - generic [ref=e459]:
-                      - paragraph [ref=e460]: "@adi After several iterations, we finally have a working dashboard for tracking myRA activity."
-                      - generic [ref=e461]: task
-                    - generic [ref=e462]:
-                      - generic [ref=e463]:
-                        - img [ref=e464]
-                        - generic [ref=e466]: Nov 11
-                      - img [ref=e468]
-                  - button [ref=e470] [cursor=pointer]:
-                    - img [ref=e471]
-                - generic [ref=e474]:
-                  - button [ref=e475] [cursor=pointer]:
-                    - img [ref=e476]
-                  - generic [ref=e478]:
-                    - generic [ref=e479]:
-                      - paragraph [ref=e480]: I need to be ready for V2
-                      - generic [ref=e481]: task
-                    - generic [ref=e482]:
-                      - generic [ref=e483]:
-                        - img [ref=e484]
-                        - generic [ref=e486]: Nov 12
-                      - img [ref=e488]
-                  - button [ref=e490] [cursor=pointer]:
-                    - img [ref=e491]
-                - generic [ref=e494]:
-                  - button [ref=e495] [cursor=pointer]:
-                    - img [ref=e496]
-                  - generic [ref=e498]:
-                    - generic [ref=e499]:
-                      - paragraph [ref=e500]: "🎯 Demo: Follow up with Emami about trial feedback @sudeshana"
-                      - generic [ref=e501]: follow up
-                    - generic [ref=e502]:
-                      - generic [ref=e503]:
-                        - img [ref=e504]
-                        - generic [ref=e506]: Nov 14
-                      - img [ref=e508]
-                  - button [ref=e510] [cursor=pointer]:
-                    - img [ref=e511]
-            - generic [ref=e514]:
-              - generic [ref=e515]:
-                - img [ref=e517]
-                - heading "Insights" [level=2] [ref=e519]
-              - button "12 trials end within 7 days Check trial status →" [ref=e521] [cursor=pointer]:
-                - paragraph [ref=e522]: 12 trials end within 7 days
-                - paragraph [ref=e523]: Check trial status →
-    - button "Give feedback" [ref=e524] [cursor=pointer]:
-      - img [ref=e525]
-    - button "Open support chat" [ref=e527] [cursor=pointer]:
-      - img [ref=e528]
-  - button "Open Next.js Dev Tools" [ref=e536] [cursor=pointer]:
-    - img [ref=e537]
-  - alert [ref=e540]
+                  - heading "Your Impact" [level=2] [ref=e270]
+                - generic [ref=e271]:
+                  - generic [ref=e272]:
+                    - generic [ref=e273]: —
+                    - generic [ref=e274]: Active
+                  - generic [ref=e275]:
+                    - generic [ref=e276]: —
+                    - generic [ref=e277]: Closed
+                  - generic [ref=e278]:
+                    - generic [ref=e279]: —
+                    - generic [ref=e280]: Urgent
+                - generic [ref=e282]:
+                  - img [ref=e283]
+                  - generic [ref=e285]:
+                    - paragraph [ref=e286]: "\"Leverage is a force multiplier for your judgment.\""
+                    - paragraph [ref=e287]: — Naval
+              - generic [ref=e288]:
+                - generic [ref=e289]:
+                  - generic [ref=e290]:
+                    - img [ref=e291]
+                    - heading "What Needs Attention" [level=2] [ref=e293]
+                  - generic [ref=e294]: Priority Focus
+                - generic [ref=e295]:
+                  - img [ref=e296]
+                  - paragraph [ref=e299]: All caught up!
+                  - paragraph [ref=e300]: "\"The best work happens in the margins\""
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - generic [ref=e303]:
+                  - button "My Todos" [ref=e304] [cursor=pointer]
+                  - button "Mentioned" [ref=e305] [cursor=pointer]:
+                    - generic [ref=e306]:
+                      - img [ref=e307]
+                      - generic [ref=e310]: Mentioned
+                - button [ref=e311] [cursor=pointer]:
+                  - img [ref=e312]
+              - generic [ref=e313]:
+                - generic [ref=e314]:
+                  - button [ref=e315] [cursor=pointer]:
+                    - img [ref=e316]
+                  - generic [ref=e318]:
+                    - generic [ref=e319]:
+                      - paragraph [ref=e320]: "@abin.zacharia is a hardworking guy"
+                      - generic [ref=e321]: task
+                    - generic [ref=e322]:
+                      - generic [ref=e323]:
+                        - img [ref=e324]
+                        - generic [ref=e326]: Nov 11
+                      - img [ref=e328]
+                  - button [ref=e330] [cursor=pointer]:
+                    - img [ref=e331]
+                - generic [ref=e334]:
+                  - button [ref=e335] [cursor=pointer]:
+                    - img [ref=e336]
+                  - generic [ref=e338]:
+                    - generic [ref=e339]:
+                      - paragraph [ref=e340]: "@adi After several iterations, we finally have a working dashboard for tracking myRA activity."
+                      - generic [ref=e341]: task
+                    - generic [ref=e342]:
+                      - generic [ref=e343]:
+                        - img [ref=e344]
+                        - generic [ref=e346]: Nov 11
+                      - img [ref=e348]
+                  - button [ref=e350] [cursor=pointer]:
+                    - img [ref=e351]
+                - generic [ref=e354]:
+                  - button [ref=e355] [cursor=pointer]:
+                    - img [ref=e356]
+                  - generic [ref=e358]:
+                    - generic [ref=e359]:
+                      - paragraph [ref=e360]: I need to be ready for V2
+                      - generic [ref=e361]: task
+                    - generic [ref=e362]:
+                      - generic [ref=e363]:
+                        - img [ref=e364]
+                        - generic [ref=e366]: Nov 12
+                      - img [ref=e368]
+                  - button [ref=e370] [cursor=pointer]:
+                    - img [ref=e371]
+                - generic [ref=e374]:
+                  - button [ref=e375] [cursor=pointer]:
+                    - img [ref=e376]
+                  - generic [ref=e378]:
+                    - generic [ref=e379]:
+                      - paragraph [ref=e380]: "🎯 Demo: Follow up with Emami about trial feedback @sudeshana"
+                      - generic [ref=e381]: follow up
+                    - generic [ref=e382]:
+                      - generic [ref=e383]:
+                        - img [ref=e384]
+                        - generic [ref=e386]: Nov 14
+                      - img [ref=e388]
+                  - button [ref=e390] [cursor=pointer]:
+                    - img [ref=e391]
+            - generic [ref=e394]:
+              - generic [ref=e395]:
+                - img [ref=e397]
+                - heading "Insights" [level=2] [ref=e399]
+              - generic [ref=e401]:
+                - paragraph [ref=e402]: All systems nominal
+                - paragraph [ref=e403]: "\"Compounding works. Keep going.\""
+    - button "Give feedback" [ref=e404] [cursor=pointer]:
+      - img [ref=e405]
+    - button "Open support chat" [ref=e407] [cursor=pointer]:
+      - img [ref=e408]
+  - generic [ref=e415] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e416]:
+      - img [ref=e417]
+    - generic [ref=e420]:
+      - button "Open issues overlay" [ref=e421]:
+        - generic [ref=e422]:
+          - generic [ref=e423]: "4"
+          - generic [ref=e424]: "5"
+        - generic [ref=e425]:
+          - text: Issue
+          - generic [ref=e426]: s
+      - button "Collapse issues badge" [ref=e427]:
+        - img [ref=e428]
+  - alert [ref=e430]
 ```

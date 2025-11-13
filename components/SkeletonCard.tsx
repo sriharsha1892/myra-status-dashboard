@@ -1,103 +1,65 @@
-export default function SkeletonCard() {
+import { Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+const loadingQuotes = [
+  "Building momentum...",
+  "Shipping fast...",
+  "Scaling up...",
+  "0 to 1 in progress...",
+  "Growth mode activated...",
+  "Execution in motion...",
+];
+
+export function SkeletonCard() {
+  const [quote, setQuote] = useState(loadingQuotes[0]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQuote(loadingQuotes[Math.floor(Math.random() * loadingQuotes.length)]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div
-      style={{
-        padding: '20px',
-        borderRadius: '12px',
-        background: 'rgba(255, 255, 255, 0.03)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(10px)',
-        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-      }}
-    >
-      {/* Provider header skeleton */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-        <div style={{ flex: 1 }}>
-          {/* Provider name */}
-          <div
-            style={{
-              height: '20px',
-              width: '120px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '4px',
-              marginBottom: '8px',
-            }}
-          />
-          {/* Status text */}
-          <div
-            style={{
-              height: '14px',
-              width: '100px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
-        {/* Status badge */}
-        <div
-          style={{
-            height: '24px',
-            width: '80px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
-          }}
-        />
-      </div>
+    <div className="relative rounded-2xl overflow-hidden backdrop-blur-sm border border-gray-200/50 shadow-lg bg-white/80 p-6 min-h-[320px]">
+      {/* Shimmer effect */}
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-blue-50/50 to-transparent" />
 
-      {/* Uptime skeleton */}
-      <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div
-            style={{
-              height: '12px',
-              width: '80px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '4px',
-            }}
-          />
-          <div
-            style={{
-              height: '16px',
-              width: '50px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '4px',
-            }}
-          />
+      {/* Icon placeholder */}
+      <div className="flex items-start gap-3.5 mb-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 via-blue-50 to-gray-100 animate-pulse flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-blue-400/50 animate-pulse" />
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '75%' }} />
+          <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '50%' }} />
         </div>
       </div>
 
-      {/* Services monitored skeleton */}
-      <div style={{ marginTop: '12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div
-            style={{
-              height: '12px',
-              width: '100px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '4px',
-            }}
-          />
-          <div
-            style={{
-              height: '16px',
-              width: '30px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '4px',
-            }}
-          />
-        </div>
+      {/* Content placeholders */}
+      <div className="space-y-3 mb-6">
+        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" />
+        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '90%' }} />
+        <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded animate-pulse" style={{ width: '65%' }} />
       </div>
 
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-      `}</style>
+      {/* Stats placeholders */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="h-16 bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 rounded-lg animate-pulse" />
+        <div className="h-16 bg-gradient-to-r from-gray-100 via-blue-50 to-gray-100 rounded-lg animate-pulse" />
+      </div>
+
+      {/* Button placeholder */}
+      <div className="pt-4 border-t border-gray-200">
+        <div className="h-10 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-xl animate-pulse" />
+      </div>
+
+      {/* Loading quote at bottom */}
+      <div className="absolute bottom-3 left-6 right-6">
+        <p className="text-xs text-blue-600/70 italic animate-pulse transition-opacity duration-500">
+          {quote}
+        </p>
+      </div>
     </div>
   );
 }

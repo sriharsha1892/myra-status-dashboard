@@ -14,6 +14,7 @@ import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
 import PersonalImpactWidget from '@/components/support/PersonalImpactWidget';
 import PasswordReminderBanner from '@/components/PasswordReminderBanner';
+import { OnboardingChecklist } from '@/components/OnboardingChecklist';
 import { MagneticCard } from '@/components/animations/MagneticCard';
 import { HolographicOverlay } from '@/components/animations/HolographicOverlay';
 import { ChromaticShift } from '@/components/animations/ChromaticShift';
@@ -553,6 +554,9 @@ export default function EnterpriseCommandCenter() {
             <div className="lg:col-span-1 space-y-4">
               {/* Personal Impact & Activity Feed - Always visible */}
               <PersonalImpactWidget userId={user?.id} role={role} />
+
+              {/* Onboarding Checklist */}
+              <OnboardingChecklist />
 
               {/* Todos Widget - Always visible */}
               <TodosWidget userId={user?.id} />

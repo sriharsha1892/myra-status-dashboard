@@ -181,7 +181,7 @@
                 - generic [ref=e282]:
                   - img [ref=e283]
                   - generic [ref=e285]:
-                    - paragraph [ref=e286]: "\"Leverage is a force multiplier for your judgment.\""
+                    - paragraph [ref=e286]: "\"Specific knowledge is found by pursuing your genuine curiosity.\""
                     - paragraph [ref=e287]: — Naval
               - generic [ref=e288]:
                 - generic [ref=e289]:

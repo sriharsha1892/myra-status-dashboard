@@ -33,262 +33,140 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - generic [ref=e86]:
-        - generic [ref=e87]:
-          - generic [ref=e88]:
-            - generic [ref=e89]:
-              - heading "Active Filters" [level=3] [ref=e90]
-              - generic [ref=e91]: No filters applied - showing all trials
-            - generic [ref=e92]:
-              - generic [ref=e93]:
-                - button "All" [ref=e94] [cursor=pointer]
-                - button "My Portfolio" [ref=e95] [cursor=pointer]
-              - button "Filters" [ref=e96] [cursor=pointer]:
-                - img [ref=e97]
-                - generic [ref=e99]: Filters
-          - generic [ref=e101]: No filters applied - showing all trials
-        - generic [ref=e102]:
-          - generic [ref=e103] [cursor=pointer]:
-            - generic [ref=e105]:
-              - img [ref=e107]
-              - generic [ref=e111]: Trials
-            - generic [ref=e112]: "39"
-            - generic [ref=e113]: 30 active trials
-            - generic [ref=e115]:
-              - img [ref=e116]
-              - generic [ref=e119]: +12%
-              - generic [ref=e120]: vs last week
-          - generic [ref=e121] [cursor=pointer]:
-            - generic [ref=e123]:
-              - img [ref=e125]
-              - generic [ref=e130]: Users
-            - generic [ref=e131]: "52"
-            - generic [ref=e132]: 13 active users
-            - generic [ref=e134]:
-              - img [ref=e135]
-              - generic [ref=e138]: +8%
-              - generic [ref=e139]: vs last week
-          - generic [ref=e140] [cursor=pointer]:
-            - generic [ref=e142]:
-              - img [ref=e144]
-              - generic [ref=e146]: Engagement
-            - generic [ref=e147]: 22.6%
-            - generic [ref=e148]: Avg across trials
-            - generic [ref=e150]:
-              - img [ref=e151]
-              - generic [ref=e154]: "-3%"
-              - generic [ref=e155]: vs last week
-          - generic [ref=e156] [cursor=pointer]:
-            - generic [ref=e158]:
-              - img [ref=e160]
-              - generic [ref=e163]: Conversion
-            - generic [ref=e164]: 0.0%
-            - generic [ref=e165]: Trial to customer
-            - generic [ref=e167]:
-              - img [ref=e168]
-              - generic [ref=e171]: +5%
-              - generic [ref=e172]: vs last week
-        - generic [ref=e173]:
-          - generic [ref=e174]:
-            - generic [ref=e175]:
-              - generic [ref=e176]:
-                - heading "Platform Growth Timeline" [level=3] [ref=e177]
-                - paragraph [ref=e178]: Track platform growth with key metrics over time
-              - generic [ref=e179]:
-                - button "7D" [ref=e180] [cursor=pointer]
-                - button "14D" [ref=e181] [cursor=pointer]
-                - button "30D" [ref=e182] [cursor=pointer]
-            - generic [ref=e184]:
-              - application [ref=e185]:
-                - generic [ref=e189]:
-                  - generic [ref=e191]: Oct 30
-                  - generic [ref=e193]: Oct 31
-                  - generic [ref=e195]: Nov 01
-                  - generic [ref=e197]: Nov 02
-                  - generic [ref=e199]: Nov 03
-                  - generic [ref=e201]: Nov 04
-                  - generic [ref=e203]: Nov 05
-                  - generic [ref=e205]: Nov 06
-                  - generic [ref=e207]: Nov 07
-                  - generic [ref=e209]: Nov 08
-                  - generic [ref=e211]: Nov 09
-                  - generic [ref=e213]: Nov 10
-                  - generic [ref=e215]: Nov 11
-                  - generic [ref=e217]: Nov 12
-                  - generic [ref=e219]: Nov 13
-                - generic [ref=e221]:
-                  - generic [ref=e223]: "0"
-                  - generic [ref=e225]: "15"
-                  - generic [ref=e227]: "30"
-                  - generic [ref=e229]: "45"
-                  - generic [ref=e231]: "60"
-              - list [ref=e239]:
-                - listitem [ref=e240]:
-                  - img "Active Users legend icon" [ref=e241]
-                  - text: Active Users
-                - listitem [ref=e243]:
-                  - img "Trials legend icon" [ref=e244]
-                  - text: Trials
-                - listitem [ref=e246]:
-                  - img "Users legend icon" [ref=e247]
-                  - text: Users
-          - generic [ref=e249]:
-            - generic [ref=e250]:
-              - generic [ref=e251]:
-                - heading "Engagement Levels" [level=3] [ref=e252]
-                - paragraph [ref=e253]: Organizations by engagement range
-              - application [ref=e256]:
-                - generic [ref=e260]:
-                  - generic [ref=e262]: "0"
-                  - generic [ref=e264]: "8"
-                  - generic [ref=e266]: "16"
-                  - generic [ref=e268]: "24"
-                  - generic [ref=e270]: "32"
-                - generic [ref=e272]:
-                  - generic [ref=e274]: 0-20%
-                  - generic [ref=e276]: 20-40%
-                  - generic [ref=e278]: 40-60%
-                  - generic [ref=e280]: 60-80%
-                  - generic [ref=e282]: 80-100%
-            - generic [ref=e294]:
-              - generic [ref=e295]:
-                - heading "Conversion Funnel" [level=3] [ref=e296]
-                - paragraph [ref=e297]: Pipeline stage progression
-              - application [ref=e300]:
-                - generic [ref=e304]:
-                  - generic [ref=e306]: Prospect
-                  - generic [ref=e308]: Demo
-                  - generic [ref=e310]: Trial
-                  - generic [ref=e312]: Converted
-                - generic [ref=e314]:
-                  - generic [ref=e316]: "0"
-                  - generic [ref=e318]: "8"
-                  - generic [ref=e320]: "16"
-                  - generic [ref=e322]: "24"
-                  - generic [ref=e324]: "32"
-          - generic [ref=e330]:
-            - generic [ref=e331]:
-              - generic [ref=e332]:
-                - heading "Domain Split" [level=3] [ref=e333]
-                - paragraph [ref=e334]: Trials by industry vertical
-              - application [ref=e337]:
-                - generic [ref=e352]:
-                  - generic [ref=e354]: TMT 20%
-                  - generic [ref=e356]: NEO 3%
-                  - generic [ref=e358]: AF&B 37%
-                  - generic [ref=e360]: E&C 23%
-                  - generic [ref=e362]: HC 10%
-                  - generic [ref=e364]: AAD 7%
-            - generic [ref=e365]:
-              - generic [ref=e366]:
-                - heading "Support Activity Timeline" [level=3] [ref=e367]
-                - paragraph [ref=e368]: Daily ticket creation by priority over last 30 days
-              - generic [ref=e369]:
-                - img [ref=e371]
-                - heading "Support Activity Timeline" [level=3] [ref=e373]
-                - paragraph [ref=e374]: No support tickets created in the last 30 days
-          - generic [ref=e375]:
-            - generic [ref=e376]:
-              - heading "Trial Success Journey" [level=3] [ref=e377]
-              - paragraph [ref=e378]: Domain → Engagement Level → Account Manager → Outcome
-            - img [ref=e380]:
-              - generic [ref=e382]:
-                - generic: E&C
-                - generic: AF&B
-                - generic: TMT
-                - generic: AAD
-                - generic: N/A
-                - generic: HC
-                - generic: NEO
-                - generic: acme.com
-                - generic: techstart.io
-                - generic: globalent.com
-                - generic: innovationlabs.ai
-                - generic: dataviz.co
-                - generic: High Engagement (>60%)
-                - generic: Medium Engagement (30-60%)
-                - generic: Low Engagement (<30%)
-                - generic: Unknown Manager
-                - generic: Unassigned
-                - generic: Converted
-                - generic: At Risk
-                - generic: Active & Healthy
-                - generic: Lost
-                - generic [ref=e426]:
-                  - generic [ref=e427]:
-                    - generic: E&C
-                  - generic [ref=e429]:
-                    - generic: AF&B
-                  - generic [ref=e431]:
-                    - generic: TMT
-                  - generic [ref=e433]:
-                    - generic: AAD
-                  - generic [ref=e435]:
-                    - generic: N/A
-                  - generic [ref=e437]:
-                    - generic: HC
-                  - generic [ref=e439]:
-                    - generic: NEO
-                  - generic [ref=e441]:
-                    - generic: acme.com
-                  - generic [ref=e443]:
-                    - generic: techstart.io
-                  - generic [ref=e445]:
-                    - generic: globalent.com
-                  - generic [ref=e447]:
-                    - generic: innovationlabs.ai
-                  - generic [ref=e449]:
-                    - generic: dataviz.co
-                  - generic [ref=e451]:
-                    - generic: High Engagement (>60%)
-                  - generic [ref=e453]:
-                    - generic: Medium Engagement (30-60%)
-                  - generic [ref=e455]:
-                    - generic: Low Engagement (<30%)
-                  - generic [ref=e457]:
-                    - generic: Unknown Manager
-                  - generic [ref=e459]:
-                    - generic: Unassigned
-                  - generic [ref=e461]:
-                    - generic: Converted
-                  - generic [ref=e463]:
-                    - generic: At Risk
-                  - generic [ref=e465]:
-                    - generic: Active & Healthy
-                  - generic [ref=e467]:
-                    - generic: Lost
-    - button "Give feedback" [ref=e469] [cursor=pointer]:
-      - img [ref=e470]
-    - button "Open support chat" [ref=e472] [cursor=pointer]:
-      - img [ref=e473]
-  - button "Open Next.js Dev Tools" [ref=e481] [cursor=pointer]:
-    - img [ref=e482]
-  - alert [ref=e485]
-  - generic [ref=e486]: Prospect
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - generic [ref=e72]:
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - heading "Active Filters" [level=3] [ref=e76]
+              - generic [ref=e77]: No filters applied - showing all trials
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - button "All" [ref=e80] [cursor=pointer]
+                - button "My Portfolio" [ref=e81] [cursor=pointer]
+              - button "Filters" [ref=e82] [cursor=pointer]:
+                - img [ref=e83]
+                - generic [ref=e85]: Filters
+          - generic [ref=e87]: No filters applied - showing all trials
+        - generic [ref=e88]:
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e91]:
+              - img [ref=e93]
+              - generic [ref=e97]: Trials
+            - generic [ref=e98]: "0"
+            - generic [ref=e99]: 0 active trials
+            - generic [ref=e101]:
+              - img [ref=e102]
+              - generic [ref=e105]: +12%
+              - generic [ref=e106]: vs last week
+          - generic [ref=e107] [cursor=pointer]:
+            - generic [ref=e109]:
+              - img [ref=e111]
+              - generic [ref=e116]: Users
+            - generic [ref=e117]: "0"
+            - generic [ref=e118]: 0 active users
+            - generic [ref=e120]:
+              - img [ref=e121]
+              - generic [ref=e124]: +8%
+              - generic [ref=e125]: vs last week
+          - generic [ref=e126] [cursor=pointer]:
+            - generic [ref=e128]:
+              - img [ref=e130]
+              - generic [ref=e132]: Engagement
+            - generic [ref=e133]: 0.0%
+            - generic [ref=e134]: Avg across trials
+            - generic [ref=e136]:
+              - img [ref=e137]
+              - generic [ref=e140]: "-3%"
+              - generic [ref=e141]: vs last week
+          - generic [ref=e142] [cursor=pointer]:
+            - generic [ref=e144]:
+              - img [ref=e146]
+              - generic [ref=e149]: Conversion
+            - generic [ref=e150]: 0.0%
+            - generic [ref=e151]: Trial to customer
+            - generic [ref=e153]:
+              - img [ref=e154]
+              - generic [ref=e157]: +5%
+              - generic [ref=e158]: vs last week
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - heading "Platform Growth Timeline" [level=3] [ref=e162]
+              - paragraph [ref=e163]: Track platform growth with key metrics over time
+            - generic [ref=e164]:
+              - img [ref=e165]
+              - paragraph [ref=e167]: Timeline warming up...
+              - paragraph [ref=e168]: Activity data will appear as trials progress over time
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - heading "Engagement Levels" [level=3] [ref=e172]
+                - paragraph [ref=e173]: Organizations by engagement range
+              - generic [ref=e174]:
+                - img [ref=e176]
+                - heading "Engagement Levels" [level=3] [ref=e180]
+                - paragraph [ref=e181]: No trial organizations yet
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - heading "Conversion Funnel" [level=3] [ref=e184]
+                - paragraph [ref=e185]: Pipeline stage progression
+              - generic [ref=e186]:
+                - img [ref=e188]
+                - heading "Conversion Funnel" [level=3] [ref=e191]
+                - paragraph [ref=e192]: No organizations in the pipeline yet
+          - generic [ref=e193]:
+            - generic [ref=e194]:
+              - generic [ref=e195]:
+                - heading "Domain Split" [level=3] [ref=e196]
+                - paragraph [ref=e197]: Trials by industry vertical
+              - generic [ref=e198]:
+                - img [ref=e200]
+                - heading "Domain Split" [level=3] [ref=e204]
+                - paragraph [ref=e205]: No domains assigned to trials yet
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - heading "Support Activity Timeline" [level=3] [ref=e208]
+                - paragraph [ref=e209]: Daily ticket creation by priority over last 30 days
+              - generic [ref=e210]:
+                - img [ref=e212]
+                - heading "Support Activity Timeline" [level=3] [ref=e214]
+                - paragraph [ref=e215]: No support tickets created in the last 30 days
+          - generic [ref=e216]:
+            - generic [ref=e217]:
+              - heading "Trial Success Journey" [level=3] [ref=e218]
+              - paragraph [ref=e219]: Domain → Engagement Level → Account Manager → Outcome
+            - generic [ref=e220]:
+              - img [ref=e222]
+              - heading "Trial Success Journey" [level=3] [ref=e225]
+              - paragraph [ref=e226]: Flow analysis requires multiple trials across domains
+    - button "Give feedback" [ref=e227] [cursor=pointer]:
+      - img [ref=e228]
+    - button "Open support chat" [ref=e230] [cursor=pointer]:
+      - img [ref=e231]
+  - generic [ref=e238] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e239]:
+      - img [ref=e240]
+    - generic [ref=e243]:
+      - button "Open issues overlay" [ref=e244]:
+        - generic [ref=e245]:
+          - generic [ref=e246]: "0"
+          - generic [ref=e247]: "1"
+        - generic [ref=e248]: Issue
+      - button "Collapse issues badge" [ref=e249]:
+        - img [ref=e250]
+  - alert [ref=e252]
 ```

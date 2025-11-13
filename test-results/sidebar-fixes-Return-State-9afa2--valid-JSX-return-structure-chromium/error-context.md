@@ -33,209 +33,199 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - main [ref=e86]:
-        - generic [ref=e87]:
-          - navigation [ref=e88]:
-            - link "Dashboard" [ref=e89] [cursor=pointer]:
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - main [ref=e72]:
+        - generic [ref=e73]:
+          - navigation [ref=e74]:
+            - link "Dashboard" [ref=e75] [cursor=pointer]:
               - /url: /support/dashboard
-              - img [ref=e90]
-            - generic [ref=e93]:
-              - img [ref=e94]
-              - link "Dashboard" [ref=e96] [cursor=pointer]:
+              - img [ref=e76]
+            - generic [ref=e79]:
+              - img [ref=e80]
+              - link "Dashboard" [ref=e82] [cursor=pointer]:
                 - /url: /support/dashboard
-            - generic [ref=e97]:
-              - img [ref=e98]
-              - generic [ref=e100]: User Management
-          - generic [ref=e101]:
-            - generic [ref=e102]:
-              - heading "User Management" [level=2] [ref=e103]
-              - paragraph [ref=e104]: Manage team access and permissions
-            - generic [ref=e105]:
-              - combobox [ref=e106]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - generic [ref=e86]: User Management
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - heading "User Management" [level=2] [ref=e89]
+              - paragraph [ref=e90]: Manage team access and permissions
+            - generic [ref=e91]:
+              - combobox [ref=e92]:
                 - option "All Companies" [selected]
                 - option "MI - Mordor Intelligence"
                 - option "GMI"
-              - generic [ref=e107]:
-                - textbox "Search users..." [ref=e108]
-                - img [ref=e109]
-              - button "Add User" [ref=e111] [cursor=pointer]:
-                - img [ref=e112]
+              - generic [ref=e93]:
+                - textbox "Search users..." [ref=e94]
+                - img [ref=e95]
+              - button "Add User" [ref=e97] [cursor=pointer]:
+                - img [ref=e98]
                 - text: Add User
-        - generic [ref=e114]:
-          - generic [ref=e115]:
-            - generic [ref=e118]:
-              - generic [ref=e119]:
-                - paragraph [ref=e120]: Total Users
-                - paragraph [ref=e121]: "4"
-              - img [ref=e123]
-            - generic [ref=e127]:
-              - generic [ref=e128]:
-                - paragraph [ref=e129]: Active Users
-                - paragraph [ref=e130]: "4"
-              - img [ref=e132]
-            - generic [ref=e136]:
-              - generic [ref=e137]:
-                - paragraph [ref=e138]: Administrators
-                - paragraph [ref=e139]: "3"
-              - img [ref=e141]
-            - generic [ref=e145]:
-              - generic [ref=e146]:
-                - paragraph [ref=e147]: Prodgain Users
-                - paragraph [ref=e148]: "0"
-              - img [ref=e150]
-          - table [ref=e154]:
-            - rowgroup [ref=e155]:
-              - row "User Company Role Status Last Active Actions" [ref=e156]:
-                - cell "User" [ref=e157]
-                - cell "Company" [ref=e158]
-                - cell "Role" [ref=e159]
-                - cell "Status" [ref=e160]
-                - cell "Last Active" [ref=e161]
-                - cell "Actions" [ref=e162]
-            - rowgroup [ref=e163]:
-              - row "S Satyananth satyananth@mordorintelligence.com MI Account Manager Active 31 minutes ago Delete" [ref=e164]:
-                - cell "S Satyananth satyananth@mordorintelligence.com" [ref=e165]:
-                  - generic [ref=e166]:
-                    - generic [ref=e167]: S
-                    - generic [ref=e168]:
-                      - generic [ref=e170]: Satyananth
-                      - generic [ref=e171]: satyananth@mordorintelligence.com
-                - cell "MI" [ref=e172]:
-                  - generic "Mordor Intelligence" [ref=e173]:
-                    - img [ref=e174]
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - paragraph [ref=e106]: Total Users
+                - paragraph [ref=e107]: "5"
+              - img [ref=e109]
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - paragraph [ref=e115]: Active Users
+                - paragraph [ref=e116]: "5"
+              - img [ref=e118]
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - paragraph [ref=e124]: Administrators
+                - paragraph [ref=e125]: "3"
+              - img [ref=e127]
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - paragraph [ref=e133]: Prodgain Users
+                - paragraph [ref=e134]: "0"
+              - img [ref=e136]
+          - table [ref=e140]:
+            - rowgroup [ref=e141]:
+              - row "User Company Role Status Last Active Actions" [ref=e142]:
+                - cell "User" [ref=e143]
+                - cell "Company" [ref=e144]
+                - cell "Role" [ref=e145]
+                - cell "Status" [ref=e146]
+                - cell "Last Active" [ref=e147]
+                - cell "Actions" [ref=e148]
+            - rowgroup [ref=e149]:
+              - row "T test-am test-am@myra.ai MI Admin Active Never Delete" [ref=e150]:
+                - cell "T test-am test-am@myra.ai" [ref=e151]:
+                  - generic [ref=e152]:
+                    - generic [ref=e153]: T
+                    - generic [ref=e154]:
+                      - generic [ref=e156]: test-am
+                      - generic [ref=e157]: test-am@myra.ai
+                - cell "MI" [ref=e158]:
+                  - generic "Mordor Intelligence" [ref=e159]:
+                    - img [ref=e160]
                     - text: MI
-                - cell "Account Manager" [ref=e176]:
-                  - combobox [ref=e177]:
+                - cell "Admin" [ref=e162]:
+                  - combobox [ref=e163]:
+                    - option "Admin" [selected]
+                    - option "Account Manager"
+                - cell "Active" [ref=e164]:
+                  - generic [ref=e165]: Active
+                - cell "Never" [ref=e167]
+                - cell "Delete" [ref=e168]:
+                  - button "Delete" [ref=e169] [cursor=pointer]:
+                    - img [ref=e170]
+                    - text: Delete
+              - row "S Satyananth satyananth@mordorintelligence.com MI Account Manager Active 27 minutes ago Delete" [ref=e172]:
+                - cell "S Satyananth satyananth@mordorintelligence.com" [ref=e173]:
+                  - generic [ref=e174]:
+                    - generic [ref=e175]: S
+                    - generic [ref=e176]:
+                      - generic [ref=e178]: Satyananth
+                      - generic [ref=e179]: satyananth@mordorintelligence.com
+                - cell "MI" [ref=e180]:
+                  - generic "Mordor Intelligence" [ref=e181]:
+                    - img [ref=e182]
+                    - text: MI
+                - cell "Account Manager" [ref=e184]:
+                  - combobox [ref=e185]:
                     - option "Admin"
-                    - option "Sales Admin"
-                    - option "Research Admin"
                     - option "Account Manager" [selected]
-                    - option "Product"
-                    - option "Prodgain User"
-                    - option "Team"
-                - cell "Active" [ref=e178]:
-                  - generic [ref=e179]: Active
-                - cell "31 minutes ago" [ref=e181]
-                - cell "Delete" [ref=e182]:
-                  - button "Delete" [ref=e183] [cursor=pointer]:
-                    - img [ref=e184]
+                - cell "Active" [ref=e186]:
+                  - generic [ref=e187]: Active
+                - cell "27 minutes ago" [ref=e189]
+                - cell "Delete" [ref=e190]:
+                  - button "Delete" [ref=e191] [cursor=pointer]:
+                    - img [ref=e192]
                     - text: Delete
-              - row "S Sriharsha sriharsha@mordorintelligence.com MI Admin Active Never Delete" [ref=e186]:
-                - cell "S Sriharsha sriharsha@mordorintelligence.com" [ref=e187]:
-                  - generic [ref=e188]:
-                    - generic [ref=e189]: S
-                    - generic [ref=e190]:
-                      - generic [ref=e192]: Sriharsha
-                      - generic [ref=e193]: sriharsha@mordorintelligence.com
-                - cell "MI" [ref=e194]:
-                  - generic "Mordor Intelligence" [ref=e195]:
-                    - img [ref=e196]
+              - row "S Sriharsha sriharsha@mordorintelligence.com MI Admin Active Never Delete" [ref=e194]:
+                - cell "S Sriharsha sriharsha@mordorintelligence.com" [ref=e195]:
+                  - generic [ref=e196]:
+                    - generic [ref=e197]: S
+                    - generic [ref=e198]:
+                      - generic [ref=e200]: Sriharsha
+                      - generic [ref=e201]: sriharsha@mordorintelligence.com
+                - cell "MI" [ref=e202]:
+                  - generic "Mordor Intelligence" [ref=e203]:
+                    - img [ref=e204]
                     - text: MI
-                - cell "Admin" [ref=e198]:
-                  - combobox [ref=e199]:
+                - cell "Admin" [ref=e206]:
+                  - combobox [ref=e207]:
                     - option "Admin" [selected]
-                    - option "Sales Admin"
-                    - option "Research Admin"
                     - option "Account Manager"
-                    - option "Product"
-                    - option "Prodgain User"
-                    - option "Team"
-                - cell "Active" [ref=e200]:
-                  - generic [ref=e201]: Active
-                - cell "Never" [ref=e203]
-                - cell "Delete" [ref=e204]:
-                  - button "Delete" [ref=e205] [cursor=pointer]:
-                    - img [ref=e206]
+                - cell "Active" [ref=e208]:
+                  - generic [ref=e209]: Active
+                - cell "Never" [ref=e211]
+                - cell "Delete" [ref=e212]:
+                  - button "Delete" [ref=e213] [cursor=pointer]:
+                    - img [ref=e214]
                     - text: Delete
-              - row "A admin SUPER ADMIN admin@myra.ai MI Admin Active 1 minute ago Delete" [ref=e208]:
-                - cell "A admin SUPER ADMIN admin@myra.ai" [ref=e209]:
-                  - generic [ref=e210]:
-                    - generic [ref=e211]: A
-                    - generic [ref=e212]:
-                      - generic [ref=e213]:
-                        - generic [ref=e214]: admin
-                        - generic [ref=e215]:
-                          - img [ref=e216]
+              - row "A admin SUPER ADMIN admin@myra.ai MI Admin Active 1 minute ago Delete" [ref=e216]:
+                - cell "A admin SUPER ADMIN admin@myra.ai" [ref=e217]:
+                  - generic [ref=e218]:
+                    - generic [ref=e219]: A
+                    - generic [ref=e220]:
+                      - generic [ref=e221]:
+                        - generic [ref=e222]: admin
+                        - generic [ref=e223]:
+                          - img [ref=e224]
                           - text: SUPER ADMIN
-                      - generic [ref=e218]: admin@myra.ai
-                - cell "MI" [ref=e219]:
-                  - generic "Mordor Intelligence" [ref=e220]:
-                    - img [ref=e221]
+                      - generic [ref=e226]: admin@myra.ai
+                - cell "MI" [ref=e227]:
+                  - generic "Mordor Intelligence" [ref=e228]:
+                    - img [ref=e229]
                     - text: MI
-                - cell "Admin" [ref=e223]:
-                  - combobox [ref=e224]:
+                - cell "Admin" [ref=e231]:
+                  - combobox [ref=e232]:
                     - option "Admin" [selected]
-                    - option "Sales Admin"
-                    - option "Research Admin"
                     - option "Account Manager"
-                    - option "Product"
-                    - option "Prodgain User"
-                    - option "Team"
-                - cell "Active" [ref=e225]:
-                  - generic [ref=e226]: Active
-                - cell "1 minute ago" [ref=e228]
-                - cell "Delete" [ref=e229]:
-                  - button "Delete" [ref=e230] [cursor=pointer]:
-                    - img [ref=e231]
+                - cell "Active" [ref=e233]:
+                  - generic [ref=e234]: Active
+                - cell "1 minute ago" [ref=e236]
+                - cell "Delete" [ref=e237]:
+                  - button "Delete" [ref=e238] [cursor=pointer]:
+                    - img [ref=e239]
                     - text: Delete
-              - row "A Admin User admin@test.com MI Admin Active 7 days ago Delete" [ref=e233]:
-                - cell "A Admin User admin@test.com" [ref=e234]:
-                  - generic [ref=e235]:
-                    - generic [ref=e236]: A
-                    - generic [ref=e237]:
-                      - generic [ref=e239]: Admin User
-                      - generic [ref=e240]: admin@test.com
-                - cell "MI" [ref=e241]:
-                  - generic "Mordor Intelligence" [ref=e242]:
-                    - img [ref=e243]
+              - row "A Admin User admin@test.com MI Admin Active 7 days ago Delete" [ref=e241]:
+                - cell "A Admin User admin@test.com" [ref=e242]:
+                  - generic [ref=e243]:
+                    - generic [ref=e244]: A
+                    - generic [ref=e245]:
+                      - generic [ref=e247]: Admin User
+                      - generic [ref=e248]: admin@test.com
+                - cell "MI" [ref=e249]:
+                  - generic "Mordor Intelligence" [ref=e250]:
+                    - img [ref=e251]
                     - text: MI
-                - cell "Admin" [ref=e245]:
-                  - combobox [ref=e246]:
+                - cell "Admin" [ref=e253]:
+                  - combobox [ref=e254]:
                     - option "Admin" [selected]
-                    - option "Sales Admin"
-                    - option "Research Admin"
                     - option "Account Manager"
-                    - option "Product"
-                    - option "Prodgain User"
-                    - option "Team"
-                - cell "Active" [ref=e247]:
-                  - generic [ref=e248]: Active
-                - cell "7 days ago" [ref=e250]
-                - cell "Delete" [ref=e251]:
-                  - button "Delete" [ref=e252] [cursor=pointer]:
-                    - img [ref=e253]
+                - cell "Active" [ref=e255]:
+                  - generic [ref=e256]: Active
+                - cell "7 days ago" [ref=e258]
+                - cell "Delete" [ref=e259]:
+                  - button "Delete" [ref=e260] [cursor=pointer]:
+                    - img [ref=e261]
                     - text: Delete
-    - button "Give feedback" [ref=e255] [cursor=pointer]:
-      - img [ref=e256]
-    - button "Open support chat" [ref=e258] [cursor=pointer]:
-      - img [ref=e259]
-  - button "Open Next.js Dev Tools" [ref=e267] [cursor=pointer]:
-    - img [ref=e268]
-  - alert [ref=e271]
+    - button "Give feedback" [ref=e263] [cursor=pointer]:
+      - img [ref=e264]
+    - button "Open support chat" [ref=e266] [cursor=pointer]:
+      - img [ref=e267]
+  - button "Open Next.js Dev Tools" [ref=e275] [cursor=pointer]:
+    - img [ref=e276]
+  - alert [ref=e279]
 ```

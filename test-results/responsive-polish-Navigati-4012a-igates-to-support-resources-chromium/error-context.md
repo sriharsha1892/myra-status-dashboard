@@ -33,71 +33,70 @@
             - /url: /support/tickets
             - img [ref=e49]
             - generic [ref=e51]: Tickets
-          - link "Users" [ref=e52] [cursor=pointer]:
-            - /url: /support/users
-            - img [ref=e53]
-            - generic [ref=e57]: Users
-          - link "Roadmap" [ref=e58] [cursor=pointer]:
-            - /url: /support/admin/roadmap
-            - img [ref=e59]
-            - generic [ref=e61]: Roadmap
-          - link "Customer Support" [ref=e62] [cursor=pointer]:
-            - /url: /support/admin/customer-support
-            - img [ref=e63]
-            - generic [ref=e65]: Customer Support
-        - generic [ref=e66]:
-          - link "Profile" [ref=e67] [cursor=pointer]:
+        - generic [ref=e52]:
+          - link "Profile" [ref=e53] [cursor=pointer]:
             - /url: /support/profile
-            - img [ref=e68]
-            - generic [ref=e71]: Profile
-          - button "Sign Out" [ref=e72] [cursor=pointer]:
-            - img [ref=e73]
-            - generic [ref=e76]: Sign Out
-      - generic [ref=e79]:
-        - generic [ref=e80]: A
-        - generic [ref=e81]:
-          - paragraph [ref=e82]: admin
-          - paragraph [ref=e83]: Team
-    - main [ref=e84]:
-      - generic [ref=e85]:
-        - generic [ref=e87]:
+            - img [ref=e54]
+            - generic [ref=e57]: Profile
+          - button "Sign Out" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - generic [ref=e62]: Sign Out
+      - generic [ref=e65]:
+        - generic [ref=e66]: A
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: admin
+          - paragraph [ref=e69]: Team
+    - main [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e73]:
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - img [ref=e78]
+              - generic [ref=e80]:
+                - heading "Resources" [level=1] [ref=e81]
+                - paragraph [ref=e82]: Knowledge hub for teams and clients
+            - generic [ref=e83]:
+              - paragraph [ref=e85]: 24 Resources
+              - paragraph [ref=e87]: 12 Discussions
           - generic [ref=e89]:
-            - generic [ref=e90]:
-              - img [ref=e92]
-              - generic [ref=e94]:
-                - heading "Resources" [level=1] [ref=e95]
-                - paragraph [ref=e96]: Knowledge hub for teams and clients
-            - generic [ref=e97]:
-              - paragraph [ref=e99]: 24 Resources
-              - paragraph [ref=e101]: 12 Discussions
-          - generic [ref=e103]:
-            - button "External" [ref=e104] [cursor=pointer]:
-              - img [ref=e105]
-              - generic [ref=e108]: External
-            - button "Internal Team Only" [ref=e109] [cursor=pointer]:
-              - img [ref=e110]
-              - generic [ref=e115]: Internal
-              - generic [ref=e116]: Team Only
-        - generic [ref=e118]:
-          - generic [ref=e120]:
-            - button "Documents" [ref=e121] [cursor=pointer]:
-              - img [ref=e122]
-              - generic [ref=e125]: Documents
-            - button "Discussions" [ref=e126] [cursor=pointer]:
-              - img [ref=e127]
-              - generic [ref=e129]: Discussions
-            - button "Q&A" [ref=e130] [cursor=pointer]:
-              - img [ref=e131]
-              - generic [ref=e134]: Q&A
-          - generic [ref=e137]:
-            - img [ref=e138]
-            - generic [ref=e140]: Loading your secret sauce...
-            - generic [ref=e141]: 🔍 Finding those playbooks
-    - button "Give feedback" [ref=e142] [cursor=pointer]:
-      - img [ref=e143]
-    - button "Open support chat" [ref=e145] [cursor=pointer]:
-      - img [ref=e146]
-  - button "Open Next.js Dev Tools" [ref=e154] [cursor=pointer]:
-    - img [ref=e155]
-  - alert [ref=e158]
+            - button "External" [ref=e90] [cursor=pointer]:
+              - img [ref=e91]
+              - generic [ref=e94]: External
+            - button "Internal Team Only" [ref=e95] [cursor=pointer]:
+              - img [ref=e96]
+              - generic [ref=e101]: Internal
+              - generic [ref=e102]: Team Only
+        - generic [ref=e104]:
+          - generic [ref=e106]:
+            - button "Documents" [ref=e107] [cursor=pointer]:
+              - img [ref=e108]
+              - generic [ref=e111]: Documents
+            - button "Discussions" [ref=e112] [cursor=pointer]:
+              - img [ref=e113]
+              - generic [ref=e115]: Discussions
+            - button "Q&A" [ref=e116] [cursor=pointer]:
+              - img [ref=e117]
+              - generic [ref=e120]: Q&A
+          - generic [ref=e123]:
+            - img [ref=e124]
+            - generic [ref=e126]: Loading your secret sauce...
+            - generic [ref=e127]: 🔍 Finding those playbooks
+    - button "Give feedback" [ref=e128] [cursor=pointer]:
+      - img [ref=e129]
+    - button "Open support chat" [ref=e131] [cursor=pointer]:
+      - img [ref=e132]
+  - generic [ref=e139] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e140]:
+      - img [ref=e141]
+    - generic [ref=e144]:
+      - button "Open issues overlay" [ref=e145]:
+        - generic [ref=e146]:
+          - generic [ref=e147]: "4"
+          - generic [ref=e148]: "5"
+        - generic [ref=e149]:
+          - text: Issue
+          - generic [ref=e150]: s
+      - button "Collapse issues badge" [ref=e151]:
+        - img [ref=e152]
+  - alert [ref=e154]
 ```
