@@ -32,6 +32,7 @@ export default function TrialOrganizationsPage() {
   const { user, loading: authLoading, signOut, role, parent_company, is_super_admin } = useAuth();
   const router = useRouter();
   const [organizations, setOrganizations] = useState<OrgWithUsers[]>([]);
+  const [totalCount, setTotalCount] = useState(0); // Total count for pagination
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<string>('all');
@@ -72,7 +73,7 @@ export default function TrialOrganizationsPage() {
       fetchOrganizations();
       fetchAccountManagers();
     }
-  }, [user]);
+  }, [user, currentPage]); // Re-fetch when page changes
 
   // Update trial end date when start date changes
   useEffect(() => {
@@ -90,13 +91,17 @@ export default function TrialOrganizationsPage() {
   const fetchOrganizations = async () => {
     setLoading(true);
     try {
+      // Calculate range for server-side pagination
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       // Build query with role-based filtering and join trial_users
       let query = supabase
         .from('trial_organizations')
         .select(`
           *,
           trial_users(current_stage)
-        `);
+        `, { count: 'exact' }); // Get total count for pagination
 
       // Account Managers can see all trials in their company (not just assigned ones)
       // No need to filter by account_manager_id
@@ -107,9 +112,14 @@ export default function TrialOrganizationsPage() {
       }
       // If super admin: show all orgs (no company filter)
 
-      const { data: orgs, error } = await query.order('created_at', { ascending: false });
+      const { data: orgs, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to); // SERVER-SIDE PAGINATION
 
       if (error) throw error;
+
+      // Set total count for pagination controls
+      setTotalCount(count || 0);
 
       // Process joined data
       // @ts-ignore - Supabase typing issue with dynamic columns
@@ -177,13 +187,12 @@ export default function TrialOrganizationsPage() {
     return filtered;
   }, [organizations, debouncedSearchQuery, stageFilter, companyFilter]);
 
-  // Memoized pagination
+  // Server-side pagination - just return filtered orgs (already paginated by server)
   const paginatedOrgs = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredOrgs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredOrgs, currentPage]);
+    return filteredOrgs; // No client-side slicing - already paginated by Supabase
+  }, [filteredOrgs]);
 
-  const totalPages = Math.ceil(filteredOrgs.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE); // Use totalCount from server
 
   // Bulk operations handlers
   const handleSelectAll = () => {
@@ -836,7 +845,7 @@ export default function TrialOrganizationsPage() {
                 {totalPages > 1 && (
                   <div className="mt-8 flex items-center justify-between">
                     <div className="text-sm text-gray-600">
-                      Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrgs.length)} of {filteredOrgs.length} organizations
+                      Showing {totalCount > 0 ? ((currentPage - 1) * ITEMS_PER_PAGE) + 1 : 0} to {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} organizations
                     </div>
                     <div className="flex items-center gap-2">
                       <button
