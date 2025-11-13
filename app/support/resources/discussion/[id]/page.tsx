@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import {
-  ArrowLeft, MessageCircle, Pin, Loader2, Send, X
+  ArrowLeft, MessageCircle, Pin, Loader2, Send, X, Trash2
 } from 'lucide-react';
 import VotingButtons from '@/components/resources/VotingButtons';
 import ReplyForm from '@/components/resources/ReplyForm';
@@ -43,15 +43,32 @@ export default function DiscussionDetailPage() {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const supabase = createClient();
 
   useEffect(() => {
+    fetchCurrentUser();
     if (discussionId) {
       fetchDiscussion();
       fetchReplies();
     }
   }, [discussionId]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+
+    // Check if user is admin or super admin
+    if (user) {
+      const role = user.user_metadata?.role?.toLowerCase();
+      const isSuperAdmin = user.user_metadata?.is_super_admin === true;
+      setIsAdmin(role === 'admin' || isSuperAdmin);
+    }
+  };
 
   const fetchDiscussion = async () => {
     try {
@@ -174,6 +191,45 @@ export default function DiscussionDetailPage() {
     toast.success('Reply posted successfully!');
   };
 
+  const handleDeleteDiscussion = async () => {
+    if (!discussionId) return;
+
+    setDeleting(true);
+    try {
+      // Get auth headers
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        toast.error('You must be logged in to delete');
+        return;
+      }
+
+      const response = await fetch(`/api/resources/discussions/${discussionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete discussion');
+      }
+
+      toast.success('Discussion deleted successfully');
+      router.push('/support/resources');
+    } catch (error: any) {
+      console.error('Error deleting discussion:', error);
+      toast.error(error.message || 'Failed to delete discussion');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
@@ -200,6 +256,8 @@ export default function DiscussionDetailPage() {
       </div>
     );
   }
+
+  const isDiscussionAuthor = currentUserId === discussion.author_id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -241,9 +299,22 @@ export default function DiscussionDetailPage() {
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  {discussion.title}
-                </h1>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <h1 className="text-3xl font-bold text-gray-900 flex-1">
+                    {discussion.title}
+                  </h1>
+
+                  {/* Delete Button (author or admin only) */}
+                  {(isDiscussionAuthor || isAdmin) && (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete discussion"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
 
                 {/* Tags */}
                 {discussion.tags && discussion.tags.length > 0 && (
@@ -368,6 +439,54 @@ export default function DiscussionDetailPage() {
             ))
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete Discussion</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to delete this discussion? All replies and reactions will also be permanently deleted.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteDiscussion}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
