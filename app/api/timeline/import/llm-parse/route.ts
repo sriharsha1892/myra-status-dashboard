@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get recent events for duplicate detection context
-    const recentEvents = await getRecentEvents(org_id, 10);
+    const recentEvents = await getRecentEvents(supabaseAdmin, org_id, 10);
 
     // Build parse context
     const context: ParseContext = {

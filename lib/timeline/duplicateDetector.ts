@@ -238,23 +238,27 @@ export function filterDuplicates(
 /**
  * Get recent events for an organization
  * Helper function to fetch events for context display
+ * Now uses direct Supabase query instead of HTTP fetch
  */
 export async function getRecentEvents(
+  supabase: any,
   orgId: string,
   limit: number = 5
 ): Promise<ExistingEvent[]> {
   try {
-    const response = await fetch(
-      `/api/timeline/events?org_id=${orgId}&limit=${limit}&sort=desc`
-    );
+    const { data, error } = await supabase
+      .from('trial_timeline_events')
+      .select('id, event_timestamp, event_type, event_category, title, description')
+      .eq('org_id', orgId)
+      .order('event_timestamp', { ascending: false })
+      .limit(limit);
 
-    if (!response.ok) {
-      console.error('Failed to fetch recent events:', response.statusText);
+    if (error) {
+      console.error('Error fetching recent events:', error);
       return [];
     }
 
-    const data = await response.json();
-    return data.events || [];
+    return data || [];
   } catch (error) {
     console.error('Error fetching recent events:', error);
     return [];
