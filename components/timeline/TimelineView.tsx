@@ -13,8 +13,12 @@ import {
   X,
   ChevronDown,
   SlidersHorizontal,
+  Plus,
+  Sparkles,
+  Info,
 } from 'lucide-react';
 import BulkImportModal from './BulkImportModal';
+import QuickEntryForm from './QuickEntryForm';
 import ListView from './ListView';
 import GroupedView from './GroupedView';
 import CalendarView from './CalendarView';
@@ -34,6 +38,7 @@ interface FilterState {
   severity: string[];
   tags: string[];
   mentioned_people: string[];
+  logged_by: string[];
   follow_up_only: boolean;
   date_from?: string;
   date_to?: string;
@@ -73,7 +78,9 @@ const SEVERITY_OPTIONS = [
 export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAiBanner, setShowAiBanner] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     event_types: [],
     event_categories: [],
@@ -81,14 +88,31 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
     severity: [],
     tags: [],
     mentioned_people: [],
+    logged_by: [],
     follow_up_only: false,
     search: '',
   });
+  const [accountManagers, setAccountManagers] = useState<Array<{id: string; name: string}>>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleImported = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+  // Fetch account managers for filter
+  useEffect(() => {
+    const fetchAccountManagers = async () => {
+      try {
+        const response = await fetch('/api/account-managers');
+        if (!response.ok) return;
+        const data = await response.json();
+        setAccountManagers(data.map((am: any) => ({ id: am.id, name: am.full_name || am.email })));
+      } catch (error) {
+        console.error('Error fetching account managers:', error);
+      }
+    };
+    fetchAccountManagers();
+  }, []);
 
   const toggleFilter = (key: keyof FilterState, value: string) => {
     if (Array.isArray(filters[key])) {
@@ -110,6 +134,7 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
       severity: [],
       tags: [],
       mentioned_people: [],
+      logged_by: [],
       follow_up_only: false,
       search: '',
     });
@@ -119,11 +144,60 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
     filters.event_categories.length > 0 ||
     filters.sentiment.length > 0 ||
     filters.severity.length > 0 ||
+    filters.logged_by.length > 0 ||
     filters.search.length > 0 ||
     filters.follow_up_only;
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
+      {/* AI-Powered Import Banner */}
+      {showAiBanner && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="bg-gradient-to-r from-blue-600 to-slate-600 text-white px-6 py-4"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-lg mb-1">
+                  AI-Powered Timeline Import Now Available
+                </h3>
+                <p className="text-blue-100 text-sm leading-relaxed">
+                  Import your email threads, Teams messages, CRM notes, and meeting summaries in seconds.
+                  Our AI extracts all events automatically with intelligent parsing and duplicate detection.
+                </p>
+                <div className="flex gap-3 mt-3">
+                  <button
+                    onClick={() => setShowBulkImport(true)}
+                    className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 text-sm font-medium"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Try Bulk Import
+                  </button>
+                  <button
+                    onClick={() => setShowQuickEntry(true)}
+                    className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2 text-sm font-medium backdrop-blur-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Quick Entry
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowAiBanner(false)}
+              className="text-white/80 hover:text-white transition-colors p-1"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
@@ -147,17 +221,25 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
               Filters
               {hasActiveFilters && (
                 <span className="px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
-                  {filters.event_categories.length + filters.sentiment.length + filters.severity.length + (filters.follow_up_only ? 1 : 0)}
+                  {filters.event_categories.length + filters.sentiment.length + filters.severity.length + filters.logged_by.length + (filters.follow_up_only ? 1 : 0)}
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setShowBulkImport(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              onClick={() => setShowQuickEntry(true)}
+              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
-              <Upload className="w-4 h-4" />
-              Import Notes
+              <Plus className="w-4 h-4" />
+              Add Entry
+            </button>
+
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-slate-600 text-white rounded-lg hover:from-blue-700 hover:to-slate-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold text-sm"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Bulk Import
             </button>
           </div>
         </div>
@@ -276,6 +358,30 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
               </div>
             </div>
 
+            {/* Account Manager Filter */}
+            {accountManagers.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Manager
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {accountManagers.map((am) => (
+                    <button
+                      key={am.id}
+                      onClick={() => toggleFilter('logged_by', am.id)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        filters.logged_by.includes(am.id)
+                          ? 'bg-purple-100 text-purple-700 ring-2 ring-offset-1 ring-purple-400'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {am.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Follow-up Toggle */}
             <div className="flex items-center gap-3">
               <label className="relative inline-flex items-center cursor-pointer">
@@ -340,11 +446,22 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
         )}
       </div>
 
+      {/* Quick Entry Form */}
+      {showQuickEntry && (
+        <QuickEntryForm
+          orgId={orgId}
+          orgName={orgName}
+          onClose={() => setShowQuickEntry(false)}
+          onSuccess={handleImported}
+        />
+      )}
+
       {/* Bulk Import Modal */}
       <BulkImportModal
         isOpen={showBulkImport}
         onClose={() => setShowBulkImport(false)}
         orgId={orgId}
+        orgName={orgName}
         onImported={handleImported}
       />
     </div>

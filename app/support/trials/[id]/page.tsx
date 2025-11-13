@@ -456,7 +456,7 @@ export default function TrialOrgPage() {
           {([
             { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
             { id: 'peopleEngagement', label: 'People & Engagement', icon: Users, description: 'Stakeholders, users & activity' },
-            { id: 'timeline', label: 'Timeline & Activity', icon: Clock, description: 'Unified timeline with AI insights' },
+            { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Complete event timeline with AI-powered import' },
             { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
             { id: 'product', label: 'Product & Research', icon: Lightbulb, description: 'Features, research, docs' },
           ] as const).map(({ id, label, icon: Icon, description }) => (

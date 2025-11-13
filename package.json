@@ -69,6 +69,7 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^11.18.2",
     "fuzzball": "^2.2.3",
+    "groq-sdk": "^0.35.0",
     "isomorphic-fetch": "^3.0.0",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.468.0",

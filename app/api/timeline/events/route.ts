@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const sentiment = searchParams.get('sentiment')?.split(',');
     const severity = searchParams.get('severity')?.split(',');
     const tags = searchParams.get('tags')?.split(',');
+    const loggedBy = searchParams.get('logged_by')?.split(',');
     const followUpOnly = searchParams.get('follow_up_only') === 'true';
     const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -60,6 +61,10 @@ export async function GET(request: NextRequest) {
 
     if (tags && tags.length > 0) {
       query = query.overlaps('tags', tags);
+    }
+
+    if (loggedBy && loggedBy.length > 0) {
+      query = query.in('logged_by', loggedBy);
     }
 
     if (followUpOnly) {

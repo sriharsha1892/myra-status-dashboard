@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { verifyUserAccess } from '@/lib/auth-helper';
 
 /**
  * POST /api/timeline/import/confirm
  * Import reviewed and confirmed events, pain points, and learnings
+ * Supports both old Circle K format and new LLM parser format
  */
 export async function POST(request: NextRequest) {
   try {
+    // Verify user access
+    const { authorized, userId } = await verifyUserAccess(request);
+    if (!authorized || !userId) {
+      return NextResponse.json(
+        { success: false, error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
     const supabase = await createClient();
     const body = await request.json();
 
-    const { org_id, events, pain_points, learnings, raw_text, source_type = 'crm_notes' } = body;
+    const { org_id, events, pain_points, learnings, raw_text, source_type = 'bulk_import_llm' } = body;
 
     if (!org_id || !events) {
       return NextResponse.json(
@@ -19,21 +30,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
     // Create import session record
     const { data: sessionData, error: sessionError } = await supabase
       .from('import_sessions')
       .insert({
         org_id,
-        user_id: user.id,
+        user_id: userId,
         source_type,
         raw_text,
         events_parsed: events.length,
@@ -54,14 +56,29 @@ export async function POST(request: NextRequest) {
 
     // Insert events
     for (const event of events) {
+      // Prepare event data - handle both old and new format
+      const eventToInsert: any = {
+        org_id,
+        event_type: event.event_type,
+        event_category: event.event_category,
+        title: event.title,
+        description: event.description || null,
+        event_timestamp: new Date(event.event_timestamp).toISOString(),
+        sentiment: event.sentiment || 'neutral',
+        severity: event.severity || 'medium',
+        tags: event.tags || [],
+        mentioned_people: event.mentioned_people || [],
+        mentioned_features: event.mentioned_features || [],
+        follow_up_required: event.follow_up_required || false,
+        follow_up_date: event.follow_up_date ? new Date(event.follow_up_date).toISOString().split('T')[0] : null,
+        logged_by: userId,
+        source: source_type,
+        parse_confidence: event.parse_confidence || 1.0,
+      };
+
       const { data: eventData, error: eventError } = await supabase
         .from('trial_timeline_events')
-        .insert({
-          org_id,
-          ...event,
-          logged_by: user.id,
-          source: 'bulk_import',
-        })
+        .insert(eventToInsert)
         .select()
         .single();
 
