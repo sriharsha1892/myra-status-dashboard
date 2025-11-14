@@ -286,8 +286,8 @@ export default function NotificationsPage() {
                   <div className="relative">
                     <Bell className="w-8 h-8 text-neutral-700" />
                     {unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white/95 backdrop-blur-xl border-2 border-accent-500/30 rounded-full flex items-center justify-center shadow-lg shadow-accent-500/20 animate-pulse">
-                        <span className="text-[10px] font-bold text-accent-600">{unreadCount}</span>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/50 animate-pulse">
+                        <span className="text-[10px] font-bold text-white">{unreadCount}</span>
                       </div>
                     )}
                   </div>
