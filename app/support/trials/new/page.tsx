@@ -524,7 +524,7 @@ export default function CreateOrganizationPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="h-11 px-6 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-11 px-6 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Creating...' : 'Create Organization'}
             </button>
