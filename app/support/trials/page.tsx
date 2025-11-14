@@ -566,25 +566,6 @@ export default function TrialOrganizationsPage() {
                     </svg>
                   </button>
 
-                  {/* Import CSV */}
-                  <button
-                    onClick={() => router.push('/support/admin/trial-orgs-import')}
-                    className="group relative flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left"
-                  >
-                    <div className="p-2 rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition-colors duration-200">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-0.5">Import CSV</h4>
-                      <p className="text-xs text-gray-500">Bulk upload from spreadsheet</p>
-                    </div>
-                    <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-
                   {/* Bulk Edit - Admin Only */}
                   {(role === 'Admin' || is_super_admin) && selectedOrgIds.size > 0 && (
                     <button
