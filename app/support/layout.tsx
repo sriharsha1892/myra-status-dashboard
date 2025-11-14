@@ -24,6 +24,7 @@ import {
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
 import { LoadingProvider } from '@/lib/loading';
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 export default function SupportLayout({
   children,
@@ -349,7 +350,15 @@ export default function SupportLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto lg:ml-0">{children}</main>
+      <main className="flex-1 overflow-y-auto lg:ml-0">
+        {/* Header Bar with Global Search */}
+        <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 px-6 py-3">
+          <div className="flex items-center justify-end">
+            <GlobalSearch />
+          </div>
+        </div>
+        {children}
+      </main>
 
       {/* Feedback Widget - Always visible for all logged-in users */}
       <FeedbackWidget userId={user?.id} />
