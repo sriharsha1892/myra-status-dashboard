@@ -96,7 +96,7 @@ export default function CreateOrganizationPage() {
         setAccountManagers(managersData);
 
         // Auto-select current user if they're an AM
-        if (role === 'Account Manager') {
+        if (role === 'AM') {
           const currentManager: User | undefined = managersData.find((m: User) => m.id === user?.id);
           if (currentManager) {
             setAccountManagerId(currentManager.id);
@@ -421,10 +421,10 @@ export default function CreateOrganizationPage() {
                 <select
                   value={accountManagerId}
                   onChange={(e) => setAccountManagerId(e.target.value)}
-                  disabled={role === 'Account Manager'}
+                  disabled={role === 'AM'}
                   className={`w-full h-11 px-4 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.accountManagerId ? 'border-red-300' : 'border-gray-200'
-                  } ${role === 'Account Manager' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  } ${role === 'AM' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select account manager...</option>
                   {accountManagers.map((manager) => (

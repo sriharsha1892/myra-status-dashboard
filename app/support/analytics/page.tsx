@@ -39,7 +39,7 @@ export default async function AnalyticsPage() {
 
   // Filter by account manager if not Admin
   if (profile.role !== 'Admin') {
-    orgsQuery.eq('account_manager', profile.username);
+    orgsQuery.eq('account_manager_id', user.id);
   }
 
   const { data: organizations } = await orgsQuery;

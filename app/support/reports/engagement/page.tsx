@@ -139,7 +139,7 @@ export default function EngagementReportPage() {
 
       // Filter for Account Manager role (note: API returns "Account Manager" with space, not underscore)
       const accountManagers = (managers || []).filter((m: any) =>
-        m.role === 'Account Manager' || m.role === 'account_manager' || m.role === 'Account_Manager'
+        m.role === 'Account Manager' || m.role === 'account_manager' || m.role === 'Account_Manager' || m.role === 'AM'
       );
 
       const accountManagerMap = createAccountManagerMap(accountManagers);

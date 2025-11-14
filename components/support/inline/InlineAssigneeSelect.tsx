@@ -96,7 +96,7 @@ export default function InlineAssigneeSelect({
       const { data, error } = await supabase
         .from('user_profiles')
         .select('user_id, display_name, role')
-        .in('role', ['Team', 'Admin'])
+        .in('role', ['Team', 'Admin', 'Account Manager'])
         .order('display_name');
 
       if (error) throw error;
