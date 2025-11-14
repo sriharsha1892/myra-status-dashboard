@@ -19,8 +19,15 @@ import {
   ArrowLeft,
   Edit3,
   Save,
-  Link
+  Link,
+  Trash2,
+  Plus,
+  DollarSign,
+  Clock,
+  UserCheck,
+  X
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface ParsedResult {
   session_id: string;
@@ -52,9 +59,30 @@ interface SalesPOC {
 
 interface User {
   id: string;
-  full_name: string;
+  name: string;
   email: string;
   role: string;
+}
+
+interface EditableUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isPrimary: boolean;
+  phone?: string;
+}
+
+interface EditableActivity {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  date: string;
+  duration_minutes: number | null;
+  confidence: number;
+  selected: boolean;
+  assignedUserId?: string;
 }
 
 const DOMAIN_OPTIONS = [
@@ -65,6 +93,16 @@ const DOMAIN_OPTIONS = [
   { value: 'NEO', label: 'NEO' },
   { value: 'TMT', label: 'TMT' },
   { value: 'Unassigned', label: 'Unassigned' },
+];
+
+const ACTIVITY_TYPE_OPTIONS = [
+  { value: 'demo', label: 'Demo' },
+  { value: 'call', label: 'Call' },
+  { value: 'meeting', label: 'Meeting' },
+  { value: 'email', label: 'Email' },
+  { value: 'chat', label: 'Chat' },
+  { value: 'training', label: 'Training' },
+  { value: 'support', label: 'Support' },
 ];
 
 export default function TextParserPage() {
@@ -82,20 +120,21 @@ export default function TextParserPage() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [contractValue, setContractValue] = useState('');
+  const [teamSize, setTeamSize] = useState('');
+  const [trialDuration, setTrialDuration] = useState('');
   const [salesPOCId, setSalesPOCId] = useState('');
   const [accountManagerId, setAccountManagerId] = useState('');
 
-  // Editable Contact Fields
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactDesignation, setContactDesignation] = useState('');
+  // Editable Users List
+  const [users, setUsers] = useState<EditableUser[]>([]);
+
+  // Editable Activities List
+  const [activities, setActivities] = useState<EditableActivity[]>([]);
 
   // Dropdowns data
   const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
   const [accountManagers, setAccountManagers] = useState<User[]>([]);
-
-  const [editingOrg, setEditingOrg] = useState(false);
-  const [editingContact, setEditingContact] = useState(false);
 
   const supabase = createClient();
 
@@ -116,15 +155,15 @@ export default function TextParserPage() {
       // Fetch account managers
       const { data: managersData } = await supabase
         .from('users')
-        .select('id, full_name, email, role')
+        .select('id, name, email, role')
         .in('role', ['Admin', 'Account Manager'])
-        .order('full_name', { ascending: true });
+        .order('name', { ascending: true });
 
       if (managersData) {
         setAccountManagers(managersData);
 
         // Auto-select current user if they're an AM
-        if (role === 'AM' && user) {
+        if ((role === 'Account Manager' || role === 'Admin') && user) {
           const currentManager = managersData.find((m: User) => m.id === user.id);
           if (currentManager) {
             setAccountManagerId(currentManager.id);
@@ -218,18 +257,64 @@ export default function TextParserPage() {
         setDescription(extractedDesc);
       }
 
-      // Auto-populate contact fields
+      // Extract enhanced business data from numbers
+      const contractVal = data.parsed.numbers.find((n: any) => n.metadata?.source === 'contract_value');
+      const team = data.parsed.numbers.find((n: any) => n.metadata?.source === 'team_size');
+      const duration = data.parsed.numbers.find((n: any) => n.metadata?.source === 'trial_duration');
+
+      if (contractVal) setContractValue(contractVal.metadata.formatted || contractVal.value);
+      if (team) setTeamSize(team.value);
+      if (duration) setTrialDuration(duration.value);
+
+      // Auto-populate users list
       if (data.parsed.users.length > 0) {
-        const primaryUser = data.parsed.users[0];
-        setContactName(primaryUser.value);
-        if (primaryUser.metadata?.email) {
-          setContactEmail(primaryUser.metadata.email);
-        }
+        const extractedUsers: EditableUser[] = data.parsed.users.map((usr: any, idx: number) => ({
+          id: `user-${idx}`,
+          name: usr.value,
+          email: usr.metadata?.email || '',
+          role: usr.metadata?.role || '',
+          phone: usr.metadata?.phone || '',
+          isPrimary: idx === 0
+        }));
+        setUsers(extractedUsers);
       }
 
+      // Auto-populate activities list
+      if (data.parsed.activities.length > 0) {
+        const extractedActivities: EditableActivity[] = data.parsed.activities.map((act: any, idx: number) => {
+          // Map activity types
+          const typeMapping: Record<string, string> = {
+            'trial_started': 'demo',
+            'demo_scheduled': 'demo',
+            'questions_asked': 'support',
+            'feedback_received': 'call',
+            'follow_up': 'email'
+          };
+
+          const activityType = typeMapping[act.value] || act.value;
+          const title = act.metadata?.title || act.value.replace(/_/g, ' ');
+
+          // Try to extract date from parsed dates
+          const activityDate = data.parsed.dates[idx]?.value || new Date().toISOString().split('T')[0];
+
+          return {
+            id: `activity-${idx}`,
+            type: activityType,
+            title: title,
+            description: act.metadata?.description || `${title} activity`,
+            date: activityDate,
+            duration_minutes: act.metadata?.duration_minutes || null,
+            confidence: act.confidence || 80,
+            selected: true // Selected by default
+          };
+        });
+        setActivities(extractedActivities);
+      }
+
+      toast.success('Text parsed successfully! Review the extracted data below.');
     } catch (error) {
       console.error('Error parsing text:', error);
-      alert('Failed to parse text. Please try again.');
+      toast.error('Failed to parse text. Please try again.');
     } finally {
       setParsing(false);
     }
@@ -244,24 +329,70 @@ export default function TextParserPage() {
     return trimmed;
   };
 
+  const handleAddUser = () => {
+    const newUser: EditableUser = {
+      id: `user-${Date.now()}`,
+      name: '',
+      email: '',
+      role: '',
+      isPrimary: users.length === 0,
+      phone: ''
+    };
+    setUsers([...users, newUser]);
+  };
+
+  const handleRemoveUser = (userId: string) => {
+    setUsers(users.filter(u => u.id !== userId));
+  };
+
+  const handleUpdateUser = (userId: string, field: keyof EditableUser, value: any) => {
+    setUsers(users.map(u => u.id === userId ? { ...u, [field]: value } : u));
+  };
+
+  const handleSetPrimaryUser = (userId: string) => {
+    setUsers(users.map(u => ({ ...u, isPrimary: u.id === userId })));
+  };
+
+  const handleToggleActivity = (activityId: string) => {
+    setActivities(activities.map(a =>
+      a.id === activityId ? { ...a, selected: !a.selected } : a
+    ));
+  };
+
+  const handleUpdateActivity = (activityId: string, field: keyof EditableActivity, value: any) => {
+    setActivities(activities.map(a =>
+      a.id === activityId ? { ...a, [field]: value } : a
+    ));
+  };
+
+  const handleRemoveActivity = (activityId: string) => {
+    setActivities(activities.filter(a => a.id !== activityId));
+  };
+
   const handleSave = async () => {
     if (!result) return;
 
     // Validation
     if (!orgName.trim()) {
-      alert('Organization name is required');
+      toast.error('Organization name is required');
       return;
     }
     if (!domain) {
-      alert('Domain is required');
+      toast.error('Domain is required');
       return;
     }
     if (!accountManagerId) {
-      alert('Account Manager is required');
+      toast.error('Account Manager is required');
       return;
     }
-    if (!contactName.trim() || !contactEmail.trim()) {
-      alert('Contact name and email are required');
+    if (users.length === 0) {
+      toast.error('At least one contact is required');
+      return;
+    }
+
+    const primaryUser = users.find(u => u.isPrimary);
+    if (!primaryUser || !primaryUser.name.trim() || !primaryUser.email.trim()) {
+      toast.error('Primary contact name and email are required');
       return;
     }
 
@@ -278,6 +409,9 @@ export default function TextParserPage() {
           org_url: normalizedUrl,
           logo_url: logoUrl.trim() || extractLogoUrl(normalizedUrl),
           description: description.trim(),
+          contract_value: contractValue ? parseFloat(contractValue.replace(/[^0-9.]/g, '')) : null,
+          team_size: teamSize ? parseInt(teamSize, 10) : null,
+          trial_duration_days: trialDuration ? parseInt(trialDuration, 10) : null,
           sales_poc_id: salesPOCId || null,
           account_manager_id: accountManagerId,
           org_lifecycle_stage: 'prospect',
@@ -291,42 +425,76 @@ export default function TextParserPage() {
       if (orgError) throw orgError;
       if (!newOrg) throw new Error('Failed to create organization');
 
-      // Insert primary contact
-      const { error: contactError } = await supabase
-        .from('trial_users')
-        .insert({
-          org_id: newOrg.org_id,
-          name: contactName.trim(),
-          email: contactEmail.trim(),
-          role: contactDesignation.trim() || null,
-          current_stage: 'invited',
-          account_manager: user?.id || '',
-          created_at: new Date().toISOString(),
-        });
+      // Insert all users
+      const createdUserIds: { [key: string]: string } = {};
 
-      if (contactError) throw contactError;
+      for (const usr of users) {
+        if (!usr.name.trim() || !usr.email.trim()) continue;
 
-      // Insert additional users if found
-      if (result.parsed.users.length > 1) {
-        const additionalUsers = result.parsed.users.slice(1).filter(u => u.metadata?.email);
-
-        for (const usr of additionalUsers) {
-          await supabase.from('trial_users').insert({
+        const { data: newUser, error: userError } = await supabase
+          .from('trial_users')
+          .insert({
             org_id: newOrg.org_id,
-            name: usr.value,
-            email: usr.metadata.email,
+            name: usr.name.trim(),
+            email: usr.email.trim(),
+            role: usr.role.trim() || null,
+            phone: usr.phone?.trim() || null,
             current_stage: 'invited',
-            account_manager: user?.id || '',
+            account_manager: accountManagerId,
             created_at: new Date().toISOString(),
-          });
+          })
+          .select('user_id')
+          .single();
+
+        if (userError) {
+          console.error('Error creating user:', userError);
+          continue;
+        }
+
+        createdUserIds[usr.id] = newUser.user_id;
+      }
+
+      // Insert selected activities as user_interactions
+      const selectedActivities = activities.filter(a => a.selected);
+      let activitiesCreated = 0;
+
+      for (const activity of selectedActivities) {
+        // Assign to specific user or all users
+        const targetUserIds = activity.assignedUserId && createdUserIds[activity.assignedUserId]
+          ? [createdUserIds[activity.assignedUserId]]
+          : Object.values(createdUserIds);
+
+        for (const userId of targetUserIds) {
+          const { error: activityError } = await supabase
+            .from('user_interactions')
+            .insert({
+              user_id: userId,
+              org_id: newOrg.org_id,
+              interaction_type: activity.type,
+              title: activity.title,
+              notes: activity.description,
+              interaction_date: activity.date ? new Date(activity.date).toISOString() : new Date().toISOString(),
+              duration_minutes: activity.duration_minutes,
+              conducted_by: user?.email || null,
+              created_at: new Date().toISOString()
+            });
+
+          if (activityError) {
+            console.error('Error creating activity:', activityError);
+          } else {
+            activitiesCreated++;
+          }
         }
       }
 
-      alert(`Success! Created organization "${orgName}" with ${result.parsed.users.length} contact(s)`);
+      toast.success(
+        `Success! Created "${orgName}" with ${users.length} contact(s) and ${activitiesCreated} interaction(s)`,
+        { duration: 4000 }
+      );
       router.push(`/support/trials/${newOrg.org_id}`);
     } catch (error: any) {
       console.error('Error saving data:', error);
-      alert('Failed to save data: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to save data: ' + (error.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
@@ -343,6 +511,9 @@ export default function TextParserPage() {
     return <AlertCircle className="w-4 h-4" />;
   };
 
+  const selectedActivitiesCount = activities.filter(a => a.selected).length;
+  const primaryUser = users.find(u => u.isPrimary);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -357,11 +528,11 @@ export default function TextParserPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-600 to-blue-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Text Intel Parser</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">Paste & Extract</h1>
                   <p className="text-xs text-gray-600">Extract trial data from emails, notes, and calls</p>
                 </div>
               </div>
@@ -423,7 +594,7 @@ export default function TextParserPage() {
                 placeholder="Paste your meeting notes, email, or call summary here...
 
 Example:
-Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions about web scout features. Currently using GPT-4. Trial extended by 2 weeks."
+Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmecorp.com, +1-555-0123) and Mike Chen from their product team attended. They loved the presentation builder and asked 12 questions. Team of 25 users. $50K annual contract. Looking for 14 day trial. Currently using GPT-4."
                 className="w-full h-80 px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono resize-none"
               />
 
@@ -434,17 +605,17 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                 <button
                   onClick={handleParse}
                   disabled={!text.trim() || parsing}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {parsing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Parsing...
+                      Extracting data...
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      Parse with AI
+                      Extract Data
                     </>
                   )}
                 </button>
@@ -455,90 +626,83 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
             {result && (
               <div className="bg-white rounded-lg border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-900">AI Insights</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Extraction Summary</h3>
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${getConfidenceColor(result.confidence.overall)}`}>
                     {getConfidenceIcon(result.confidence.overall)}
                     {result.confidence.overall}% confidence
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {result.parsed.activities.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Activity className="w-4 h-4 text-accent-600" />
-                        <span className="text-xs font-medium text-gray-700">Activities Detected</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {result.parsed.activities.map((activity, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1.5">
-                            <CheckCircle2 className="w-3 h-3 text-green-600" />
-                            {activity.value.replace(/_/g, ' ')}
-                          </div>
-                        ))}
-                      </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Building2 className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-medium text-blue-900">Organization</span>
                     </div>
-                  )}
+                    <p className="text-lg font-bold text-blue-900">{result.parsed.orgs.length}</p>
+                  </div>
 
-                  {(result.parsed.features.length > 0 || result.parsed.models.length > 0) && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Hash className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-medium text-gray-700">Product Usage</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result.parsed.features.map((f, idx) => (
-                          <span key={idx} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded">
-                            {f.value}
-                          </span>
-                        ))}
-                        {result.parsed.models.map((m, idx) => (
-                          <span key={idx} className="text-xs px-2 py-1 bg-accent-50 text-accent-700 rounded">
-                            {m.value}
-                          </span>
-                        ))}
-                      </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="w-4 h-4 text-green-600" />
+                      <span className="text-xs font-medium text-green-900">Contacts</span>
                     </div>
-                  )}
+                    <p className="text-lg font-bold text-green-900">{users.length}</p>
+                  </div>
 
-                  {result.parsed.numbers.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Hash className="w-4 h-4 text-gray-600" />
-                        <span className="text-xs font-medium text-gray-700">Key Metrics</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {result.parsed.numbers.map((num, idx) => (
-                          <span key={idx} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono">
-                            {num.value} {num.metadata?.unit}
-                          </span>
-                        ))}
-                      </div>
+                  <div className="bg-purple-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Activity className="w-4 h-4 text-purple-600" />
+                      <span className="text-xs font-medium text-purple-900">Activities</span>
                     </div>
-                  )}
+                    <p className="text-lg font-bold text-purple-900">{selectedActivitiesCount}/{activities.length}</p>
+                  </div>
+
+                  <div className="bg-amber-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Hash className="w-4 h-4 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-900">Key Metrics</span>
+                    </div>
+                    <p className="text-lg font-bold text-amber-900">{result.parsed.numbers.length}</p>
+                  </div>
                 </div>
+
+                {(result.parsed.features.length > 0 || result.parsed.models.length > 0) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Hash className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-medium text-gray-700">Product Usage Detected</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.parsed.features.map((f, idx) => (
+                        <span key={idx} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded">
+                          {f.value}
+                        </span>
+                      ))}
+                      {result.parsed.models.map((m, idx) => (
+                        <span key={idx} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                          {m.value}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Right Column - Editable Form */}
+          {/* Right Column - Review & Edit */}
           <div className="space-y-4">
             {result ? (
               <>
                 {/* Organization Details */}
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                  <div className="px-5 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-blue-600" />
                       <h3 className="text-sm font-semibold text-gray-900">Organization Details</h3>
                     </div>
-                    <button
-                      onClick={() => setEditingOrg(!editingOrg)}
-                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      {editingOrg ? 'Done' : 'Edit'}
-                    </button>
+                    <span className="text-xs text-blue-600 font-medium">Review & Edit</span>
                   </div>
 
                   <div className="p-5 space-y-4">
@@ -592,37 +756,63 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                       </div>
                     </div>
 
-                    {/* Logo URL */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Logo URL</label>
-                      <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Contract Value */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          <DollarSign className="w-3 h-3 inline mr-1" />
+                          Contract Value
+                        </label>
                         <input
                           type="text"
-                          value={logoUrl}
-                          onChange={(e) => setLogoUrl(e.target.value)}
-                          className="flex-1 h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Auto-generated from website"
+                          value={contractValue}
+                          onChange={(e) => setContractValue(e.target.value)}
+                          className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="$50,000"
                         />
-                        {logoUrl && (
-                          <div className="w-9 h-9 border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                          </div>
-                        )}
+                      </div>
+
+                      {/* Team Size */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          <Users className="w-3 h-3 inline mr-1" />
+                          Team Size
+                        </label>
+                        <input
+                          type="number"
+                          value={teamSize}
+                          onChange={(e) => setTeamSize(e.target.value)}
+                          className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="25"
+                        />
+                      </div>
+
+                      {/* Trial Duration */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          Trial Days
+                        </label>
+                        <input
+                          type="number"
+                          value={trialDuration}
+                          onChange={(e) => setTrialDuration(e.target.value)}
+                          className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="14"
+                        />
                       </div>
                     </div>
 
                     {/* Description */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Description <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Description</label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={3}
                         maxLength={300}
                         className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        placeholder="AI-generated from context"
+                        placeholder="Auto-generated from context"
                       />
                       <p className="text-xs text-gray-500 mt-1">{description.length}/300</p>
                     </div>
@@ -640,7 +830,7 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                         <option value="">Select...</option>
                         {accountManagers.map((manager) => (
                           <option key={manager.id} value={manager.id}>
-                            {manager.full_name}
+                            {manager.name}
                           </option>
                         ))}
                       </select>
@@ -665,65 +855,217 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                   </div>
                 </div>
 
-                {/* Primary Contact */}
+                {/* Users/Contacts */}
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                  <div className="px-5 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-green-600" />
-                      <h3 className="text-sm font-semibold text-gray-900">Primary Contact</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">Contacts ({users.length})</h3>
                     </div>
+                    <button
+                      onClick={handleAddUser}
+                      className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 font-medium"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add Contact
+                    </button>
                   </div>
 
-                  <div className="p-5 space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                        className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="John Doe"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="john@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Designation</label>
-                      <input
-                        type="text"
-                        value={contactDesignation}
-                        onChange={(e) => setContactDesignation(e.target.value)}
-                        className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="CEO, VP, Manager..."
-                      />
-                    </div>
-
-                    {result.parsed.users.length > 1 && (
-                      <div className="pt-2 border-t border-gray-100">
-                        <p className="text-xs text-gray-600 mb-2">Additional contacts detected ({result.parsed.users.length - 1}):</p>
-                        <div className="space-y-1.5">
-                          {result.parsed.users.slice(1).map((usr, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 rounded px-2 py-1.5">
-                              <Users className="w-3 h-3 text-gray-400" />
-                              {usr.value} {usr.metadata?.email && `(${usr.metadata.email})`}
-                            </div>
-                          ))}
-                        </div>
+                  <div className="p-5 space-y-3">
+                    {users.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No contacts detected</p>
+                        <button
+                          onClick={handleAddUser}
+                          className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Add manually
+                        </button>
                       </div>
+                    ) : (
+                      users.map((usr) => (
+                        <div key={usr.id} className={`p-4 rounded-lg border-2 ${usr.isPrimary ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              {usr.isPrimary && (
+                                <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded">
+                                  <UserCheck className="w-3 h-3" />
+                                  Primary
+                                </span>
+                              )}
+                              {!usr.isPrimary && users.length > 1 && (
+                                <button
+                                  onClick={() => handleSetPrimaryUser(usr.id)}
+                                  className="text-xs text-gray-500 hover:text-green-600 font-medium"
+                                >
+                                  Set as primary
+                                </button>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleRemoveUser(usr.id)}
+                              className="text-gray-400 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Name {usr.isPrimary && <span className="text-red-500">*</span>}</label>
+                              <input
+                                type="text"
+                                value={usr.name}
+                                onChange={(e) => handleUpdateUser(usr.id, 'name', e.target.value)}
+                                className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="John Doe"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Email {usr.isPrimary && <span className="text-red-500">*</span>}</label>
+                              <input
+                                type="email"
+                                value={usr.email}
+                                onChange={(e) => handleUpdateUser(usr.id, 'email', e.target.value)}
+                                className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="john@example.com"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Role/Title</label>
+                              <input
+                                type="text"
+                                value={usr.role}
+                                onChange={(e) => handleUpdateUser(usr.id, 'role', e.target.value)}
+                                className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="CEO, VP, Manager"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                              <input
+                                type="text"
+                                value={usr.phone || ''}
+                                onChange={(e) => handleUpdateUser(usr.id, 'phone', e.target.value)}
+                                className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="+1-555-0123"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Activities */}
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-purple-600" />
+                      <h3 className="text-sm font-semibold text-gray-900">Activities ({selectedActivitiesCount} selected)</h3>
+                    </div>
+                    <span className="text-xs text-purple-600 font-medium">Check to include</span>
+                  </div>
+
+                  <div className="p-5 space-y-3">
+                    {activities.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Activity className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No activities detected</p>
+                        <p className="text-xs text-gray-400 mt-1">Try including words like "demo", "call", "meeting"</p>
+                      </div>
+                    ) : (
+                      activities.map((activity) => (
+                        <div key={activity.id} className={`p-4 rounded-lg border-2 transition-all ${activity.selected ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50 opacity-60'}`}>
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={activity.selected}
+                              onChange={() => handleToggleActivity(activity.id)}
+                              className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            />
+
+                            <div className="flex-1 space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Activity Type</label>
+                                  <select
+                                    value={activity.type}
+                                    onChange={(e) => handleUpdateActivity(activity.id, 'type', e.target.value)}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  >
+                                    {ACTIVITY_TYPE_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
+                                  <input
+                                    type="date"
+                                    value={activity.date}
+                                    onChange={(e) => handleUpdateActivity(activity.id, 'date', e.target.value)}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
+                                <input
+                                  type="text"
+                                  value={activity.title}
+                                  onChange={(e) => handleUpdateActivity(activity.id, 'title', e.target.value)}
+                                  className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Demo session"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
+                                <textarea
+                                  value={activity.description}
+                                  onChange={(e) => handleUpdateActivity(activity.id, 'description', e.target.value)}
+                                  rows={2}
+                                  className="w-full px-2 py-1 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                                  placeholder="Activity details..."
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                  <input
+                                    type="number"
+                                    value={activity.duration_minutes || ''}
+                                    onChange={(e) => handleUpdateActivity(activity.id, 'duration_minutes', e.target.value ? parseInt(e.target.value, 10) : null)}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="30"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-5">
+                                  <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(activity.confidence)}`}>
+                                    {activity.confidence}%
+                                  </div>
+                                  <button
+                                    onClick={() => handleRemoveActivity(activity.id)}
+                                    className="text-gray-400 hover:text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -731,8 +1073,8 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                 <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-sm text-gray-500 mb-2">No data parsed yet</p>
-                <p className="text-xs text-gray-400">Paste text on the left and click "Parse with AI"</p>
+                <p className="text-sm text-gray-500 mb-2">No data extracted yet</p>
+                <p className="text-xs text-gray-400">Paste text on the left and click "Extract Data"</p>
               </div>
             )}
           </div>
