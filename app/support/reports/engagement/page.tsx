@@ -94,7 +94,6 @@ export default function EngagementReportPage() {
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
 
-  const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState<OrgEngagement[]>([]);
   const [allOrgs, setAllOrgs] = useState<OrgEngagement[]>([]);
   const [accessControl, setAccessControl] = useState<'all' | 'portfolio'>('all');
@@ -132,7 +131,6 @@ export default function EngagementReportPage() {
   }, [filters, allOrgs]);
 
   const fetchEngagementData = async () => {
-    setLoading(true);
     startLoading();
     try {
       // Fetch account managers via API (bypasses RLS, requires auth)
@@ -273,7 +271,6 @@ export default function EngagementReportPage() {
     } catch (error) {
       console.error('Error fetching engagement data:', error);
     } finally {
-      setLoading(false);
       stopLoading();
     }
   };
@@ -569,8 +566,13 @@ export default function EngagementReportPage() {
     const engagementLevels = ['High Engagement (>60%)', 'Medium Engagement (30-60%)', 'Low Engagement (<30%)'];
     engagementLevels.forEach(e => nodes.push({ id: e }));
 
-    // Layer 3: Account Managers
-    const managers = Array.from(new Set(allOrgs.map(o => o.account_manager).filter(Boolean)));
+    // Layer 3: Account Managers (exclude Unknown Manager and Unassigned)
+    const managers = Array.from(new Set(
+      allOrgs
+        .map(o => o.account_manager)
+        .filter(Boolean)
+        .filter(m => m !== 'Unknown Manager' && m !== 'Unassigned')
+    ));
     managers.forEach(m => nodes.push({ id: m }));
 
     // Layer 4: Outcomes
@@ -663,7 +665,7 @@ export default function EngagementReportPage() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  if (loading || authLoading) {
+  if (pageLoading || authLoading) {
     return <LoadingOverlay />;
   }
 

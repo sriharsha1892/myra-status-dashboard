@@ -106,7 +106,12 @@ export default function TimelineView({ orgId, orgName }: TimelineViewProps) {
         const response = await fetch('/api/account-managers');
         if (!response.ok) return;
         const data = await response.json();
-        setAccountManagers(data.map((am: any) => ({ id: am.id, name: am.full_name || am.email })));
+        // Handle both response formats: {managers: [...]} or direct array
+        const managers = data.managers || data;
+        setAccountManagers(Array.isArray(managers) ? managers.map((am: any) => ({
+          id: am.user_id || am.id,
+          name: am.full_name || am.email
+        })) : []);
       } catch (error) {
         console.error('Error fetching account managers:', error);
       }
