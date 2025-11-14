@@ -78,6 +78,23 @@ export default function BulkEditPage() {
     current_stage: 'invited',
     account_manager: '',
   });
+  const [autoTagging, setAutoTagging] = useState(false);
+  const [autoTagResult, setAutoTagResult] = useState<{
+    isOpen: boolean;
+    summary?: {
+      total: number;
+      succeeded: number;
+      failed: number;
+      total_tags_added: number;
+    };
+    results?: Array<{
+      org_name: string;
+      new_tags: string[];
+      confidence: number;
+      success: boolean;
+      error?: string;
+    }>;
+  }>({ isOpen: false });
 
   useEffect(() => {
     loadData();
@@ -369,6 +386,57 @@ export default function BulkEditPage() {
     return dbUpdates;
   }
 
+  async function autoTagOrganizations() {
+    if (autoTagging) return;
+
+    if (!confirm(`Auto-tag ${orgs.length} organizations with AI?\n\nThis will analyze each organization and generate relevant tags using AI. It may take 2-5 seconds per organization.`)) {
+      return;
+    }
+
+    setAutoTagging(true);
+    toast.loading(`Auto-tagging ${orgs.length} organizations...`, { id: 'auto-tag' });
+
+    try {
+      const response = await authenticatedFetch('/api/trials/bulk-operations/auto-tag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          org_ids: orgs.map(org => org.org_id),
+          mode: 'selected',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Auto-tagging failed');
+      }
+
+      // Show success toast
+      toast.success(
+        `Auto-tagged ${result.summary.succeeded} organizations (${result.summary.total_tags_added} tags added)`,
+        { id: 'auto-tag' }
+      );
+
+      // Show detailed results modal
+      setAutoTagResult({
+        isOpen: true,
+        summary: result.summary,
+        results: result.results,
+      });
+
+      // Reload data to show updated tags
+      await loadData();
+    } catch (error: any) {
+      console.error('Auto-tagging error:', error);
+      toast.error(error.message || 'Failed to auto-tag organizations', { id: 'auto-tag' });
+    } finally {
+      setAutoTagging(false);
+    }
+  }
+
   async function saveChanges() {
     setSaving(true);
     const supabase = createClient();
@@ -498,6 +566,14 @@ export default function BulkEditPage() {
             className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
           >
             Refresh
+          </button>
+          <button
+            onClick={autoTagOrganizations}
+            disabled={autoTagging || orgs.length === 0}
+            className="px-3 py-1.5 text-sm border rounded bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            title="Use AI to automatically generate tags for all organizations"
+          >
+            {autoTagging ? 'Auto-Tagging...' : '✨ Auto-Tag with AI'}
           </button>
         </div>
 
@@ -937,6 +1013,90 @@ export default function BulkEditPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Add User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Tag Results Modal */}
+      {autoTagResult.isOpen && autoTagResult.summary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold mb-2">Auto-Tagging Results</h3>
+                <div className="flex gap-4 text-sm">
+                  <span className="text-green-600 font-medium">
+                    ✓ {autoTagResult.summary.succeeded} succeeded
+                  </span>
+                  <span className="text-red-600 font-medium">
+                    ✗ {autoTagResult.summary.failed} failed
+                  </span>
+                  <span className="text-blue-600 font-medium">
+                    {autoTagResult.summary.total_tags_added} tags added
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setAutoTagResult({ isOpen: false })}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {autoTagResult.results?.map((result, idx) => (
+                <div
+                  key={idx}
+                  className={`border rounded-lg p-4 ${
+                    result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold text-gray-900">{result.org_name}</h4>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        result.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {result.success ? 'Success' : 'Failed'}
+                    </span>
+                  </div>
+
+                  {result.success && result.new_tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {result.new_tags.map((tag, tagIdx) => (
+                        <span
+                          key={tagIdx}
+                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {result.success && (
+                    <div className="text-xs text-gray-600">
+                      Confidence: {Math.round(result.confidence * 100)}%
+                    </div>
+                  )}
+
+                  {!result.success && result.error && (
+                    <div className="text-sm text-red-600 mt-2">Error: {result.error}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setAutoTagResult({ isOpen: false })}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Close
               </button>
             </div>
           </div>
