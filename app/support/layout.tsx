@@ -19,7 +19,8 @@ import {
   MessageSquare,
   FileText,
   User,
-  MessageCircle
+  MessageCircle,
+  Lightbulb
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
@@ -245,6 +246,18 @@ export default function SupportLayout({
             >
               <Sparkles className={`w-5 h-5 shrink-0 ${pathname === '/support/resources' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
               <span>Resources</span>
+            </Link>
+
+            <Link
+              href="/support/feature-requests"
+              className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                pathname === '/support/feature-requests'
+                  ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              <Lightbulb className={`w-5 h-5 shrink-0 ${pathname === '/support/feature-requests' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+              <span>Feature Requests</span>
             </Link>
 
             {/* Tickets - All users */}
