@@ -89,14 +89,14 @@ export default function CreateOrganizationPage() {
       const { data: managersData } = await supabase
         .from('users')
         .select('id, full_name, email, role')
-        .in('role', ['admin', 'account_manager'])
+        .in('role', ['Admin', 'Account Manager'])
         .order('full_name', { ascending: true });
 
       if (managersData) {
         setAccountManagers(managersData);
 
         // Auto-select current user if they're an AM
-        if (role?.toLowerCase() === 'account_manager') {
+        if (role === 'Account Manager') {
           const currentManager: User | undefined = managersData.find((m: User) => m.id === user?.id);
           if (currentManager) {
             setAccountManagerId(currentManager.id);
@@ -421,10 +421,10 @@ export default function CreateOrganizationPage() {
                 <select
                   value={accountManagerId}
                   onChange={(e) => setAccountManagerId(e.target.value)}
-                  disabled={role?.toLowerCase() === 'account_manager'}
+                  disabled={role === 'Account Manager'}
                   className={`w-full h-11 px-4 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.accountManagerId ? 'border-red-300' : 'border-gray-200'
-                  } ${role?.toLowerCase() === 'account_manager' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  } ${role === 'Account Manager' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select account manager...</option>
                   {accountManagers.map((manager) => (
