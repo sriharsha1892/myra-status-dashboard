@@ -43,7 +43,13 @@ export function getGroqClient(): Groq | null {
     return null;
   }
 
-  return new Groq({ apiKey });
+  try {
+    return new Groq({ apiKey });
+  } catch (error: any) {
+    console.error('❌ Failed to initialize Groq SDK:', error.message);
+    console.error('API Key present:', !!apiKey, '| Length:', apiKey?.length, '| Starts with:', apiKey?.substring(0, 4));
+    return null;
+  }
 }
 
 /**
