@@ -365,9 +365,30 @@ export default function SupportLayout({
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto lg:ml-0">
         {/* Header Bar with Global Search */}
-        <div className="sticky top-0 z-30 bg-white border-b border-neutral-200 px-6 py-3">
-          <div className="flex items-center justify-end">
-            <GlobalSearch />
+        <div className="sticky top-0 z-30 bg-white border-b border-neutral-200">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 gap-4">
+            {/* Left side - Page Title (Hidden on mobile, shown on desktop) */}
+            <div className="hidden sm:flex items-center gap-3">
+              <h1 className="text-lg font-semibold text-neutral-900">
+                {pathname === '/support/dashboard' && 'Dashboard'}
+                {pathname === '/support/notifications' && 'Notifications'}
+                {pathname?.startsWith('/support/trials') && 'Trial Organizations'}
+                {pathname === '/support/reports' && 'Reports'}
+                {pathname === '/support/resources' && 'Resources'}
+                {pathname === '/support/feature-requests' && 'Feature Requests'}
+                {pathname?.startsWith('/support/tickets') && 'Tickets'}
+                {pathname === '/support/users' && 'Users'}
+                {pathname?.startsWith('/support/admin/roadmap') && 'Roadmap'}
+                {pathname?.startsWith('/support/trials/roadmap') && 'Roadmap'}
+                {pathname?.startsWith('/support/admin/customer-support') && 'Customer Support'}
+                {pathname === '/support/profile' && 'Profile'}
+              </h1>
+            </div>
+
+            {/* Right side - Global Search */}
+            <div className="flex-1 flex justify-end lg:flex-none lg:min-w-[400px]">
+              <GlobalSearch />
+            </div>
           </div>
         </div>
         {children}
