@@ -8,7 +8,8 @@ import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
-  Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar
+  Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar,
+  Users, TrendingDown
 } from 'lucide-react';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
@@ -29,6 +30,8 @@ export default function EnterpriseCommandCenter() {
   const [loading, setLoading] = useState(true);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [upcomingDemos, setUpcomingDemos] = useState<any[]>([]);
+  const [activeUsersCount, setActiveUsersCount] = useState(0);
+  const [avgEngagementScore, setAvgEngagementScore] = useState(0);
 
   const supabase = createClient();
 
@@ -91,6 +94,7 @@ export default function EnterpriseCommandCenter() {
         fetchTickets(),
         fetchOrganizations(),
         fetchUpcomingDemos(),
+        fetchActiveUsers(),
       ]);
       const endTime = performance.now();
       console.log(`✅ Dashboard data loaded in ${Math.round(endTime - startTime)}ms`);
@@ -183,6 +187,32 @@ export default function EnterpriseCommandCenter() {
     }
   };
 
+  const fetchActiveUsers = async () => {
+    try {
+      // Count active users from trial_users (users who have logged in or are in active stages)
+      const { count, error } = await supabase
+        .from('trial_users')
+        .select('*', { count: 'exact', head: true })
+        .or('last_active_at.not.is.null,current_stage.in.(active,power_user,building,testing,integrating,pilot,production_ready)');
+
+      if (error) throw error;
+      setActiveUsersCount(count || 0);
+
+      // Calculate average engagement score from all organizations with engagement_score
+      const { data: orgsWithScores } = await supabase
+        .from('trial_organizations')
+        .select('engagement_score')
+        .not('engagement_score', 'is', null);
+
+      if (orgsWithScores && orgsWithScores.length > 0) {
+        const avgScore = orgsWithScores.reduce((sum, org) => sum + (org.engagement_score || 0), 0) / orgsWithScores.length;
+        setAvgEngagementScore(Math.round(avgScore));
+      }
+    } catch (error: any) {
+      console.error('Error fetching active users:', error);
+    }
+  };
+
   if (authLoading || loading) {
     const loadingQuotes = [
       { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
@@ -241,8 +271,8 @@ export default function EnterpriseCommandCenter() {
             </p>
           </div>
 
-          {/* Primary Metrics Grid - 6-Column Compact Layout - ALWAYS SHOW ALL CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {/* Primary Metrics Grid - 8-Column Compact Layout - ALWAYS SHOW ALL CARDS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
             {/* Active Trials Card */}
             <MagneticCard
               index={0}
@@ -425,6 +455,72 @@ export default function EnterpriseCommandCenter() {
                 <div className="text-2xl font-semibold text-neutral-900">{tickets.length === 0 ? '—' : tickets.length}</div>
               </div>
                   </button>
+                </ChromaticShift>
+              </HolographicOverlay>
+            </MagneticCard>
+
+            {/* Active Users Card - NEW */}
+            <MagneticCard
+              index={6}
+              className="group relative overflow-hidden"
+            >
+              <StatusGlow color="#0ea5e9" intensity="low" pulse={false} />
+              <HolographicOverlay intensity={0.3}>
+                <ChromaticShift intensity={0.4}>
+                  <div className="relative bg-white/95 backdrop-blur-sm rounded-lg border-2 border-sky-400/30 p-3 shadow-[inset_0_0_20px_rgba(14,165,233,0.10),0_0_24px_rgba(14,165,233,0.08)]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center">
+                  <Users className="w-3.5 h-3.5 text-sky-600" strokeWidth={1.5} />
+                </div>
+                <div className="px-1.5 py-0.5 bg-sky-50 border border-sky-200 rounded">
+                  <TrendingUp className="w-3 h-3 text-sky-600" strokeWidth={1.5} />
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-neutral-600 mb-1 uppercase font-medium tracking-wide">Active Users</div>
+                <div className="text-2xl font-semibold text-neutral-900">{activeUsersCount === 0 ? '—' : activeUsersCount}</div>
+              </div>
+                  </div>
+                </ChromaticShift>
+              </HolographicOverlay>
+            </MagneticCard>
+
+            {/* Engagement Score Card - NEW */}
+            <MagneticCard
+              index={7}
+              className="group relative overflow-hidden"
+            >
+              <StatusGlow color={avgEngagementScore >= 70 ? '#10b981' : avgEngagementScore >= 50 ? '#f59e0b' : '#ef4444'} intensity="low" pulse={avgEngagementScore < 50} />
+              <HolographicOverlay intensity={0.3}>
+                <ChromaticShift intensity={0.4}>
+                  <div className={`relative bg-white/95 backdrop-blur-sm rounded-lg border-2 p-3 ${
+                    avgEngagementScore >= 70 ? 'border-emerald-400/30 shadow-[inset_0_0_20px_rgba(16,185,129,0.10),0_0_24px_rgba(16,185,129,0.08)]' : avgEngagementScore >= 50 ? 'border-amber-400/30 shadow-[inset_0_0_20px_rgba(245,158,11,0.10),0_0_24px_rgba(245,158,11,0.08)]' : 'border-red-400/30 shadow-[inset_0_0_20px_rgba(239,68,68,0.10),0_0_24px_rgba(239,68,68,0.08)]'
+                  }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                  avgEngagementScore >= 70 ? 'bg-emerald-50' : avgEngagementScore >= 50 ? 'bg-amber-50' : 'bg-red-50'
+                }`}>
+                  {avgEngagementScore >= 50 ? (
+                    <TrendingUp className={`w-3.5 h-3.5 ${avgEngagementScore >= 70 ? 'text-emerald-600' : 'text-amber-600'}`} strokeWidth={1.5} />
+                  ) : (
+                    <TrendingDown className="w-3.5 h-3.5 text-red-600" strokeWidth={1.5} />
+                  )}
+                </div>
+                <div className={`px-1.5 py-0.5 rounded ${
+                  avgEngagementScore >= 70 ? 'bg-emerald-50 border border-emerald-200' : avgEngagementScore >= 50 ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'
+                }`}>
+                  <span className={`text-[10px] font-medium ${
+                    avgEngagementScore >= 70 ? 'text-emerald-700' : avgEngagementScore >= 50 ? 'text-amber-700' : 'text-red-700'
+                  }`}>AVG</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-neutral-600 mb-1 uppercase font-medium tracking-wide">Engagement</div>
+                <div className="text-2xl font-semibold text-neutral-900">{avgEngagementScore === 0 ? '—' : `${avgEngagementScore}%`}</div>
+              </div>
+                  </div>
                 </ChromaticShift>
               </HolographicOverlay>
             </MagneticCard>
