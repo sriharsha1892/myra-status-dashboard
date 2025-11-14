@@ -17,7 +17,7 @@ interface SalesPOC {
 
 interface User {
   id: string;
-  full_name: string;
+  name: string;
   email: string;
   role: string;
 }
@@ -88,9 +88,9 @@ export default function CreateOrganizationPage() {
       // Fetch account managers (users table)
       const { data: managersData } = await supabase
         .from('users')
-        .select('id, full_name, email, role')
+        .select('id, name, email, role')
         .in('role', ['Admin', 'Account Manager'])
-        .order('full_name', { ascending: true });
+        .order('name', { ascending: true });
 
       if (managersData) {
         setAccountManagers(managersData);
@@ -428,7 +428,7 @@ export default function CreateOrganizationPage() {
                   <option value="">Select account manager...</option>
                   {accountManagers.map((manager) => (
                     <option key={manager.id} value={manager.id}>
-                      {manager.full_name} ({manager.email})
+                      {manager.name} ({manager.email})
                     </option>
                   ))}
                 </select>
