@@ -230,6 +230,144 @@ export function extractNumbers(text: string): ParsedEntity[] {
 }
 
 /**
+ * Extract contract value/currency amounts (e.g., "$50K", "100K ARR", "$25,000")
+ */
+export function extractContractValue(text: string): ParsedEntity | null {
+  // Pattern for currency with K/M suffix
+  const currencyPattern1 = /\$\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*([KM])\b/gi;
+  // Pattern for explicit contract/deal value
+  const currencyPattern2 = /(?:contract|deal|value|ARR|MRR).*?\$?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*([KM]?)/gi;
+  // Pattern for plain currency
+  const currencyPattern3 = /\$\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\b/g;
+
+  const matches: Array<{value: number; match: string; confidence: number}> = [];
+
+  // Try pattern 1 (high confidence)
+  let match;
+  while ((match = currencyPattern1.exec(text)) !== null) {
+    const amount = parseFloat(match[1].replace(/,/g, ''));
+    const multiplier = match[2].toUpperCase() === 'K' ? 1000 : 1000000;
+    matches.push({ value: amount * multiplier, match: match[0], confidence: 90 });
+  }
+
+  // Try pattern 2 (medium-high confidence)
+  currencyPattern2.lastIndex = 0;
+  while ((match = currencyPattern2.exec(text)) !== null) {
+    const amount = parseFloat(match[1].replace(/,/g, ''));
+    const multiplier = match[2] ? (match[2].toUpperCase() === 'K' ? 1000 : 1000000) : 1;
+    matches.push({ value: amount * multiplier, match: match[0], confidence: 85 });
+  }
+
+  // Try pattern 3 (lower confidence - could be any dollar amount)
+  currencyPattern3.lastIndex = 0;
+  while ((match = currencyPattern3.exec(text)) !== null) {
+    const amount = parseFloat(match[1].replace(/,/g, ''));
+    // Only include if > $1000 (likely contract value, not small amounts)
+    if (amount >= 1000) {
+      matches.push({ value: amount, match: match[0], confidence: 70 });
+    }
+  }
+
+  // Return highest confidence match
+  if (matches.length > 0) {
+    const best = matches.sort((a, b) => b.confidence - a.confidence)[0];
+    return {
+      type: 'number',
+      value: best.value.toString(),
+      confidence: best.confidence,
+      metadata: {
+        amount: best.value,
+        formatted: `$${best.value.toLocaleString()}`,
+        original: best.match,
+        source: 'contract_value'
+      }
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Extract team size (e.g., "team of 12", "5 users", "15 seat license")
+ */
+export function extractTeamSize(text: string): ParsedEntity | null {
+  const teamPatterns = [
+    /team\s+of\s+(\d+)/gi,
+    /(\d+)\s+(?:users?|people|employees?|members?|seats?)/gi,
+    /(\d+)\s+seat\s+(?:license|plan)/gi,
+    /company\s+size.*?(\d+)/gi,
+    /(\d+)(?:\+)?\s+(?:person|user)\s+(?:team|org|company)/gi
+  ];
+
+  const matches: Array<{size: number; match: string; confidence: number}> = [];
+
+  for (const pattern of teamPatterns) {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const size = parseInt(match[1], 10);
+      // Only include reasonable team sizes (1-10000)
+      if (size >= 1 && size <= 10000) {
+        const confidence = match[0].toLowerCase().includes('team') ? 90 :
+                          match[0].toLowerCase().includes('seat') ? 85 : 80;
+        matches.push({ size, match: match[0], confidence });
+      }
+    }
+  }
+
+  // Return highest confidence match
+  if (matches.length > 0) {
+    const best = matches.sort((a, b) => b.confidence - a.confidence)[0];
+    return {
+      type: 'number',
+      value: best.size.toString(),
+      confidence: best.confidence,
+      metadata: {
+        team_size: best.size,
+        original: best.match,
+        source: 'team_size'
+      }
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Extract trial duration (e.g., "14 day trial", "2 week trial", "30 days")
+ */
+export function extractTrialDuration(text: string): ParsedEntity | null {
+  const durationPatterns = [
+    /(\d+)\s*(?:day|days?)\s+trial/gi,
+    /(\d+)\s*(?:week|weeks?)\s+trial/gi,
+    /trial.*?(\d+)\s*(?:day|days?)/gi,
+    /(\d+)\s*(?:day|days?)\s+(?:evaluation|pilot|POC)/gi
+  ];
+
+  for (const pattern of durationPatterns) {
+    const match = pattern.exec(text);
+    if (match) {
+      let days = parseInt(match[1], 10);
+      // Convert weeks to days if needed
+      if (match[0].toLowerCase().includes('week')) {
+        days = days * 7;
+      }
+      return {
+        type: 'number',
+        value: days.toString(),
+        confidence: 85,
+        metadata: {
+          trial_days: days,
+          original: match[0],
+          source: 'trial_duration'
+        }
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Main parsing function - extracts all entities from text
  */
 export async function parseText(text: string): Promise<ParsedData> {
