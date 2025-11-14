@@ -162,11 +162,15 @@ async function testSemanticSearch() {
 
       // Show statistics
       console.log('\n📊 Search Statistics:');
-      console.log(`   Total found: ${result.stats.total_found}`);
-      console.log(`   Top results: ${result.stats.total_returned}`);
-      console.log(`   Avg relevance: ${result.stats.avg_relevance}`);
-      console.log(`   Highest score: ${result.stats.highest_relevance}`);
-      console.log(`   Lowest score: ${result.stats.lowest_relevance}`);
+      if (result.stats) {
+        console.log(`   Total found: ${result.stats.total_found}`);
+        console.log(`   Top results: ${result.stats.total_returned}`);
+        console.log(`   Avg relevance: ${result.stats.avg_relevance}`);
+        console.log(`   Highest score: ${result.stats.highest_relevance}`);
+        console.log(`   Lowest score: ${result.stats.lowest_relevance}`);
+      } else {
+        console.log(`   Total results: ${result.total_results || 0}`);
+      }
 
       // Show top results
       if (result.results && result.results.length > 0) {

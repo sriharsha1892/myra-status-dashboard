@@ -49,31 +49,31 @@ export async function POST(request: NextRequest) {
 
     // Determine which categories to search
     const searchAll = categories.includes('all');
-    const searchTimeline = searchAll || categories.includes('timeline');
-    const searchTrials = searchAll || categories.includes('trials');
-    const searchUsers = searchAll || categories.includes('users');
-    const searchResources = searchAll || categories.includes('resources');
+    const shouldSearchTimeline = searchAll || categories.includes('timeline');
+    const shouldSearchTrials = searchAll || categories.includes('trials');
+    const shouldSearchUsers = searchAll || categories.includes('users');
+    const shouldSearchResources = searchAll || categories.includes('resources');
 
     // 1. TIMELINE EVENTS SEARCH (with AI if available)
-    if (searchTimeline) {
+    if (shouldSearchTimeline) {
       const timelineResults = await searchTimelineEvents(query, queryLower, limit);
       results.push(...timelineResults);
     }
 
     // 2. TRIAL ORGANIZATIONS SEARCH
-    if (searchTrials) {
+    if (shouldSearchTrials) {
       const trialResults = await searchTrials(queryLower, limit);
       results.push(...trialResults);
     }
 
     // 3. USERS SEARCH
-    if (searchUsers) {
+    if (shouldSearchUsers) {
       const userResults = await searchUsers(queryLower, limit);
       results.push(...userResults);
     }
 
     // 4. RESOURCE DISCUSSIONS & QUESTIONS SEARCH
-    if (searchResources) {
+    if (shouldSearchResources) {
       const resourceResults = await searchResources(queryLower, limit);
       results.push(...resourceResults);
     }

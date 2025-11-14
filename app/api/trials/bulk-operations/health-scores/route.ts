@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
         org_id,
         org_name,
         org_lifecycle_stage,
-        trial_start,
-        trial_end,
+        trial_start_date,
+        trial_end_date,
         engagement_score
       `);
 
@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
       orgs.map(async (org) => {
         // Calculate days in trial
         let daysInTrial: number | undefined;
-        if (org.trial_start) {
-          const startDate = new Date(org.trial_start);
+        if (org.trial_start_date) {
+          const startDate = new Date(org.trial_start_date);
           const now = new Date();
           daysInTrial = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         }
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
           org_id: org.org_id,
           org_name: org.org_name,
           org_lifecycle_stage: org.org_lifecycle_stage,
-          trial_start: org.trial_start,
-          trial_end: org.trial_end,
+          trial_start: org.trial_start_date,
+          trial_end: org.trial_end_date,
           engagement_score: org.engagement_score,
           event_count: eventCount || 0,
           user_count: userCount || 0,
