@@ -286,8 +286,8 @@ export default function NotificationsPage() {
                   <div className="relative">
                     <Bell className="w-8 h-8 text-neutral-700" />
                     {unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-blue-500 to-accent-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 animate-pulse">
-                        <span className="text-[10px] font-bold text-white">{unreadCount}</span>
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-white/95 backdrop-blur-xl border-2 border-accent-500/30 rounded-full flex items-center justify-center shadow-lg shadow-accent-500/20 animate-pulse">
+                        <span className="text-[10px] font-bold text-accent-600">{unreadCount}</span>
                       </div>
                     )}
                   </div>
@@ -301,10 +301,11 @@ export default function NotificationsPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowPreferences(true)}
-                  className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-neutral-700 bg-white/80 backdrop-blur-xl border border-neutral-200 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-slate-500/10 hover:scale-105 hover:border-neutral-300"
+                  className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-accent-700 bg-white/95 backdrop-blur-xl border-2 border-accent-200 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/20 hover:scale-105 hover:border-accent-300 hover:bg-accent-50/50"
                 >
                   <Settings className="w-4 h-4" />
                   <span>Preferences</span>
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent-500 rounded-full animate-pulse"></span>
                 </button>
                 {unreadCount > 0 && (
                   <button
