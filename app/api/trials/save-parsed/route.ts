@@ -90,48 +90,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Handle activities
-    if (selected_activities && selected_activities.length > 0 && org_id) {
+    // 3. Handle activities - create user_interactions for each user
+    if (selected_activities && selected_activities.length > 0 && org_id && created_user_ids.length > 0) {
+      // Map interaction types from activity types
+      const typeMapping: Record<string, string> = {
+        'demo': 'demo',
+        'call': 'call',
+        'meeting': 'meeting',
+        'email': 'email',
+        'chat': 'chat',
+        'training': 'training',
+        'support': 'support',
+        'trial_started': 'demo',
+        'questions_asked': 'support',
+        'feedback_received': 'call'
+      };
+
       for (const activity of selected_activities) {
-        // Get activity type details
-        const { data: activityType } = await supabase
-          .from('trial_activity_types')
-          .select('id, type_name')
-          .eq('type_name', activity.type)
-          .single();
+        // Create interaction for each user (or primary user if specified)
+        const targetUserIds = activity.user_id ? [activity.user_id] : created_user_ids;
 
-        const metadata: any = { ...activity.metadata };
+        for (const userId of targetUserIds) {
+          const interactionType = typeMapping[activity.type] || 'meeting';
+          const title = activity.title || `${activity.type.replace(/_/g, ' ')}`;
 
-        // Add feature/model usage to metadata if present
-        if (activity.feature) {
-          metadata.feature_used = activity.feature;
-        }
-        if (activity.model) {
-          metadata.model_used = activity.model;
-        }
+          const { data: newInteraction, error: interactionError } = await supabase
+            .from('user_interactions')
+            .insert({
+              user_id: userId,
+              org_id: org_id,
+              interaction_type: interactionType,
+              title: title,
+              notes: activity.description || activity.notes || null,
+              interaction_date: activity.date || new Date().toISOString(),
+              duration_minutes: activity.duration_minutes || null,
+              conducted_by: user.email || null,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-        const { data: newActivity, error: activityError } = await supabase
-          .from('trial_activities')
-          .insert({
-            trial_org_id: org_id,
-            activity_type_id: activityType?.id || null,
-            activity_type: activity.type,
-            title: activity.title || `${activity.type.replace(/_/g, ' ')}`,
-            description: activity.description || null,
-            metadata,
-            created_by: user.id
-          })
-          .select()
-          .single();
+          if (interactionError) {
+            console.error('Error creating user interaction:', interactionError);
+          } else {
+            created_activity_ids.push(newInteraction.id);
 
-        if (activityError) {
-          console.error('Error creating activity:', activityError);
-        } else {
-          created_activity_ids.push(newActivity.id);
-
-          // Increment terminology usage count
-          if (activity.terminology_id) {
-            await incrementTerminologyUsage(activity.terminology_id);
+            // Increment terminology usage count
+            if (activity.terminology_id) {
+              await incrementTerminologyUsage(activity.terminology_id);
+            }
           }
         }
       }

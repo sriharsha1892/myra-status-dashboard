@@ -378,6 +378,16 @@ export async function parseText(text: string): Promise<ParsedData> {
   const dates = extractDates(text);
   const numbers = extractNumbers(text);
 
+  // Extract enhanced business data
+  const contractValue = extractContractValue(text);
+  const teamSize = extractTeamSize(text);
+  const trialDuration = extractTrialDuration(text);
+
+  // Add enhanced data to numbers array if found
+  if (contractValue) numbers.push(contractValue);
+  if (teamSize) numbers.push(teamSize);
+  if (trialDuration) numbers.push(trialDuration);
+
   // Merge user entities (emails + names)
   const users = [...emails, ...personNames];
 
