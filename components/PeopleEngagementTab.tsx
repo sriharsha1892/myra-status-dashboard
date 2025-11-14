@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Users, UserCheck, Activity } from 'lucide-react';
-import PlatformUsersTab from './PlatformUsersTab';
+import { useState, useEffect } from 'react';
+import { Users, Activity, UserCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import UpdatesTab from './UpdatesTab';
+import toast from 'react-hot-toast';
 
 interface PeopleEngagementTabProps {
   orgId: string;
@@ -20,33 +21,51 @@ export default function PeopleEngagementTab({
   onEditUser,
   onDeleteUser,
 }: PeopleEngagementTabProps) {
-  const [activeSection, setActiveSection] = useState<'stakeholders' | 'platform' | 'activity'>('stakeholders');
+  const [activeSection, setActiveSection] = useState<'people' | 'activity'>('people');
+  const [platformUsers, setPlatformUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  // Fetch platform users from trial_users table
+  useEffect(() => {
+    if (activeSection === 'people') {
+      fetchPlatformUsers();
+    }
+  }, [orgId, activeSection]);
+
+  const fetchPlatformUsers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('trial_users')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPlatformUsers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching platform users:', error);
+      toast.error('Failed to load platform users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Section Toggle - 3 sections */}
+      {/* Section Toggle - 2 sections (merged people view + activity) */}
       <div className="flex items-center gap-2 p-1 bg-white/60 backdrop-blur-xl border border-gray-200 rounded-xl inline-flex">
         <button
-          onClick={() => setActiveSection('stakeholders')}
+          onClick={() => setActiveSection('people')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeSection === 'stakeholders'
+            activeSection === 'people'
               ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg'
               : 'text-gray-600 hover:bg-white/80'
           }`}
         >
           <Users className="w-4 h-4" />
-          Stakeholders
-        </button>
-        <button
-          onClick={() => setActiveSection('platform')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            activeSection === 'platform'
-              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg'
-              : 'text-gray-600 hover:bg-white/80'
-          }`}
-        >
-          <UserCheck className="w-4 h-4" />
-          Platform Users
+          People
         </button>
         <button
           onClick={() => setActiveSection('activity')}
@@ -62,17 +81,15 @@ export default function PeopleEngagementTab({
       </div>
 
       {/* Content */}
-      {activeSection === 'stakeholders' && (
-        <UsersSection
-          users={users}
+      {activeSection === 'people' && (
+        <MergedPeopleSection
+          stakeholders={users}
+          platformUsers={platformUsers}
+          loading={loading}
           onAddUser={onAddUser}
           onEditUser={onEditUser}
           onDeleteUser={onDeleteUser}
         />
-      )}
-
-      {activeSection === 'platform' && (
-        <PlatformUsersTab orgId={orgId} />
       )}
 
       {activeSection === 'activity' && (
@@ -82,29 +99,49 @@ export default function PeopleEngagementTab({
   );
 }
 
-// Internal Users Section Component (Stakeholders)
-function UsersSection({
-  users,
+// Merged People Section - Combines Stakeholders and Platform Users
+function MergedPeopleSection({
+  stakeholders,
+  platformUsers,
+  loading,
   onAddUser,
   onEditUser,
   onDeleteUser,
 }: {
-  users: any[];
+  stakeholders: any[];
+  platformUsers: any[];
+  loading: boolean;
   onAddUser: () => void;
   onEditUser: (user: any) => void;
   onDeleteUser: (userId: string) => void;
 }) {
+  // Determine if a user is an active platform user
+  const isActivePlatformUser = (user: any) => {
+    return user.last_active_at || ['active', 'power_user', 'building', 'testing', 'integrating', 'pilot', 'production_ready'].includes(user.current_stage?.toLowerCase());
+  };
+
+  // Create merged list with platform user info
+  const mergedUsers = stakeholders.map(user => {
+    const platformUser = platformUsers.find(pu => pu.user_id === user.user_id || pu.email === user.email);
+    return {
+      ...user,
+      isPlatformUser: !!platformUser,
+      isActive: platformUser ? isActivePlatformUser(platformUser) : false,
+      platformStage: platformUser?.current_stage
+    };
+  });
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Trial Stakeholders</h3>
-          <p className="text-sm text-gray-600 mt-1">Internal contacts and decision makers</p>
+          <h3 className="text-lg font-semibold text-gray-900">People & Contacts</h3>
+          <p className="text-sm text-gray-600 mt-1">Stakeholders and platform users for this trial</p>
         </div>
         <button
           onClick={onAddUser}
-          className="flex items-center gap-2 px-4 py-2 bg-accent-500 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-500 text-white text-sm font-semibold rounded-lg hover:bg-accent-600 transition-all shadow-md"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -114,18 +151,22 @@ function UsersSection({
       </div>
 
       {/* Users Grid */}
-      {users.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      ) : mergedUsers.length === 0 ? (
         <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
             <Users className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No stakeholders yet</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No contacts yet</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Add internal contacts and decision makers to track relationships
+            Add contacts and decision makers to track relationships
           </p>
           <button
             onClick={onAddUser}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all shadow-md"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -135,7 +176,7 @@ function UsersSection({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((user) => (
+          {mergedUsers.map((user) => (
             <div
               key={user.user_id}
               className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all group"
@@ -151,7 +192,8 @@ function UsersSection({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                {/* Role badge */}
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                   user.role === 'Decision Maker' ? 'bg-accent-100 text-purple-800' :
                   user.role === 'Influencer' ? 'bg-blue-100 text-blue-800' :
@@ -160,6 +202,7 @@ function UsersSection({
                 }`}>
                   {user.role || 'Contact'}
                 </span>
+                {/* Current stage badge */}
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                   user.current_stage === 'Engaged' ? 'bg-green-100 text-green-800' :
                   user.current_stage === 'Interested' ? 'bg-blue-100 text-blue-800' :
@@ -168,6 +211,13 @@ function UsersSection({
                 }`}>
                   {user.current_stage || 'Unknown'}
                 </span>
+                {/* Active User badge for platform users */}
+                {user.isPlatformUser && user.isActive && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" />
+                    Active User
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
