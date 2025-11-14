@@ -4,6 +4,7 @@
  */
 
 import { callGroqJSON, isGroqAvailable, formatPrompt } from './groqClient';
+import { processWithProgress } from './parallelProcessor';
 
 // Health status levels
 export type HealthStatus = 'healthy' | 'warning' | 'at-risk' | 'critical';
@@ -179,6 +180,7 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON.`,
 
 /**
  * Batch generate health scores for multiple organizations
+ * Now with parallel processing for 3x faster performance
  */
 export async function batchGenerateHealthScores(
   orgs: OrgDataForHealth[]
@@ -187,18 +189,25 @@ export async function batchGenerateHealthScores(
 
   console.log(`Starting batch health score generation for ${orgs.length} organizations...`);
 
-  for (let i = 0; i < orgs.length; i++) {
-    const org = orgs[i];
-    console.log(`Analyzing ${i + 1}/${orgs.length}: ${org.org_name}...`);
+  // Process organizations in parallel (3 concurrent)
+  const parallelResults = await processWithProgress(
+    orgs,
+    async (org, index) => {
+      console.log(`Analyzing ${index + 1}/${orgs.length}: ${org.org_name}...`);
+      const result = await generateHealthScore(org);
+      return { orgId: org.org_id, result };
+    },
+    (completed, total) => {
+      console.log(`Progress: ${completed}/${total} organizations analyzed`);
+    },
+    3, // 3 concurrent requests
+    200 // 200ms delay between batches
+  );
 
-    const result = await generateHealthScore(org);
-    results.set(org.org_id, result);
-
-    // Small delay between requests to avoid rate limits
-    if (i < orgs.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
+  // Convert array results back to map
+  parallelResults.forEach(({ orgId, result }) => {
+    results.set(orgId, result);
+  });
 
   console.log(`Batch health score generation complete: ${results.size} organizations analyzed`);
 

@@ -151,7 +151,7 @@ export async function batchTagTimelineEvents(
 
     // Small delay between requests to avoid rate limits
     if (i < events.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200)); // Optimized: 200ms (5 req/sec)
     }
   }
 

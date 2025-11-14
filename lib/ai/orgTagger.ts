@@ -162,7 +162,7 @@ export async function batchTagOrganizations(
 
     // Small delay between requests to avoid rate limits (14,400 req/day = ~10 req/min safe)
     if (i < orgs.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200)); // Optimized: 200ms (5 req/sec)
     }
   }
 

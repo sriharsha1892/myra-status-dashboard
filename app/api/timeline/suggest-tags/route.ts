@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isGroqAvailable, callGroqJSON, formatPrompt } from '@/lib/ai/groqClient';
 import { getSuggestedTags } from '@/lib/ai/timelineEventTagger';
+import { getCacheKey, getCachedTags, setCachedTags } from '@/lib/ai/tagCache';
 
 // Create Supabase admin client
 const supabaseAdmin = createClient(
@@ -87,6 +88,11 @@ export async function POST(request: NextRequest) {
 
     // Categorize suggestions for better UX
     const categorized = categorizeTags(finalSuggestions, existingTags, aiSuggestions);
+
+    // Cache AI suggestions for future requests
+    if (aiSuggestions.length > 0) {
+      setCachedTags(cacheKey, aiSuggestions);
+    }
 
     return NextResponse.json({
       success: true,

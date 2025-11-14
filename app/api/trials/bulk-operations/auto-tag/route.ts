@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
         comments,
         engagement_score,
         org_lifecycle_stage,
-        trial_start,
-        trial_end,
+        trial_start_date,
+        trial_end_date,
         tags
       `);
 
@@ -133,8 +133,8 @@ export async function POST(request: NextRequest) {
           comments: org.comments,
           engagement_score: org.engagement_score,
           org_lifecycle_stage: org.org_lifecycle_stage,
-          trial_start: org.trial_start,
-          trial_end: org.trial_end,
+          trial_start: org.trial_start_date,
+          trial_end: org.trial_end_date,
           event_count: eventCount || 0,
           user_count: userCount || 0,
           days_since_last_activity: daysSinceLastActivity,
