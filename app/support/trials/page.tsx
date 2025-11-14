@@ -170,7 +170,7 @@ export default function TrialOrganizationsPage() {
         (org) =>
           org.org_name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
           org.account_manager?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-          org.org_domain?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+          org.domain?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
     }
 
@@ -339,7 +339,7 @@ export default function TrialOrganizationsPage() {
 
     const csvData = selectedOrgs.map((org) => ({
       'Org Name': org.org_name,
-      'Domain': org.org_domain || '',
+      'Domain': org.domain || '',
       'Account Manager': resolveAccountManagerName(org.account_manager, new Map()) || '',
       'Stage': formatStage(org.org_lifecycle_stage),
       'Trial Start': org.trial_start_date ? format(new Date(org.trial_start_date), 'yyyy-MM-dd') : '',
@@ -731,7 +731,7 @@ export default function TrialOrganizationsPage() {
                                 {org.org_name}
                               </h3>
                               <p className="text-xs font-medium text-gray-500 truncate">
-                                {org.org_domain || 'No domain'}
+                                {org.domain || 'No domain'}
                               </p>
                             </div>
                           </div>

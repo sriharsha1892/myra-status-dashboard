@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 interface TrialOrg {
   org_id: string;
   org_name: string;
-  org_domain: string;
+  domain: string;
 }
 
 interface ActivityEntry {
@@ -71,7 +71,7 @@ export default function BulkActivityPage() {
     try {
       const { data, error } = await supabase
         .from('trial_organizations')
-        .select('org_id, org_name, org_domain')
+        .select('org_id, org_name, domain')
         .eq('org_lifecycle_stage', 'trial_active')
         .order('org_name', { ascending: true });
 
@@ -257,7 +257,7 @@ export default function BulkActivityPage() {
             <option value="">Choose an organization...</option>
             {orgs.filter(org => !selectedOrgs.includes(org.org_id)).map(org => (
               <option key={org.org_id} value={org.org_id}>
-                {org.org_name} {org.org_domain && `(${org.org_domain})`}
+                {org.org_name} {org.domain && `(${org.domain})`}
               </option>
             ))}
           </select>
@@ -285,7 +285,7 @@ export default function BulkActivityPage() {
                   <div className="bg-accent-500 px-6 py-4 flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-bold text-white">{org.org_name}</h3>
-                      {org.org_domain && <p className="text-sm text-blue-100">{org.org_domain}</p>}
+                      {org.domain && <p className="text-sm text-blue-100">{org.domain}</p>}
                     </div>
                     <button
                       onClick={() => removeOrg(orgId)}

@@ -378,7 +378,7 @@ export default function TrialOrgPage() {
                       {lifecycleStage?.label}
                     </span>
                     <span className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-700">
-                      {organization.org_domain}
+                      {organization.domain}
                     </span>
                     <span className="text-sm text-gray-600">
                       AM: <span className="font-medium">{organization.account_manager_name || organization.account_manager || 'Unassigned'}</span>
@@ -527,8 +527,8 @@ export default function TrialOrgPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Domain *</label>
                 <select
-                  value={orgForm.org_domain || ''}
-                  onChange={(e) => setOrgForm({ ...orgForm, org_domain: e.target.value })}
+                  value={orgForm.domain || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, domain: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {DOMAIN_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -910,7 +910,7 @@ function DetailsTab({ organization }: any) {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">Domain</label>
-            <p className="text-base text-gray-900 mt-1">{organization.org_domain}</p>
+            <p className="text-base text-gray-900 mt-1">{organization.domain}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">Account Manager</label>

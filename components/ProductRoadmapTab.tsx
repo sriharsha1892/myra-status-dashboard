@@ -168,7 +168,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       // Fetch organizations
       const { data: orgsData, error: orgsError } = await supabase
         .from('trial_organizations')
-        .select('org_id, org_name, org_domain as domain')
+        .select('org_id, org_name, domain')
         .order('org_name');
 
       if (orgsError) throw orgsError;
