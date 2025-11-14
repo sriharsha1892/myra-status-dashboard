@@ -8,12 +8,11 @@ import { format } from 'date-fns';
 
 interface TrialUser {
   user_id: string;
-  full_name: string;
+  name: string;
   email: string;
-  user_designation?: string;
-  freshsales_id?: string;
-  is_primary_contact: boolean;
-  user_status: string;
+  role?: string;
+  salesforce_id?: string;
+  current_stage: string;
   last_login_at?: string;
   created_at: string;
 }
@@ -59,7 +58,7 @@ export default function TrialUsersTab({ orgId }: TrialUsersTabProps) {
     try {
       const { error } = await supabase
         .from('trial_users')
-        .update({ user_status: newStatus })
+        .update({ current_stage: newStatus })
         .eq('user_id', userId);
 
       if (error) throw error;
@@ -69,26 +68,6 @@ export default function TrialUsersTab({ orgId }: TrialUsersTabProps) {
     } catch (error: any) {
       console.error('Error updating user status:', error);
       toast.error('Failed to update user status');
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
-  const handleTogglePrimaryContact = async (userId: string, currentValue: boolean) => {
-    setUpdatingStatus(true);
-    try {
-      const { error } = await supabase
-        .from('trial_users')
-        .update({ is_primary_contact: !currentValue })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      toast.success(`Primary contact status updated`);
-      await fetchUsers();
-    } catch (error: any) {
-      console.error('Error updating primary contact:', error);
-      toast.error('Failed to update primary contact status');
     } finally {
       setUpdatingStatus(false);
     }
@@ -194,9 +173,6 @@ export default function TrialUsersTab({ orgId }: TrialUsersTabProps) {
                   <th className="px-6 py-3 text-left">
                     <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Status</span>
                   </th>
-                  <th className="px-6 py-3 text-left">
-                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Primary</span>
-                  </th>
                   <th className="px-6 py-3 text-right">
                     <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Actions</span>
                   </th>
@@ -208,51 +184,29 @@ export default function TrialUsersTab({ orgId }: TrialUsersTabProps) {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                          {user.full_name.charAt(0).toUpperCase()}
+                          {user.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{user.full_name}</span>
+                        <span className="text-sm font-medium text-gray-900">{user.name}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm text-gray-600">{user.email}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-gray-600">{user.user_designation || '-'}</span>
+                      <span className="text-sm text-gray-600">{user.role || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <select
-                        value={user.user_status}
+                        value={user.current_stage}
                         onChange={(e) => handleStatusChange(user.user_id, e.target.value)}
                         disabled={updatingStatus}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-md border cursor-pointer transition-all ${getStatusColor(user.user_status)}`}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-md border cursor-pointer transition-all ${getStatusColor(user.current_stage)}`}
                       >
                         <option value="invited">Invited</option>
                         <option value="access_enabled">Access Enabled</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                       </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleTogglePrimaryContact(user.user_id, user.is_primary_contact)}
-                        disabled={updatingStatus}
-                        className={`text-sm font-semibold px-3 py-1.5 rounded-md border transition-all ${
-                          user.is_primary_contact
-                            ? 'text-green-600 bg-green-50 border-green-200'
-                            : 'text-gray-600 bg-gray-50 border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        {user.is_primary_contact ? (
-                          <>
-                            <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Primary
-                          </>
-                        ) : (
-                          'Mark Primary'
-                        )}
-                      </button>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button

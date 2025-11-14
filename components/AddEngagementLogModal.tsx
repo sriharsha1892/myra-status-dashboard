@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 interface TrialUser {
   user_id: string;
-  full_name: string;
+  name: string;
 }
 
 interface AddEngagementLogModalProps {
@@ -61,9 +61,9 @@ export default function AddEngagementLogModal({
     try {
       const { data, error } = await supabase
         .from('trial_users')
-        .select('user_id, full_name')
+        .select('user_id, name')
         .eq('org_id', orgId)
-        .order('full_name');
+        .order('name');
 
       if (error) throw error;
       setTrialUsers(data || []);
@@ -174,7 +174,7 @@ export default function AddEngagementLogModal({
                 </option>
                 {trialUsers.map((user) => (
                   <option key={user.user_id} value={user.user_id}>
-                    {user.full_name}
+                    {user.name}
                   </option>
                 ))}
               </select>

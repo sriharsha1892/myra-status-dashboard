@@ -71,9 +71,11 @@ export async function POST(request: NextRequest) {
             .insert({
               org_id,
               email: userData.email,
-              full_name: userData.full_name || userData.email.split('@')[0],
-              title_role: userData.title_role || null,
-              is_primary_contact: selected_users.indexOf(userData) === 0
+              name: userData.name || userData.full_name || userData.email.split('@')[0],
+              role: userData.role || userData.title_role || null,
+              account_manager: userData.account_manager || 'unassigned',
+              salesforce_id: userData.salesforce_id || null,
+              current_stage: 'invited'
             })
             .select()
             .single();

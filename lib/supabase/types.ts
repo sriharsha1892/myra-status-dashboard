@@ -297,11 +297,13 @@ export interface Database {
         Row: {
           user_id: string
           org_id: string
-          full_name: string
+          name: string
           email: string
-          title_role: string | null
-          is_primary_contact: boolean
-          user_status: 'invited' | 'access_enabled' | 'active' | 'inactive'
+          role: string | null
+          salesforce_id: string | null
+          account_manager: string
+          phone: string | null
+          current_stage: 'invited' | 'access_enabled' | 'active' | 'inactive'
           first_login_date: string | null
           last_login_date: string | null
           login_count: number
@@ -313,11 +315,13 @@ export interface Database {
         Insert: {
           user_id?: string
           org_id: string
-          full_name: string
+          name: string
           email: string
-          title_role?: string | null
-          is_primary_contact?: boolean
-          user_status?: 'invited' | 'access_enabled' | 'active' | 'inactive'
+          role?: string | null
+          salesforce_id?: string | null
+          account_manager: string
+          phone?: string | null
+          current_stage?: 'invited' | 'access_enabled' | 'active' | 'inactive'
           first_login_date?: string | null
           last_login_date?: string | null
           login_count?: number
@@ -329,11 +333,13 @@ export interface Database {
         Update: {
           user_id?: string
           org_id?: string
-          full_name?: string
+          name?: string
           email?: string
-          title_role?: string | null
-          is_primary_contact?: boolean
-          user_status?: 'invited' | 'access_enabled' | 'active' | 'inactive'
+          role?: string | null
+          salesforce_id?: string | null
+          account_manager?: string
+          phone?: string | null
+          current_stage?: 'invited' | 'access_enabled' | 'active' | 'inactive'
           first_login_date?: string | null
           last_login_date?: string | null
           login_count?: number

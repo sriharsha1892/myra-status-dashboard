@@ -321,9 +321,12 @@ export default function ImportWizardPage() {
           // @ts-ignore - Supabase typing issue with dynamic columns
           const { error: userError } = await supabase.from('trial_users').insert({
             org_id: orgId,
-            full_name: row.fullName,
+            name: row.fullName,
             email: row.email,
-            title_role: row.title,
+            role: row.title || null,
+            account_manager: row.accountManager || 'unassigned',
+            salesforce_id: null,
+            current_stage: 'invited',
           });
 
           if (userError) {

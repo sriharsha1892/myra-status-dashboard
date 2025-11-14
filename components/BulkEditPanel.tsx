@@ -9,8 +9,8 @@ interface TrialUser {
   user_id: string;
   org_id: string;
   email: string;
-  full_name: string;
-  title_role?: string;
+  name: string;
+  role?: string;
 }
 
 interface EditField {
@@ -30,7 +30,7 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
-  const [editField, setEditField] = useState<'full_name' | 'title_role'>('full_name');
+  const [editField, setEditField] = useState<'name' | 'role'>('name');
   const [editValue, setEditValue] = useState('');
   const [updating, setUpdating] = useState(false);
 
@@ -64,7 +64,7 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
   const filteredUsers = users.filter(
     (user) =>
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+      user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSelectUser = (userId: string) => {
@@ -171,11 +171,11 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
               <label className="block text-sm font-medium text-gray-700 mb-2">Field to edit</label>
               <select
                 value={editField}
-                onChange={(e) => setEditField(e.target.value as 'full_name' | 'title_role')}
+                onChange={(e) => setEditField(e.target.value as 'name' | 'role')}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="full_name">Full Name</option>
-                <option value="title_role">Title/Role</option>
+                <option value="name">Name</option>
+                <option value="role">Role</option>
               </select>
             </div>
 
@@ -185,7 +185,7 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                placeholder={`Enter new ${editField === 'full_name' ? 'full name' : 'title/role'}...`}
+                placeholder={`Enter new ${editField === 'name' ? 'name' : 'role'}...`}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -233,8 +233,8 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
                 />
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Full Name</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Title/Role</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Role</th>
             </tr>
           </thead>
           <tbody>
@@ -261,8 +261,8 @@ export default function BulkEditPanel({ orgId, onComplete }: BulkEditPanelProps)
                     />
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{user.full_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{user.title_role || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{user.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{user.role || '-'}</td>
                 </tr>
               ))
             )}
