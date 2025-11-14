@@ -9,10 +9,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       {children}
       <Toaster
-        position="top-right"
+        position="top-center"
         containerStyle={{
-          top: 20,
-          right: 20,
+          top: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 99999,
         }}
         toastOptions={{
@@ -88,7 +89,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <style jsx global>{`
         @keyframes enter {
           0% {
-            transform: translate3d(100%, 0, 0);
+            transform: translate3d(0, -100%, 0);
             opacity: 0;
           }
           100% {
@@ -103,7 +104,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             opacity: 1;
           }
           100% {
-            transform: translate3d(100%, 0, 0);
+            transform: translate3d(0, -100%, 0);
             opacity: 0;
           }
         }

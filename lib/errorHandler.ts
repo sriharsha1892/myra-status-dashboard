@@ -87,16 +87,16 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   if (errorType === 'network') {
     const messages = [
       {
-        message: "Oops! Can't reach the server right now 🌐",
-        suggestion: "Check your internet connection and try again"
+        message: "Connection to server lost",
+        suggestion: "Please check your internet connection and try again"
       },
       {
-        message: "Network connection lost 📡",
-        suggestion: "Please check your internet and retry"
+        message: "Network connection interrupted",
+        suggestion: "Your internet connection appears unstable. Please check your connection and retry."
       },
       {
-        message: "Can't connect to the server 🔌",
-        suggestion: "Your connection seems unstable. Give it another try?"
+        message: "Unable to reach the server",
+        suggestion: "We're having trouble connecting. Please verify your internet connection and try again."
       }
     ];
     const selected = messages[Math.floor(Math.random() * messages.length)];
@@ -107,16 +107,16 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   if (errorType === 'auth') {
     const messages = [
       {
-        message: "Session expired ⏰",
-        suggestion: "Please log in again to continue"
+        message: "Session has expired",
+        suggestion: "For security, please log in again to continue"
       },
       {
-        message: "Authentication required 🔐",
+        message: "Authentication required",
         suggestion: "Please log in to access this page"
       },
       {
-        message: "Your session has ended 🚪",
-        suggestion: "Please log in again"
+        message: "Login session ended",
+        suggestion: "Your session has timed out. Please log in again."
       }
     ];
     const selected = messages[Math.floor(Math.random() * messages.length)];
@@ -127,23 +127,23 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   if (errorType === 'duplicate') {
     const contextMessages: Record<ErrorContext, ErrorDetails> = {
       trial_org_create: {
-        message: "This organization already exists 🔄",
-        suggestion: "Please use a different name or check existing organizations",
+        message: "Organization already exists",
+        suggestion: "This organization name is already in use. Please choose a different name or check existing organizations.",
         technical: technicalMessage
       },
       user_create: {
-        message: "This email is already registered 👥",
-        suggestion: "Please use a different email address",
+        message: "Email address already registered",
+        suggestion: "This email is already associated with an account. Please use a different email address.",
         technical: technicalMessage
       },
       note_create: {
-        message: "Duplicate note detected 📝",
-        suggestion: "This note already exists",
+        message: "Duplicate note detected",
+        suggestion: "This note already exists in the system",
         technical: technicalMessage
       },
       generic: {
-        message: "This entry already exists 🔄",
-        suggestion: "Please use unique values",
+        message: "Duplicate entry found",
+        suggestion: "This information already exists. Please use unique values.",
         technical: technicalMessage
       },
       trial_org_update: { message: "", technical: technicalMessage },
@@ -159,16 +159,16 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   if (errorType === 'validation') {
     const messages = [
       {
-        message: "Please fill in all required fields 📋",
-        suggestion: "Some fields are missing or invalid"
+        message: "Required fields incomplete",
+        suggestion: "Please fill in all required fields before submitting"
       },
       {
-        message: "Missing required information ✍️",
-        suggestion: "Please complete all required fields"
+        message: "Missing required information",
+        suggestion: "Some required fields are empty. Please complete all fields marked as required."
       },
       {
-        message: "Invalid input detected 📝",
-        suggestion: "Please check your entries and try again"
+        message: "Invalid input detected",
+        suggestion: "Please check your entries and ensure all information is in the correct format"
       }
     ];
     const selected = messages[Math.floor(Math.random() * messages.length)];
@@ -179,32 +179,36 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   if (errorType === 'permission') {
     const messages = [
       {
-        message: "Access denied 🚫",
-        suggestion: "You don't have permission for this action. Please contact your admin."
+        message: "Access denied",
+        suggestion: "You don't have permission for this action. Please contact your administrator or use the support chat below."
       },
       {
-        message: "Insufficient permissions 🔒",
-        suggestion: "This action requires admin privileges"
+        message: "Insufficient permissions",
+        suggestion: "This action requires additional privileges. Please contact your admin for access."
       }
     ];
     const selected = messages[Math.floor(Math.random() * messages.length)];
     return { ...selected, technical: technicalMessage };
   }
 
-  // Database Errors
+  // Database Errors - balanced professional tone with light humor
   if (errorType === 'database') {
     const messages = [
       {
-        message: "Database error occurred 💾",
-        suggestion: "Please try again. Our team has been notified."
+        message: "Database connection interrupted",
+        suggestion: "We're experiencing a temporary database issue. Please try again in a moment. If the problem continues, use the support chat in the bottom right corner."
       },
       {
-        message: "Something went wrong on our end 🔧",
-        suggestion: "We're looking into it. Please retry in a moment."
+        message: "Server processing error",
+        suggestion: "Something went wrong while processing your request. Our team has been notified. Please try again or use the support widget for immediate assistance."
       },
       {
-        message: "Server error 🖥️",
-        suggestion: "Please try again in a few seconds"
+        message: "Temporary service disruption",
+        suggestion: "We're having a brief technical hiccup. Please try again shortly. Need help? Click the chat bubble in the bottom right corner."
+      },
+      {
+        message: "Request processing failed",
+        suggestion: "We couldn't complete your request this time. Please retry, and if you continue to see this message, reach out via the support chat below."
       }
     ];
     const selected = messages[Math.floor(Math.random() * messages.length)];
@@ -214,52 +218,52 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
   // Timeout Errors
   if (errorType === 'timeout') {
     return {
-      message: "Request timed out ⏱️",
-      suggestion: "This is taking longer than expected. Please try again",
+      message: "Request timed out",
+      suggestion: "This is taking longer than expected. Please try again or use the support chat if the issue persists.",
       technical: technicalMessage
     };
   }
 
-  // Context-Specific Generic Errors
+  // Context-Specific Generic Errors - professional with support guidance
   const contextFallbacks: Record<ErrorContext, ErrorDetails> = {
     trial_org_create: {
-      message: "Failed to create organization 🏢",
-      suggestion: "Please check your information and try again",
+      message: "Unable to create organization",
+      suggestion: "There was an issue creating the organization. Please verify your information and try again. If this persists, use the support chat in the bottom right corner.",
       technical: technicalMessage
     },
     trial_org_update: {
-      message: "Failed to update organization 📝",
-      suggestion: "Please try again",
+      message: "Update could not be saved",
+      suggestion: "We encountered an issue saving your changes. Please try again. Need assistance? Click the chat widget below.",
       technical: technicalMessage
     },
     user_create: {
-      message: "Failed to create user 👤",
-      suggestion: "Please verify the details and try again",
+      message: "User creation failed",
+      suggestion: "We couldn't create the user account. Please check the details and try again. For help, use the support chat in the bottom right.",
       technical: technicalMessage
     },
     user_update: {
-      message: "Failed to update user 💾",
-      suggestion: "Please try again in a moment",
+      message: "Unable to update user information",
+      suggestion: "The update didn't go through as expected. Please retry. If you need immediate help, the support chat is available below.",
       technical: technicalMessage
     },
     note_create: {
-      message: "Failed to save note 📝",
-      suggestion: "Please try posting your note again",
+      message: "Note could not be saved",
+      suggestion: "We had trouble saving your note. Please try posting it again. If the issue continues, reach out via the support widget.",
       technical: technicalMessage
     },
     login: {
-      message: "Login failed 🔑",
-      suggestion: "Please check your credentials and try again",
+      message: "Authentication error",
+      suggestion: "We couldn't complete the login process. Please verify your credentials and try again. Need help? Use the chat bubble below.",
       technical: technicalMessage
     },
     api_call: {
-      message: "Request failed 📡",
-      suggestion: "Please try again",
+      message: "Request failed",
+      suggestion: "The request couldn't be processed. Please try again. For persistent issues, contact support using the chat widget.",
       technical: technicalMessage
     },
     generic: {
-      message: "Something went wrong ⚠️",
-      suggestion: "Please try again or contact support if this persists",
+      message: "Something went wrong",
+      suggestion: "We encountered an unexpected issue. Please try again. If this continues, click the support chat in the bottom right corner for assistance.",
       technical: technicalMessage
     }
   };

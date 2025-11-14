@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLoading } from '@/lib/loading';
+import FeatureRequestVoting from '@/components/FeatureRequestVoting';
 
 interface FeatureRequest {
   id: string;
@@ -372,10 +373,20 @@ export default function FeatureRequestsPage() {
                         <PriorityIcon className="w-3.5 h-3.5" />
                         {priorityConfig.label}
                       </div>
-                      <div className="flex items-center gap-1 bg-white/50 px-2 py-1 rounded-lg">
-                        <ThumbsUp className="w-3.5 h-3.5 text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700">{request.votes}</span>
-                      </div>
+                      <FeatureRequestVoting
+                        featureRequestId={request.id}
+                        initialVotes={request.votes}
+                        title={request.title}
+                        onVoteChange={(newVoteCount) => {
+                          // Update local state
+                          const updatedRequests = requests.map(r =>
+                            r.id === request.id ? { ...r, votes: newVoteCount } : r
+                          );
+                          setRequests(updatedRequests);
+                        }}
+                        size="sm"
+                        showVoters={true}
+                      />
                     </div>
                   </div>
                 </div>

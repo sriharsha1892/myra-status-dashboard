@@ -9,7 +9,7 @@ import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar,
-  Users, TrendingDown
+  Users, TrendingDown, ChevronDown, BarChart3
 } from 'lucide-react';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
@@ -32,6 +32,7 @@ export default function EnterpriseCommandCenter() {
   const [upcomingDemos, setUpcomingDemos] = useState<any[]>([]);
   const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [avgEngagementScore, setAvgEngagementScore] = useState(0);
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
 
   const supabase = createClient();
 
@@ -275,8 +276,10 @@ export default function EnterpriseCommandCenter() {
             </p>
           </div>
 
-          {/* Primary Metrics Grid - 8-Column Compact Layout - ALWAYS SHOW ALL CARDS */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+          {/* Primary Metrics Grid - Simplified Layout */}
+          <div className="mb-8">
+            {/* Primary Cards - Always Visible (4 cards) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             {/* Active Trials Card */}
             <MagneticCard
               index={0}
@@ -406,8 +409,25 @@ export default function EnterpriseCommandCenter() {
                 </ChromaticShift>
               </HolographicOverlay>
             </MagneticCard>
+            </div>
 
-            {/* Total Organizations Card - NEW */}
+            {/* Show More Metrics Toggle */}
+            <div className="flex justify-center mb-4">
+              <button
+                onClick={() => setShowAllMetrics(!showAllMetrics)}
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <BarChart3 className="w-4 h-4" />
+                {showAllMetrics ? 'Show Less' : 'Show More Metrics'}
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAllMetrics ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            {/* Secondary Cards - Expandable (4 more cards) */}
+            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-300 ${
+              showAllMetrics ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none absolute'
+            }`}>
+            {/* Total Organizations Card */}
             <MagneticCard
               index={4}
               className="group relative overflow-hidden"
@@ -528,6 +548,7 @@ export default function EnterpriseCommandCenter() {
                 </ChromaticShift>
               </HolographicOverlay>
             </MagneticCard>
+            </div>
           </div>
 
           {/* Two-Column Layout - Compact Spacing */}

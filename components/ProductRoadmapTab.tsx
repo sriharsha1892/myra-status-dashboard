@@ -4,14 +4,19 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar, Trash2, CheckCircle, User } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, BarChart3, AlertCircle, Calendar, Trash2, CheckCircle, User, MessageCircle, Copy } from 'lucide-react';
 import AddRoadmapItemModal from './AddRoadmapItemModal';
 import RoadmapDetailPanel from './roadmap/RoadmapDetailPanel';
+import RoadmapItemVoting from './RoadmapItemVoting';
+import RoadmapComments from './RoadmapComments';
+import CloneTemplateModal from './roadmap/CloneTemplateModal';
 import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
 import RoadmapFilters from './roadmap/RoadmapFilters';
 import RoadmapAnalytics from './roadmap/RoadmapAnalytics';
 import CalendarView from './roadmap/CalendarView';
 import QuickStats from './roadmap/QuickStats';
+import SavedFilterViews from './roadmap/SavedFilterViews';
+import RoadmapPresence from './roadmap/RoadmapPresence';
 import { GridSkeleton, StatsSkeleton } from './roadmap/RoadmapSkeleton';
 import KeyboardShortcuts from './roadmap/KeyboardShortcuts';
 import { STATUS_CONFIG, PRIORITY_CONFIG, ANIMATIONS } from '@/lib/roadmap/constants';
@@ -49,6 +54,8 @@ interface RoadmapItem {
   milestone_id: string | null;
   progress_percentage?: number;
   owners?: Owner[];
+  votes?: number;
+  comment_count?: number;
 }
 
 interface Label {
@@ -89,6 +96,8 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [showCommentsModal, setShowCommentsModal] = useState<string | null>(null);
+  const [showCloneModal, setShowCloneModal] = useState<RoadmapItem | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Filter states
@@ -112,15 +121,48 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
   useEffect(() => {
     fetchAll();
+
+    // Set up real-time subscriptions for roadmap changes
+    const channel = supabase
+      .channel(`roadmap-changes-${orgId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'org_product_roadmap',
+          filter: `org_id=eq.${orgId}`
+        },
+        (payload) => {
+          // Handle real-time updates
+          if (payload.eventType === 'INSERT') {
+            setItems((prev) => [...prev, payload.new as RoadmapItem]);
+            toast.success('New roadmap item added');
+          } else if (payload.eventType === 'UPDATE') {
+            setItems((prev) =>
+              prev.map((item) =>
+                item.id === payload.new.id ? (payload.new as RoadmapItem) : item
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setItems((prev) => prev.filter((item) => item.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [orgId]);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      // Fetch items
+      // Fetch items with comment count
       const { data: itemsData, error: itemsError } = await supabase
         .from('org_product_roadmap')
-        .select('*')
+        .select('*, comment_count')
         .eq('org_id', orgId)
         .order('target_date', { ascending: true, nullsFirst: false });
 
@@ -330,73 +372,121 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Product Roadmap</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
-            {filteredItems.length !== items.length && ` (filtered from ${items.length})`}
-          </p>
-        </div>
+      {/* Real-time Presence */}
+      <RoadmapPresence
+        roadmapId={orgId}
+        currentView={viewMode}
+        showCursors={false}
+        showAvatars={true}
+      />
 
-        <div className="flex gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('cards')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'cards'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span className="hidden sm:inline">Cards</span>
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'kanban'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <LayoutList className="w-4 h-4" />
-              <span className="hidden sm:inline">Kanban</span>
-            </button>
-            <button
-              onClick={() => setViewMode('analytics')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'analytics'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                viewMode === 'calendar'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Calendar</span>
-            </button>
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left: Title and Description */}
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">Product Roadmap</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+              {filteredItems.length !== items.length && ` (filtered from ${items.length})`}
+            </p>
           </div>
 
-          {/* Add Button */}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Item</span>
-          </button>
+          {/* Right: Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            {/* Saved Filter Views */}
+            <div className="flex items-center gap-3">
+              <SavedFilterViews
+                orgId={orgId}
+                currentFilters={{
+                  searchQuery,
+                  selectedStatuses,
+                  selectedPriorities,
+                  selectedLabelIds,
+                  selectedMilestoneIds,
+                  selectedOrgIds,
+                  dateRange,
+                  showBlockedOnly
+                }}
+                currentViewMode={viewMode}
+                onApplyView={(filters, mode) => {
+                  setSearchQuery(filters.searchQuery || '');
+                  setSelectedStatuses(filters.selectedStatuses || []);
+                  setSelectedPriorities(filters.selectedPriorities || []);
+                  setSelectedLabelIds(filters.selectedLabelIds || []);
+                  setSelectedMilestoneIds(filters.selectedMilestoneIds || []);
+                  setSelectedOrgIds(filters.selectedOrgIds || []);
+                  setDateRange(filters.dateRange || { start: null, end: null });
+                  setShowBlockedOnly(filters.showBlockedOnly || false);
+                  setViewMode(mode as ViewMode);
+                }}
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-10 bg-gray-200" />
+
+            {/* View Mode Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'cards'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Cards View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden lg:inline">Cards</span>
+              </button>
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'kanban'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Kanban View"
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden lg:inline">Kanban</span>
+              </button>
+              <button
+                onClick={() => setViewMode('analytics')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'analytics'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Analytics View"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden lg:inline">Analytics</span>
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'calendar'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Calendar View"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden lg:inline">Calendar</span>
+              </button>
+            </div>
+
+            {/* Add Button */}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-sm flex items-center gap-2 text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Item</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -630,6 +720,35 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                               🎯
                             </span>
                           )}
+
+                          {/* Voting */}
+                          <RoadmapItemVoting
+                            roadmapId={item.id}
+                            initialVotes={item.votes || 0}
+                            title={item.title}
+                            onVoteChange={(newVoteCount) => {
+                              // Update local state
+                              setItems(prevItems =>
+                                prevItems.map(i =>
+                                  i.id === item.id ? { ...i, votes: newVoteCount } : i
+                                )
+                              );
+                            }}
+                            size="sm"
+                            showVoters={false}
+                          />
+
+                          {/* Comments */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowCommentsModal(item.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm hover:bg-blue-100 transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            {item.comment_count || 0}
+                          </button>
                         </div>
                             </div>
                           </div>
@@ -645,7 +764,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
                               >
                                 <CheckCircle className="w-4 h-4" />
-                                Mark Complete
+                                Complete
                               </button>
                             )}
                             {item.status === 'completed' && (
@@ -657,13 +776,23 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setShowCloneModal(item);
+                              }}
+                              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                              title="Clone item"
+                            >
+                              <Copy className="w-4 h-4" />
+                              Clone
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteItem(item.id, item.title);
                               }}
                               className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center justify-center gap-1.5"
                               title="Delete item"
                             >
                               <Trash2 className="w-4 h-4" />
-                              Delete
                             </button>
                           </div>
                         </RippleEffect>
@@ -714,6 +843,33 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           }
         }}
       />
+
+      {/* Comments Modal */}
+      {showCommentsModal && (
+        <RoadmapComments
+          roadmapItemId={showCommentsModal}
+          roadmapTitle={items.find(item => item.id === showCommentsModal)?.title || 'Roadmap Item'}
+          isOpen={!!showCommentsModal}
+          onClose={() => setShowCommentsModal(null)}
+          embedded={false}
+        />
+      )}
+
+      {/* Clone/Template Modal */}
+      {showCloneModal && (
+        <CloneTemplateModal
+          isOpen={!!showCloneModal}
+          onClose={() => setShowCloneModal(null)}
+          item={showCloneModal}
+          orgId={orgId}
+          onSuccess={() => {
+            fetchAll();
+            setShowCloneModal(null);
+            toast.success('Item cloned successfully!');
+          }}
+          mode="both"
+        />
+      )}
 
       {/* Confetti Effect */}
       <ConfettiEffect trigger={showConfetti} />
