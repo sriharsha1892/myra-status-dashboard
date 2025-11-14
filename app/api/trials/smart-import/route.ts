@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     );
     const { data: existingUsers } = await supabaseAdmin
       .from('trial_users')
-      .select('user_id, email, full_name, org_id')
+      .select('user_id, email, name, org_id')
       .in('email', allEmails);
 
     // Calculate statistics

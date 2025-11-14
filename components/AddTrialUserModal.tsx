@@ -26,7 +26,6 @@ export default function AddTrialUserModal({
   const [email, setEmail] = useState('');
   const [designation, setDesignation] = useState('');
   const [freshsalesId, setFreshsalesId] = useState('');
-  const [isPrimaryContact, setIsPrimaryContact] = useState(false);
 
   const supabase = createClient();
 
@@ -88,7 +87,6 @@ export default function AddTrialUserModal({
     setEmail('');
     setDesignation('');
     setFreshsalesId('');
-    setIsPrimaryContact(false);
   };
 
   const handleClose = () => {
@@ -161,34 +159,19 @@ export default function AddTrialUserModal({
             />
           </div>
 
-          {/* Freshsales ID */}
+          {/* Salesforce ID */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Freshsales ID
+              Salesforce ID
             </label>
             <input
               type="text"
               value={freshsalesId}
               onChange={(e) => setFreshsalesId(e.target.value)}
-              placeholder="e.g., FS123456"
+              placeholder="e.g., SF123456"
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">Optional: Link to Freshsales CRM contact</p>
-          </div>
-
-          {/* Primary Contact Checkbox */}
-          <div className="flex items-center gap-3 pt-2">
-            <input
-              type="checkbox"
-              id="isPrimaryContact"
-              checked={isPrimaryContact}
-              onChange={(e) => setIsPrimaryContact(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
-            />
-            <label htmlFor="isPrimaryContact" className="text-sm font-medium text-gray-900 cursor-pointer">
-              Mark as Primary Contact
-            </label>
-            <p className="text-xs text-gray-500 ml-auto">Main point of contact for this organization</p>
+            <p className="text-xs text-gray-500 mt-1">Optional: Link to Salesforce CRM contact</p>
           </div>
 
           {/* User Status Info */}
