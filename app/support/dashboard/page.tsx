@@ -189,20 +189,21 @@ export default function EnterpriseCommandCenter() {
 
   const fetchActiveUsers = async () => {
     try {
-      // Count active users from trial_users (users who have logged in or are in active stages)
+      // Count total trial users across all organizations
       const { count, error } = await supabase
         .from('trial_users')
-        .select('*', { count: 'exact', head: true })
-        .or('last_active_at.not.is.null,current_stage.in.(active,power_user,building,testing,integrating,pilot,production_ready)');
+        .select('*', { count: 'exact', head: true });
 
       if (error) throw error;
       setActiveUsersCount(count || 0);
 
       // Calculate average engagement score from all organizations with engagement_score
-      const { data: orgsWithScores } = await supabase
+      const { data: orgsWithScores, error: scoreError } = await supabase
         .from('trial_organizations')
         .select('engagement_score')
         .not('engagement_score', 'is', null);
+
+      if (scoreError) throw scoreError;
 
       if (orgsWithScores && orgsWithScores.length > 0) {
         const avgScore = orgsWithScores.reduce((sum, org) => sum + (org.engagement_score || 0), 0) / orgsWithScores.length;
@@ -210,6 +211,9 @@ export default function EnterpriseCommandCenter() {
       }
     } catch (error: any) {
       console.error('Error fetching active users:', error);
+      // Set defaults on error to prevent UI from breaking
+      setActiveUsersCount(0);
+      setAvgEngagementScore(0);
     }
   };
 
