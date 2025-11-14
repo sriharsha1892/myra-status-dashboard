@@ -25,7 +25,6 @@ import {
   Folder,
   Headphones,
   Activity,
-  Lightbulb,
   Target,
   UserCheck,
   RotateCcw,
@@ -42,13 +41,12 @@ import UnifiedNotesPanel from '@/components/UnifiedNotesPanel';
 import DocumentLibrary2027 from '@/components/DocumentLibrary2027';
 import SupportQueriesTab from '@/components/SupportQueriesTab';
 import TrialExtensionsTab from '@/components/TrialExtensionsTab';
-import ProductResearchTab from '@/components/ProductResearchTab';
 import OverviewTab from '@/components/OverviewTab';
 import LogActivityModal from '@/components/LogActivityModal';
 import PeopleEngagementTab from '@/components/PeopleEngagementTab';
 import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
 
-type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support' | 'product';
+type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support';
 
 const LIFECYCLE_STAGES = [
   { value: 'prospect', label: 'Prospect', color: 'text-gray-600 bg-gray-100' },
@@ -451,14 +449,13 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* Tab Navigation - 5 Consolidated Tabs */}
+        {/* Tab Navigation - 4 Consolidated Tabs */}
         <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2 flex-wrap">
           {([
             { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
             { id: 'peopleEngagement', label: 'People & Engagement', icon: Users, description: 'Stakeholders, users & activity' },
             { id: 'timeline', label: 'Timeline', icon: Clock, description: 'Complete event timeline with AI-powered import' },
             { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
-            { id: 'product', label: 'Product & Research', icon: Lightbulb, description: 'Features, research, docs' },
           ] as const).map(({ id, label, icon: Icon, description }) => (
             <button
               key={id}
@@ -510,15 +507,6 @@ export default function TrialOrgPage() {
 
           {activeTab === 'support' && (
             <SupportQueriesTab orgId={orgId} />
-          )}
-
-          {activeTab === 'product' && (
-            <ProductResearchTab
-              orgId={orgId}
-              organizationName={organization?.org_name || ''}
-              currentUserId={user?.id || ''}
-              currentUserRole={user?.user_metadata?.role}
-            />
           )}
         </div>
       </div>
