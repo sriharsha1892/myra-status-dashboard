@@ -117,14 +117,14 @@ export default function TextParserPage() {
       const { data: managersData } = await supabase
         .from('users')
         .select('id, full_name, email, role')
-        .in('role', ['admin', 'account_manager'])
+        .in('role', ['Admin', 'Account Manager'])
         .order('full_name', { ascending: true });
 
       if (managersData) {
         setAccountManagers(managersData);
 
         // Auto-select current user if they're an AM
-        if (role?.toLowerCase() === 'account_manager' && user) {
+        if (role === 'AM' && user) {
           const currentManager = managersData.find((m: User) => m.id === user.id);
           if (currentManager) {
             setAccountManagerId(currentManager.id);

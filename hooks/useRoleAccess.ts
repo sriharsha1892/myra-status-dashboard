@@ -29,7 +29,7 @@ export function useRoleAccess(): RolePermissions {
   }
 
   // Admin: full access
-  if (role === 'admin') {
+  if (role === 'Admin') {
     permissions = {
       canViewAllOrgs: true,
       canViewAnalytics: true,
@@ -41,7 +41,7 @@ export function useRoleAccess(): RolePermissions {
     };
   }
   // Account Manager: can log activities, create queries, edit own org info
-  else if (role === 'account_manager') {
+  else if (role === 'AM') {
     permissions = {
       canViewAllOrgs: false, // Only sees their own
       canViewAnalytics: false, // Limited to their orgs
@@ -88,12 +88,12 @@ export function useCanViewOrganization(orgAccountManagerId: string | null): bool
   }
 
   // Admins and Sales Managers can view all orgs
-  if (role === 'admin' || role === 'sales_manager' || role === 'product') {
+  if (role === 'Admin' || role === 'Team') {
     return true;
   }
 
   // Account Managers can only view their own orgs
-  if (role === 'account_manager') {
+  if (role === 'AM') {
     return orgAccountManagerId === user.id;
   }
 

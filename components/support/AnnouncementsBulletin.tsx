@@ -149,7 +149,7 @@ export default function AnnouncementsBulletin({ role }: AnnouncementsBulletinPro
           </div>
           <h2 className="text-xs font-semibold text-neutral-900">What's New</h2>
         </div>
-        {role === 'admin' && (
+        {role === 'Admin' && (
           <button
             onClick={() => router.push('/support/resources')}
             className="flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors"

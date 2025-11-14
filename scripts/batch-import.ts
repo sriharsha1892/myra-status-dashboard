@@ -268,7 +268,7 @@ async function main() {
   const { data: managers, error: managersError } = await supabase
     .from('users')
     .select('id, full_name, email, role')
-    .in('role', ['admin', 'account_manager']);
+    .in('role', ['Admin', 'Account Manager']);
 
   let accountManagerId: string | null = null;
 
