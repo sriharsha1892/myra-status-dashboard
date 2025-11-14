@@ -208,18 +208,17 @@ export default function CreateOrganizationPage() {
       if (!newOrg) throw new Error('Failed to create organization');
 
       // Insert primary contact
-      const { error: contactError } = (await supabase
+      const { error: contactError} = (await supabase
         .from('trial_users')
         // @ts-ignore - Supabase type inference issue with insert method
         .insert({
           org_id: newOrg.org_id,
-          full_name: contactName.trim(),
+          name: contactName.trim(),
           email: contactEmail.trim(),
-          user_designation: contactDesignation.trim() || null,
-          is_primary_contact: isPrimaryContact,
-          user_status: 'invited',
+          role: contactDesignation.trim() || null,
+          current_stage: 'invited',
+          account_manager: user?.id || '',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })) as { error: any };
 
       if (contactError) throw contactError;

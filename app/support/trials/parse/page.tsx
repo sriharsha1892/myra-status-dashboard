@@ -296,13 +296,12 @@ export default function TextParserPage() {
         .from('trial_users')
         .insert({
           org_id: newOrg.org_id,
-          full_name: contactName.trim(),
+          name: contactName.trim(),
           email: contactEmail.trim(),
-          user_designation: contactDesignation.trim() || null,
-          is_primary_contact: true,
-          user_status: 'invited',
+          role: contactDesignation.trim() || null,
+          current_stage: 'invited',
+          account_manager: user?.id || '',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         });
 
       if (contactError) throw contactError;
@@ -314,12 +313,11 @@ export default function TextParserPage() {
         for (const usr of additionalUsers) {
           await supabase.from('trial_users').insert({
             org_id: newOrg.org_id,
-            full_name: usr.value,
+            name: usr.value,
             email: usr.metadata.email,
-            is_primary_contact: false,
-            user_status: 'invited',
+            current_stage: 'invited',
+            account_manager: user?.id || '',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           });
         }
       }

@@ -470,13 +470,12 @@ async function createOrganization(
         .from('trial_users')
         .insert({
           org_id: newOrg.org_id,
-          full_name: data.contact_name,
+          name: data.contact_name,
           email: data.contact_email,
-          user_designation: data.contact_designation || null,
-          is_primary_contact: true,
-          user_status: 'invited',
+          role: data.contact_designation || null,
+          current_stage: 'invited',
+          account_manager: data.account_manager_id || '',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         });
 
       if (contactError) throw contactError;

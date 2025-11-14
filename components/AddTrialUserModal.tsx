@@ -51,14 +51,21 @@ export default function AddTrialUserModal({
 
     setLoading(true);
     try {
+      // Get account_manager from the organization
+      const { data: org } = await supabase
+        .from('trial_organizations')
+        .select('account_manager_id')
+        .eq('org_id', orgId)
+        .single();
+
       const { error } = await supabase.from('trial_users').insert({
         org_id: orgId,
-        full_name: fullName,
+        name: fullName,
         email: email,
-        user_designation: designation || null,
-        freshsales_id: freshsalesId || null,
-        is_primary_contact: isPrimaryContact,
-        user_status: 'invited',
+        role: designation || null,
+        salesforce_id: freshsalesId || null,
+        current_stage: 'invited',
+        account_manager: org?.account_manager_id || '',
         created_at: new Date().toISOString(),
       });
 

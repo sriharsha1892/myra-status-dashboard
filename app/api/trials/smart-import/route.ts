@@ -307,13 +307,12 @@ export async function PUT(request: NextRequest) {
                 .from('trial_users')
                 .insert({
                   org_id: orgId,
-                  full_name: userData.name,
+                  name: userData.name,
                   email: userData.email,
-                  user_designation: userData.designation || userData.title || null,
-                  phone: userData.phone || null,
-                  user_status: 'invited',
+                  role: userData.designation || userData.title || null,
+                  current_stage: 'invited',
+                  account_manager: account_manager_id,
                   created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
                 })
                 .select('user_id')
                 .single();
