@@ -95,6 +95,38 @@ export default function BulkEditPage() {
       error?: string;
     }>;
   }>({ isOpen: false });
+  const [generatingHealth, setGeneratingHealth] = useState(false);
+  const [healthScoreResult, setHealthScoreResult] = useState<{
+    isOpen: boolean;
+    summary?: {
+      total: number;
+      succeeded: number;
+      failed: number;
+      total_issues: number;
+      total_recommendations: number;
+      health_distribution: Record<string, number>;
+    };
+    detailed_analyses?: Array<{
+      org_id: string;
+      org_name: string;
+      success: boolean;
+      health_status: string;
+      engagement_score: number;
+      health_issues: Array<{
+        type: string;
+        severity: string;
+        description: string;
+      }>;
+      health_recommendations: Array<{
+        priority: string;
+        action: string;
+        rationale: string;
+      }>;
+      summary: string;
+      confidence: number;
+      error?: string;
+    }>;
+  }>({ isOpen: false });
 
   useEffect(() => {
     loadData();
@@ -437,6 +469,57 @@ export default function BulkEditPage() {
     }
   }
 
+  async function generateHealthScores() {
+    if (generatingHealth) return;
+
+    if (!confirm(`Generate health scores for ${orgs.length} organizations with AI?\n\nThis will analyze engagement, activity, and timeline data to assess trial health and provide recommendations. It may take 2-5 seconds per organization.`)) {
+      return;
+    }
+
+    setGeneratingHealth(true);
+    toast.loading(`Generating health scores for ${orgs.length} organizations...`, { id: 'health-score' });
+
+    try {
+      const response = await authenticatedFetch('/api/trials/bulk-operations/health-scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          org_ids: orgs.map(org => org.org_id),
+          mode: 'selected',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Health score generation failed');
+      }
+
+      // Show success toast
+      toast.success(
+        `Generated health scores for ${result.summary.succeeded} organizations (${result.summary.total_issues} issues, ${result.summary.total_recommendations} recommendations)`,
+        { id: 'health-score' }
+      );
+
+      // Show detailed results modal
+      setHealthScoreResult({
+        isOpen: true,
+        summary: result.summary,
+        detailed_analyses: result.detailed_analyses,
+      });
+
+      // Reload data to show updated health scores
+      await loadData();
+    } catch (error: any) {
+      console.error('Health score generation error:', error);
+      toast.error(error.message || 'Failed to generate health scores', { id: 'health-score' });
+    } finally {
+      setGeneratingHealth(false);
+    }
+  }
+
   async function saveChanges() {
     setSaving(true);
     const supabase = createClient();
@@ -574,6 +657,14 @@ export default function BulkEditPage() {
             title="Use AI to automatically generate tags for all organizations"
           >
             {autoTagging ? 'Auto-Tagging...' : '✨ Auto-Tag with AI'}
+          </button>
+          <button
+            onClick={generateHealthScores}
+            disabled={generatingHealth || orgs.length === 0}
+            className="px-3 py-1.5 text-sm border rounded bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            title="Use AI to analyze trial health and generate recommendations"
+          >
+            {generatingHealth ? 'Analyzing...' : '🏥 Generate Health Scores'}
           </button>
         </div>
 
@@ -1094,6 +1185,219 @@ export default function BulkEditPage() {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setAutoTagResult({ isOpen: false })}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Health Scores Results Modal */}
+      {healthScoreResult.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Health Score Generation Results
+              </h2>
+              {healthScoreResult.summary && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-blue-50 p-3 rounded">
+                    <div className="text-sm text-gray-600">Total</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {healthScoreResult.summary.total}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <div className="text-sm text-gray-600">Succeeded</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {healthScoreResult.summary.succeeded}
+                    </div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded">
+                    <div className="text-sm text-gray-600">Failed</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {healthScoreResult.summary.failed}
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded">
+                    <div className="text-sm text-gray-600">Issues</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {healthScoreResult.summary.total_issues}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 p-3 rounded">
+                    <div className="text-sm text-gray-600">Recommendations</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {healthScoreResult.summary.total_recommendations}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Health Distribution */}
+              {healthScoreResult.summary?.health_distribution && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Health Distribution</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {Object.entries(healthScoreResult.summary.health_distribution).map(([status, count]) => {
+                      const colors = {
+                        healthy: 'bg-green-100 text-green-800 border-green-300',
+                        warning: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                        'at-risk': 'bg-orange-100 text-orange-800 border-orange-300',
+                        critical: 'bg-red-100 text-red-800 border-red-300',
+                      };
+                      const color = colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-300';
+
+                      return (
+                        <div key={status} className={`${color} border px-3 py-2 rounded text-center`}>
+                          <div className="text-xs font-medium uppercase">{status}</div>
+                          <div className="text-xl font-bold">{count}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 space-y-4">
+              {healthScoreResult.detailed_analyses?.map((analysis, idx) => (
+                <div
+                  key={analysis.org_id}
+                  className={`border rounded-lg p-4 ${
+                    analysis.success
+                      ? 'border-gray-200 bg-white'
+                      : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-lg">
+                        {idx + 1}. {analysis.org_name}
+                      </h3>
+                      {analysis.success && analysis.summary && (
+                        <p className="text-sm text-gray-600 mt-1 italic">
+                          "{analysis.summary}"
+                        </p>
+                      )}
+                    </div>
+                    {analysis.success && (
+                      <div className="ml-4 flex items-center gap-2">
+                        {/* Health Status Badge */}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
+                            analysis.health_status === 'healthy'
+                              ? 'bg-green-100 text-green-800'
+                              : analysis.health_status === 'warning'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : analysis.health_status === 'at-risk'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {analysis.health_status}
+                        </span>
+                        {/* Engagement Score */}
+                        <span className="text-sm font-semibold text-gray-700">
+                          Score: {analysis.engagement_score}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {analysis.success ? (
+                    <>
+                      {/* Health Issues */}
+                      {analysis.health_issues && analysis.health_issues.length > 0 && (
+                        <div className="mt-3">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                            Issues ({analysis.health_issues.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {analysis.health_issues.map((issue, issueIdx) => (
+                              <div
+                                key={issueIdx}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                <span
+                                  className={`px-2 py-0.5 rounded text-xs font-semibold uppercase flex-shrink-0 ${
+                                    issue.severity === 'critical'
+                                      ? 'bg-red-100 text-red-800'
+                                      : issue.severity === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : issue.severity === 'medium'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-blue-100 text-blue-800'
+                                  }`}
+                                >
+                                  {issue.severity}
+                                </span>
+                                <span className="text-gray-700">
+                                  <span className="font-medium">{issue.type}:</span> {issue.description}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recommendations */}
+                      {analysis.health_recommendations && analysis.health_recommendations.length > 0 && (
+                        <div className="mt-3">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                            Recommendations ({analysis.health_recommendations.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {analysis.health_recommendations.map((rec, recIdx) => (
+                              <div
+                                key={recIdx}
+                                className="flex items-start gap-2 text-sm"
+                              >
+                                <span
+                                  className={`px-2 py-0.5 rounded text-xs font-semibold uppercase flex-shrink-0 ${
+                                    rec.priority === 'urgent'
+                                      ? 'bg-red-100 text-red-800'
+                                      : rec.priority === 'high'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : rec.priority === 'medium'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {rec.priority}
+                                </span>
+                                <div className="text-gray-700">
+                                  <div className="font-medium">{rec.action}</div>
+                                  <div className="text-xs text-gray-600 mt-0.5">{rec.rationale}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Confidence Score */}
+                      {analysis.confidence !== undefined && (
+                        <div className="mt-3 text-xs text-gray-500">
+                          Confidence: {Math.round(analysis.confidence * 100)}%
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-red-600 text-sm">
+                      Error: {analysis.error || 'Failed to generate health score'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end mt-6 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
+              <button
+                onClick={() => setHealthScoreResult({ isOpen: false })}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Close
