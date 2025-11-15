@@ -156,16 +156,23 @@ export default function TextParserPage() {
       // Fetch account managers
       const { data: managersData } = await supabase
         .from('users')
-        .select('id, name, email, role')
+        .select('id, full_name, email, role')
         .in('role', ['Admin', 'Account Manager'])
-        .order('name', { ascending: true });
+        .order('full_name', { ascending: true });
 
       if (managersData) {
-        setAccountManagers(managersData);
+        // Map full_name to name for compatibility
+        const mappedManagers = managersData.map((m: any) => ({
+          id: m.id,
+          name: m.full_name,
+          email: m.email,
+          role: m.role
+        }));
+        setAccountManagers(mappedManagers);
 
         // Auto-select current user if they're an AM
         if ((role === 'Account Manager' || role === 'Admin') && user) {
-          const currentManager = managersData.find((m: User) => m.id === user.id);
+          const currentManager = mappedManagers.find((m: User) => m.id === user.id);
           if (currentManager) {
             setAccountManagerId(currentManager.id);
           }
