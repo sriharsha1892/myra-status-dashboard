@@ -299,7 +299,7 @@ export async function parseTextWithGroq(text: string): Promise<ParsedData> {
         metadata: {
           amount: metrics.contract_value,
           formatted: `$${metrics.contract_value.toLocaleString()}`,
-          source: 'groq_contract_value'
+          source: 'contract_value'
         }
       });
     }
@@ -311,7 +311,7 @@ export async function parseTextWithGroq(text: string): Promise<ParsedData> {
         confidence: 90,
         metadata: {
           team_size: metrics.team_size,
-          source: 'groq_team_size'
+          source: 'team_size'
         }
       });
     }
@@ -323,7 +323,7 @@ export async function parseTextWithGroq(text: string): Promise<ParsedData> {
         confidence: 90,
         metadata: {
           trial_days: metrics.trial_duration_days,
-          source: 'groq_trial_duration'
+          source: 'trial_duration'
         }
       });
     }
