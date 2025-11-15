@@ -1,98 +1,137 @@
+#!/usr/bin/env node
+
 /**
- * Cleanup Test Data Created During AI Features Testing
- * Removes test timeline events and trial users
+ * Cleanup Test Data Script
+ *
+ * Deletes all test data from the database (organizations with names starting with "TEST-")
+ *
+ * Usage:
+ *   node scripts/cleanup-test-data.js
+ *   or
+ *   npm run cleanup:test-data
  */
 
+require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing environment variables:');
+  console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
+  console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 async function cleanupTestData() {
-  console.log('🧹 CLEANING UP TEST DATA\n');
-  console.log('='.repeat(80));
+  console.log('🧹 Starting test data cleanup...\n');
 
   try {
-    // 1. Remove test timeline events (created during tagging test)
-    console.log('\n📋 Step 1: Removing test timeline events...');
-
-    const { data: testEvents, error: findError } = await supabase
-      .from('trial_timeline_events')
-      .select('id, title')
-      .or('title.eq.Customer reported integration issue,title.eq.Successful product demo,title.eq.User milestone: 10 workflows created');
+    // 1. Find all test organizations
+    console.log('📋 Step 1: Finding test organizations...');
+    const { data: testOrgs, error: findError } = await supabase
+      .from('trial_organizations')
+      .select('org_id, org_name')
+      .like('org_name', 'TEST-%');
 
     if (findError) {
-      console.error('Error finding test events:', findError.message);
-    } else if (testEvents && testEvents.length > 0) {
-      console.log(`   Found ${testEvents.length} test timeline events:`);
-      testEvents.forEach((event, index) => {
-        console.log(`   ${index + 1}. "${event.title}" (${event.id})`);
-      });
-
-      const { error: deleteError } = await supabase
-        .from('trial_timeline_events')
-        .delete()
-        .in('id', testEvents.map(e => e.id));
-
-      if (deleteError) {
-        console.error('   ❌ Error deleting events:', deleteError.message);
-      } else {
-        console.log(`   ✅ Deleted ${testEvents.length} test timeline events`);
-      }
-    } else {
-      console.log('   No test timeline events found');
+      console.error('❌ Error finding test organizations:', findError.message);
+      process.exit(1);
     }
 
-    // 2. Remove test trial users (created during user import test)
-    console.log('\n📋 Step 2: Removing test trial users...');
+    if (!testOrgs || testOrgs.length === 0) {
+      console.log('✅ No test data found. Database is clean!\n');
+      return;
+    }
 
-    const { data: testUsers, error: findUsersError } = await supabase
-      .from('trial_users')
-      .select('user_id, name, email, org_id')
-      .or('email.eq.john.smith@acmecorp.com,email.eq.jane.doe@acmecorp.com,email.eq.bob.wilson@acmecorp.com,email.eq.sarah.connor@techstart.io');
+    console.log(`   Found ${testOrgs.length} test organization(s):`);
+    testOrgs.forEach((org, idx) => {
+      console.log(`   ${idx + 1}. ${org.org_name} (${org.org_id})`);
+    });
+    console.log('');
 
-    if (findUsersError) {
-      console.error('Error finding test users:', findUsersError.message);
-    } else if (testUsers && testUsers.length > 0) {
-      console.log(`   Found ${testUsers.length} test trial users:`);
-      testUsers.forEach((user, index) => {
-        console.log(`   ${index + 1}. ${user.name} (${user.email}) - Org: ${user.org_id}`);
-      });
+    const testOrgIds = testOrgs.map(org => org.org_id);
 
-      const { error: deleteUsersError } = await supabase
-        .from('trial_users')
-        .delete()
-        .in('user_id', testUsers.map(u => u.user_id));
+    // 2. Delete user_interactions
+    console.log('📋 Step 2: Deleting user interactions...');
+    const { data: deletedInteractions, error: interactionError } = await supabase
+      .from('user_interactions')
+      .delete()
+      .in('org_id', testOrgIds)
+      .select();
 
-      if (deleteUsersError) {
-        console.error('   ❌ Error deleting users:', deleteUsersError.message);
-      } else {
-        console.log(`   ✅ Deleted ${testUsers.length} test trial users`);
-      }
+    if (interactionError) {
+      console.error('❌ Error deleting interactions:', interactionError.message);
     } else {
-      console.log('   No test trial users found');
+      console.log(`   ✓ Deleted ${deletedInteractions?.length || 0} interaction(s)\n`);
+    }
+
+    // 3. Delete trial_users
+    console.log('📋 Step 3: Deleting trial users...');
+    const { data: deletedUsers, error: userError } = await supabase
+      .from('trial_users')
+      .delete()
+      .in('org_id', testOrgIds)
+      .select();
+
+    if (userError) {
+      console.error('❌ Error deleting users:', userError.message);
+    } else {
+      console.log(`   ✓ Deleted ${deletedUsers?.length || 0} user(s)\n`);
+    }
+
+    // 4. Delete trial_organizations
+    console.log('📋 Step 4: Deleting trial organizations...');
+    const { data: deletedOrgs, error: orgError } = await supabase
+      .from('trial_organizations')
+      .delete()
+      .in('org_id', testOrgIds)
+      .select();
+
+    if (orgError) {
+      console.error('❌ Error deleting organizations:', orgError.message);
+    } else {
+      console.log(`   ✓ Deleted ${deletedOrgs?.length || 0} organization(s)\n`);
+    }
+
+    // 5. Verify cleanup
+    console.log('📋 Step 5: Verifying cleanup...');
+    const { data: remainingOrgs, error: verifyError } = await supabase
+      .from('trial_organizations')
+      .select('org_id, org_name')
+      .like('org_name', 'TEST-%');
+
+    if (verifyError) {
+      console.error('❌ Error verifying cleanup:', verifyError.message);
+    } else if (remainingOrgs && remainingOrgs.length > 0) {
+      console.log(`   ⚠️  Warning: ${remainingOrgs.length} test organization(s) still remain:`);
+      remainingOrgs.forEach((org, idx) => {
+        console.log(`      ${idx + 1}. ${org.org_name}`);
+      });
+    } else {
+      console.log('   ✓ Cleanup verified: No test organizations remain\n');
     }
 
     // Summary
-    console.log('\n' + '='.repeat(80));
-    console.log('\n✅ TEST DATA CLEANUP COMPLETE!\n');
+    console.log('✅ Cleanup Complete!\n');
     console.log('Summary:');
-    console.log(`  - Timeline Events: ${testEvents?.length || 0} removed`);
-    console.log(`  - Trial Users: ${testUsers?.length || 0} removed`);
-    console.log('\nNote: Health scores and tags that were generated are part of');
-    console.log('production data and have been left intact.');
-    console.log('');
+    console.log(`   Organizations: ${deletedOrgs?.length || 0} deleted`);
+    console.log(`   Users: ${deletedUsers?.length || 0} deleted`);
+    console.log(`   Interactions: ${deletedInteractions?.length || 0} deleted\n`);
 
   } catch (error) {
-    console.error('\n❌ Cleanup failed:', error.message);
-    console.error(error);
+    console.error('❌ Unexpected error during cleanup:', error.message);
+    process.exit(1);
   }
 }
 
 // Run the cleanup
-(async () => {
-  await cleanupTestData();
-})();
+cleanupTestData();

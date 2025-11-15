@@ -26,6 +26,7 @@
     "cleanup:roadmap": "tsx scripts/cleanup-roadmap-test.ts",
     "test:resources": "tsx scripts/test-resources-platform.ts",
     "cleanup:resources": "PGPASSWORD=\"$SUPABASE_DB_PASSWORD\" psql -h aws-0-ap-south-1.pooler.supabase.com -p 6543 -d postgres -U postgres.mkkhwiyolmowomojvtel -f scripts/cleanup-resource-test-data.sql",
+    "cleanup:test-data": "node scripts/cleanup-test-data.js",
     "seed": "tsx scripts/seed-data.ts",
     "seed:clear": "tsx scripts/seed-data.ts --clear-only"
   },

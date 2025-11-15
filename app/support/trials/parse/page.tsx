@@ -28,6 +28,7 @@ import {
   X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import * as fuzz from 'fuzzball';
 
 interface ParsedResult {
   session_id: string;
@@ -279,6 +280,55 @@ export default function TextParserPage() {
         setUsers(extractedUsers);
       }
 
+      // Auto-populate account manager from extracted text
+      const extractedAccountManager = data.parsed.users.find((usr: any) =>
+        usr.metadata?.source === 'account_manager_pattern' ||
+        usr.metadata?.is_account_manager === true ||
+        usr.metadata?.role === 'Account Manager'
+      );
+
+      if (extractedAccountManager && accountManagers.length > 0) {
+        const extractedName = extractedAccountManager.value;
+
+        // Try exact match first
+        let matchedManager = accountManagers.find((m: User) =>
+          m.name?.toLowerCase() === extractedName.toLowerCase()
+        );
+
+        // If no exact match, try fuzzy matching
+        if (!matchedManager && extractedName) {
+          const fuzzMatches = accountManagers.map((m: User) => ({
+            manager: m,
+            score: m.name ?
+              Math.max(
+                // Token sort ratio for partial matches
+                fuzz.token_sort_ratio(extractedName.toLowerCase(), m.name.toLowerCase()),
+                // Partial ratio for substring matches
+                fuzz.partial_ratio(extractedName.toLowerCase(), m.name.toLowerCase())
+              )
+              : 0
+          }));
+
+          // Get best match if score > 70
+          const bestMatch = fuzzMatches.sort((a, b) => b.score - a.score)[0];
+          if (bestMatch && bestMatch.score > 70) {
+            matchedManager = bestMatch.manager;
+            console.log(`Fuzzy matched "${extractedName}" to "${matchedManager.name}" (${bestMatch.score}% confidence)`);
+          }
+        }
+
+        // Auto-select matched account manager
+        if (matchedManager) {
+          setAccountManagerId(matchedManager.id);
+          toast.success(`Auto-selected Account Manager: ${matchedManager.name}`, { duration: 3000 });
+        } else {
+          toast(`Account Manager "${extractedName}" mentioned but not found in system`, {
+            icon: '⚠️',
+            duration: 4000
+          });
+        }
+      }
+
       // Auto-populate activities list
       if (data.parsed.activities.length > 0) {
         const extractedActivities: EditableActivity[] = data.parsed.activities.map((act: any, idx: number) => {
@@ -382,7 +432,21 @@ export default function TextParserPage() {
       return;
     }
     if (!accountManagerId) {
-      toast.error('Account Manager is required');
+      // Check if there's an extracted account manager that wasn't matched
+      const extractedAM = result.parsed.users.find((usr: any) =>
+        usr.metadata?.source === 'account_manager_pattern' ||
+        usr.metadata?.is_account_manager === true ||
+        usr.metadata?.role === 'Account Manager'
+      );
+
+      if (extractedAM) {
+        toast.error(
+          `Account Manager is required. We detected "${extractedAM.value}" in your text but couldn't find a matching user. Please select one from the dropdown.`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.error('Account Manager is required. Please select one from the dropdown.');
+      }
       return;
     }
     if (users.length === 0) {

@@ -6,6 +6,7 @@ import {
   normalizeOrgName,
   extractDomainFromEmail
 } from '@/lib/trials/textParser';
+import { parseTextWithGroq, isGroqAvailable } from '@/lib/trials/groqParser';
 import { findDuplicateOrgs, findDuplicateUsers } from '@/lib/trials/autoLink';
 
 export async function POST(request: NextRequest) {
@@ -25,8 +26,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
-    // Parse the text
-    const parsed = await parseText(text);
+    // Parse the text - try Groq first, fall back to regex
+    let parsed;
+    let extraction_method = 'regex';
+
+    if (isGroqAvailable()) {
+      try {
+        console.log('🤖 Attempting Groq LLM extraction...');
+        parsed = await parseTextWithGroq(text);
+        extraction_method = 'groq';
+        console.log('✅ Groq extraction succeeded');
+      } catch (groqError) {
+        console.warn('⚠️ Groq extraction failed, falling back to regex:', groqError);
+        parsed = await parseText(text);
+      }
+    } else {
+      console.log('📝 Using regex extraction (Groq not available)');
+      parsed = await parseText(text);
+    }
 
     // Find potential duplicates for extracted orgs and users
     const orgDuplicates = [];
@@ -91,6 +108,7 @@ export async function POST(request: NextRequest) {
       success: true,
       session_id: session?.id,
       parsed,
+      extraction_method, // 'groq' or 'regex'
       duplicates: {
         orgs: orgDuplicates,
         users: userDuplicates

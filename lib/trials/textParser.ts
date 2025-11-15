@@ -46,6 +46,38 @@ const DATE_FORMATS = [
 ];
 
 /**
+ * Extract company name from email domain
+ * Example: "john@frieslandcampina.com" → "FrieslandCampina"
+ */
+export function extractCompanyFromEmailDomain(email: string): string | null {
+  const domain = extractDomainFromEmail(email);
+  if (!domain) return null;
+
+  // Remove TLD (.com, .net, .org, .co.uk, etc.)
+  const domainWithoutTLD = domain
+    .replace(/\.(com|net|org|io|ai|co|edu|gov|mil|int|info|biz|xyz|app|dev)(\.[a-z]{2})?$/i, '');
+
+  if (!domainWithoutTLD || domainWithoutTLD.length < 2) return null;
+
+  // Handle multi-word domains with hyphens/dashes
+  const words = domainWithoutTLD.split(/[-._]/);
+
+  // Capitalize each word properly
+  const capitalizedWords = words.map(word => {
+    if (word.length === 0) return '';
+    if (word.length === 1) return word.toUpperCase();
+    // Handle acronyms (all caps if 2-4 chars and no vowels)
+    if (word.length <= 4 && !/[aeiou]/i.test(word)) {
+      return word.toUpperCase();
+    }
+    // Normal capitalization
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+
+  return capitalizedWords.join(' ');
+}
+
+/**
  * Extract email addresses from text
  */
 export function extractEmails(text: string): ParsedEntity[] {
@@ -54,7 +86,11 @@ export function extractEmails(text: string): ParsedEntity[] {
     type: 'user' as const,
     value: email,
     confidence: 95, // Email regex is very accurate
-    metadata: { email, source: 'regex_email' }
+    metadata: {
+      email,
+      source: 'regex_email',
+      companyName: extractCompanyFromEmailDomain(email)
+    }
   }));
 }
 
@@ -147,6 +183,38 @@ export function extractPersonNames(text: string): ParsedEntity[] {
   }
 
   return names;
+}
+
+/**
+ * Extract account manager / point of contact from text
+ * Patterns: "Account Manager: John Doe", "AM: Jane Smith", "POC: Mike Chen"
+ */
+export function extractAccountManager(text: string): ParsedEntity | null {
+  // Pattern 1: "Account Manager: FirstName LastName"
+  const amPatterns = [
+    /(?:Account\s+Manager|AM|Manager|POC|Point\s+of\s+Contact|Sales\s+POC|Contact):\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/gi,
+    /(?:managed\s+by|assigned\s+to|contact|owner):\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/gi
+  ];
+
+  for (const pattern of amPatterns) {
+    const match = pattern.exec(text);
+    if (match) {
+      const fullName = match[1].trim();
+      return {
+        type: 'user',
+        value: fullName,
+        confidence: 90,
+        metadata: {
+          role: 'Account Manager',
+          source: 'account_manager_pattern',
+          original: match[0]
+        },
+        position: { start: match.index, end: match.index + match[0].length }
+      };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -382,14 +450,39 @@ export async function parseText(text: string): Promise<ParsedData> {
   const contractValue = extractContractValue(text);
   const teamSize = extractTeamSize(text);
   const trialDuration = extractTrialDuration(text);
+  const accountManager = extractAccountManager(text);
 
   // Add enhanced data to numbers array if found
   if (contractValue) numbers.push(contractValue);
   if (teamSize) numbers.push(teamSize);
   if (trialDuration) numbers.push(trialDuration);
 
+  // Extract company names from email domains if no org found via context
+  if (orgNames.length === 0 && emails.length > 0) {
+    const companyNamesFromEmails = emails
+      .map(email => email.metadata?.companyName)
+      .filter((name): name is string => !!name && name.length > 0);
+
+    // Get unique company names
+    const uniqueCompanies = Array.from(new Set(companyNamesFromEmails));
+
+    uniqueCompanies.forEach(companyName => {
+      orgNames.push({
+        type: 'org',
+        value: companyName,
+        confidence: 85,
+        metadata: { source: 'email_domain' }
+      });
+    });
+  }
+
   // Merge user entities (emails + names)
   const users = [...emails, ...personNames];
+
+  // Add account manager to users list with special metadata
+  if (accountManager) {
+    users.push(accountManager);
+  }
 
   // Extract terminology matches for activities, features, models
   const terminologyMatches = await findAllMatches(text);
