@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,7 +7,11 @@ export async function POST(request: NextRequest) {
 
     if (!text || !text.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Text is required' },
+        {
+          success: false,
+          error: 'Text is required to parse activity',
+          suggestion: 'Please provide activity text to extract information from'
+        },
         { status: 400 }
       );
     }
@@ -80,11 +85,33 @@ export async function POST(request: NextRequest) {
       confidence
     };
 
-    return NextResponse.json({ success: true, data: parsed });
+    return NextResponse.json({
+      success: true,
+      data: parsed,
+      meta: {
+        confidence,
+        activity_type,
+        warnings: confidence < 0.7 ? ['Low confidence detection - please review carefully'] : []
+      }
+    });
   } catch (error: any) {
-    console.error('Parser error:', error);
+    // Use graceful error handler for user-friendly messages
+    const errorDetails = getErrorMessage(error, 'api_call');
+
+    // Log for debugging
+    console.error('[Activity Parser] Error:', {
+      error: error.message,
+      technical: errorDetails.technical,
+      stack: error.stack
+    });
+
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to parse activity' },
+      {
+        success: false,
+        error: errorDetails.message,
+        suggestion: errorDetails.suggestion,
+        technical: errorDetails.technical
+      },
       { status: 500 }
     );
   }

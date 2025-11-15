@@ -5,6 +5,14 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import Papa from 'papaparse';
+import {
+  createImportResults,
+  addSuccess,
+  addFailure,
+  generateImportSummary,
+  getImportToastMessage
+} from '@/lib/errors/importResultsFormatter';
+import { getErrorMessage } from '@/lib/errorHandler';
 
 interface BulkImportFeatureRequestsModalProps {
   orgId: string;
@@ -88,6 +96,10 @@ export default function BulkImportFeatureRequestsModal({
     setStep('importing');
     setLoading(true);
 
+    // Create import results tracker
+    const importResults = createImportResults<ParsedFeatureRequest>();
+    let totalProcessed = 0;
+
     try {
       const recordsToInsert = preview
         .filter((row) => row.title && row.title.trim()) // Must have title
@@ -110,25 +122,92 @@ export default function BulkImportFeatureRequestsModal({
         return;
       }
 
-      // Insert in batches of 100
+      // Insert in batches of 100 with error collection
       for (let i = 0; i < recordsToInsert.length; i += 100) {
         const batch = recordsToInsert.slice(i, i + 100);
-        const { error } = await supabase.from('feature_requests').insert(batch);
+        const batchStartIndex = i;
 
-        if (error) throw error;
+        try {
+          const { data, error } = await supabase
+            .from('feature_requests')
+            .insert(batch)
+            .select('id, title');
 
-        toast.success(`Imported ${Math.min(i + 100, recordsToInsert.length)}/${recordsToInsert.length} records`);
+          if (error) throw error;
+
+          // Track all successful inserts from this batch
+          if (data) {
+            data.forEach((record, idx) => {
+              addSuccess(importResults, record.id, preview[batchStartIndex + idx]);
+              totalProcessed++;
+            });
+          }
+
+          // Show progress toast
+          if (recordsToInsert.length > 100) {
+            toast.success(`Imported ${Math.min(i + 100, recordsToInsert.length)}/${recordsToInsert.length} records`, { duration: 2000 });
+          }
+        } catch (batchError: any) {
+          // Track batch failure - add each item in the failed batch to failures
+          batch.forEach((record, idx) => {
+            addFailure(
+              importResults,
+              preview[batchStartIndex + idx],
+              batchError,
+              'generic'
+            );
+          });
+
+          // Log for debugging
+          console.error('[Bulk Import] Batch failed:', {
+            batchIndex: i / 100 + 1,
+            batchSize: batch.length,
+            error: batchError.message
+          });
+        }
       }
 
-      toast.success(`Successfully imported ${recordsToInsert.length} feature requests!`);
-      setFile(null);
-      setPreview([]);
-      setStep('upload');
-      onClose();
-      onSuccess();
+      // Generate summary
+      const summary = generateImportSummary(importResults, 'feature requests', recordsToInsert.length);
+
+      // Show appropriate toast based on results
+      if (summary.success) {
+        toast.success(`✅ Successfully imported all ${summary.successCount} feature requests!`, { duration: 5000 });
+        setFile(null);
+        setPreview([]);
+        setStep('upload');
+        onClose();
+        onSuccess();
+      } else if (summary.successCount > 0) {
+        // Partial success
+        const message = `⚠️ Imported ${summary.successCount}/${summary.totalAttempted} feature requests\n\n${summary.failureCount} failed. Some records may have duplicates or validation issues.`;
+        toast.error(message, { duration: 8000 });
+        setStep('preview');
+      } else {
+        // Complete failure
+        const errorDetails = getErrorMessage(importResults.failed[0]?.error || 'Unknown error', 'generic');
+        toast.error(`❌ Failed to import feature requests\n\n${errorDetails.message}`, { duration: 7000 });
+        setStep('preview');
+      }
+
+      // Log summary for debugging
+      console.log('[Bulk Import] Import complete:', {
+        total: summary.totalAttempted,
+        succeeded: summary.successCount,
+        failed: summary.failureCount
+      });
     } catch (error: any) {
-      console.error('Error importing records:', error);
-      toast.error(error.message || 'Failed to import feature requests');
+      // Unexpected error during preparation
+      const errorDetails = getErrorMessage(error, 'generic');
+      console.error('[Bulk Import] Unexpected error:', {
+        error: error.message,
+        technical: errorDetails.technical,
+        stack: error.stack
+      });
+
+      toast.error(`Failed to import: ${errorDetails.message}\n\n${errorDetails.suggestion || 'Please try again.'}`, {
+        duration: 7000
+      });
       setStep('preview');
     } finally {
       setLoading(false);

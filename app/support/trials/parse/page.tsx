@@ -29,6 +29,23 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as fuzz from 'fuzzball';
+import {
+  createTrialOrganizationAtomic,
+  verifyAtomicCreation,
+  verifyDatabaseRecords
+} from '@/lib/supabase/rpc';
+import {
+  createImportResults,
+  addSuccess,
+  addFailure,
+  addWarning,
+  verifyImportCounts,
+  addDatabaseVerification,
+  generateImportSummary,
+  getImportToastMessage
+} from '@/lib/errors/importResultsFormatter';
+import { getErrorMessage } from '@/lib/errorHandler';
+import { generateOrgDescription } from '@/lib/ai/descriptionGenerator';
 
 interface ParsedResult {
   session_id: string;
@@ -114,6 +131,7 @@ export default function TextParserPage() {
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<ParsedResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   // Editable Organization Fields
   const [orgName, setOrgName] = useState('');
@@ -426,6 +444,57 @@ export default function TextParserPage() {
     setActivities(activities.filter(a => a.id !== activityId));
   };
 
+  const handleGenerateAIDescription = async () => {
+    if (!orgName.trim()) {
+      toast.error('Organization name is required to generate description');
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const context = {
+        name: orgName,
+        domain: domain || undefined,
+        website: websiteUrl || undefined,
+        users: users.map(u => ({
+          name: u.name,
+          role: u.role || undefined,
+          email: u.email
+        })),
+        activities: activities
+          .filter(a => a.selected)
+          .map(a => ({
+            type: a.type,
+            title: a.title,
+            description: a.description
+          })),
+        rawText: text || undefined
+      };
+
+      const aiResult = await generateOrgDescription(context);
+
+      if (aiResult.success && aiResult.description) {
+        setDescription(aiResult.description);
+
+        if (aiResult.usingAI) {
+          toast.success('AI-generated description created successfully!', { duration: 3000 });
+        } else {
+          toast('Generated description using fallback (AI unavailable)', {
+            icon: 'ℹ️',
+            duration: 4000
+          });
+        }
+      } else {
+        toast.error(aiResult.error || 'Failed to generate description');
+      }
+    } catch (error: any) {
+      console.error('Error generating AI description:', error);
+      toast.error('Failed to generate description. Please try again.');
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!result) return;
 
@@ -471,101 +540,114 @@ export default function TextParserPage() {
     try {
       const normalizedUrl = normalizeUrl(websiteUrl);
 
-      // Insert organization
-      const { data: newOrg, error: orgError } = await supabase
-        .from('trial_organizations')
-        .insert({
-          org_name: orgName.trim(),
-          domain: domain,
-          org_url: normalizedUrl,
-          logo_url: logoUrl.trim() || extractLogoUrl(normalizedUrl),
-          description: description.trim(),
-          contract_value: contractValue ? parseFloat(contractValue.replace(/[^0-9.]/g, '')) : null,
-          team_size: teamSize ? parseInt(teamSize, 10) : null,
-          trial_duration_days: trialDuration ? parseInt(trialDuration, 10) : null,
-          sales_poc_id: salesPOCId || null,
-          account_manager_id: accountManagerId,
-          org_lifecycle_stage: 'prospect',
-          trial_status: 'requested',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select('org_id')
-        .single();
+      // Prepare organization data for atomic RPC call
+      const orgData: TrialOrganizationData = {
+        org_name: orgName.trim(),
+        domain: domain,
+        org_url: normalizedUrl,
+        logo_url: logoUrl.trim() || extractLogoUrl(normalizedUrl),
+        description: description.trim(),
+        contract_value: contractValue ? parseFloat(contractValue.replace(/[^0-9.]/g, '')) : undefined,
+        team_size: teamSize ? parseInt(teamSize, 10) : undefined,
+        trial_duration_days: trialDuration ? parseInt(trialDuration, 10) : undefined,
+        sales_poc_id: salesPOCId || undefined,
+        account_manager_id: accountManagerId,
+        org_lifecycle_stage: 'prospect',
+        trial_status: 'requested'
+      };
 
-      if (orgError) throw orgError;
-      if (!newOrg) throw new Error('Failed to create organization');
+      // Prepare users data
+      const usersData: TrialUserData[] = users
+        .filter(usr => usr.name.trim() && usr.email.trim())
+        .map(usr => ({
+          name: usr.name.trim(),
+          email: usr.email.trim(),
+          role: usr.role.trim() || undefined,
+          phone: usr.phone?.trim() || undefined,
+          current_stage: 'invited' as const
+        }));
 
-      // Insert all users
-      const createdUserIds: { [key: string]: string } = {};
-
-      for (const usr of users) {
-        if (!usr.name.trim() || !usr.email.trim()) continue;
-
-        const { data: newUser, error: userError } = await supabase
-          .from('trial_users')
-          .insert({
-            org_id: newOrg.org_id,
-            name: usr.name.trim(),
-            email: usr.email.trim(),
-            role: usr.role.trim() || null,
-            phone: usr.phone?.trim() || null,
-            current_stage: 'invited',
-            account_manager: accountManagerId,
-            created_at: new Date().toISOString(),
-          })
-          .select('user_id')
-          .single();
-
-        if (userError) {
-          console.error('Error creating user:', userError);
-          continue;
-        }
-
-        createdUserIds[usr.id] = newUser.user_id;
-      }
-
-      // Insert selected activities as user_interactions
+      // Prepare activities data (selected only)
       const selectedActivities = activities.filter(a => a.selected);
-      let activitiesCreated = 0;
+      const activitiesData: UserInteractionData[] = selectedActivities.map(activity => ({
+        interaction_type: activity.type,
+        title: activity.title,
+        notes: activity.description,
+        interaction_date: activity.date ? new Date(activity.date).toISOString() : new Date().toISOString(),
+        duration_minutes: activity.duration_minutes || undefined,
+        conducted_by: user?.email || undefined
+      }));
 
-      for (const activity of selectedActivities) {
-        // Assign to specific user or all users
-        const targetUserIds = activity.assignedUserId && createdUserIds[activity.assignedUserId]
-          ? [createdUserIds[activity.assignedUserId]]
-          : Object.values(createdUserIds);
+      // Call atomic RPC function - ALL or NOTHING
+      const atomicResult = await createTrialOrganizationAtomic(
+        orgData,
+        usersData,
+        activitiesData,
+        supabase
+      );
 
-        for (const userId of targetUserIds) {
-          const { error: activityError } = await supabase
-            .from('user_interactions')
-            .insert({
-              user_id: userId,
-              org_id: newOrg.org_id,
-              interaction_type: activity.type,
-              title: activity.title,
-              notes: activity.description,
-              interaction_date: activity.date ? new Date(activity.date).toISOString() : new Date().toISOString(),
-              duration_minutes: activity.duration_minutes,
-              conducted_by: user?.email || null,
-              created_at: new Date().toISOString()
-            });
+      // Verify counts match expectations
+      const verification = verifyAtomicCreation(atomicResult);
 
-          if (activityError) {
-            console.error('Error creating activity:', activityError);
-          } else {
-            activitiesCreated++;
-          }
-        }
+      if (!verification.success) {
+        // Count mismatch - organization was created but some items failed
+        const warningTitle = `⚠️ "${orgName}" created with issues`;
+        const warningDetails = verification.errors.map(err => `• ${err}`).join('\n');
+
+        toast.error(
+          `${warningTitle}\n\n${warningDetails}\n\nThe organization was created successfully, but some contacts or activities were not saved. Please review and add missing items manually.`,
+          { duration: 8000 }
+        );
+
+        // Still navigate - the org was created
+        router.push(`/support/trials/${atomicResult.org_id}`);
+      } else {
+        // Complete success
+        const successMsg = `✅ Created "${orgName}" with ${atomicResult.created_user_count} contact(s) and ${atomicResult.created_activity_count} interaction(s)`;
+        toast.success(successMsg, { duration: 4000 });
+
+        // Navigate to the new organization
+        router.push(`/support/trials/${atomicResult.org_id}`);
+      }
+    } catch (error: any) {
+      // Use graceful error handler for user-friendly messages
+      const errorDetails = getErrorMessage(error, 'trial_org_create');
+
+      // Build comprehensive error message
+      let errorMessage = errorDetails.message;
+
+      // Add suggestion if available
+      if (errorDetails.suggestion) {
+        errorMessage += `\n\n${errorDetails.suggestion}`;
       }
 
-      toast.success(
-        `Success! Created "${orgName}" with ${users.length} contact(s) and ${activitiesCreated} interaction(s)`,
-        { duration: 4000 }
-      );
-      router.push(`/support/trials/${newOrg.org_id}`);
-    } catch (error: any) {
-      console.error('Error saving data:', error);
-      toast.error('Failed to save data: ' + (error.message || 'Unknown error'));
+      // Add specific guidance based on error type
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        errorMessage += '\n\nTip: An organization with this name or email may already exist. Try checking existing organizations first.';
+      } else if (error.message?.includes('required') || error.message?.includes('validation')) {
+        errorMessage += '\n\nPlease check that all required fields are filled correctly and try again.';
+      } else if (error.message?.includes('permission') || error.message?.includes('unauthorized')) {
+        errorMessage += '\n\nYou may not have permission to create organizations. Please contact your administrator.';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage += '\n\nPlease check your internet connection and try again.';
+      }
+
+      // Show error toast with extended duration for longer messages
+      toast.error(errorMessage, {
+        duration: 7000,
+        style: {
+          maxWidth: '500px'
+        }
+      });
+
+      // Log technical details for debugging
+      console.error('[Paste & Extract] Failed to create trial organization:', {
+        error: error.message,
+        technical: errorDetails.technical,
+        orgName,
+        userCount: users.length,
+        activityCount: selectedActivities.length
+      });
     } finally {
       setSaving(false);
     }
@@ -876,14 +958,34 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
 
                     {/* Description */}
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Description</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-medium text-gray-700">Description</label>
+                        <button
+                          onClick={handleGenerateAIDescription}
+                          disabled={generatingDescription || !orgName.trim()}
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Generate professional description from context"
+                        >
+                          {generatingDescription ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Writing...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3 h-3" />
+                              Write for me
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={3}
                         maxLength={300}
                         className="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        placeholder="Auto-generated from context"
+                        placeholder="Auto-generated from context or click 'Generate with AI'"
                       />
                       <p className="text-xs text-gray-500 mt-1">{description.length}/300</p>
                     </div>
