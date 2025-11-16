@@ -14,6 +14,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
+    "test:production": "node scripts/production-test-suite.js",
     "test:customer-support": "node scripts/test-customer-support-flow.js",
     "test:attachments": "node scripts/test-file-attachments.js",
     "smart-import": "tsx scripts/smart-import.ts",
