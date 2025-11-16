@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getErrorMessage } from '@/lib/errorHandler';
+import { withErrorHandler, validateRequired, createValidationError } from '@/lib/middleware/errorHandler';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { text, available_users } = await request.json();
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const { text, available_users } = await request.json();
 
-    if (!text || !text.trim()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Text is required to parse activity',
-          suggestion: 'Please provide activity text to extract information from'
-        },
-        { status: 400 }
-      );
-    }
+  if (!text || !text.trim()) {
+    throw createValidationError('Text is required to parse activity. Please provide activity text to extract information from');
+  }
 
     // Simple rule-based parser
     const lowerText = text.toLowerCase();
@@ -94,25 +87,4 @@ export async function POST(request: NextRequest) {
         warnings: confidence < 0.7 ? ['Low confidence detection - please review carefully'] : []
       }
     });
-  } catch (error: any) {
-    // Use graceful error handler for user-friendly messages
-    const errorDetails = getErrorMessage(error, 'api_call');
-
-    // Log for debugging
-    console.error('[Activity Parser] Error:', {
-      error: error.message,
-      technical: errorDetails.technical,
-      stack: error.stack
-    });
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorDetails.message,
-        suggestion: errorDetails.suggestion,
-        technical: errorDetails.technical
-      },
-      { status: 500 }
-    );
-  }
-}
+});

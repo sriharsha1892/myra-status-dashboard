@@ -8,23 +8,23 @@ import {
 } from '@/lib/trials/textParser';
 import { parseTextWithGroq, isGroqAvailable } from '@/lib/trials/groqParser';
 import { findDuplicateOrgs, findDuplicateUsers } from '@/lib/trials/autoLink';
+import { withErrorHandler, validateRequired, createValidationError } from '@/lib/middleware/errorHandler';
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const supabase = await createClient();
 
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Check authentication
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    const body = await request.json();
-    const { text, source_type = 'manual_entry' } = body;
+  const body = await request.json();
+  const { text, source_type = 'manual_entry' } = body;
 
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
-    }
+  if (!text || typeof text !== 'string') {
+    throw createValidationError('Text is required');
+  }
 
     // Parse the text - try Groq first, fall back to regex
     let parsed;
@@ -124,11 +124,4 @@ export async function POST(request: NextRequest) {
         }
       }
     });
-  } catch (error) {
-    console.error('Error in parse-text API:', error);
-    return NextResponse.json(
-      { error: 'Failed to parse text', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
-}
+});

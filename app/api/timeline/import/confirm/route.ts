@@ -18,40 +18,36 @@ import {
   logBatchProgress
 } from '@/lib/monitoring/performance';
 import { chunkArray } from '@/lib/utils/arrayUtils';
+import { withErrorHandler, validateRequired } from '@/lib/middleware/errorHandler';
 
 /**
  * POST /api/timeline/import/confirm
  * Import reviewed and confirmed events, pain points, and learnings
  * Supports both old Circle K format and new LLM parser format
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   // Start performance monitoring
   const performanceTimer = new PerformanceTimer('Timeline Import', {});
   const requestId = performanceTimer.getRequestId();
 
-  try {
-    logAPIStart('POST', '/api/timeline/import/confirm', requestId);
+  logAPIStart('POST', '/api/timeline/import/confirm', requestId);
 
-    // Verify user access
-    const { authorized, userId } = await verifyUserAccess(request);
-    if (!authorized || !userId) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+  // Verify user access
+  const { authorized, userId } = await verifyUserAccess(request);
+  if (!authorized || !userId) {
+    return NextResponse.json(
+      { success: false, error: 'Not authenticated' },
+      { status: 401 }
+    );
+  }
 
-    const supabase = await createClient();
-    const body = await request.json();
+  const supabase = await createClient();
+  const body = await request.json();
 
-    const { org_id, events, pain_points, learnings, raw_text, source_type = 'bulk_import_llm' } = body;
+  const { org_id, events, pain_points, learnings, raw_text, source_type = 'bulk_import_llm' } = body;
 
-    if (!org_id || !events) {
-      return NextResponse.json(
-        { success: false, error: 'org_id and events are required' },
-        { status: 400 }
-      );
-    }
+  // Validate required fields
+  validateRequired(body, ['org_id', 'events']);
 
     // Check dataset sizes and log warnings if large
     checkDatasetSize('Events', events.length, requestId);
@@ -311,22 +307,4 @@ export async function POST(request: NextRequest) {
         ],
       }
     });
-  } catch (error: any) {
-    // Log failure with performance data
-    const timing = performanceTimer.stop();
-    logAPIComplete('POST', '/api/timeline/import/confirm', timing.duration, requestId, false, {
-      error: error.message
-    });
-
-    console.error('[Timeline Import] Error confirming import:', {
-      requestId,
-      error: error.message,
-      stack: error.stack
-    });
-
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to confirm import' },
-      { status: 500 }
-    );
-  }
-}
+});

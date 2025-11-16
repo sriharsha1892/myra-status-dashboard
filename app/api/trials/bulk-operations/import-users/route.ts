@@ -11,6 +11,7 @@ import {
   type ParsedUser,
 } from '@/lib/ai/userParser';
 import { isGroqAvailable } from '@/lib/ai/groqClient';
+import { withErrorHandler, validateRequired, createValidationError } from '@/lib/middleware/errorHandler';
 
 // Create Supabase admin client
 const supabaseAdmin = createClient(
@@ -19,53 +20,28 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-export async function POST(request: NextRequest) {
-  try {
-    // Check if Groq is available
-    if (!isGroqAvailable()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'AI features not configured - GROQ_API_KEY missing',
-        },
-        { status: 503 }
-      );
-    }
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  // Check if Groq is available
+  if (!isGroqAvailable()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'AI features not configured - GROQ_API_KEY missing',
+      },
+      { status: 503 }
+    );
+  }
 
-    // Parse request body
-    const body = await request.json();
-    const { org_id, raw_text, account_manager } = body;
+  // Parse request body
+  const body = await request.json();
+  const { org_id, raw_text, account_manager } = body;
 
-    // Validate input
-    if (!org_id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'org_id is required',
-        },
-        { status: 400 }
-      );
-    }
+  // Validate required fields
+  validateRequired(body, ['org_id', 'raw_text', 'account_manager']);
 
-    if (!raw_text || typeof raw_text !== 'string' || raw_text.trim().length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'raw_text is required and must be a non-empty string',
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!account_manager) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'account_manager is required',
-        },
-        { status: 400 }
-      );
-    }
+  if (typeof raw_text !== 'string' || raw_text.trim().length === 0) {
+    throw createValidationError('raw_text must be a non-empty string');
+  }
 
     console.log(`Parsing users for org ${org_id}...`);
 
@@ -183,18 +159,7 @@ export async function POST(request: NextRequest) {
       duplicates: parseResult.duplicates || [],
       inserted_users: insertedUsers,
     });
-  } catch (error: any) {
-    console.error('User import error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        details: error.message,
-      },
-      { status: 500 }
-    );
-  }
-}
+});
 
 // GET endpoint to check if user import is available
 export async function GET(request: NextRequest) {
