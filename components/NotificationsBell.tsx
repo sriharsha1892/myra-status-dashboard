@@ -5,34 +5,16 @@ import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
-import { authenticatedFetch } from '@/lib/api-client';
-
-interface Notification {
-  notification_id: string;
-  user_email: string;
-  note_id: string;
-  notification_type: string;
-  read: boolean;
-  created_at: string;
-  org_activity_notes: {
-    note_id: string;
-    org_id: string;
-    note_category: string;
-    note_text: string;
-    logged_by: string;
-    created_at: string;
-    trial_organizations: {
-      org_id: string;
-      org_name: string;
-    };
-  };
-}
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function NotificationsBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Use real-time notifications hook
+  const { notifications: allNotifications, unreadCount, markAsRead, loading } = useNotifications();
+
+  // Filter for note-related notifications only (backward compatibility)
+  const notifications = allNotifications.filter(n => n.entity_type === 'note');
+
   const [showDropdown, setShowDropdown] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -54,12 +36,7 @@ export default function NotificationsBell() {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
     fetchUserEmail();
-
-    // Poll for new notifications every 60 seconds (reduced from 30s for better performance)
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchUserEmail = async () => {
@@ -134,79 +111,31 @@ export default function NotificationsBell() {
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  const fetchNotifications = async () => {
-    try {
-      const response = await authenticatedFetch('/api/notifications');
-      const data = await response.json();
-
-      if (data.notifications) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.notifications.filter((n: Notification) => !n.read).length);
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (notificationIds: string[]) => {
-    try {
-      await authenticatedFetch('/api/notifications', {
-        method: 'PATCH',
-        body: JSON.stringify({ notification_ids: notificationIds }),
-      });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((n) =>
-          notificationIds.includes(n.notification_id) ? { ...n, read: true } : n
-        )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - notificationIds.length));
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: any) => {
     // Mark as read
-    if (!notification.read) {
-      markAsRead([notification.notification_id]);
+    if (!notification.is_read) {
+      markAsRead(notification.id);
     }
 
-    // Navigate to the org detail page with activity log tab
-    const orgId = notification.org_activity_notes.trial_organizations.org_id;
-    router.push(`/support/trials/${orgId}?tab=activitylog`);
+    // Navigate using action_url from notification
+    if (notification.action_url) {
+      router.push(notification.action_url);
+    }
     setShowDropdown(false);
   };
 
   const handleMarkAllAsRead = () => {
-    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.notification_id);
-    if (unreadIds.length > 0) {
-      markAsRead(unreadIds);
-    }
+    // Mark all note notifications as read
+    notifications.forEach((n) => {
+      if (!n.is_read) {
+        markAsRead(n.id);
+      }
+    });
   };
 
   const getNotificationIcon = (type: string) => {
     // Return empty string - no icons
     return '';
-  };
-
-  const getNotificationText = (notification: Notification) => {
-    const note = notification.org_activity_notes;
-    const orgName = note.trial_organizations.org_name;
-
-    switch (notification.notification_type) {
-      case 'mention':
-        return `${note.logged_by} mentioned you in a note about ${orgName}`;
-      case 'issue':
-        return `New issue reported for ${orgName}`;
-      case 'new_note':
-        return `${note.logged_by} added a note to ${orgName}`;
-      default:
-        return `New activity for ${orgName}`;
-    }
   };
 
   return (
@@ -318,9 +247,9 @@ export default function NotificationsBell() {
                   <div className="py-1">
                     {notifications.map((notification) => (
                       <div
-                        key={notification.notification_id}
+                        key={notification.id}
                         className={`relative group border-b border-slate-50 transition-all ${
-                          notification.read
+                          notification.is_read
                             ? 'bg-white hover:bg-neutral-50'
                             : 'bg-blue-50/50 hover:bg-blue-50'
                         }`}
@@ -330,16 +259,21 @@ export default function NotificationsBell() {
                           className="w-full text-left px-3 py-2 pr-8"
                         >
                           <div className="flex items-start gap-2">
-                            {!notification.read && (
+                            {!notification.is_read && (
                               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="text-[11px] text-neutral-900 font-medium leading-tight mb-1">
-                                {notification.org_activity_notes.trial_organizations.org_name}
+                                {notification.entity_title || 'Notification'}
                               </p>
                               <p className="text-[10px] text-neutral-600 leading-tight line-clamp-2">
-                                {getNotificationText(notification)}
+                                {notification.title}
                               </p>
+                              {notification.message && (
+                                <p className="text-[9px] text-neutral-500 leading-tight line-clamp-1 mt-0.5">
+                                  {notification.message}
+                                </p>
+                              )}
                               <p className="text-[9px] text-neutral-400 mt-1">
                                 {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                               </p>
@@ -351,7 +285,7 @@ export default function NotificationsBell() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            markAsRead([notification.notification_id]);
+                            markAsRead(notification.id);
                           }}
                           className="absolute top-2 right-2 p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-all"
                           title="Dismiss"

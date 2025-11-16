@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createActivityNoteNotifications, notifyAccountManagerOfNote } from '@/lib/notifications/activity-notes';
 
 // GET - List activity notes for an org
 export async function GET(request: NextRequest) {
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     // 3. Notify account manager for this org
     const { data: org } = await supabase
       .from('trial_organizations')
-      .select('account_manager')
+      .select('account_manager, org_name')
       .eq('org_id', org_id)
       .single();
 
@@ -164,11 +165,59 @@ export async function POST(request: NextRequest) {
         return !disabledTypes || !disabledTypes.has(notif.notification_type);
       });
 
-      // Insert filtered notifications
+      // Insert filtered notifications (backward compatibility)
       if (filteredNotifications.length > 0) {
         await supabase
           .from('activity_note_notifications')
           .insert(filteredNotifications as any);
+      }
+    }
+
+    // Create unified notifications for mentions (dual-write strategy)
+    if (mentions && mentions.length > 0 && org) {
+      // Get user's name for notification
+      const { data: userData } = await supabase
+        .from('users' as any)
+        .select('name')
+        .eq('email', user.email)
+        .single() as any;
+
+      const actorName = userData?.name || user.email?.split('@')[0] || 'Someone';
+
+      await createActivityNoteNotifications({
+        noteId: note.note_id,
+        orgId: org_id,
+        orgName: org.org_name,
+        noteCategory: note_category,
+        noteText: note_text,
+        actorEmail: user.email!,
+        actorName,
+        mentionedEmails: mentions,
+      });
+    }
+
+    // Notify account manager via unified notifications (if not already mentioned)
+    if (org?.account_manager && org.account_manager !== user.email) {
+      const isMentioned = mentions && mentions.includes(org.account_manager);
+      if (!isMentioned) {
+        const { data: userData } = await supabase
+          .from('users' as any)
+          .select('name')
+          .eq('email', user.email)
+          .single() as any;
+
+        const actorName = userData?.name || user.email?.split('@')[0] || 'Someone';
+
+        await notifyAccountManagerOfNote(
+          note.note_id,
+          org_id,
+          org.org_name,
+          org.account_manager,
+          note_category,
+          note_text,
+          user.email!,
+          actorName
+        );
       }
     }
 
