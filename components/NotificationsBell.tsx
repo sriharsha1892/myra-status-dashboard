@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import NotificationPreferencesModal from './NotificationPreferencesModal';
 import { useNotifications } from '@/hooks/useNotifications';
 
 export default function NotificationsBell() {
@@ -15,8 +14,6 @@ export default function NotificationsBell() {
   const notifications = allNotifications.filter(n => n.entity_type === 'note');
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -34,21 +31,6 @@ export default function NotificationsBell() {
       setPosition(JSON.parse(savedPosition));
     }
   }, []);
-
-  useEffect(() => {
-    fetchUserEmail();
-  }, []);
-
-  const fetchUserEmail = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-      }
-    } catch (error) {
-      console.error('Error fetching user email:', error);
-    }
-  };
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -212,19 +194,6 @@ export default function NotificationsBell() {
                       Clear all
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      setShowDropdown(false);
-                      setShowPreferences(true);
-                    }}
-                    className="p-1 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50 rounded transition-all"
-                    title="Settings"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </button>
                 </div>
               </div>
 
@@ -303,13 +272,6 @@ export default function NotificationsBell() {
           )}
         </div>
       </div>
-
-      {/* Notification Preferences Modal */}
-      <NotificationPreferencesModal
-        isOpen={showPreferences}
-        onClose={() => setShowPreferences(false)}
-        userEmail={userEmail}
-      />
     </>
   );
 }
