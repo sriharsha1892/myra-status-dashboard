@@ -9,12 +9,6 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 
-interface SalesPOC {
-  id: string;
-  name: string;
-  email: string;
-}
-
 interface User {
   id: string;
   name: string;
@@ -38,7 +32,6 @@ export default function CreateOrganizationPage() {
   const { user, loading: authLoading, role } = useAuth();
   const router = useRouter();
 
-  const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
   const [accountManagers, setAccountManagers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +42,7 @@ export default function CreateOrganizationPage() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [description, setDescription] = useState('');
-  const [salesPOCId, setSalesPOCId] = useState('');
+  const [salesPOCName, setSalesPOCName] = useState('');
   const [accountManagerId, setAccountManagerId] = useState('');
 
   // Primary contact form state
@@ -77,14 +70,6 @@ export default function CreateOrganizationPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch sales POCs
-      const { data: pocsData } = await supabase
-        .from('sales_pocs')
-        .select('id, name, email')
-        .order('name', { ascending: true });
-
-      if (pocsData) setSalesPOCs(pocsData);
-
       // Fetch account managers (users table)
       const { data: managersData } = await supabase
         .from('users')
@@ -194,7 +179,8 @@ export default function CreateOrganizationPage() {
           org_url: normalizedUrl,
           logo_url: logoUrl.trim(),
           description: description.trim(),
-          sales_poc_id: salesPOCId || null,
+          sales_poc_id: null,
+          sales_poc: salesPOCName.trim() || null,
           account_manager_id: accountManagerId,
           org_lifecycle_stage: 'prospect',
           trial_status: 'requested',
@@ -397,18 +383,14 @@ export default function CreateOrganizationPage() {
               {/* Sales POC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC (Optional)</label>
-                <select
-                  value={salesPOCId}
-                  onChange={(e) => setSalesPOCId(e.target.value)}
+                <input
+                  type="text"
+                  value={salesPOCName}
+                  onChange={(e) => setSalesPOCName(e.target.value)}
                   className="w-full h-11 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">None selected</option>
-                  {salesPOCs.map((poc) => (
-                    <option key={poc.id} value={poc.id}>
-                      {poc.name} ({poc.email})
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Enter sales POC full name (e.g., John Smith)"
+                />
+                <p className="text-xs text-gray-500 mt-1">Type the full name of the sales point of contact</p>
               </div>
 
               {/* Account Manager */}
@@ -419,10 +401,9 @@ export default function CreateOrganizationPage() {
                 <select
                   value={accountManagerId}
                   onChange={(e) => setAccountManagerId(e.target.value)}
-                  disabled={role === 'AM'}
                   className={`w-full h-11 px-4 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.accountManagerId ? 'border-red-300' : 'border-gray-200'
-                  } ${role === 'AM' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  }`}
                 >
                   <option value="">Select account manager...</option>
                   {accountManagers.map((manager) => (
