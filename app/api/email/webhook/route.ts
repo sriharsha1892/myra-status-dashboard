@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { processInboundEmail, extractTicketNumber, extractUserInfo, isReply } from '@/lib/email/parser';
+// Email webhook temporarily disabled
+// import { processInboundEmail, extractTicketNumber, extractUserInfo, isReply } from '@/lib/email/parser';
 
 export async function POST(request: NextRequest) {
+  // Email webhook temporarily disabled
+  return NextResponse.json(
+    { error: 'Email webhook is currently disabled' },
+    { status: 503 }
+  );
+
+  /*
   try {
     const supabase = await createClient();
     const rawEmail = await request.text();
@@ -108,4 +116,5 @@ export async function POST(request: NextRequest) {
       error: error.message
     }, { status: 500 });
   }
+  */
 }

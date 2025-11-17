@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAccess } from '@/lib/auth-helper';
-import { sendAccountManagerInvitationEmail } from '@/lib/email/resend';
+// Email notifications temporarily disabled
+// import { sendAccountManagerInvitationEmail } from '@/lib/email/resend';
 
 /**
  * POST /api/admin/users/resend-invite
@@ -25,31 +26,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get admin name for the "invited by" field
-    const adminName = authResult.user.user_metadata?.name || authResult.user.email || 'Admin';
+    // Email notifications temporarily disabled
+    return NextResponse.json(
+      { error: 'Email notifications are currently disabled. Please share credentials manually.' },
+      { status: 503 }
+    );
 
-    // Send invitation email
-    const emailResult = await sendAccountManagerInvitationEmail({
-      to: email,
-      name,
-      email,
-      password,
-      role,
-      invitedBy: adminName,
-    });
-
-    if (emailResult.success) {
-      return NextResponse.json({
-        success: true,
-        message: 'Invitation email sent successfully',
-      });
-    } else {
-      console.error('Failed to send invitation email:', emailResult.error);
-      return NextResponse.json(
-        { error: 'Failed to send invitation email' },
-        { status: 500 }
-      );
-    }
+    // const adminName = authResult.user.user_metadata?.name || authResult.user.email || 'Admin';
+    // const emailResult = await sendAccountManagerInvitationEmail({
+    //   to: email,
+    //   name,
+    //   email,
+    //   password,
+    //   role,
+    //   invitedBy: adminName,
+    // });
+    // if (emailResult.success) {
+    //   return NextResponse.json({
+    //     success: true,
+    //     message: 'Invitation email sent successfully',
+    //   });
+    // } else {
+    //   console.error('Failed to send invitation email:', emailResult.error);
+    //   return NextResponse.json(
+    //     { error: 'Failed to send invitation email' },
+    //     { status: 500 }
+    //   );
+    // }
   } catch (error: any) {
     console.error('Error in resend-invite API:', error);
     return NextResponse.json(

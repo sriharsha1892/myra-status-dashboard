@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
-import NotificationPreferencesModal from '@/components/NotificationPreferencesModal';
+// Email preferences temporarily disabled
+// import NotificationPreferencesModal from '@/components/NotificationPreferencesModal';
 
 interface Notification {
   id: string;
@@ -151,7 +152,8 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<'priority' | 'recent' | 'archived'>('priority');
   const [loading, setLoading] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [showPreferences, setShowPreferences] = useState(false);
+  // Email preferences temporarily disabled
+  // const [showPreferences, setShowPreferences] = useState(false);
   const supabase = createClient();
 
   const toggleGroup = (groupName: string) => {
@@ -299,14 +301,15 @@ export default function NotificationsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
+                {/* Email preferences temporarily disabled */}
+                {/* <button
                   onClick={() => setShowPreferences(true)}
                   className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-accent-700 bg-white/95 backdrop-blur-xl border-2 border-accent-200 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/20 hover:scale-105 hover:border-accent-300 hover:bg-accent-50/50"
                 >
                   <Settings className="w-4 h-4" />
                   <span>Preferences</span>
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent-500 rounded-full animate-pulse"></span>
-                </button>
+                </button> */}
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
@@ -559,12 +562,12 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Notification Preferences Modal */}
-      <NotificationPreferencesModal
+      {/* Email preferences temporarily disabled */}
+      {/* <NotificationPreferencesModal
         isOpen={showPreferences}
         onClose={() => setShowPreferences(false)}
         userEmail={user?.email || ''}
-      />
+      /> */}
     </div>
   );
 }

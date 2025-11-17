@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { sendTrialHandoffEmail } from '@/lib/notifications/send-with-email';
+// Email notifications temporarily disabled
+// import { sendTrialHandoffEmail } from '@/lib/notifications/send-with-email';
 
 interface HandoffRequest {
   new_account_manager: string; // email
@@ -110,17 +111,17 @@ export async function POST(
           status: 'unread',
         } as any);
 
-        // Send email notification asynchronously
-        sendTrialHandoffEmail({
-          recipientEmail: new_account_manager,
-          orgName: org.org_name,
-          previousAccountManager: previousAccountManager || 'Unassigned',
-          newAccountManager: new_account_manager,
-          handoffReason: handoff_reason,
-          contextNotes: context_notes,
-          actionUrl: `/support/trials/${orgId}`,
-          actorName,
-        });
+        // Email notifications temporarily disabled
+        // sendTrialHandoffEmail({
+        //   recipientEmail: new_account_manager,
+        //   orgName: org.org_name,
+        //   previousAccountManager: previousAccountManager || 'Unassigned',
+        //   newAccountManager: new_account_manager,
+        //   handoffReason: handoff_reason,
+        //   contextNotes: context_notes,
+        //   actionUrl: `/support/trials/${orgId}`,
+        //   actorName,
+        // });
       }
     }
 

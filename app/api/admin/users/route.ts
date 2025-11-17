@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyAdminAccess, isSuperAdmin } from '@/lib/auth-helper';
-import { sendAccountManagerInvitationEmail } from '@/lib/email/resend';
+// Email notifications temporarily disabled
+// import { sendAccountManagerInvitationEmail } from '@/lib/email/resend';
 
 // Create Supabase Admin client with service role key (lazy initialization)
 function getSupabaseAdmin() {
@@ -182,33 +183,28 @@ export async function POST(request: NextRequest) {
       // Don't fail user creation if DB sync fails - user is already created in auth
     }
 
-    // Send welcome/invitation email (non-blocking - don't fail if email fails)
-    let emailSent = false;
-    try {
-      // Get the admin user info for "invited by" field
-      const { data: requestData } = await verifyAdminAccess(request);
-      const adminName = requestData?.user?.user_metadata?.name || 'Your Admin';
-
-      const emailResult = await sendAccountManagerInvitationEmail({
-        to: email,
-        name,
-        email,
-        password,
-        role,
-        invitedBy: adminName,
-      });
-
-      emailSent = emailResult.success;
-
-      if (emailResult.success) {
-        console.log(`✅ Invitation email sent to ${email}`);
-      } else {
-        console.warn(`⚠️  Failed to send invitation email to ${email}:`, emailResult.error);
-      }
-    } catch (emailError) {
-      console.warn('⚠️  Error sending invitation email:', emailError);
-      // Don't fail user creation if email fails
-    }
+    // Email notifications temporarily disabled
+    const emailSent = false;
+    // try {
+    //   const { data: requestData } = await verifyAdminAccess(request);
+    //   const adminName = requestData?.user?.user_metadata?.name || 'Your Admin';
+    //   const emailResult = await sendAccountManagerInvitationEmail({
+    //     to: email,
+    //     name,
+    //     email,
+    //     password,
+    //     role,
+    //     invitedBy: adminName,
+    //   });
+    //   emailSent = emailResult.success;
+    //   if (emailResult.success) {
+    //     console.log(`✅ Invitation email sent to ${email}`);
+    //   } else {
+    //     console.warn(`⚠️  Failed to send invitation email to ${email}:`, emailResult.error);
+    //   }
+    // } catch (emailError) {
+    //   console.warn('⚠️  Error sending invitation email:', emailError);
+    // }
 
     return NextResponse.json({
       success: true,
