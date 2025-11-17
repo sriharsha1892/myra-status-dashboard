@@ -737,29 +737,6 @@ export default function TextParserPage() {
           {/* Left Column - Input */}
           <div className="space-y-4">
             <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-medium text-gray-900">Source Type</label>
-                <div className="flex gap-2">
-                  {[
-                    { value: 'meeting_notes', label: 'Meeting' },
-                    { value: 'email', label: 'Email' },
-                    { value: 'call_summary', label: 'Call' }
-                  ].map((type) => (
-                    <button
-                      key={type.value}
-                      onClick={() => setSourceType(type.value as any)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                        sourceType === type.value
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
