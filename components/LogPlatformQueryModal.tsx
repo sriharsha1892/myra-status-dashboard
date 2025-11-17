@@ -21,6 +21,31 @@ const QUERY_STATUS_OPTIONS = [
   { value: 'timeout', label: 'Timeout', icon: Clock, color: 'text-orange-600 bg-orange-50 border-orange-200' },
 ];
 
+const QUERY_CATEGORY_OPTIONS = [
+  { value: 'Market Size & Forecast', label: 'Market Size & Forecast' },
+  { value: 'Competitive Analysis', label: 'Competitive Analysis' },
+  { value: 'Trend Analysis', label: 'Trend Analysis' },
+  { value: 'Industry Overview', label: 'Industry Overview' },
+  { value: 'Regulatory & Compliance', label: 'Regulatory & Compliance' },
+  { value: 'Technology Assessment', label: 'Technology Assessment' },
+  { value: 'Consumer Insights', label: 'Consumer Insights' },
+  { value: 'Supply Chain Analysis', label: 'Supply Chain Analysis' },
+  { value: 'Regional Analysis', label: 'Regional Analysis' },
+  { value: 'Product Analysis', label: 'Product Analysis' },
+  { value: 'Other', label: 'Other' },
+];
+
+const OBSERVATION_OPTIONS = [
+  { value: 'Excellent - Highly accurate and comprehensive', label: 'Excellent - Highly accurate and comprehensive' },
+  { value: 'Good - Meets expectations with solid insights', label: 'Good - Meets expectations with solid insights' },
+  { value: 'Satisfactory - Adequate but could be improved', label: 'Satisfactory - Adequate but could be improved' },
+  { value: 'Needs Refinement - Missing key information', label: 'Needs Refinement - Missing key information' },
+  { value: 'Poor - Lacks context or accuracy', label: 'Poor - Lacks context or accuracy' },
+  { value: 'Data Quality Issues', label: 'Data Quality Issues' },
+  { value: 'Requires Expert Review', label: 'Requires Expert Review' },
+  { value: 'Novel Insight - Unexpected findings', label: 'Novel Insight - Unexpected findings' },
+];
+
 export default function LogPlatformQueryModal({ isOpen, onClose, orgId, users, onQueryLogged }: LogPlatformQueryModalProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -29,6 +54,8 @@ export default function LogPlatformQueryModal({ isOpen, onClose, orgId, users, o
     query_topic: '',
     query_text: '',
     status: 'success',
+    query_category: '',
+    observations: '',
     confidence_score: '',
     response_time_ms: '',
     session_id: '',
@@ -64,6 +91,8 @@ export default function LogPlatformQueryModal({ isOpen, onClose, orgId, users, o
           query_topic: form.query_topic,
           query_text: form.query_text,
           status: form.status,
+          query_category: form.query_category || null,
+          observations: form.observations || null,
           confidence_score: form.confidence_score ? parseFloat(form.confidence_score) : null,
           response_time_ms: form.response_time_ms ? parseInt(form.response_time_ms) : null,
           session_id: form.session_id || null,
@@ -81,6 +110,8 @@ export default function LogPlatformQueryModal({ isOpen, onClose, orgId, users, o
         query_topic: '',
         query_text: '',
         status: 'success',
+        query_category: '',
+        observations: '',
         confidence_score: '',
         response_time_ms: '',
         session_id: '',
@@ -155,6 +186,43 @@ export default function LogPlatformQueryModal({ isOpen, onClose, orgId, users, o
               placeholder="Full query text entered by the user..."
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
+          </div>
+
+          {/* Query Category */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Query Category</label>
+            <select
+              value={form.query_category}
+              onChange={(e) => setForm({ ...form, query_category: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select category (optional)</option>
+              {QUERY_CATEGORY_OPTIONS.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Observations */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Observations</label>
+            <select
+              value={form.observations}
+              onChange={(e) => setForm({ ...form, observations: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select observation (optional)</option>
+              {OBSERVATION_OPTIONS.map((observation) => (
+                <option key={observation.value} value={observation.value}>
+                  {observation.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-gray-500">
+              Quality assessment for B2B AI market research output
+            </p>
           </div>
 
           {/* Status */}

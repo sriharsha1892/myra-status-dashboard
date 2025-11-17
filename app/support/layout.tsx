@@ -21,7 +21,7 @@ import {
   User,
   MessageCircle,
   Lightbulb,
-  Mail
+  Upload
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
@@ -319,18 +319,18 @@ export default function SupportLayout({
               </Link>
             )}
 
-            {/* Email Settings - Super Admin only */}
-            {(role === 'Admin' && is_super_admin) && (
+            {/* Bulk Activity Import - Admin only */}
+            {role === 'Admin' && (
               <Link
-                href="/support/admin/email-settings"
+                href="/support/admin/bulk-activity-import"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  pathname === '/support/admin/email-settings'
+                  pathname?.startsWith('/support/admin/bulk-activity-import')
                     ? 'text-neutral-900 bg-accent-50 border border-accent-100'
                     : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                 }`}
               >
-                <Mail className={`w-5 h-5 shrink-0 ${pathname === '/support/admin/email-settings' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
-                <span>Email Settings</span>
+                <Upload className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/bulk-activity-import') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+                <span>Bulk Activity Import</span>
               </Link>
             )}
 
@@ -397,7 +397,7 @@ export default function SupportLayout({
                 {pathname?.startsWith('/support/admin/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/trials/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/admin/customer-support') && 'Customer Support'}
-                {pathname === '/support/admin/email-settings' && 'Email Settings'}
+                {pathname?.startsWith('/support/admin/bulk-activity-import') && 'Bulk Activity Import'}
                 {pathname === '/support/profile' && 'Profile'}
               </h1>
             </div>

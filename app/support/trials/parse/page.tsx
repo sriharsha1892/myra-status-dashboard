@@ -33,7 +33,9 @@ import * as fuzz from 'fuzzball';
 import {
   createTrialOrganizationAtomic,
   verifyAtomicCreation,
-  verifyDatabaseRecords
+  verifyDatabaseRecords,
+  type PlatformQueryData,
+  type UserInteractionData
 } from '@/lib/supabase/rpc';
 import {
   createImportResults,
@@ -47,6 +49,7 @@ import {
 } from '@/lib/errors/importResultsFormatter';
 import { getErrorMessage } from '@/lib/errorHandler';
 import { generateOrgDescription } from '@/lib/ai/descriptionGenerator';
+import { parseQueryCSV, type ParsedQuery } from '@/lib/parsers/query-csv-parser';
 
 interface ParsedResult {
   session_id: string;
@@ -143,6 +146,7 @@ export default function TextParserPage() {
   const router = useRouter();
   const { user, role } = useAuth();
   const [text, setText] = useState('');
+  const [platformQueriesCSV, setPlatformQueriesCSV] = useState('');
   const [sourceType, setSourceType] = useState<'email' | 'meeting_notes' | 'call_summary' | 'manual_entry'>('meeting_notes');
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<ParsedResult | null>(null);
@@ -217,6 +221,80 @@ export default function TextParserPage() {
       }
     } catch (error: any) {
       console.error('Error fetching dropdown data:', error);
+    }
+  };
+
+  const handlePlatformQueriesCSVChange = (csvText: string) => {
+    setPlatformQueriesCSV(csvText);
+
+    if (!csvText || csvText.trim().length === 0) {
+      setPlatformQueries([]);
+      return;
+    }
+
+    try {
+      const parseResult = parseQueryCSV(csvText);
+
+      if (parseResult.errors.length > 0) {
+        const errorMessages = parseResult.errors
+          .slice(0, 3)
+          .map(e => `Row ${e.row}: ${e.message}`)
+          .join('\n');
+
+        toast.error(
+          `CSV parsing errors (${parseResult.errors.length} total):\n${errorMessages}${
+            parseResult.errors.length > 3 ? '\n...' : ''
+          }`,
+          { duration: 5000 }
+        );
+      }
+
+      // Convert parsed queries to editable format with fuzzy user matching
+      const editableQueries: EditablePlatformQuery[] = parseResult.queries.map((q) => {
+        // Fuzzy match user name with existing users
+        const matchedUser = users.find((u) => {
+          const similarity = fuzz.ratio(
+            q.user_name.toLowerCase(),
+            u.name.toLowerCase()
+          );
+          return similarity >= 85; // 85% similarity threshold
+        });
+
+        return {
+          id: `temp-${Date.now()}-${Math.random()}`,
+          queryTopic: q.query_topic,
+          queryText: q.query_text,
+          userName: q.user_name,
+          executedAt: q.executed_at,
+          status: q.status || 'success',
+          confidenceScore: q.confidence_score || 0,
+          responseTimeMs: undefined,
+          sessionId: undefined,
+          confidence: 90, // Default confidence for CSV imports
+          selected: true,
+          assignedUserId: matchedUser?.id, // Will be undefined if no match found
+        };
+      });
+
+      setPlatformQueries(editableQueries);
+
+      // Show summary toast
+      const matchedCount = editableQueries.filter((q) => q.assignedUserId).length;
+      const unmatchedCount = editableQueries.length - matchedCount;
+
+      if (unmatchedCount > 0) {
+        toast.success(
+          `Parsed ${editableQueries.length} queries. ${matchedCount} matched to users, ${unmatchedCount} need manual assignment.`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.success(`Parsed ${editableQueries.length} queries. All matched to users!`, {
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing platform queries CSV:', error);
+      toast.error(`Failed to parse CSV: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -597,12 +675,36 @@ export default function TextParserPage() {
         conducted_by: user?.email || undefined
       }));
 
+      // Prepare platform queries data (selected only with assigned users)
+      const selectedQueries = platformQueries.filter(q => q.selected);
+      const queriesWithoutUsers = selectedQueries.filter(q => !q.assignedUserId);
+
+      if (queriesWithoutUsers.length > 0) {
+        toast.error(
+          `${queriesWithoutUsers.length} platform queries do not have assigned users. Please assign users to all queries before saving.`,
+          { duration: 5000 }
+        );
+        setSaving(false);
+        return;
+      }
+
+      const queriesData: PlatformQueryData[] = selectedQueries.map(query => ({
+        query_topic: query.queryTopic,
+        query_text: query.queryText,
+        status: query.status,
+        confidence_score: query.confidenceScore || undefined,
+        response_time_ms: query.responseTimeMs || undefined,
+        session_id: query.sessionId || undefined,
+        executed_at: query.executedAt,
+        user_id: query.assignedUserId!  // Non-null assertion safe due to validation above
+      }));
+
       // Call atomic RPC function - ALL or NOTHING
       const atomicResult = await createTrialOrganizationAtomic(
         orgData,
         usersData,
         activitiesData,
-        [], // Empty queries data - platform queries not yet supported in paste & extract
+        queriesData,
         supabase
       );
 
@@ -769,6 +871,39 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+
+            {/* Platform Queries CSV Input */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Search className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-semibold text-gray-900">Platform Queries (CSV)</h3>
+              </div>
+              <textarea
+                value={platformQueriesCSV}
+                onChange={(e) => handlePlatformQueriesCSVChange(e.target.value)}
+                placeholder="Paste platform queries CSV here...
+
+Simple format (Title,User,Date):
+Dairy Beverage Giants,Michael Pence,Nov 17, Mon
+Global Cream Manufacturers,Michael Pence,Nov 17, Mon
+Latin America Cream Market,Lezama Pérez Aureliano,Nov 15, Sat
+
+Extended format (Title,User,Date,Status,Category,Observations,Confidence):
+Dairy Trends,John Doe,Nov 17,success,Market Analysis,Excellent,95.5"
+                className="w-full h-64 px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono resize-none"
+              />
+
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-xs text-gray-500">
+                  {platformQueriesCSV.length} chars · {platformQueries.length} queries parsed
+                </span>
+                {platformQueries.length > 0 && (
+                  <span className="text-xs text-blue-600 font-medium">
+                    {platformQueries.filter(q => q.assignedUserId).length} matched · {platformQueries.filter(q => !q.assignedUserId).length} unmatched
+                  </span>
+                )}
               </div>
             </div>
 

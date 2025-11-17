@@ -73,18 +73,4 @@ export const PROVIDERS: Provider[] = [
     dependsOn: ['aws'],
     impacts: 'Web data collection degraded, research quality reduced',
   },
-  {
-    id: 'brave',
-    name: 'Brave',
-    displayName: 'Search Continuity Service',
-    userFacingName: 'Search Continuity Service',
-    enables: 'Backup web search capabilities, source diversity',
-    statusPageUrl: 'https://status.brave.app',
-    apiEndpoint: 'https://status.brave.app',
-    color: '#fb542b',
-    priority: 'secondary',
-    dependsOn: ['aws'],
-    impacts: 'Reduced search redundancy and source diversity',
-    role: 'fallback',
-  },
 ];

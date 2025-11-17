@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import RelativeTime from '@/components/ui/RelativeTime';
 import {
   TrendingUp, TrendingDown, Activity, Users, FileText, MessageSquare,
-  Calendar, AlertCircle, CheckCircle, Clock, BarChart3, Zap
+  Calendar, AlertCircle, CheckCircle, Clock, BarChart3, Zap, Search
 } from 'lucide-react';
 
 interface TrialUsageDashboardProps {
@@ -18,10 +18,14 @@ interface UsageStats {
   totalQuestions: number;
   totalReports: number;
   totalActivities: number;
+  totalPlatformQueries: number;
+  successfulQueries: number;
+  averageConfidenceScore: number | null;
   recentActivities: any[];
   loginTrend: number; // % change from previous period
   questionTrend: number;
   reportTrend: number;
+  queryTrend: number;
 }
 
 interface TrialInfo {
@@ -39,10 +43,14 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
     totalQuestions: 0,
     totalReports: 0,
     totalActivities: 0,
+    totalPlatformQueries: 0,
+    successfulQueries: 0,
+    averageConfidenceScore: null,
     recentActivities: [],
     loginTrend: 0,
     questionTrend: 0,
     reportTrend: 0,
+    queryTrend: 0,
   });
   const [trialInfo, setTrialInfo] = useState<TrialInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -145,15 +153,52 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
         ? ((recentReports - previousReports) / previousReports) * 100
         : recentReports > 0 ? 100 : 0;
 
+      // Fetch platform queries
+      const { data: queries, error: queriesError } = await supabase
+        .from('platform_queries')
+        .select('*')
+        .eq('org_id', trialOrgId);
+
+      if (queriesError) {
+        console.error('Error fetching platform queries:', queriesError);
+      }
+
+      const totalPlatformQueries = queries?.length || 0;
+      const successfulQueries = queries?.filter(q => q.status === 'success').length || 0;
+
+      // Calculate average confidence score
+      const queriesWithConfidence = queries?.filter(q => q.confidence_score !== null) || [];
+      const averageConfidenceScore = queriesWithConfidence.length > 0
+        ? queriesWithConfidence.reduce((sum, q) => sum + (q.confidence_score || 0), 0) / queriesWithConfidence.length
+        : null;
+
+      // Calculate query trend (last 7 days vs previous 7 days)
+      const recentQueries = queries?.filter(q =>
+        new Date(q.executed_at) >= sevenDaysAgo
+      ).length || 0;
+
+      const previousQueries = queries?.filter(q =>
+        new Date(q.executed_at) >= fourteenDaysAgo &&
+        new Date(q.executed_at) < sevenDaysAgo
+      ).length || 0;
+
+      const queryTrend = previousQueries > 0
+        ? ((recentQueries - previousQueries) / previousQueries) * 100
+        : recentQueries > 0 ? 100 : 0;
+
       setStats({
         totalLogins: logins,
         totalQuestions: questions,
         totalReports: reports,
         totalActivities: activities?.length || 0,
+        totalPlatformQueries,
+        successfulQueries,
+        averageConfidenceScore,
         recentActivities: activities?.slice(0, 5) || [],
         loginTrend,
         questionTrend,
         reportTrend,
+        queryTrend,
       });
     } catch (error) {
       console.error('Error fetching usage stats:', error);
@@ -229,7 +274,7 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Logins Card */}
         <StatCard
           title="User Logins"
@@ -255,6 +300,15 @@ export default function TrialUsageDashboard({ trialOrgId, trialOrgName }: TrialU
           trend={stats.reportTrend}
           icon={FileText}
           color="green"
+        />
+
+        {/* Platform Queries Card */}
+        <StatCard
+          title="Platform Queries"
+          value={stats.totalPlatformQueries}
+          trend={stats.queryTrend}
+          icon={Search}
+          color="blue"
         />
       </div>
 

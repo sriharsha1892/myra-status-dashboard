@@ -274,76 +274,6 @@ export class StatusFetcher {
     }
   }
 
-  private static async fetchBetterStackStatus(provider: Provider): Promise<ProviderStatus> {
-    try {
-      // Fetch the HTML page
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 10000);
-
-      const response = await fetch(provider.statusPageUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'myRA-AI-Status-Dashboard/1.0',
-        },
-      });
-      clearTimeout(id);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const html = await response.text();
-
-      // Parse overall status from the icon class
-      const overallMatch = html.match(/status-page__overview-icon--(\w+)/);
-      const overallStatus = overallMatch ? overallMatch[1] : 'unknown';
-
-      // Extract service list - match service names
-      const serviceMatches = Array.from(html.matchAll(/status-page__resource-name[^>]*>[\s\S]*?<img[^>]*>[\s\S]*?([^<\n]+)</g));
-
-      const components: Component[] = serviceMatches
-        .map((match, index) => {
-          const name = match[1].trim();
-          if (!name) return null;
-
-          // Look for operational indicators in the HTML around this service
-          const serviceSection = html.substring(match.index || 0, (match.index || 0) + 500);
-          const hasOperationalIcon = serviceSection.includes('not_monitored_small') ? 'operational' : 'operational';
-
-          return {
-            id: `brave-${index}`,
-            name: name,
-            status: 'operational' as ServiceStatus, // BetterStack shows all as operational if page loads
-          };
-        })
-        .filter((c): c is Component => c !== null)
-        .filter(c => c.name.toLowerCase().includes('search') || c.name.toLowerCase().includes('api'));
-
-      return {
-        provider,
-        status: this.mapStatusIndicator(overallStatus),
-        indicator: overallStatus,
-        lastUpdated: new Date().toISOString(),
-        components: components.length > 0 ? components : [{
-          id: 'brave-search',
-          name: 'Brave Search',
-          status: this.mapStatusIndicator(overallStatus),
-        }],
-        incidents: [],
-      };
-    } catch (error) {
-      console.error(`Error fetching Brave status:`, error);
-      return {
-        provider,
-        status: 'unknown',
-        indicator: 'unknown',
-        lastUpdated: new Date().toISOString(),
-        components: [],
-        incidents: [],
-      };
-    }
-  }
-
   private static async fetchExaStatus(provider: Provider): Promise<ProviderStatus> {
     try {
       const data = await this.fetchWithTimeout(provider.apiEndpoint);
@@ -379,9 +309,6 @@ export class StatusFetcher {
   public static async fetchProviderStatus(provider: Provider): Promise<ProviderStatus> {
     if (provider.id === 'google') {
       return this.fetchGoogleStatus(provider);
-    }
-    if (provider.id === 'brave') {
-      return this.fetchBetterStackStatus(provider);
     }
     if (provider.id === 'aws') {
       return this.fetchAWSStatus(provider);

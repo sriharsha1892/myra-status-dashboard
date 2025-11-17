@@ -62,10 +62,10 @@ export default function CreateOrganizationPage() {
       return;
     }
 
-    if (user && role) {
+    if (user) {
       fetchData();
     }
-  }, [user, authLoading, role]);
+  }, [user, authLoading]);
 
   const fetchData = async () => {
     setLoading(true);

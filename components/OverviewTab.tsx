@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Video, CalendarClock, MessageSquare, Sparkles } from 'lucide-react';
+import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Video, CalendarClock, MessageSquare, Sparkles, Search } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import TrialExtensionsTab from './TrialExtensionsTab';
 import UpdateDealStatusModal from './UpdateDealStatusModal';
@@ -25,10 +25,12 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
   const [showExtensions, setShowExtensions] = useState(false);
   const [dealData, setDealData] = useState<any>(null);
   const [showDealModal, setShowDealModal] = useState(false);
+  const [queryCount, setQueryCount] = useState<number>(0);
   const supabase = createClient();
 
   useEffect(() => {
     fetchDealData();
+    fetchQueryCount();
   }, [orgId]);
 
   const fetchDealData = async () => {
@@ -44,6 +46,23 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
         return;
       }
       setDealData(data || null);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const fetchQueryCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('platform_queries')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId);
+
+      if (error) {
+        console.error('Error fetching query count:', error);
+        return;
+      }
+      setQueryCount(count || 0);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -71,7 +90,7 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Trial Health</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Days Remaining */}
           <div className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-3">
@@ -118,6 +137,19 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
               </div>
             </div>
           )}
+
+          {/* Platform Queries */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                <Search className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Platform Queries</p>
+                <p className="text-2xl font-bold text-gray-900">{queryCount}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
