@@ -7,7 +7,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { formatDistanceToNow } from 'date-fns';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import {
   Search,
   Filter,
@@ -346,7 +346,6 @@ export default function TicketsListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">

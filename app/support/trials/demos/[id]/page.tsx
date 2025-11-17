@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import MentionTextEditor from '@/components/MentionTextEditor';
 

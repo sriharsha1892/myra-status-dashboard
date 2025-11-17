@@ -8,6 +8,7 @@ import { X, Bell, Check } from 'lucide-react';
 interface NotificationPreference {
   notification_type: string;
   enabled: boolean;
+  email_delivery_frequency: 'instant' | 'daily_digest' | 'weekly_digest' | 'never';
   label: string;
   description: string;
 }
@@ -88,13 +89,17 @@ export default function NotificationPreferencesModal({
 
       // Create a map of existing preferences
       const existingPrefsMap = new Map(
-        (data || []).map((pref: any) => [pref.notification_type, pref.enabled])
+        (data || []).map((pref: any) => [
+          pref.notification_type,
+          { enabled: pref.enabled, email_delivery_frequency: pref.email_delivery_frequency || 'instant' }
+        ])
       );
 
       // Merge with default notification types
       const mergedPreferences = NOTIFICATION_TYPES.map((type) => ({
         ...type,
-        enabled: existingPrefsMap.get(type.notification_type) ?? true, // Default to enabled
+        enabled: existingPrefsMap.get(type.notification_type)?.enabled ?? true, // Default to enabled
+        email_delivery_frequency: existingPrefsMap.get(type.notification_type)?.email_delivery_frequency ?? 'instant' as const,
       }));
 
       setPreferences(mergedPreferences);
@@ -102,7 +107,7 @@ export default function NotificationPreferencesModal({
       console.error('Error fetching notification preferences:', error);
       // If table doesn't exist, just use defaults
       setPreferences(
-        NOTIFICATION_TYPES.map((type) => ({ ...type, enabled: true }))
+        NOTIFICATION_TYPES.map((type) => ({ ...type, enabled: true, email_delivery_frequency: 'instant' as const }))
       );
     } finally {
       setLoading(false);
@@ -114,6 +119,19 @@ export default function NotificationPreferencesModal({
       prev.map((pref) =>
         pref.notification_type === notificationType
           ? { ...pref, enabled: !pref.enabled }
+          : pref
+      )
+    );
+  };
+
+  const updateEmailFrequency = (
+    notificationType: string,
+    frequency: 'instant' | 'daily_digest' | 'weekly_digest' | 'never'
+  ) => {
+    setPreferences((prev) =>
+      prev.map((pref) =>
+        pref.notification_type === notificationType
+          ? { ...pref, email_delivery_frequency: frequency }
           : pref
       )
     );
@@ -133,6 +151,7 @@ export default function NotificationPreferencesModal({
         user_email: userEmail,
         notification_type: pref.notification_type,
         enabled: pref.enabled,
+        email_delivery_frequency: pref.email_delivery_frequency,
       }));
 
       const { error } = await supabase
@@ -192,58 +211,87 @@ export default function NotificationPreferencesModal({
           ) : (
             <div className="space-y-2">
               {preferences.map((pref) => (
-                <button
+                <div
                   key={pref.notification_type}
-                  onClick={() => togglePreference(pref.notification_type)}
-                  className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left group hover:shadow-md ${
+                  className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
                     pref.enabled
-                      ? 'border-blue-500 bg-blue-50 hover:bg-blue-100'
-                      : 'border-neutral-200 bg-white hover:bg-neutral-50'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-neutral-200 bg-white'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    {/* Checkbox */}
-                    <div
-                      className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                        pref.enabled
-                          ? 'bg-blue-600 border-blue-600'
-                          : 'bg-white border-neutral-300 group-hover:border-slate-400'
-                      }`}
-                    >
-                      {pref.enabled && (
-                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4
-                        className={`text-sm font-bold mb-0.5 ${
-                          pref.enabled ? 'text-blue-900' : 'text-neutral-900'
+                  <button
+                    onClick={() => togglePreference(pref.notification_type)}
+                    className="w-full text-left group"
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox */}
+                      <div
+                        className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                          pref.enabled
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-white border-neutral-300 group-hover:border-slate-400'
                         }`}
                       >
-                        {pref.label}
-                      </h4>
-                      <p
-                        className={`text-xs ${
-                          pref.enabled ? 'text-blue-700' : 'text-neutral-600'
+                        {pref.enabled && (
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h4
+                          className={`text-sm font-bold mb-0.5 ${
+                            pref.enabled ? 'text-blue-900' : 'text-neutral-900'
+                          }`}
+                        >
+                          {pref.label}
+                        </h4>
+                        <p
+                          className={`text-xs ${
+                            pref.enabled ? 'text-blue-700' : 'text-neutral-600'
+                          }`}
+                        >
+                          {pref.description}
+                        </p>
+                      </div>
+
+                      {/* Status indicator */}
+                      <div
+                        className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          pref.enabled
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-neutral-200 text-neutral-600'
                         }`}
                       >
-                        {pref.description}
-                      </p>
+                        {pref.enabled ? 'ON' : 'OFF'}
+                      </div>
                     </div>
+                  </button>
 
-                    {/* Status indicator */}
-                    <div
-                      className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        pref.enabled
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-neutral-200 text-neutral-600'
-                      }`}
-                    >
-                      {pref.enabled ? 'ON' : 'OFF'}
+                  {/* Email Frequency Dropdown - Only shown when enabled */}
+                  {pref.enabled && (
+                    <div className="mt-2 ml-8">
+                      <label className="block text-xs font-semibold text-blue-900 mb-1">
+                        Email Delivery
+                      </label>
+                      <select
+                        value={pref.email_delivery_frequency}
+                        onChange={(e) =>
+                          updateEmailFrequency(
+                            pref.notification_type,
+                            e.target.value as 'instant' | 'daily_digest' | 'weekly_digest' | 'never'
+                          )
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full px-2 py-1.5 text-xs border border-blue-300 rounded-md bg-white text-blue-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="instant">📧 Instant (send immediately)</option>
+                        <option value="daily_digest">📅 Daily Digest (once per day)</option>
+                        <option value="weekly_digest">📆 Weekly Digest (once per week)</option>
+                        <option value="never">🔕 Never (in-app only)</option>
+                      </select>
                     </div>
-                  </div>
-                </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -258,10 +306,11 @@ export default function NotificationPreferencesModal({
               </div>
               <div>
                 <p className="text-xs font-semibold text-blue-900 mb-0.5">
-                  About Notifications
+                  About Email Notifications
                 </p>
                 <p className="text-xs text-blue-700 leading-relaxed">
-                  Customize which events trigger notifications based on your preferences.
+                  Customize which events trigger notifications and choose how often you receive emails.
+                  Instant sends immediately, digests bundle notifications, and never disables email (in-app only).
                 </p>
               </div>
             </div>

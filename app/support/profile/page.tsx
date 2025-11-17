@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { User, Lock, Mail, Calendar, Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import LoadingState from '@/components/LoadingState';
 
@@ -80,7 +80,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-8">
-      <Toaster position="top-right" />
 
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}

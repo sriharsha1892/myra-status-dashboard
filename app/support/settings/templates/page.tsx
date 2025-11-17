@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import {
   FileText,
   Plus,
@@ -282,7 +282,6 @@ export default function TemplatesPage() {
 
   return (
     <div className="h-full bg-gray-50">
-      <Toaster position="top-right" />
 
       {/* Main content */}
       <div className="h-full overflow-y-auto">

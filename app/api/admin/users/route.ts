@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
         parent_company: dbData?.db_parent_company || user.user_metadata?.parent_company || 'Mordor Intelligence',
-        is_super_admin: dbData?.is_super_admin || false,
+        is_super_admin: dbData?.is_super_admin || user.user_metadata?.is_super_admin || false,
       };
     });
 
@@ -163,6 +163,23 @@ export async function POST(request: NextRequest) {
         { error: error.message || 'Failed to create user' },
         { status: 400 }
       );
+    }
+
+    // Sync user to public.users table
+    const { error: dbInsertError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: data.user.id,
+        email: email,
+        full_name: name,
+        role: role,
+        parent_company: userParentCompany,
+        is_super_admin: is_super_admin || false,
+      });
+
+    if (dbInsertError) {
+      console.error('Error syncing user to public.users table:', dbInsertError);
+      // Don't fail user creation if DB sync fails - user is already created in auth
     }
 
     // Send welcome/invitation email (non-blocking - don't fail if email fails)
@@ -300,6 +317,25 @@ export async function PATCH(request: NextRequest) {
         { error: error.message || 'Failed to update user' },
         { status: 400 }
       );
+    }
+
+    // Sync user updates to public.users table
+    const { error: dbUpsertError } = await supabaseAdmin
+      .from('users')
+      .upsert({
+        id: userId,
+        email: data.user.email,
+        full_name: data.user.user_metadata?.name || currentUserData.user.user_metadata?.name || data.user.email?.split('@')[0],
+        role: data.user.user_metadata?.role || currentUserData.user.user_metadata?.role || 'Team',
+        parent_company: data.user.user_metadata?.parent_company || currentUserData.user.user_metadata?.parent_company || 'Mordor Intelligence',
+        is_super_admin: data.user.user_metadata?.is_super_admin ?? currentUserData.user.user_metadata?.is_super_admin ?? false,
+      }, {
+        onConflict: 'id'
+      });
+
+    if (dbUpsertError) {
+      console.error('Error syncing user updates to public.users table:', dbUpsertError);
+      // Don't fail user update if DB sync fails - user is already updated in auth
     }
 
     return NextResponse.json({

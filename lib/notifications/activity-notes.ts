@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { sendMentionEmail, sendAccountManagerNoteEmail } from './send-with-email';
 
 interface CreateActivityNoteNotificationParams {
   noteId: string;
@@ -98,6 +99,20 @@ export async function createActivityNoteNotifications(
         console.error('Error inserting unified notifications:', insertError);
         return { success: false, created: 0, error: insertError };
       }
+
+      // Send email notifications asynchronously
+      for (const user of mentionedUsers as any[]) {
+        if (user.email !== params.actorEmail) {
+          sendMentionEmail({
+            recipientEmail: user.email,
+            actorName: params.actorName,
+            orgName: params.orgName,
+            notePreview,
+            actionUrl,
+            notePriority: priorityScore,
+          });
+        }
+      }
     }
 
     return { success: true, created: unifiedNotifications.length };
@@ -176,6 +191,17 @@ export async function notifyAccountManagerOfNote(
       console.error('Error notifying account manager:', error);
       return { success: false, created: 0 };
     }
+
+    // Send email notification asynchronously
+    sendAccountManagerNoteEmail({
+      recipientEmail: accountManagerEmail,
+      orgName,
+      noteCategory,
+      notePreview,
+      actionUrl,
+      actorName,
+      notePriority: priorityScore,
+    });
 
     return { success: true, created: 1 };
   } catch (error) {

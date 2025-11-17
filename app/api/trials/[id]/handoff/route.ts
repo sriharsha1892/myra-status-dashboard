@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendTrialHandoffEmail } from '@/lib/notifications/send-with-email';
 
 interface HandoffRequest {
   new_account_manager: string; // email
@@ -83,7 +84,7 @@ export async function POST(
     // Create high-priority notification for new account manager
     const { data: users } = await supabase
       .from('users' as any)
-      .select('id, email, name')
+      .select('id, email, full_name')
       .in('email', [new_account_manager, user.email!]) as any;
 
     if (users && users.length > 0) {
@@ -91,7 +92,7 @@ export async function POST(
       const actorUser = (users as any[]).find((u: any) => u.email === user.email);
 
       if (newAccountManagerUser) {
-        const actorName = actorUser?.name || user.email?.split('@')[0] || 'Someone';
+        const actorName = actorUser?.full_name || user.email?.split('@')[0] || 'Someone';
 
         // Create high-priority handoff notification
         await supabase.from('notifications').insert({
@@ -108,6 +109,18 @@ export async function POST(
           priority_score: 75, // High priority for handoffs
           status: 'unread',
         } as any);
+
+        // Send email notification asynchronously
+        sendTrialHandoffEmail({
+          recipientEmail: new_account_manager,
+          orgName: org.org_name,
+          previousAccountManager: previousAccountManager || 'Unassigned',
+          newAccountManager: new_account_manager,
+          handoffReason: handoff_reason,
+          contextNotes: context_notes,
+          actionUrl: `/support/trials/${orgId}`,
+          actorName,
+        });
       }
     }
 

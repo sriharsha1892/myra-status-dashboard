@@ -14,7 +14,7 @@ export default function AdminHeader() {
     try {
       await logout();
       toast.success('Logged out successfully');
-      router.push('/admin/login');
+      router.push('/support/login');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout');

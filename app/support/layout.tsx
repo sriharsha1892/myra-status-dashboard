@@ -20,7 +20,8 @@ import {
   FileText,
   User,
   MessageCircle,
-  Lightbulb
+  Lightbulb,
+  Mail
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
@@ -32,7 +33,7 @@ export default function SupportLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading: authLoading, signOut, role } = useAuth();
+  const { user, loading: authLoading, signOut, role, is_super_admin } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -274,7 +275,7 @@ export default function SupportLayout({
             </Link>
 
             {/* Users - Admin and Super Admin only */}
-            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
+            {role === 'Admin' && (
               <Link
                 href="/support/users"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
@@ -289,7 +290,7 @@ export default function SupportLayout({
             )}
 
             {/* Roadmap - Admin and Super Admin only */}
-            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
+            {role === 'Admin' && (
               <Link
                 href="/support/admin/roadmap"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
@@ -303,8 +304,8 @@ export default function SupportLayout({
               </Link>
             )}
 
-            {/* Customer Support - Super Admin only */}
-            {(role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super admin') && (
+            {/* Customer Support - Admin only */}
+            {role === 'Admin' && (
               <Link
                 href="/support/admin/customer-support"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
@@ -315,6 +316,21 @@ export default function SupportLayout({
               >
                 <MessageCircle className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/customer-support') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
                 <span>Customer Support</span>
+              </Link>
+            )}
+
+            {/* Email Settings - Super Admin only */}
+            {(role === 'Admin' && is_super_admin) && (
+              <Link
+                href="/support/admin/email-settings"
+                className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  pathname === '/support/admin/email-settings'
+                    ? 'text-neutral-900 bg-accent-50 border border-accent-100'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                <Mail className={`w-5 h-5 shrink-0 ${pathname === '/support/admin/email-settings' ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+                <span>Email Settings</span>
               </Link>
             )}
 
@@ -381,6 +397,7 @@ export default function SupportLayout({
                 {pathname?.startsWith('/support/admin/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/trials/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/admin/customer-support') && 'Customer Support'}
+                {pathname === '/support/admin/email-settings' && 'Email Settings'}
                 {pathname === '/support/profile' && 'Profile'}
               </h1>
             </div>

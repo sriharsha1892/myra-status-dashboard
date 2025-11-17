@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { format, differenceInDays, addDays, formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';

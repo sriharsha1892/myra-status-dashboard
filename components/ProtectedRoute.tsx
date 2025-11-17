@@ -16,7 +16,7 @@ export default function ProtectedRoute({ children, requiredRoles }: ProtectedRou
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/admin/login');
+      router.push('/support/login');
     } else if (!isLoading && user && requiredRoles && !requiredRoles.includes(user.role)) {
       router.push('/unauthorized');
     }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { differenceInDays, format } from 'date-fns';
 import { authenticatedFetch } from '@/lib/api-client';
 import {
@@ -324,15 +324,6 @@ export default function TrialOrgPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: { maxWidth: '500px' },
-          success: { duration: 3000 },
-          error: { duration: 4000 },
-        }}
-      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumbs */}

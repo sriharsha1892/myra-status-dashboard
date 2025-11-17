@@ -178,11 +178,11 @@ export async function POST(request: NextRequest) {
       // Get user's name for notification
       const { data: userData } = await supabase
         .from('users' as any)
-        .select('name')
+        .select('full_name')
         .eq('email', user.email)
         .single() as any;
 
-      const actorName = userData?.name || user.email?.split('@')[0] || 'Someone';
+      const actorName = userData?.full_name || user.email?.split('@')[0] || 'Someone';
 
       await createActivityNoteNotifications({
         noteId: note.note_id,
@@ -202,11 +202,11 @@ export async function POST(request: NextRequest) {
       if (!isMentioned) {
         const { data: userData } = await supabase
           .from('users' as any)
-          .select('name')
+          .select('full_name')
           .eq('email', user.email)
           .single() as any;
 
-        const actorName = userData?.name || user.email?.split('@')[0] || 'Someone';
+        const actorName = userData?.full_name || user.email?.split('@')[0] || 'Someone';
 
         await notifyAccountManagerOfNote(
           note.note_id,

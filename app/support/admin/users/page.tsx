@@ -11,7 +11,7 @@ import { Select } from '@/components/support/ui/Select';
 import { Modal } from '@/components/support/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import CredentialsModal from '@/components/CredentialsModal';
 import { authenticatedFetch } from '@/lib/api-client';
 
@@ -221,7 +221,6 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#0d1117]">
-      <Toaster position="top-right" />
 
       {/* Header */}
       <header className="bg-white dark:bg-[#161b22] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">

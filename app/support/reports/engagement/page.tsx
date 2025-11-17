@@ -225,8 +225,8 @@ export default function EngagementReportPage() {
           org_id: org.org_id,
           org_name: org.org_name,
           domain: org.org_domain || org.domain || 'N/A',
-          trial_status: org.trial_status || 'unknown',
-          org_lifecycle_stage: org.org_lifecycle_stage || 'unknown',
+          trial_status: org.trial_status || '',
+          org_lifecycle_stage: org.org_lifecycle_stage || '',
           user_count: orgUsers.length,
           active_users: activeUsers,
           trial_start_date: org.trial_start_date,
@@ -558,8 +558,23 @@ export default function EngagementReportPage() {
     const nodes: { id: string }[] = [];
     const links: { source: string; target: string; value: number }[] = [];
 
+    // Helper function to check if a value is invalid/unknown
+    const isInvalidValue = (value: string | undefined | null) => {
+      if (!value) return true;
+      const normalized = value.trim().toLowerCase();
+      return normalized === 'unknown' || normalized === 'n/a' || normalized === 'unassigned' || normalized === '';
+    };
+
+    // Filter out organizations with missing or invalid data
+    const validOrgs = allOrgs.filter(o =>
+      !isInvalidValue(o.trial_status) &&
+      !isInvalidValue(o.org_lifecycle_stage) &&
+      !isInvalidValue(o.domain) &&
+      !isInvalidValue(o.account_manager)
+    );
+
     // Layer 1: Domains
-    const domains = Array.from(new Set(allOrgs.map(o => o.domain).filter(Boolean)));
+    const domains = Array.from(new Set(validOrgs.map(o => o.domain).filter(Boolean)));
     domains.forEach(d => nodes.push({ id: d }));
 
     // Layer 2: Engagement levels
@@ -568,7 +583,7 @@ export default function EngagementReportPage() {
 
     // Layer 3: Account Managers (exclude Unknown Manager and Unassigned)
     const managers = Array.from(new Set(
-      allOrgs
+      validOrgs
         .map(o => o.account_manager)
         .filter(Boolean)
         .filter(m => m !== 'Unknown Manager' && m !== 'Unassigned')
@@ -581,7 +596,7 @@ export default function EngagementReportPage() {
 
     // Links: Domain → Engagement
     domains.forEach(domain => {
-      const domainOrgs = allOrgs.filter(o => o.domain === domain);
+      const domainOrgs = validOrgs.filter(o => o.domain === domain);
 
       const high = domainOrgs.filter(o => o.engagement_rate >= 60).length;
       if (high > 0) {
@@ -608,7 +623,7 @@ export default function EngagementReportPage() {
       };
 
       managers.forEach(manager => {
-        const count = allOrgs.filter(o =>
+        const count = validOrgs.filter(o =>
           o.account_manager === manager && getEngagementFilter(o)
         ).length;
         if (count > 0) {
@@ -619,7 +634,7 @@ export default function EngagementReportPage() {
 
     // Links: Manager → Outcome
     managers.forEach(manager => {
-      const managerOrgs = allOrgs.filter(o => o.account_manager === manager);
+      const managerOrgs = validOrgs.filter(o => o.account_manager === manager);
 
       // Converted
       const converted = managerOrgs.filter(o => o.org_lifecycle_stage === 'converted').length;

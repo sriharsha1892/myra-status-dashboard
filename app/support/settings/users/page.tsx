@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 interface UserProfile {
@@ -208,8 +208,6 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Toaster position="top-right" />
-
       {/* Sidebar */}
       <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
         <div className="h-14 px-4 flex items-center border-b border-gray-200">
