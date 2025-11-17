@@ -22,8 +22,8 @@ export interface TrialOrganizationData {
   sales_poc_id?: string; // UUID of sales POC
   description?: string;
   parent_company?: string;
+  parent_organization?: 'Mordor Intelligence' | 'GMI'; // Added: Organization parent
   contract_value?: number;
-  team_size?: number;
   trial_duration_days?: number;
   trial_status?: string;
 }
@@ -32,7 +32,6 @@ export interface TrialUserData {
   name: string;
   email: string;
   role?: string;
-  phone?: string;
   current_stage?: 'invited' | 'low_activity' | 'active' | 'power_user' | 'dormant';
 }
 
@@ -46,16 +45,37 @@ export interface UserInteractionData {
   user_id?: string; // If specified, must be one of the created user IDs
 }
 
+export interface PlatformQueryData {
+  query_topic: string;
+  query_text: string;
+  status: 'success' | 'partial' | 'failed' | 'timeout';
+  confidence_score?: number; // 0-100
+  response_time_ms?: number;
+  session_id?: string;
+  executed_at: string; // ISO timestamp string
+  user_id: string; // UUID of the user who executed the query
+}
+
+export interface PlatformQuery extends PlatformQueryData {
+  query_id: string;
+  org_id: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
 export interface AtomicTrialOrgResult {
   success: boolean;
   org_id: string;
   org_name: string;
   created_user_count: number;
   created_activity_count: number;
+  created_query_count?: number; // Added: Number of platform queries created
   expected_user_count: number;
   expected_activity_count: number;
+  expected_query_count?: number; // Added: Expected number of platform queries
   user_ids: string[];
   activity_ids: string[];
+  query_ids?: string[]; // Added: IDs of created platform queries
 }
 
 // ============================================================================
@@ -100,6 +120,7 @@ export async function createTrialOrganizationAtomic(
   orgData: TrialOrganizationData,
   usersData: TrialUserData[] = [],
   activitiesData: UserInteractionData[] = [],
+  queriesData: PlatformQueryData[] = [],
   supabaseClient?: SupabaseClient
 ): Promise<AtomicTrialOrgResult> {
   const supabase = supabaseClient || createClient();
@@ -127,11 +148,27 @@ export async function createTrialOrganizationAtomic(
     }
   });
 
+  queriesData.forEach((query, index) => {
+    if (!query.query_topic || query.query_topic.trim() === '') {
+      throw new Error(`Query at index ${index} must have a query_topic`);
+    }
+    if (!query.query_text || query.query_text.trim() === '') {
+      throw new Error(`Query at index ${index} must have query_text`);
+    }
+    if (!query.user_id) {
+      throw new Error(`Query at index ${index} must have a user_id`);
+    }
+    if (!query.executed_at) {
+      throw new Error(`Query at index ${index} must have an executed_at timestamp`);
+    }
+  });
+
   // Call the PostgreSQL function
   const { data, error } = await supabase.rpc('create_trial_organization_atomic', {
     org_data: orgData,
     users_data: usersData,
-    activities_data: activitiesData
+    activities_data: activitiesData,
+    queries_data: queriesData
   });
 
   if (error) {

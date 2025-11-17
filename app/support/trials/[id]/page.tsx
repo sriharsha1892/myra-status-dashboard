@@ -28,6 +28,7 @@ import {
   UserCheck,
   RotateCcw,
   Sparkles,
+  Search,
 } from 'lucide-react';
 
 import LoadingState from '@/components/LoadingState';
@@ -42,6 +43,7 @@ import SupportQueriesTab from '@/components/SupportQueriesTab';
 import TrialExtensionsTab from '@/components/TrialExtensionsTab';
 import OverviewTab from '@/components/OverviewTab';
 import LogActivityModal from '@/components/LogActivityModal';
+import LogPlatformQueryModal from '@/components/LogPlatformQueryModal';
 import PeopleEngagementTab from '@/components/PeopleEngagementTab';
 import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
 
@@ -94,6 +96,7 @@ export default function TrialOrgPage() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showLogQueryModal, setShowLogQueryModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
 
   // Form states
@@ -371,6 +374,15 @@ export default function TrialOrgPage() {
                     <span className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-700">
                       {organization.domain}
                     </span>
+                    {organization.parent_organization && (
+                      <span className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                        organization.parent_organization === 'GMI'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {organization.parent_organization}
+                      </span>
+                    )}
                     <span className="text-sm text-gray-600">
                       AM: <span className="font-medium">{organization.account_manager_name || organization.account_manager || 'Unassigned'}</span>
                     </span>
@@ -379,6 +391,13 @@ export default function TrialOrgPage() {
               </div>
 
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowLogQueryModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-medium border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200"
+                >
+                  <Search className="w-4 h-4" />
+                  Log Query
+                </button>
                 <button
                   onClick={() => setShowEditOrgModal(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-medium border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-200"
@@ -785,6 +804,15 @@ export default function TrialOrgPage() {
         orgId={orgId}
         users={users}
         onActivityLogged={fetchData}
+      />
+
+      {/* Log Platform Query Modal */}
+      <LogPlatformQueryModal
+        isOpen={showLogQueryModal}
+        onClose={() => setShowLogQueryModal(false)}
+        orgId={orgId}
+        users={users}
+        onQueryLogged={fetchData}
       />
 
       {/* Delete Organization Modal */}

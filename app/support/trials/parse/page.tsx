@@ -25,7 +25,8 @@ import {
   DollarSign,
   Clock,
   UserCheck,
-  X
+  X,
+  Search
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as fuzz from 'fuzzball';
@@ -103,6 +104,21 @@ interface EditableActivity {
   assignedUserId?: string;
 }
 
+interface EditablePlatformQuery {
+  id: string;
+  queryTopic: string;
+  queryText: string;
+  userName: string;
+  executedAt: string;
+  status: 'success' | 'partial' | 'failed' | 'timeout';
+  confidenceScore: number;
+  responseTimeMs?: number;
+  sessionId?: string;
+  confidence: number;
+  selected: boolean;
+  assignedUserId?: string;
+}
+
 const DOMAIN_OPTIONS = [
   { value: 'AAD', label: 'AAD' },
   { value: 'AF&B', label: 'AF&B' },
@@ -140,7 +156,7 @@ export default function TextParserPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [description, setDescription] = useState('');
   const [contractValue, setContractValue] = useState('');
-  const [teamSize, setTeamSize] = useState('');
+  const [parentOrganization, setParentOrganization] = useState<'Mordor Intelligence' | 'GMI'>('Mordor Intelligence');
   const [trialDuration, setTrialDuration] = useState('');
   const [salesPOCId, setSalesPOCId] = useState('');
   const [accountManagerId, setAccountManagerId] = useState('');
@@ -150,6 +166,9 @@ export default function TextParserPage() {
 
   // Editable Activities List
   const [activities, setActivities] = useState<EditableActivity[]>([]);
+
+  // Editable Platform Queries List
+  const [platformQueries, setPlatformQueries] = useState<EditablePlatformQuery[]>([]);
 
   // Dropdowns data
   const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
@@ -548,7 +567,7 @@ export default function TextParserPage() {
         logo_url: logoUrl.trim() || extractLogoUrl(normalizedUrl),
         description: description.trim(),
         contract_value: contractValue ? parseFloat(contractValue.replace(/[^0-9.]/g, '')) : undefined,
-        team_size: teamSize ? parseInt(teamSize, 10) : undefined,
+        parent_organization: parentOrganization,
         trial_duration_days: trialDuration ? parseInt(trialDuration, 10) : undefined,
         sales_poc_id: salesPOCId || undefined,
         account_manager_id: accountManagerId,
@@ -686,7 +705,7 @@ export default function TextParserPage() {
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">Paste & Extract</h1>
-                  <p className="text-xs text-gray-600">Extract trial data from emails, notes, and calls</p>
+                  <p className="text-xs text-gray-600">Create trial organizations and capture user interactions, platform queries, and other details from any text source</p>
                 </div>
               </div>
             </div>
@@ -925,19 +944,20 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                         />
                       </div>
 
-                      {/* Team Size */}
+                      {/* Parent Organization */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          <Users className="w-3 h-3 inline mr-1" />
-                          Team Size
+                          <Building2 className="w-3 h-3 inline mr-1" />
+                          Parent Organization
                         </label>
-                        <input
-                          type="number"
-                          value={teamSize}
-                          onChange={(e) => setTeamSize(e.target.value)}
+                        <select
+                          value={parentOrganization}
+                          onChange={(e) => setParentOrganization(e.target.value as 'Mordor Intelligence' | 'GMI')}
                           className="w-full h-9 px-3 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="25"
-                        />
+                        >
+                          <option value="Mordor Intelligence">Mordor Intelligence</option>
+                          <option value="GMI">GMI</option>
+                        </select>
                       </div>
 
                       {/* Trial Duration */}
@@ -1242,6 +1262,176 @@ Had a great demo with Acme Corp (acmecorp.com) today. Sarah Johnson (sarah@acmec
                     )}
                   </div>
                 </div>
+
+                {/* Platform Queries */}
+                {platformQueries.length > 0 && (
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-5 py-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b border-gray-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Search className="w-4 h-4 text-blue-600" />
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          Platform Queries ({platformQueries.filter(q => q.selected).length} selected)
+                        </h3>
+                      </div>
+                      <span className="text-xs text-blue-600 font-medium">Check to include</span>
+                    </div>
+
+                    <div className="p-5 space-y-3">
+                      {platformQueries.length === 0 ? (
+                        <div className="text-center py-6">
+                          <p className="text-sm text-gray-500">No platform queries detected</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Include query execution details in your text for automatic extraction
+                          </p>
+                        </div>
+                      ) : (
+                        platformQueries.map((query) => (
+                          <div
+                            key={query.id}
+                            className={`p-4 rounded-lg border transition-all ${
+                              query.selected
+                                ? 'bg-blue-50 border-blue-200'
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="checkbox"
+                                checked={query.selected}
+                                onChange={(e) => {
+                                  setPlatformQueries(platformQueries.map(q =>
+                                    q.id === query.id ? { ...q, selected: e.target.checked } : q
+                                  ));
+                                }}
+                                className="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+                              />
+
+                              <div className="flex-1 grid grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Query Topic</label>
+                                  <input
+                                    type="text"
+                                    value={query.queryTopic}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, queryTopic: e.target.value } : q
+                                      ));
+                                    }}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Market Analysis"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">User</label>
+                                  <select
+                                    value={query.assignedUserId || ''}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, assignedUserId: e.target.value } : q
+                                      ));
+                                    }}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="">Select user...</option>
+                                    {users.map(user => (
+                                      <option key={user.id} value={user.id}>
+                                        {user.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                                  <select
+                                    value={query.status}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, status: e.target.value as any } : q
+                                      ));
+                                    }}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="success">Success</option>
+                                    <option value="partial">Partial</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="timeout">Timeout</option>
+                                  </select>
+                                </div>
+
+                                <div className="col-span-3">
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Query Text</label>
+                                  <textarea
+                                    value={query.queryText}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, queryText: e.target.value } : q
+                                      ));
+                                    }}
+                                    rows={2}
+                                    className="w-full px-2 py-1.5 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="What are the market trends for electric vehicles in 2024?"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Executed At</label>
+                                  <input
+                                    type="datetime-local"
+                                    value={query.executedAt}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, executedAt: e.target.value } : q
+                                      ));
+                                    }}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Confidence Score</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={query.confidenceScore}
+                                    onChange={(e) => {
+                                      setPlatformQueries(platformQueries.map(q =>
+                                        q.id === query.id ? { ...q, confidenceScore: parseFloat(e.target.value) || 0 } : q
+                                      ));
+                                    }}
+                                    className="w-full h-8 px-2 text-sm bg-white border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="85"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-5">
+                                  <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                    query.status === 'success' ? 'bg-green-100 text-green-700' :
+                                    query.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                    query.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {query.status.toUpperCase()}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setPlatformQueries(platformQueries.filter(q => q.id !== query.id));
+                                    }}
+                                    className="text-gray-400 hover:text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">

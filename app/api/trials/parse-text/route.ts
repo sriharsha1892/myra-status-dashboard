@@ -87,13 +87,15 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
           dates: parsed.dates,
           numbers: parsed.numbers,
           features: parsed.features,
-          models: parsed.models
+          models: parsed.models,
+          queries: parsed.queries || []
         },
         confidence_scores: {
           overall: parsed.overall_confidence,
           orgs: calculateConfidence(parsed.orgs),
           users: calculateConfidence(parsed.users),
-          activities: calculateConfidence(parsed.activities)
+          activities: calculateConfidence(parsed.activities),
+          queries: calculateConfidence(parsed.queries || [])
         },
         flagged_for_review: parsed.overall_confidence < 90 || orgDuplicates.length > 0 || userDuplicates.length > 0
       })
@@ -120,7 +122,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
           users: calculateConfidence(parsed.users),
           activities: calculateConfidence(parsed.activities),
           dates: calculateConfidence(parsed.dates),
-          numbers: calculateConfidence(parsed.numbers)
+          numbers: calculateConfidence(parsed.numbers),
+          queries: calculateConfidence(parsed.queries || [])
         }
       }
     });
