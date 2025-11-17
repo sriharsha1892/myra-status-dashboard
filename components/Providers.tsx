@@ -12,8 +12,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         position="top-center"
         containerStyle={{
           top: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
           zIndex: 99999,
         }}
         toastOptions={{
