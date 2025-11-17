@@ -602,6 +602,7 @@ export default function TextParserPage() {
         orgData,
         usersData,
         activitiesData,
+        [], // Empty queries data - platform queries not yet supported in paste & extract
         supabase
       );
 
