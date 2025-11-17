@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { sendMentionEmail, sendAccountManagerNoteEmail } from './send-with-email';
+// Email notifications temporarily disabled
+// import { sendMentionEmail, sendAccountManagerNoteEmail } from './send-with-email';
 
 interface CreateActivityNoteNotificationParams {
   noteId: string;
@@ -100,19 +101,19 @@ export async function createActivityNoteNotifications(
         return { success: false, created: 0, error: insertError };
       }
 
-      // Send email notifications asynchronously
-      for (const user of mentionedUsers as any[]) {
-        if (user.email !== params.actorEmail) {
-          sendMentionEmail({
-            recipientEmail: user.email,
-            actorName: params.actorName,
-            orgName: params.orgName,
-            notePreview,
-            actionUrl,
-            notePriority: priorityScore,
-          });
-        }
-      }
+      // Email notifications temporarily disabled
+      // for (const user of mentionedUsers as any[]) {
+      //   if (user.email !== params.actorEmail) {
+      //     sendMentionEmail({
+      //       recipientEmail: user.email,
+      //       actorName: params.actorName,
+      //       orgName: params.orgName,
+      //       notePreview,
+      //       actionUrl,
+      //       notePriority: priorityScore,
+      //     });
+      //   }
+      // }
     }
 
     return { success: true, created: unifiedNotifications.length };
@@ -192,16 +193,16 @@ export async function notifyAccountManagerOfNote(
       return { success: false, created: 0 };
     }
 
-    // Send email notification asynchronously
-    sendAccountManagerNoteEmail({
-      recipientEmail: accountManagerEmail,
-      orgName,
-      noteCategory,
-      notePreview,
-      actionUrl,
-      actorName,
-      notePriority: priorityScore,
-    });
+    // Email notifications temporarily disabled
+    // sendAccountManagerNoteEmail({
+    //   recipientEmail: accountManagerEmail,
+    //   orgName,
+    //   noteCategory,
+    //   notePreview,
+    //   actionUrl,
+    //   actorName,
+    //   notePriority: priorityScore,
+    // });
 
     return { success: true, created: 1 };
   } catch (error) {
