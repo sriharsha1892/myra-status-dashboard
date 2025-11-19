@@ -1,9 +1,18 @@
 // @ts-nocheck
 'use client';
 
-import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { FormInput, FormSelect, FormTextarea } from '@/components/forms';
+import type { SelectOption } from '@/components/forms';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  createFeatureRequestSchema,
+  FEATURE_REQUEST_PRIORITIES,
+} from '@/lib/validation/schemas/trialManagement';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface AddFeatureRequestModalProps {
   orgId: string;
@@ -12,64 +21,97 @@ interface AddFeatureRequestModalProps {
   onSuccess: () => void;
 }
 
+// Priority options with descriptive labels
+const PRIORITY_OPTIONS: SelectOption[] = [
+  { value: 'low', label: '🟢 Low - Nice to have' },
+  { value: 'medium', label: '🟡 Medium - Important but not urgent' },
+  { value: 'high', label: '🔴 High - Very important' },
+  { value: 'critical', label: '🚨 Critical - Blocking our work' },
+];
+
 export default function AddFeatureRequestModal({
   orgId,
   isOpen,
   onClose,
   onSuccess,
 }: AddFeatureRequestModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [useCase, setUseCase] = useState('');
-  const [priority, setPriority] = useState('medium');
-
   const supabase = createClient();
+
+  // Use form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+  } = useFormValidation(createFeatureRequestSchema, {
+    title: '',
+    description: '',
+    use_case: '',
+    priority: 'medium' as typeof FEATURE_REQUEST_PRIORITIES[number],
+  });
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
-      toast.error('Title is required');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    if (!description.trim()) {
-      toast.error('Description is required');
-      return;
-    }
+    await execute(
+      async () => {
+        const { error } = await supabase.from('feature_requests').insert([
+          {
+            org_id: orgId,
+            title: formData.title.trim(),
+            description: formData.description.trim(),
+            use_case: formData.use_case || null,
+            priority: formData.priority,
+            status: 'submitted',
+            votes: 0,
+          },
+        ]);
 
-    setLoading(true);
-    try {
-      // @ts-ignore - Supabase typing issue with dynamic columns
-      const { error } = await supabase.from('feature_requests').insert([
-        {
-          org_id: orgId,
-          title: title.trim(),
-          description: description.trim(),
-          use_case: useCase || null,
-          priority,
-          status: 'submitted',
-          votes: 0,
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Feature request submitted successfully',
+        errorMessage: 'Failed to submit feature request',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
         },
-      ]);
+        onError: async (error) => {
+          console.error('Error adding feature request:', error);
 
-      if (error) throw error;
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'feature_request_create');
 
-      toast.success('Feature request submitted successfully');
-      onClose();
-      onSuccess();
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setUseCase('');
-      setPriority('medium');
-    } catch (error: any) {
-      console.error('Error adding feature request:', error);
-      toast.error(error.message || 'Failed to submit feature request');
-    } finally {
-      setLoading(false);
-    }
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'feature_request_create',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -84,8 +126,9 @@ export default function AddFeatureRequestModal({
             <p className="text-sm text-gray-500 mt-1">Tell us what feature you'd like to see</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -95,64 +138,47 @@ export default function AddFeatureRequestModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Feature Title *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Dark mode support, Real-time notifications"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Feature Title"
+            type="text"
+            required
+            value={formData.title}
+            onChange={(e) => handleInputChange('title', e.target.value)}
+            error={errors.title}
+            placeholder="e.g., Dark mode support, Real-time notifications"
+            helperText="Brief title describing the feature"
+          />
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Description *
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the feature and why it would be valuable..."
-              rows={4}
-              className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-          </div>
+          <FormTextarea
+            label="Description"
+            required
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            error={errors.description}
+            placeholder="Describe the feature and why it would be valuable..."
+            rows={4}
+            helperText="Explain what the feature does and why you need it"
+          />
 
-          {/* Use Case */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Use Case / Business Value
-            </label>
-            <textarea
-              value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
-              placeholder="How would this feature help your organization?..."
-              rows={3}
-              className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-          </div>
+          <FormTextarea
+            label="Use Case / Business Value"
+            value={formData.use_case}
+            onChange={(e) => handleInputChange('use_case', e.target.value)}
+            error={errors.use_case}
+            placeholder="How would this feature help your organization?..."
+            rows={3}
+            helperText="Optional: Describe the business impact"
+          />
 
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Priority
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="low">🟢 Low - Nice to have</option>
-              <option value="medium">🟡 Medium - Important but not urgent</option>
-              <option value="high">🔴 High - Very important</option>
-              <option value="critical">🚨 Critical - Blocking our work</option>
-            </select>
-          </div>
+          <FormSelect
+            label="Priority"
+            required
+            options={PRIORITY_OPTIONS}
+            value={formData.priority}
+            onChange={(e) => handleInputChange('priority', e.target.value)}
+            error={errors.priority}
+            helperText="How important is this feature to your workflow?"
+          />
 
           {/* Info Box */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -173,17 +199,17 @@ export default function AddFeatureRequestModal({
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

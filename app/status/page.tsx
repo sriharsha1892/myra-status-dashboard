@@ -7,7 +7,7 @@ import AnimatedStat from '@/components/AnimatedStat';
 import ServiceStatusCard from '@/components/ServiceStatusCard';
 import HeroStatusBanner from '@/components/HeroStatusBanner';
 import WorkflowStatus from '@/components/WorkflowStatus';
-import { SkeletonCard } from '@/components/SkeletonCard';
+import { SkeletonCard } from '@/components/skeletons';
 import AnimatedBackground from '@/components/AnimatedBackground';
 import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';

@@ -27,6 +27,7 @@ import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
 import { LoadingProvider } from '@/lib/loading';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { NotificationBell } from '@/components/NotificationBell';
 
 export default function SupportLayout({
   children,
@@ -402,9 +403,10 @@ export default function SupportLayout({
               </h1>
             </div>
 
-            {/* Right side - Global Search */}
-            <div className="flex-1 flex justify-end lg:flex-none lg:min-w-[400px]">
+            {/* Right side - Global Search & Notifications */}
+            <div className="flex-1 flex items-center justify-end gap-4 lg:flex-none lg:min-w-[400px]">
               <GlobalSearch />
+              <NotificationBell userId={user?.id || ''} isSuperAdmin={is_super_admin || false} />
             </div>
           </div>
         </div>

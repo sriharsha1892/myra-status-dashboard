@@ -1,10 +1,19 @@
 // @ts-nocheck
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import AIAssistant from './roadmap/AIAssistant';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  createRoadmapItemSchema,
+  ROADMAP_STATUSES,
+  ROADMAP_PRIORITIES,
+} from '@/lib/validation/schemas/roadmapManagement';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface AddRoadmapItemModalProps {
   orgId: string;
@@ -21,66 +30,95 @@ export default function AddRoadmapItemModal({
   onSuccess,
   initialDate,
 }: AddRoadmapItemModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('planned');
-  const [priority, setPriority] = useState('medium');
-  const [targetDate, setTargetDate] = useState('');
-  const [estimatedDate, setEstimatedDate] = useState('');
-  const [createdBy, setCreatedBy] = useState('');
-
   const supabase = createClient();
+
+  // Use form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+    setFormData,
+  } = useFormValidation(createRoadmapItemSchema, {
+    title: '',
+    description: '',
+    status: 'planned' as typeof ROADMAP_STATUSES[number],
+    priority: 'medium' as typeof ROADMAP_PRIORITIES[number],
+    target_date: '',
+    estimated_completion_date: '',
+    created_by: '',
+  });
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
   // Pre-fill target date when modal opens with initialDate
   useEffect(() => {
     if (isOpen && initialDate) {
-      setTargetDate(initialDate);
+      setFormData((prev) => ({ ...prev, target_date: initialDate }));
     }
-  }, [isOpen, initialDate]);
+  }, [isOpen, initialDate, setFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
-      toast.error('Title is required');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('org_product_roadmap').insert([
-        {
-          org_id: orgId,
-          title: title.trim(),
-          description: description || null,
-          status,
-          priority,
-          target_date: targetDate || null,
-          estimated_completion_date: estimatedDate || null,
-          created_by: createdBy || null,
+    await execute(
+      async () => {
+        const { error } = await supabase.from('org_product_roadmap').insert([
+          {
+            org_id: orgId,
+            title: formData.title.trim(),
+            description: formData.description || null,
+            status: formData.status,
+            priority: formData.priority,
+            target_date: formData.target_date || null,
+            estimated_completion_date: formData.estimated_completion_date || null,
+            created_by: formData.created_by || null,
+          },
+        ]);
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Roadmap item added successfully',
+        errorMessage: 'Failed to add roadmap item',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
         },
-      ]);
+        onError: async (error) => {
+          console.error('Error adding roadmap item:', error);
 
-      if (error) throw error;
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'roadmap_item_create');
 
-      toast.success('Roadmap item added successfully');
-      onClose();
-      onSuccess();
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setStatus('planned');
-      setPriority('medium');
-      setTargetDate('');
-      setEstimatedDate('');
-      setCreatedBy('');
-    } catch (error: any) {
-      console.error('Error adding roadmap item:', error);
-      toast.error(error.message || 'Failed to add roadmap item');
-    } finally {
-      setLoading(false);
-    }
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'roadmap_item_create',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -96,8 +134,9 @@ export default function AddRoadmapItemModal({
               <p className="text-sm text-gray-500 mt-1">Add a new item to the product roadmap</p>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -105,13 +144,18 @@ export default function AddRoadmapItemModal({
             </button>
           </div>
           {/* AI Assistant */}
-          {title && (
+          {formData.title && (
             <div className="mt-2">
               <AIAssistant
-                item={{ title, description, priority, status }}
+                item={{
+                  title: formData.title,
+                  description: formData.description,
+                  priority: formData.priority,
+                  status: formData.status
+                }}
                 onApplySuggestion={(type, value) => {
-                  if (type === 'priority') setPriority(value);
-                  else if (type === 'status') setStatus(value);
+                  if (type === 'priority') handleInputChange('priority', value);
+                  else if (type === 'status') handleInputChange('status', value);
                   toast.success(`Applied AI suggestion: ${type}`);
                 }}
                 compact={false}
@@ -129,11 +173,16 @@ export default function AddRoadmapItemModal({
             </label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="e.g., Mobile App Support, Advanced Analytics"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full h-10 px-4 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.title ? 'border-red-300' : 'border-gray-200'
+              }`}
             />
+            {errors.title && (
+              <p className="mt-1 text-xs text-red-600">{errors.title}</p>
+            )}
           </div>
 
           {/* Description */}
@@ -142,8 +191,8 @@ export default function AddRoadmapItemModal({
               Description
             </label>
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Detailed description of the feature..."
               rows={3}
               className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -157,8 +206,8 @@ export default function AddRoadmapItemModal({
                 Status
               </label>
               <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="planned">📋 Planned</option>
@@ -172,8 +221,8 @@ export default function AddRoadmapItemModal({
                 Priority
               </label>
               <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+                value={formData.priority}
+                onChange={(e) => handleInputChange('priority', e.target.value)}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="low">🟢 Low</option>
@@ -192,8 +241,8 @@ export default function AddRoadmapItemModal({
               </label>
               <input
                 type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
+                value={formData.target_date}
+                onChange={(e) => handleInputChange('target_date', e.target.value)}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -203,8 +252,8 @@ export default function AddRoadmapItemModal({
               </label>
               <input
                 type="date"
-                value={estimatedDate}
-                onChange={(e) => setEstimatedDate(e.target.value)}
+                value={formData.estimated_completion_date}
+                onChange={(e) => handleInputChange('estimated_completion_date', e.target.value)}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -217,8 +266,8 @@ export default function AddRoadmapItemModal({
             </label>
             <input
               type="text"
-              value={createdBy}
-              onChange={(e) => setCreatedBy(e.target.value)}
+              value={formData.created_by}
+              onChange={(e) => handleInputChange('created_by', e.target.value)}
               placeholder="Account manager or product name"
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -228,17 +277,17 @@ export default function AddRoadmapItemModal({
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

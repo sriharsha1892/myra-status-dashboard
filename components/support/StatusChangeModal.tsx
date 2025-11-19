@@ -13,23 +13,19 @@ interface StatusChangeModalProps {
   onConfirm: (comment?: string) => void;
 }
 
+// Status values must match database CHECK constraint: ('open', 'in_progress', 'resolved', 'closed')
 const STATUS_PROMPTS: Record<string, { title: string; placeholder: string; optional: boolean }> = {
-  Resolved: {
+  resolved: {
     title: 'Add resolution note?',
     placeholder: 'Describe how this issue was resolved...',
     optional: true,
   },
-  'Waiting on User': {
-    title: 'What info do you need?',
-    placeholder: 'Describe what information you need from the user...',
-    optional: true,
-  },
-  Closed: {
+  closed: {
     title: 'Add closing note?',
     placeholder: 'Add any final notes before closing...',
     optional: true,
   },
-  'In Progress': {
+  in_progress: {
     title: 'Add a note about progress?',
     placeholder: 'Describe what you\'re working on...',
     optional: true,

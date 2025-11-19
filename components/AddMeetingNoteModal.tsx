@@ -3,11 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import MentionTextEditor from '@/components/MentionTextEditor';
 import { createMentionNotifications } from '@/lib/mentions';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import { createMeetingNoteSchema } from '@/lib/validation/schemas/engagement';
 
 interface ActionItem {
   description: string;
@@ -93,7 +98,6 @@ export default function AddMeetingNoteModal({
   const [organizations, setOrganizations] = useState<Array<{ org_id: string; org_name: string }>>(
     []
   );
-  const [saving, setSaving] = useState(false);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
 
   // Rich text editor states
@@ -106,7 +110,11 @@ export default function AddMeetingNoteModal({
   const [positiveSignals, setPositiveSignals] = useState('');
   const [positiveSignalsMentions, setPositiveSignalsMentions] = useState<string[]>([]);
 
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
+
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<MeetingFormData>({
+    resolver: zodResolver(createMeetingNoteSchema),
     defaultValues: {
       meeting_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       conducted_by: 'Current User', // You can replace with actual user name
@@ -185,83 +193,105 @@ export default function AddMeetingNoteModal({
     toast.success(`Added ${suggestions.length} suggested action items`);
   };
 
+  const resetAllFields = () => {
+    reset();
+    setActionItems([]);
+    setMeetingSummary('');
+    setPainPoints('');
+    setObjections('');
+    setPositiveSignals('');
+    setMeetingSummaryMentions([]);
+    setPainPointsMentions([]);
+    setObjectionsMentions([]);
+    setPositiveSignalsMentions([]);
+  };
+
   const onSubmit = async (data: MeetingFormData) => {
-    setSaving(true);
-    try {
-      // Parse attendees (one per line)
-      const attendeesArray = data.attendees
-        ? data.attendees.split('\n').map((a) => a.trim()).filter((a) => a)
-        : [];
+    await execute(
+      async () => {
+        // Parse attendees (one per line)
+        const attendeesArray = data.attendees
+          ? data.attendees.split('\n').map((a) => a.trim()).filter((a) => a)
+          : [];
 
-      // Prepare meeting data with rich text content
-      const meetingData = {
-        org_id: data.org_id,
-        meeting_type: data.meeting_type,
-        meeting_date: new Date(data.meeting_date).toISOString(),
-        duration_minutes: data.duration_minutes || null,
-        conducted_by: data.conducted_by,
-        attendees: attendeesArray,
-        meeting_summary: meetingSummary || null,
-        pain_points_discussed: painPoints || null,
-        objections_raised: objections || null,
-        positive_signals: positiveSignals || null,
-        action_items: actionItems,
-        next_meeting_date: data.next_meeting_date
-          ? new Date(data.next_meeting_date).toISOString()
-          : null,
-      };
+        // Prepare meeting data with rich text content
+        const meetingData = {
+          org_id: data.org_id,
+          meeting_type: data.meeting_type,
+          meeting_date: new Date(data.meeting_date).toISOString(),
+          duration_minutes: data.duration_minutes || null,
+          conducted_by: data.conducted_by,
+          attendees: attendeesArray,
+          meeting_summary: meetingSummary || null,
+          pain_points_discussed: painPoints || null,
+          objections_raised: objections || null,
+          positive_signals: positiveSignals || null,
+          action_items: actionItems,
+          next_meeting_date: data.next_meeting_date
+            ? new Date(data.next_meeting_date).toISOString()
+            : null,
+        };
 
-      const { data: insertedMeeting, error } = await supabase
-        .from('meeting_notes')
-        .insert([meetingData])
-        .select()
-        .single();
+        const { data: insertedMeeting, error } = await supabase
+          .from('meeting_notes')
+          .insert([meetingData])
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Get current user for mention notifications
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && insertedMeeting) {
-        // Collect all mentioned users from all rich text fields
-        const allMentions = [
-          ...meetingSummaryMentions,
-          ...painPointsMentions,
-          ...objectionsMentions,
-          ...positiveSignalsMentions,
-        ];
-        const uniqueMentions = Array.from(new Set(allMentions));
+        // Get current user for mention notifications
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && insertedMeeting) {
+          // Collect all mentioned users from all rich text fields
+          const allMentions = [
+            ...meetingSummaryMentions,
+            ...painPointsMentions,
+            ...objectionsMentions,
+            ...positiveSignalsMentions,
+          ];
+          const uniqueMentions = Array.from(new Set(allMentions));
 
-        // Create notifications for all mentioned users
-        if (uniqueMentions.length > 0) {
-          await createMentionNotifications(uniqueMentions, user.id, {
-            type: 'meeting_note',
-            entityId: insertedMeeting.meeting_id,
-            entityTitle: `${data.meeting_type} with ${data.org_id}`,
-            url: `/support/trials/${data.org_id}`,
-          });
+          // Create notifications for all mentioned users
+          if (uniqueMentions.length > 0) {
+            await createMentionNotifications(uniqueMentions, user.id, {
+              type: 'meeting_note',
+              entityId: insertedMeeting.meeting_id,
+              entityTitle: `${data.meeting_type} with ${data.org_id}`,
+              url: `/support/trials/${data.org_id}`,
+            });
+          }
         }
-      }
 
-      toast.success('Meeting note created successfully!');
-      reset();
-      setActionItems([]);
-      // Reset rich text fields
-      setMeetingSummary('');
-      setPainPoints('');
-      setObjections('');
-      setPositiveSignals('');
-      setMeetingSummaryMentions([]);
-      setPainPointsMentions([]);
-      setObjectionsMentions([]);
-      setPositiveSignalsMentions([]);
-      onSuccess();
-      onClose();
-    } catch (error: any) {
-      console.error('Error creating meeting note:', error);
-      toast.error('Failed to create meeting note: ' + error.message);
-    } finally {
-      setSaving(false);
-    }
+        return { success: true };
+      },
+      {
+        successMessage: 'Meeting note created successfully!',
+        errorMessage: 'Failed to create meeting note',
+        onSuccess: () => {
+          resetAllFields();
+          onSuccess();
+          onClose();
+        },
+        onError: async (error) => {
+          console.error('Error creating meeting note:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'meeting_note');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'meeting_note',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
   };
 
   if (!isOpen) return null;
@@ -596,17 +626,19 @@ export default function AddMeetingNoteModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={saving}
+            disabled={isLoading}
             className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            aria-label="Cancel meeting note"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit(onSubmit)}
-            disabled={saving}
+            disabled={isLoading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Save meeting note"
           >
-            {saving ? 'Saving...' : 'Save Meeting Note'}
+            {isLoading ? 'Saving...' : 'Save Meeting Note'}
           </button>
         </div>
       </div>

@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { X, LogIn, BarChart, MessageCircle, BookOpen, FileText, CheckCircle, ClipboardList, Clock } from 'lucide-react';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
+import { logActivitySchema } from '@/lib/validation/schemas/engagement';
 
 interface LogActivityModalProps {
   isOpen: boolean;
@@ -26,56 +31,94 @@ const ACTIVITY_TYPES = [
 
 export default function LogActivityModal({ isOpen, onClose, orgId, users, onActivityLogged }: LogActivityModalProps) {
   const supabase = createClient();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
+
+  // Form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+  } = useFormValidation(logActivitySchema, {
     activity_type: '',
     user_id: '',
     description: '',
     observations: '',
   });
 
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        toast.error('Not authenticated');
-        return;
-      }
-
-      // Insert into trial_engagement_log
-      const { error } = await supabase
-        .from('trial_engagement_log')
-        .insert({
-          org_id: orgId,
-          user_id: form.user_id || null,
-          activity_type: form.activity_type,
-          description: form.description,
-          observations: form.observations || null,
-          logged_by: user.id,
-          logged_by_role: user.user_metadata?.role || 'Unknown',
-        });
-
-      if (error) throw error;
-
-      toast.success('Activity logged successfully');
-      onActivityLogged();
-      onClose();
-      setForm({ activity_type: '', user_id: '', description: '', observations: '' });
-    } catch (error: any) {
-      console.error('Error logging activity:', error);
-      toast.error(error.message || 'Failed to log activity');
-    } finally {
-      setLoading(false);
+    // Validate form with Zod
+    if (!validateForm()) {
+      return;
     }
+
+    await execute(
+      async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
+        // Insert into trial_engagement_log
+        const { error } = await supabase
+          .from('trial_engagement_log')
+          .insert({
+            org_id: orgId,
+            user_id: formData.user_id || null,
+            activity_type: formData.activity_type,
+            description: formData.description,
+            observations: formData.observations || null,
+            logged_by: user.id,
+            logged_by_role: user.user_metadata?.role === 'Admin' ? 'admin' : 'product',
+          });
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Activity logged successfully!',
+        errorMessage: 'Failed to log activity',
+        onSuccess: () => {
+          resetForm();
+          onActivityLogged();
+          onClose();
+        },
+        onError: async (error) => {
+          console.error('Error logging activity:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'activity_log');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'activity_log',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
   };
 
-  const selectedActivityType = ACTIVITY_TYPES.find(t => t.value === form.activity_type);
+  const selectedActivityType = ACTIVITY_TYPES.find(t => t.value === formData.activity_type);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -84,8 +127,9 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
         <div className="sticky top-0 bg-accent-500 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">Log Activity</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-white/80 hover:text-white transition-colors"
+            aria-label="Close modal"
           >
             <X className="w-6 h-6" />
           </button>
@@ -99,12 +143,12 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
             <div className="grid grid-cols-2 gap-3">
               {ACTIVITY_TYPES.map((type) => {
                 const Icon = type.icon;
-                const isSelected = form.activity_type === type.value;
+                const isSelected = formData.activity_type === type.value;
                 return (
                   <button
                     key={type.value}
                     type="button"
-                    onClick={() => setForm({ ...form, activity_type: type.value })}
+                    onClick={() => handleInputChange('activity_type', type.value)}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
                       isSelected
                         ? 'border-blue-600 bg-blue-50'
@@ -128,8 +172,8 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">User (Optional)</label>
             <select
-              value={form.user_id}
-              onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+              value={formData.user_id}
+              onChange={(e) => handleInputChange('user_id', e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a user (optional)</option>
@@ -145,8 +189,8 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
             <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
               required
               rows={3}
               placeholder="What happened? Provide a brief summary..."
@@ -158,8 +202,8 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Detailed Observations (Optional)</label>
             <textarea
-              value={form.observations}
-              onChange={(e) => setForm({ ...form, observations: e.target.value })}
+              value={formData.observations}
+              onChange={(e) => handleInputChange('observations', e.target.value)}
               rows={4}
               placeholder="Any additional notes, learnings, or follow-ups..."
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -170,18 +214,18 @@ export default function LogActivityModal({ isOpen, onClose, orgId, users, onActi
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
-              disabled={loading}
+              onClick={handleClose}
+              disabled={isLoading}
               className="px-6 py-2.5 text-gray-700 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading || !form.activity_type || !form.description}
+              disabled={isLoading || !formData.activity_type || !formData.description}
               className="px-6 py-2.5 bg-accent-500 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Logging...' : 'Log Activity'}
+              {isLoading ? 'Logging...' : 'Log Activity'}
             </button>
           </div>
         </form>

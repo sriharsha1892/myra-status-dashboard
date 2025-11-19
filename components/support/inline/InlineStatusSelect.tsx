@@ -10,12 +10,12 @@ interface InlineStatusSelectProps {
   onCancel?: () => void;
 }
 
+// Status values must match database CHECK constraint: ('open', 'in_progress', 'resolved', 'closed')
 const STATUS_OPTIONS = [
-  { value: 'New', label: 'New', color: 'bg-blue-50 text-blue-700' },
-  { value: 'In Progress', label: 'In Progress', color: 'bg-amber-50 text-amber-700' },
-  { value: 'Waiting on User', label: 'Waiting on User', color: 'bg-orange-50 text-orange-700' },
-  { value: 'Resolved', label: 'Resolved', color: 'bg-green-50 text-green-700' },
-  { value: 'Closed', label: 'Closed', color: 'bg-neutral-50 text-neutral-700' },
+  { value: 'open', label: 'Open', color: 'bg-blue-50 text-blue-700' },
+  { value: 'in_progress', label: 'In Progress', color: 'bg-amber-50 text-amber-700' },
+  { value: 'resolved', label: 'Resolved', color: 'bg-green-50 text-green-700' },
+  { value: 'closed', label: 'Closed', color: 'bg-neutral-50 text-neutral-700' },
 ];
 
 export default function InlineStatusSelect({
@@ -141,10 +141,9 @@ export default function InlineStatusSelect({
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full mr-2.5 ${
-                  option.value === 'New' ? 'bg-blue-600' :
-                  option.value === 'In Progress' ? 'bg-amber-600' :
-                  option.value === 'Waiting on User' ? 'bg-orange-600' :
-                  option.value === 'Resolved' ? 'bg-green-600' :
+                  option.value === 'open' ? 'bg-blue-600' :
+                  option.value === 'in_progress' ? 'bg-amber-600' :
+                  option.value === 'resolved' ? 'bg-green-600' :
                   'bg-slate-600'
                 }`} />
                 {option.label}

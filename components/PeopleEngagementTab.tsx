@@ -12,6 +12,7 @@ interface PeopleEngagementTabProps {
   onAddUser: () => void;
   onEditUser: (user: any) => void;
   onDeleteUser: (userId: string) => void;
+  onSetPassword?: (user: any) => void;
 }
 
 export default function PeopleEngagementTab({
@@ -20,6 +21,7 @@ export default function PeopleEngagementTab({
   onAddUser,
   onEditUser,
   onDeleteUser,
+  onSetPassword,
 }: PeopleEngagementTabProps) {
   const [activeSection, setActiveSection] = useState<'people' | 'activity'>('people');
   const [platformUsers, setPlatformUsers] = useState<any[]>([]);
@@ -226,6 +228,14 @@ function MergedPeopleSection({
                 >
                   Edit
                 </button>
+                {onSetPassword && (
+                  <button
+                    onClick={() => onSetPassword(user)}
+                    className="flex-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Set Password
+                  </button>
+                )}
                 <button
                   onClick={() => onDeleteUser(user.user_id)}
                   className="flex-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-lg transition-colors"

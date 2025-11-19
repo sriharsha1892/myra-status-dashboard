@@ -2,8 +2,17 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { validatePasswordStrength, generateTemporaryPassword, hashPassword } from '@/lib/auth/password';
+import { generateTemporaryPassword, hashPassword } from '@/lib/auth/password';
 import toast from 'react-hot-toast';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { FormInput } from '@/components/forms';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  setUserPasswordSchema,
+  PASSWORD_MODES,
+} from '@/lib/validation/schemas/userManagement';
+import { z } from 'zod';
 
 interface SetUserPasswordModalProps {
   isOpen: boolean;
@@ -14,7 +23,7 @@ interface SetUserPasswordModalProps {
   onSuccess: () => void;
 }
 
-type PasswordMode = 'set' | 'generate';
+type PasswordMode = typeof PASSWORD_MODES[number];
 
 export default function SetUserPasswordModal({
   isOpen,
@@ -26,297 +35,300 @@ export default function SetUserPasswordModal({
 }: SetUserPasswordModalProps) {
   const supabase = createClient();
   const [mode, setMode] = useState<PasswordMode>('set');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Form state
+  const [formData, setFormData] = useState({
+    password: '',
+    confirmPassword: '',
+    mode: 'set' as PasswordMode,
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [passwordValidation, setPasswordValidation] = useState({ isValid: true, errors: [] as string[] });
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPassword(value);
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
-    if (value) {
-      const validation = validatePasswordStrength(value);
-      setPasswordValidation(validation);
-    } else {
-      setPasswordValidation({ isValid: true, errors: [] });
+  // Handle input changes with error clearing
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user types
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
   const handleGeneratePassword = () => {
     const temp = generateTemporaryPassword();
     setGeneratedPassword(temp);
-    setPassword(temp);
-    setConfirmPassword(temp);
+    setFormData({
+      ...formData,
+      password: temp,
+      confirmPassword: temp,
+    });
+    // Clear any existing errors
+    setErrors({});
     toast.success('Temporary password generated. Make sure user changes it on first login!');
+  };
+
+  // Validate form with Zod schema
+  const validateForm = (): boolean => {
+    try {
+      setUserPasswordSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        err.errors.forEach((error) => {
+          if (error.path[0]) {
+            newErrors[error.path[0].toString()] = error.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
   };
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      // Validation
-      if (!password || !confirmPassword) {
-        toast.error('Both password fields are required');
-        setLoading(false);
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        toast.error('Passwords do not match');
-        setLoading(false);
-        return;
-      }
-
-      const validation = validatePasswordStrength(password);
-      if (!validation.isValid) {
-        toast.error('Password does not meet requirements');
-        setLoading(false);
-        return;
-      }
-
-      // Hash the password
-      const passwordHash = await hashPassword(password);
-
-      // Update user password in database
-      const { error } = await supabase
-        .from('trial_users')
-        .update({
-          password_hash: passwordHash,
-          last_password_changed_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      toast.success('Password set successfully!');
-      setPassword('');
-      setConfirmPassword('');
-      setGeneratedPassword('');
-      setMode('set');
-      onSuccess();
-      onClose();
-    } catch (error: any) {
-      console.error('Error setting password:', error);
-      toast.error('Failed to set password');
-    } finally {
-      setLoading(false);
+    // Validate form with Zod
+    if (!validateForm()) {
+      return;
     }
+
+    await execute(
+      async () => {
+        // Hash the password
+        const passwordHash = await hashPassword(formData.password);
+
+        // Update user password in database
+        const { error } = await supabase
+          .from('trial_users')
+          .update({
+            password_hash: passwordHash,
+            last_password_changed_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Password set successfully!',
+        errorMessage: 'Failed to set password',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error setting password:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'password_set');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'password_set',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
+  };
+
+  const resetForm = () => {
+    setFormData({
+      password: '',
+      confirmPassword: '',
+      mode: 'set',
+    });
+    setErrors({});
+    setGeneratedPassword('');
+    setShowPassword(false);
+    setMode('set');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Set Password</h2>
-            <p className="text-purple-100 text-sm mt-1">{userName}</p>
+            <h2 className="text-xl font-bold text-gray-900">Set User Password</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {userName} ({userEmail})
+            </p>
           </div>
           <button
-            onClick={onClose}
-            className="text-white hover:text-purple-100 transition text-2xl"
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Close modal"
           >
-            ×
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Form */}
+        <form onSubmit={handleSetPassword} className="p-6 space-y-5">
           {/* Mode Selector */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setMode('set')}
-              className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition ${
-                mode === 'set'
-                  ? 'bg-accent-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Set Password
-            </button>
-            <button
-              onClick={() => setMode('generate')}
-              className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition ${
-                mode === 'generate'
-                  ? 'bg-accent-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Auto Generate
-            </button>
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Password Mode
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('set');
+                  setFormData({ ...formData, mode: 'set' });
+                }}
+                className={`flex-1 h-10 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  mode === 'set'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Set Manually
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('generate');
+                  setFormData({ ...formData, mode: 'generate' });
+                  handleGeneratePassword();
+                }}
+                className={`flex-1 h-10 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  mode === 'generate'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Generate
+              </button>
+            </div>
           </div>
 
-          {/* Set Password Mode */}
-          {mode === 'set' && (
-            <form onSubmit={handleSetPassword} className="space-y-4">
-              {/* Password Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={handlePasswordChange}
-                    placeholder="Enter secure password"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                />
-              </div>
-
-              {/* Password Requirements */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-xs font-medium text-blue-900 mb-2">Password must contain:</p>
-                <ul className="text-xs text-blue-800 space-y-1">
-                  <li className={/^.{8,}$/.test(password) ? 'line-through text-green-700' : ''}>
-                    • At least 8 characters
-                  </li>
-                  <li className={/[A-Z]/.test(password) ? 'line-through text-green-700' : ''}>
-                    • Uppercase letter (A-Z)
-                  </li>
-                  <li className={/[a-z]/.test(password) ? 'line-through text-green-700' : ''}>
-                    • Lowercase letter (a-z)
-                  </li>
-                  <li className={/\d/.test(password) ? 'line-through text-green-700' : ''}>
-                    • Number (0-9)
-                  </li>
-                  <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? 'line-through text-green-700' : ''}>
-                    • Special character (!@#$%^&* etc)
-                  </li>
-                </ul>
-              </div>
-
-              {/* Error Messages */}
-              {!passwordValidation.isValid && password && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-xs font-medium text-red-900 mb-2">Issues:</p>
-                  <ul className="text-xs text-red-800 space-y-1">
-                    {passwordValidation.errors.map((error, idx) => (
-                      <li key={idx}>• {error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !passwordValidation.isValid || !password}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
-                >
-                  {loading ? 'Setting...' : 'Set Password'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Generate Password Mode */}
-          {mode === 'generate' && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Generate a temporary password for this user. They should change it on their first login.
+          {/* Generated Password Display */}
+          {mode === 'generate' && generatedPassword && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm text-green-900 font-semibold mb-2">
+                Generated Password:
               </p>
-
-              {generatedPassword && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Generated Password
-                  </label>
-                  <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <code className="font-mono text-lg font-bold text-gray-900">
-                        {generatedPassword}
-                      </code>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedPassword);
-                          toast.success('Copied to clipboard!');
-                        }}
-                        className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-orange-600 mt-2">
-                    ⚠️ This password will not be visible again. Share it with the user securely.
-                  </p>
-                </div>
-              )}
-
-              {!generatedPassword ? (
-                <button
-                  onClick={handleGeneratePassword}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition"
-                >
-                  Generate Password
-                </button>
-              ) : (
-                <form onSubmit={handleSetPassword} className="space-y-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50"
-                  >
-                    {loading ? 'Setting...' : 'Confirm & Set Password'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-full px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-                  >
-                    Cancel
-                  </button>
-                </form>
-              )}
+              <code className="block text-lg font-mono text-green-800 bg-green-100 p-3 rounded border border-green-300">
+                {generatedPassword}
+              </code>
+              <p className="text-xs text-green-700 mt-2">
+                Please copy this password and securely share it with the user. They should change it on first login.
+              </p>
             </div>
           )}
-        </div>
 
-        {/* Security Notice */}
-        <div className="bg-gray-50 border-t p-4">
-          <p className="text-xs text-gray-600">
-            🔒 Passwords are encrypted using bcrypt. Admins cannot view passwords. Users can reset their password anytime.
-          </p>
-        </div>
+          {/* Password Fields */}
+          <div className="space-y-4">
+            <FormInput
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={formData.password}
+              onChange={(e) => handleInputChange('password', e.target.value)}
+              error={errors.password}
+              placeholder="Enter password"
+              helperText="Must be at least 8 characters with uppercase, lowercase, number, and special character"
+            />
+
+            <FormInput
+              label="Confirm Password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={formData.confirmPassword}
+              onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+              error={errors.confirmPassword}
+              placeholder="Re-enter password"
+              helperText="Must match the password above"
+            />
+
+            {/* Show Password Toggle */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="showPassword"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <label htmlFor="showPassword" className="text-sm text-gray-700 cursor-pointer">
+                Show password
+              </label>
+            </div>
+          </div>
+
+          {/* Security Notice */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-900 font-semibold mb-1">
+              Security Reminder
+            </p>
+            <p className="text-xs text-yellow-800">
+              Passwords are securely hashed using bcrypt before storage. Never share passwords over insecure channels.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Setting...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Set Password</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

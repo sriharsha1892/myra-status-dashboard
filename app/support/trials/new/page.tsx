@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
+import { prepareTrialOrgForCreation, validateTrialOrgForm } from '@/lib/trial-org-helpers';
 
 interface User {
   id: string;
@@ -169,24 +170,27 @@ export default function CreateOrganizationPage() {
     try {
       const normalizedUrl = normalizeUrl(websiteUrl);
 
+      // Prepare organization data with all required fields including parent_company and trial dates
+      const orgData = prepareTrialOrgForCreation(
+        {
+          org_name: orgName,
+          domain: domain,
+          account_manager_id: accountManagerId,
+          org_url: normalizedUrl,
+          logo_url: logoUrl,
+          description: description,
+          sales_poc: salesPOCName,
+        },
+        {
+          parent_company: user?.parent_company,
+        }
+      );
+
       // Insert organization
       const { data: newOrg, error: orgError } = (await supabase
         .from('trial_organizations')
         // @ts-ignore - Supabase type inference issue with insert method
-        .insert({
-          org_name: orgName.trim(),
-          domain: domain,
-          org_url: normalizedUrl,
-          logo_url: logoUrl.trim(),
-          description: description.trim(),
-          sales_poc_id: null,
-          sales_poc: salesPOCName.trim() || null,
-          account_manager_id: accountManagerId,
-          org_lifecycle_stage: 'prospect',
-          trial_status: 'requested',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .insert(orgData)
         .select('org_id')
         .single()) as { data: { org_id: string } | null; error: any };
 

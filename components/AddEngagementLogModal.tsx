@@ -4,6 +4,11 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import { createEngagementLogSchema } from '@/lib/validation/schemas/engagement';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface TrialUser {
   user_id: string;
@@ -36,23 +41,34 @@ export default function AddEngagementLogModal({
   onSuccess,
   userId,
 }: AddEngagementLogModalProps) {
-  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
   const [trialUsers, setTrialUsers] = useState<TrialUser[]>([]);
   const [fetchingUsers, setFetchingUsers] = useState(false);
 
-  // Form state
-  const [activityType, setActivityType] = useState('user_logged_in');
-  const [selectedUserId, setSelectedUserId] = useState(userId || '');
-  const [description, setDescription] = useState('');
-  const [observations, setObservations] = useState('');
+  // Form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+    setFormData,
+  } = useFormValidation(createEngagementLogSchema, {
+    activity_type: 'user_logged_in',
+    user_id: userId || '',
+    description: '',
+    observations: '',
+  });
 
-  const supabase = createClient();
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
   useEffect(() => {
     if (isOpen && !userId) {
       fetchTrialUsers();
     } else if (userId) {
-      setSelectedUserId(userId);
+      setFormData((prev) => ({ ...prev, user_id: userId }));
     }
   }, [isOpen, userId]);
 
@@ -75,56 +91,66 @@ export default function AddEngagementLogModal({
     }
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedUserId) {
-      toast.error('Please select a user');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    if (!description.trim()) {
-      toast.error('Description is required');
-      return;
-    }
+    await execute(
+      async () => {
+        // Get current user info from auth
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          throw new Error('User not authenticated');
+        }
 
-    setLoading(true);
-    try {
-      // Get current user info from auth
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      const userId_logged = authUser?.id || 'unknown';
+        // @ts-ignore - Supabase typing issue with dynamic columns
+        const { error } = await supabase.from('trial_engagement_log').insert({
+          org_id: orgId,
+          user_id: formData.user_id,
+          activity_type: formData.activity_type,
+          description: formData.description,
+          observations: formData.observations || null,
+          logged_by: authUser.id,
+          logged_by_role: authUser.user_metadata?.role === 'Admin' ? 'admin' : 'product',
+          created_at: new Date().toISOString(),
+        });
 
-      // @ts-ignore - Supabase typing issue with dynamic columns
-      const { error } = await supabase.from('trial_engagement_log').insert({
-        org_id: orgId,
-        user_id: selectedUserId,
-        activity_type: activityType,
-        description: description,
-        observations: observations || null,
-        logged_by: userId_logged,
-        logged_by_role: 'account_manager', // Will be determined by actual user role
-        created_at: new Date().toISOString(),
-      });
+        if (error) throw error;
 
-      if (error) throw error;
+        return { success: true };
+      },
+      {
+        successMessage: 'Activity logged successfully!',
+        errorMessage: 'Failed to log activity',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error logging activity:', error);
 
-      toast.success('Activity logged successfully');
-      resetForm();
-      onClose();
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error logging activity:', error);
-      toast.error(error.message || 'Failed to log activity');
-    } finally {
-      setLoading(false);
-    }
-  };
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'engagement_log');
 
-  const resetForm = () => {
-    setActivityType('user_logged_in');
-    setSelectedUserId(userId || '');
-    setDescription('');
-    setObservations('');
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'engagement_log',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
   };
 
   const handleClose = () => {
@@ -134,7 +160,7 @@ export default function AddEngagementLogModal({
 
   if (!isOpen) return null;
 
-  const selectedActivityType = ACTIVITY_TYPES.find((a) => a.value === activityType);
+  const selectedActivityType = ACTIVITY_TYPES.find((a) => a.value === formData.activity_type);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -148,6 +174,7 @@ export default function AddEngagementLogModal({
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -164,8 +191,8 @@ export default function AddEngagementLogModal({
                 Select User *
               </label>
               <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
+                value={formData.user_id}
+                onChange={(e) => handleInputChange('user_id', e.target.value)}
                 disabled={fetchingUsers}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               >
@@ -191,7 +218,7 @@ export default function AddEngagementLogModal({
                 <label
                   key={type.value}
                   className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    activityType === type.value
+                    formData.activity_type === type.value
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
@@ -200,8 +227,8 @@ export default function AddEngagementLogModal({
                     type="radio"
                     name="activityType"
                     value={type.value}
-                    checked={activityType === type.value}
-                    onChange={(e) => setActivityType(e.target.value)}
+                    checked={formData.activity_type === type.value}
+                    onChange={(e) => handleInputChange('activity_type', e.target.value)}
                     className="w-4 h-4 text-blue-600"
                   />
                   <span className="text-lg">{type.icon}</span>
@@ -217,8 +244,8 @@ export default function AddEngagementLogModal({
               Description *
             </label>
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="What happened? What did the user do or say?"
               rows={3}
               className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -238,8 +265,8 @@ export default function AddEngagementLogModal({
               Additional Observations
             </label>
             <textarea
-              value={observations}
-              onChange={(e) => setObservations(e.target.value)}
+              value={formData.observations}
+              onChange={(e) => handleInputChange('observations', e.target.value)}
               placeholder="Any additional insights, concerns, or notes..."
               rows={2}
               className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -272,10 +299,10 @@ export default function AddEngagementLogModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

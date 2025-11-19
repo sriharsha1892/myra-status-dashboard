@@ -7,6 +7,15 @@ import toast from 'react-hot-toast';
 import MentionTextEditor from '@/components/MentionTextEditor';
 import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
 import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { FormInput, FormSelect } from '@/components/forms';
+import type { SelectOption } from '@/components/forms';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  createTrialOrganizationSchema,
+  TRIAL_DOMAINS,
+  PARENT_COMPANIES,
+} from '@/lib/validation/schemas/trialOrganization';
+import { z } from 'zod';
 
 interface SalesPOC {
   id: string;
@@ -26,27 +35,42 @@ interface CreateOrganizationModalProps {
   onSuccess: () => void;
 }
 
-const DOMAINS = ['TMT', 'NEO', 'AF&B', 'E&C', 'HC', 'AAD', 'Unassigned'];
-const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'];
+// Convert constants to SelectOption format
+const domainOptions: SelectOption[] = TRIAL_DOMAINS.map((domain) => ({
+  value: domain,
+  label: domain,
+}));
+
+const parentCompanyOptions: SelectOption[] = PARENT_COMPANIES.map((company) => ({
+  value: company,
+  label: company,
+}));
 
 export default function CreateOrganizationModal({
   isOpen,
   onClose,
   onSuccess,
 }: CreateOrganizationModalProps) {
-  const [loading, setLoading] = useState(false);
   const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
   const [accountManagers, setAccountManagers] = useState<Users[]>([]);
 
-  // Form state
-  const [orgName, setOrgName] = useState('');
-  const [selectedPOC, setSelectedPOC] = useState('');
-  const [selectedDomain, setSelectedDomain] = useState('');
-  const [parentCompany, setParentCompany] = useState('Mordor Intelligence');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [orgUrl, setOrgUrl] = useState('');
-  const [description, setDescription] = useState('');
+  // Form state - using schema type
+  const [formData, setFormData] = useState({
+    org_name: '',
+    sales_poc_id: '',
+    org_domain: '',
+    parent_company: 'Mordor Intelligence',
+    logo_url: '',
+    org_url: '',
+    description: '',
+    account_manager_id: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [assignedAccountManager, setAssignedAccountManager] = useState('');
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
   const supabase = createClient();
 
@@ -59,14 +83,15 @@ export default function CreateOrganizationModal({
 
   // Auto-assign account manager when POC is selected
   useEffect(() => {
-    if (selectedPOC) {
-      const poc = salesPOCs.find((p) => p.id === selectedPOC);
+    if (formData.sales_poc_id) {
+      const poc = salesPOCs.find((p) => p.id === formData.sales_poc_id);
       if (poc) {
         const manager = accountManagers.find((m) => m.id === poc.account_manager_id);
         setAssignedAccountManager(manager?.full_name || '');
+        setFormData((prev) => ({ ...prev, account_manager_id: poc.account_manager_id }));
       }
     }
-  }, [selectedPOC, salesPOCs, accountManagers]);
+  }, [formData.sales_poc_id, salesPOCs, accountManagers]);
 
   const fetchSalesPOCsAndManagers = async () => {
     try {
@@ -107,75 +132,108 @@ export default function CreateOrganizationModal({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!orgName.trim()) {
-      toast.error('Organization name is required');
-      return;
-    }
-
-    if (!selectedPOC) {
-      toast.error('Please select a Sales POC');
-      return;
-    }
-
-    if (!selectedDomain) {
-      toast.error('Please select a domain');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('trial_organizations').insert({
-        org_name: orgName,
-        org_domain: selectedDomain,
-        parent_company: parentCompany,
-        logo_url: logoUrl || null,
-        org_url: orgUrl || null,
-        description: description || null,
-        sales_poc_id: selectedPOC,
-        account_manager_id: salesPOCs.find((p) => p.id === selectedPOC)?.account_manager_id,
-        trial_request_date: new Date().toISOString(),
-        trial_status: 'requested',
-        org_lifecycle_stage: 'prospect',
+  // Handle input changes with error clearing
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user types
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
       });
-
-      if (error) throw error;
-
-      toast.success('Organization created successfully');
-      resetForm();
-      onClose();
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating organization:', error);
-
-      // Get current user for error reporting
-      const { data: { user } } = await supabase.auth.getUser();
-      const errorDetails = getErrorMessage(error, 'trial_org_create');
-
-      // Show error with report option for better support
-      showErrorWithReport(
-        error,
-        'trial_org_create',
-        errorDetails.message,
-        errorDetails.suggestion,
-        user?.email,
-        user?.id
-      );
-    } finally {
-      setLoading(false);
     }
   };
 
+  // Validate form with Zod schema
+  const validateForm = (): boolean => {
+    try {
+      createTrialOrganizationSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        err.errors.forEach((error) => {
+          if (error.path[0]) {
+            newErrors[error.path[0].toString()] = error.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate form with Zod
+    if (!validateForm()) {
+      return;
+    }
+
+    await execute(
+      async () => {
+        const { error } = await supabase.from('trial_organizations').insert({
+          org_name: formData.org_name,
+          org_domain: formData.org_domain,
+          parent_company: formData.parent_company,
+          logo_url: formData.logo_url || null,
+          org_url: formData.org_url || null,
+          description: formData.description || null,
+          sales_poc_id: formData.sales_poc_id,
+          account_manager_id: formData.account_manager_id,
+          trial_request_date: new Date().toISOString(),
+          trial_status: 'requested',
+          org_lifecycle_stage: 'prospect',
+        });
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Organization created successfully',
+        errorMessage: 'Failed to create organization',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error creating organization:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'trial_org_create');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'trial_org_create',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
+      }
+    );
+  };
+
   const resetForm = () => {
-    setOrgName('');
-    setSelectedPOC('');
-    setSelectedDomain('');
-    setParentCompany('Mordor Intelligence');
-    setLogoUrl('');
-    setOrgUrl('');
-    setDescription('');
+    setFormData({
+      org_name: '',
+      sales_poc_id: '',
+      org_domain: '',
+      parent_company: 'Mordor Intelligence',
+      logo_url: '',
+      org_url: '',
+      description: '',
+      account_manager_id: '',
+    });
+    setErrors({});
     setAssignedAccountManager('');
   };
 
@@ -183,6 +241,12 @@ export default function CreateOrganizationModal({
     resetForm();
     onClose();
   };
+
+  // Convert sales POCs to select options
+  const salesPOCOptions: SelectOption[] = salesPOCs.map((poc) => ({
+    value: poc.id,
+    label: `${poc.name} (${poc.email})`,
+  }));
 
   if (!isOpen) return null;
 
@@ -208,36 +272,29 @@ export default function CreateOrganizationModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Organization Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Organization Name *
-            </label>
-            <input
-              type="text"
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder="e.g., Acme Corporation"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Organization Name"
+            type="text"
+            required
+            value={formData.org_name}
+            onChange={(e) => handleInputChange('org_name', e.target.value)}
+            error={errors.org_name}
+            placeholder="e.g., Acme Corporation"
+            helperText="The official name of the organization requesting a trial"
+          />
 
           {/* Sales POC Selection */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Sales POC *
-            </label>
-            <select
-              value={selectedPOC}
-              onChange={(e) => setSelectedPOC(e.target.value)}
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a Sales POC</option>
-              {salesPOCs.map((poc) => (
-                <option key={poc.id} value={poc.id}>
-                  {poc.name} ({poc.email})
-                </option>
-              ))}
-            </select>
+            <FormSelect
+              label="Sales POC"
+              required
+              options={salesPOCOptions}
+              value={formData.sales_poc_id}
+              onChange={(e) => handleInputChange('sales_poc_id', e.target.value)}
+              error={errors.sales_poc_id}
+              placeholder="Select a Sales POC"
+              helperText="The sales representative managing this trial"
+            />
             {assignedAccountManager && (
               <p className="text-xs text-green-600 mt-2">
                 ✓ Assigned to Account Manager: <span className="font-semibold">{assignedAccountManager}</span>
@@ -246,69 +303,49 @@ export default function CreateOrganizationModal({
           </div>
 
           {/* Domain Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Domain *
-            </label>
-            <select
-              value={selectedDomain}
-              onChange={(e) => setSelectedDomain(e.target.value)}
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a domain</option>
-              {DOMAINS.map((domain) => (
-                <option key={domain} value={domain}>
-                  {domain}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Domain"
+            required
+            options={domainOptions}
+            value={formData.org_domain}
+            onChange={(e) => handleInputChange('org_domain', e.target.value)}
+            error={errors.org_domain}
+            placeholder="Select a domain"
+            helperText="The industry or business domain for this organization"
+          />
 
           {/* Parent Company Selection */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Parent Company *
-            </label>
-            <select
-              value={parentCompany}
-              onChange={(e) => setParentCompany(e.target.value)}
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {PARENT_COMPANIES.map((company) => (
-                <option key={company} value={company}>
-                  {company}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormSelect
+            label="Parent Company"
+            required
+            options={parentCompanyOptions}
+            value={formData.parent_company}
+            onChange={(e) => handleInputChange('parent_company', e.target.value)}
+            error={errors.parent_company}
+            helperText="The parent company managing this trial"
+          />
 
           {/* Organization URL */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Organization URL
-            </label>
-            <input
-              type="url"
-              value={orgUrl}
-              onChange={(e) => setOrgUrl(e.target.value)}
-              placeholder="e.g., https://example.com"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Organization URL"
+            type="url"
+            value={formData.org_url}
+            onChange={(e) => handleInputChange('org_url', e.target.value)}
+            error={errors.org_url}
+            placeholder="https://example.com"
+            helperText="The organization's website (optional)"
+          />
 
           {/* Logo URL */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Logo URL
-            </label>
-            <input
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="e.g., https://example.com/logo.png"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Logo URL"
+            type="url"
+            value={formData.logo_url}
+            onChange={(e) => handleInputChange('logo_url', e.target.value)}
+            error={errors.logo_url}
+            placeholder="https://example.com/logo.png"
+            helperText="URL to the organization's logo (optional)"
+          />
 
           {/* Description */}
           <div>
@@ -317,8 +354,8 @@ export default function CreateOrganizationModal({
             </label>
             <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
               <MentionTextEditor
-                content={description}
-                onChange={(html) => setDescription(html)}
+                content={formData.description}
+                onChange={(html) => handleInputChange('description', html)}
                 placeholder="Add any additional details about this organization..."
                 minHeight={100}
               />
@@ -346,10 +383,10 @@ export default function CreateOrganizationModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -1,17 +1,21 @@
 'use client';
 
-import toast, { Toaster, Toast } from 'react-hot-toast';
+import toast, { Toaster, Toast as RHToast } from 'react-hot-toast';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { X } from 'lucide-react';
+import { EnhancedToast } from './toast/EnhancedToast';
+import { toastManager } from '@/lib/toast/manager';
+import type { Toast } from '@/lib/toast/types';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       {children}
       <Toaster
-        position="top-center"
+        position="top-right"
         containerStyle={{
-          top: 80,
+          top: 20,
+          right: 20,
           zIndex: 99999,
         }}
         toastOptions={{
@@ -67,21 +71,42 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
       >
-        {(t: Toast) => (
-          <div
-            className={`flex items-center gap-3 ${
-              t.visible ? 'animate-enter' : 'animate-leave'
-            }`}
-          >
-            <div className="flex-1">{t.message}</div>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="flex-shrink-0 p-1 hover:bg-neutral-100 rounded transition-colors"
+        {(t: RHToast) => {
+          // Check if this is an enhanced toast
+          const enhancedToastData =
+            typeof window !== 'undefined'
+              ? ((window as any).__ENHANCED_TOAST_DATA__ as Map<string, Toast>)?.get(t.id)
+              : null;
+
+          // If enhanced toast data exists, use EnhancedToast component
+          if (enhancedToastData) {
+            return (
+              <div className={t.visible ? 'animate-enter' : 'animate-leave'}>
+                <EnhancedToast
+                  toast={enhancedToastData}
+                  onDismiss={(id) => toastManager.dismiss(id, 'user')}
+                />
+              </div>
+            );
+          }
+
+          // Otherwise, use simple rendering for backward compatibility
+          return (
+            <div
+              className={`flex items-center gap-3 ${
+                t.visible ? 'animate-enter' : 'animate-leave'
+              }`}
             >
-              <X className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />
-            </button>
-          </div>
-        )}
+              <div className="flex-1">{t.message}</div>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="flex-shrink-0 p-1 hover:bg-neutral-100 rounded transition-colors"
+              >
+                <X className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />
+              </button>
+            </div>
+          );
+        }}
       </Toaster>
 
       <style jsx global>{`

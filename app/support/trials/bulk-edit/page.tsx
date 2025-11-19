@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { authenticatedFetch } from '@/lib/api-client';
+import { prepareTrialOrgForUpdate } from '@/lib/trial-org-helpers';
 
 type TrialUser = {
   user_id: string;
@@ -375,48 +376,7 @@ export default function BulkEditPage() {
     }
   }
 
-  // Map frontend field names to database column names
-  function mapOrgFieldsToDb(updates: Partial<TrialOrg>) {
-    const dbUpdates: any = {};
-
-    // Map only the fields that exist in the actual database schema
-    if ('org_name' in updates) dbUpdates.org_name = updates.org_name;
-    if ('domain' in updates) dbUpdates.org_domain = updates.domain;
-    // Store account manager UUID in account_manager field for proper resolution
-    if ('account_manager_id' in updates) dbUpdates.account_manager = updates.account_manager_id;
-
-    // Convert old lifecycle stage values to new ones
-    if ('org_lifecycle_stage' in updates) {
-      let stage = updates.org_lifecycle_stage;
-      // Automatically convert old values to new values
-      if (stage === 'converted') stage = 'customer';
-      if (stage === 'churned') stage = 'lost';
-      if (stage === 'demo_scheduled') stage = 'trial_pending';
-      dbUpdates.org_lifecycle_stage = stage;
-    }
-
-    if ('trial_access_provided_date' in updates) dbUpdates.trial_start_date = updates.trial_access_provided_date;
-    if ('trial_expiry_date' in updates) dbUpdates.trial_end_date = updates.trial_expiry_date;
-    if ('comments' in updates) dbUpdates.comments = updates.comments;
-
-    // Add updated_at timestamp
-    dbUpdates.updated_at = new Date().toISOString();
-
-    return dbUpdates;
-  }
-
-  function mapUserFieldsToDb(updates: Partial<TrialUser>) {
-    const dbUpdates: any = {};
-
-    // These fields use the same names in the database (no mapping needed)
-    if ('name' in updates) dbUpdates.name = updates.name;
-    if ('email' in updates) dbUpdates.email = updates.email;
-    if ('role' in updates) dbUpdates.role = updates.role;
-    if ('current_stage' in updates) dbUpdates.current_stage = updates.current_stage;
-    if ('account_manager' in updates) dbUpdates.account_manager = updates.account_manager;
-
-    return dbUpdates;
-  }
+  // No custom mapping needed - use helper functions for consistency
 
   async function autoTagOrganizations() {
     if (autoTagging) return;
@@ -534,9 +494,9 @@ export default function BulkEditPage() {
         console.log('Org ID:', orgId);
         console.log('Original updates:', JSON.stringify(updates, null, 2));
 
-        const dbUpdates = mapOrgFieldsToDb(updates);
+        const dbUpdates = prepareTrialOrgForUpdate(updates);
 
-        console.log('Mapped dbUpdates:', JSON.stringify(dbUpdates, null, 2));
+        console.log('Prepared dbUpdates:', JSON.stringify(dbUpdates, null, 2));
 
         if (Object.keys(dbUpdates).length > 0) {
           const { data, error } = await supabase
@@ -568,9 +528,13 @@ export default function BulkEditPage() {
         console.log('User ID:', userId);
         console.log('Original updates:', JSON.stringify(updates, null, 2));
 
-        const dbUpdates = mapUserFieldsToDb(updates);
+        // Users table: fields map directly (no transformation needed)
+        const dbUpdates = {
+          ...updates,
+          updated_at: new Date().toISOString(),
+        };
 
-        console.log('Mapped dbUpdates:', JSON.stringify(dbUpdates, null, 2));
+        console.log('Prepared dbUpdates:', JSON.stringify(dbUpdates, null, 2));
 
         if (Object.keys(dbUpdates).length > 0) {
           const { data, error } = await supabase

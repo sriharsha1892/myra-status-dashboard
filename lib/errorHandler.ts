@@ -3,6 +3,9 @@
  * Provides graceful, user-friendly error messages with support reporting
  */
 
+import { enhancedToast } from './toast/manager';
+import type { EnhancedToastOptions } from './toast/types';
+
 export type ErrorContext =
   | 'trial_org_create'
   | 'trial_org_update'
@@ -373,4 +376,87 @@ export function formatErrorWithReportOption(
   message += '\n\nIssue persists? Click to report to support team.';
 
   return message;
+}
+
+/**
+ * Show enhanced error toast with retry capability
+ * Uses the enhanced toast system with progressive disclosure and actions
+ */
+export function showEnhancedError(
+  error: any,
+  context: ErrorContext = 'generic',
+  options?: {
+    onRetry?: () => void | Promise<void>;
+    userEmail?: string;
+    userId?: string;
+    additionalInfo?: Record<string, any>;
+    priority?: 'low' | 'normal' | 'high' | 'critical';
+  }
+): string {
+  const details = getErrorMessage(error, context);
+  const errorType = detectErrorType(error);
+
+  // Determine priority based on error type if not specified
+  const priority = options?.priority || (
+    errorType === 'auth' ? 'high' :
+    errorType === 'database' ? 'critical' :
+    errorType === 'permission' ? 'high' :
+    errorType === 'network' ? 'normal' :
+    'normal'
+  );
+
+  // Build toast options
+  const toastOptions: EnhancedToastOptions = {
+    type: 'error',
+    message: details.message,
+    description: details.suggestion,
+    priority,
+    expandable: true,
+    autoDismiss: false, // Errors should be manually dismissed
+    metadata: {
+      dedupeKey: `error_${context}_${details.message}`,
+      context,
+      technicalDetails: process.env.NODE_ENV === 'development' ? details.technical : undefined,
+      errorCode: (error as any)?.code,
+    },
+  };
+
+  // Add retry action if provided
+  if (options?.onRetry) {
+    toastOptions.onRetry = options.onRetry;
+  }
+
+  // Add report to support action
+  toastOptions.actions = [
+    {
+      label: 'Report to Support',
+      variant: 'secondary',
+      onClick: async () => {
+        const result = await reportErrorToSupport(
+          error,
+          context,
+          options?.userEmail,
+          options?.userId,
+          options?.additionalInfo
+        );
+
+        if (result.success) {
+          enhancedToast.success('Error reported successfully', {
+            description: result.ticketId
+              ? `Ticket #${result.ticketId} created`
+              : 'Support team has been notified',
+            duration: 5000,
+          });
+        } else {
+          enhancedToast.error('Failed to report error', {
+            description: 'Please try again or contact support directly',
+            duration: 5000,
+          });
+        }
+      },
+    },
+  ];
+
+  // Show the enhanced toast
+  return enhancedToast.show(toastOptions);
 }

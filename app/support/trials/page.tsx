@@ -12,11 +12,14 @@ import Papa from 'papaparse';
 import CreateOrganizationModal from '@/components/CreateOrganizationModal';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import NavalLoadingBar from '@/components/NavalLoadingBar';
-import { SkeletonCard } from '@/components/SkeletonCard';
+import { SkeletonCard } from '@/components/skeletons';
 import { TrialProgressBar } from '@/components/TrialProgressBar';
 import { showTrialUpdatedToast, showBulkActionToast, showExportSuccessToast } from '@/utils/navalToasts';
 import { createAccountManagerMap, resolveAccountManagerName, getInitials } from '@/lib/utils/accountManagerUtils';
 import { authenticatedFetch } from '@/lib/api-client';
+import { FormInput, FormSelect } from '@/components/forms';
+import type { SelectOption } from '@/components/forms';
+import { ORG_LIFECYCLE_STAGES } from '@/lib/validation/schemas/trialOrganization';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
@@ -48,6 +51,8 @@ export default function TrialOrganizationsPage() {
   const [showBulkAccountManagerModal, setShowBulkAccountManagerModal] = useState(false);
   const [showBulkTrialDatesModal, setShowBulkTrialDatesModal] = useState(false);
   const [showBulkStageModal, setShowBulkStageModal] = useState(false);
+  const [showBulkTrialStatusModal, setShowBulkTrialStatusModal] = useState(false);
+  const [showBulkTrialExtensionModal, setShowBulkTrialExtensionModal] = useState(false);
   const [showQuickEditPanel, setShowQuickEditPanel] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
@@ -58,6 +63,8 @@ export default function TrialOrganizationsPage() {
   const [bulkTrialEndDate, setBulkTrialEndDate] = useState('');
   const [onlyUpdateMissingDates, setOnlyUpdateMissingDates] = useState(false);
   const [bulkStage, setBulkStage] = useState<string>('');
+  const [bulkTrialStatus, setBulkTrialStatus] = useState<string>('');
+  const [extensionDays, setExtensionDays] = useState<number>(7);
   const [accountManagers, setAccountManagers] = useState<Array<{ user_id: string; email: string; full_name: string | null }>>([]);
 
   const supabase = createClient();
@@ -334,6 +341,82 @@ export default function TrialOrganizationsPage() {
     }
   };
 
+  const handleBulkChangeTrialStatus = async () => {
+    setBulkProcessing(true);
+    try {
+      if (!bulkTrialStatus) {
+        toast.error('Please select a trial status');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('trial_organizations')
+        .update({ trial_status: bulkTrialStatus })
+        .in('org_id', Array.from(selectedOrgIds));
+
+      if (error) throw error;
+
+      showBulkActionToast('Changed trial status for', selectedOrgIds.size);
+      setShowBulkTrialStatusModal(false);
+      setBulkTrialStatus('');
+      setSelectedOrgIds(new Set());
+      await fetchOrganizations();
+    } catch (error: any) {
+      console.error('Error updating trial status:', error);
+      toast.error('Failed to update trial status');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const handleBulkExtendTrial = async () => {
+    setBulkProcessing(true);
+    try {
+      if (!extensionDays || extensionDays <= 0) {
+        toast.error('Please enter a valid number of days');
+        return;
+      }
+
+      // Get selected organizations with current trial_end_date
+      const orgsToExtend = organizations.filter((org) => selectedOrgIds.has(org.org_id));
+
+      // Filter out orgs without trial_end_date
+      const orgsWithEndDate = orgsToExtend.filter((org) => org.trial_end_date);
+
+      if (orgsWithEndDate.length === 0) {
+        toast.error('None of the selected organizations have trial end dates');
+        return;
+      }
+
+      // Update each organization with extended date
+      for (const org of orgsWithEndDate) {
+        const currentEndDate = new Date(org.trial_end_date!);
+        const newEndDate = addDays(currentEndDate, extensionDays);
+
+        const { error } = await supabase
+          .from('trial_organizations')
+          .update({
+            trial_end_date: format(newEndDate, 'yyyy-MM-dd'),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('org_id', org.org_id);
+
+        if (error) throw error;
+      }
+
+      showBulkActionToast(`Extended trial by ${extensionDays} days for`, orgsWithEndDate.length);
+      setShowBulkTrialExtensionModal(false);
+      setExtensionDays(7);
+      setSelectedOrgIds(new Set());
+      await fetchOrganizations();
+    } catch (error: any) {
+      console.error('Error extending trial:', error);
+      toast.error('Failed to extend trial');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   const handleExportCSV = () => {
     const selectedOrgs = organizations.filter((org) => selectedOrgIds.has(org.org_id));
 
@@ -549,7 +632,7 @@ export default function TrialOrganizationsPage() {
 
                   {/* Add New Trial - Primary Action */}
                   <button
-                    onClick={() => router.push('/support/trials/new')}
+                    onClick={() => setShowCreateOrgModal(true)}
                     className="group relative flex items-center gap-3 p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 text-left"
                   >
                     <div className="p-2 rounded-lg bg-blue-600 text-white">
@@ -559,7 +642,7 @@ export default function TrialOrganizationsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-semibold text-gray-900 mb-0.5">Add New Trial</h4>
-                      <p className="text-xs text-gray-600">Guided form</p>
+                      <p className="text-xs text-gray-600">Quick modal form</p>
                     </div>
                     <svg className="w-4 h-4 text-blue-600 group-hover:translate-x-0.5 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -933,6 +1016,24 @@ export default function TrialOrganizationsPage() {
                   <span>Change Stage</span>
                 </button>
                 <button
+                  onClick={() => setShowBulkTrialStatusModal(true)}
+                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Trial Status</span>
+                </button>
+                <button
+                  onClick={() => setShowBulkTrialExtensionModal(true)}
+                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Extend Trial</span>
+                </button>
+                <button
                   onClick={handleExportCSV}
                   className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
                 >
@@ -973,21 +1074,18 @@ export default function TrialOrganizationsPage() {
             </div>
 
             <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager</label>
-                <select
-                  value={bulkAccountManager}
-                  onChange={(e) => setBulkAccountManager(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select account manager...</option>
-                  {accountManagers.map((manager) => (
-                    <option key={manager.user_id} value={manager.user_id}>
-                      {manager.full_name || manager.email} ({manager.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <FormSelect
+                label="Account Manager"
+                required
+                options={accountManagers.map((manager) => ({
+                  value: manager.user_id,
+                  label: `${manager.full_name || manager.email} (${manager.email})`,
+                }))}
+                value={bulkAccountManager}
+                onChange={(e) => setBulkAccountManager(e.target.value)}
+                placeholder="Select account manager..."
+                helperText={`Assign an account manager to ${selectedOrgIds.size} selected organization${selectedOrgIds.size !== 1 ? 's' : ''}`}
+              />
             </div>
 
             <div className="flex items-center gap-3">
@@ -1026,25 +1124,23 @@ export default function TrialOrganizationsPage() {
             </div>
 
             <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Trial Start Date</label>
-                <input
-                  type="date"
-                  value={bulkTrialStartDate}
-                  onChange={(e) => setBulkTrialStartDate(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <FormInput
+                label="Trial Start Date"
+                type="date"
+                required
+                value={bulkTrialStartDate}
+                onChange={(e) => setBulkTrialStartDate(e.target.value)}
+                helperText="The trial period will start on this date"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Trial End Date</label>
-                <input
-                  type="date"
-                  value={bulkTrialEndDate}
-                  onChange={(e) => setBulkTrialEndDate(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <FormInput
+                label="Trial End Date"
+                type="date"
+                required
+                value={bulkTrialEndDate}
+                onChange={(e) => setBulkTrialEndDate(e.target.value)}
+                helperText="Auto-populated as 14 days from start date"
+              />
 
               <div className="flex items-center gap-2">
                 <input
@@ -1096,21 +1192,21 @@ export default function TrialOrganizationsPage() {
             </div>
 
             <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">New Stage</label>
-                <select
-                  value={bulkStage}
-                  onChange={(e) => setBulkStage(e.target.value)}
-                  className="w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select stage...</option>
-                  <option value="prospect">Prospect</option>
-                  <option value="demo_scheduled">Demo Scheduled</option>
-                  <option value="trial_active">Trial Active</option>
-                  <option value="converted">Converted</option>
-                  <option value="churned">Churned</option>
-                </select>
-              </div>
+              <FormSelect
+                label="New Stage"
+                required
+                options={[
+                  { value: 'prospect', label: 'Prospect' },
+                  { value: 'demo_scheduled', label: 'Demo Scheduled' },
+                  { value: 'trial_active', label: 'Trial Active' },
+                  { value: 'converted', label: 'Converted' },
+                  { value: 'churned', label: 'Churned' },
+                ]}
+                value={bulkStage}
+                onChange={(e) => setBulkStage(e.target.value)}
+                placeholder="Select stage..."
+                helperText={`Change lifecycle stage for ${selectedOrgIds.size} selected organization${selectedOrgIds.size !== 1 ? 's' : ''}`}
+              />
 
               {bulkStage && isBackwardStageChange(bulkStage) && (
                 <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1140,6 +1236,113 @@ export default function TrialOrganizationsPage() {
                 className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {bulkProcessing ? 'Applying...' : `Apply to ${selectedOrgIds.size} org${selectedOrgIds.size !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Change Trial Status Modal */}
+      {showBulkTrialStatusModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Change Trial Status</h3>
+              <button
+                onClick={() => setShowBulkTrialStatusModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <FormSelect
+                label="Trial Status"
+                required
+                options={[
+                  { value: 'requested', label: 'Requested' },
+                  { value: 'in_progress', label: 'In Progress' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'expired', label: 'Expired' },
+                ]}
+                value={bulkTrialStatus}
+                onChange={(e) => setBulkTrialStatus(e.target.value)}
+                placeholder="Select trial status..."
+                helperText={`Update trial status for ${selectedOrgIds.size} selected organization${selectedOrgIds.size !== 1 ? 's' : ''}`}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowBulkTrialStatusModal(false)}
+                className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkChangeTrialStatus}
+                disabled={bulkProcessing || !bulkTrialStatus}
+                className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {bulkProcessing ? 'Applying...' : `Apply to ${selectedOrgIds.size} org${selectedOrgIds.size !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Trial Extension Modal */}
+      {showBulkTrialExtensionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Extend Trial Period</h3>
+              <button
+                onClick={() => setShowBulkTrialExtensionModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <FormInput
+                label="Extension Days"
+                type="number"
+                required
+                value={extensionDays.toString()}
+                onChange={(e) => setExtensionDays(parseInt(e.target.value) || 0)}
+                helperText={`Extend trial end date by this many days for ${selectedOrgIds.size} selected organization${selectedOrgIds.size !== 1 ? 's' : ''}`}
+                min="1"
+                max="365"
+              />
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Only organizations with existing trial end dates will be extended. Organizations without trial end dates will be skipped.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowBulkTrialExtensionModal(false)}
+                className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkExtendTrial}
+                disabled={bulkProcessing || !extensionDays || extensionDays <= 0}
+                className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {bulkProcessing ? 'Applying...' : `Extend ${selectedOrgIds.size} org${selectedOrgIds.size !== 1 ? 's' : ''}`}
               </button>
             </div>
           </div>
@@ -1220,6 +1423,26 @@ export default function TrialOrganizationsPage() {
                   <span className="text-sm font-medium text-gray-900">Change Stage</span>
                   <svg className="w-5 h-5 text-gray-400 group-hover:text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setShowBulkTrialStatusModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-accent-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Change Trial Status</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => setShowBulkTrialExtensionModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Extend Trial Period</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
 

@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import MentionTextEditor from '@/components/MentionTextEditor';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import { updateDealStatusSchema } from '@/lib/validation/schemas/dealManagement';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface UpdateDealStatusModalProps {
   orgId: string;
@@ -42,114 +47,139 @@ export default function UpdateDealStatusModal({
   onSuccess,
   currentDealStatus = 'prospect',
 }: UpdateDealStatusModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [dealStatus, setDealStatus] = useState(currentDealStatus);
-  const [opportunityValue, setOpportunityValue] = useState('');
-  const [dealValue, setDealValue] = useState('');
-  const [dealCurrency, setDealCurrency] = useState('USD');
-  const [lossReason, setLossReason] = useState('');
-  const [lossReasonOther, setLossReasonOther] = useState('');
-  const [deferredReason, setDeferredReason] = useState('');
-  const [expectedFollowupDate, setExpectedFollowupDate] = useState('');
-  const [notes, setNotes] = useState('');
-
   const supabase = createClient();
+
+  // Form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+    setFormData,
+  } = useFormValidation(updateDealStatusSchema, {
+    deal_status: currentDealStatus,
+    opportunity_value: '',
+    deal_currency: 'USD',
+    deal_value: '',
+    loss_reason: '',
+    loss_reason_other: '',
+    deferred_reason: '',
+    expected_followup_date: '',
+    notes: '',
+  });
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
 
   useEffect(() => {
     if (isOpen) {
-      setDealStatus(currentDealStatus || 'prospect');
-      setOpportunityValue('');
-      setDealValue('');
-      setDealCurrency('USD');
-      setLossReason('');
-      setLossReasonOther('');
-      setDeferredReason('');
-      setExpectedFollowupDate('');
-      setNotes('');
+      setFormData({
+        deal_status: currentDealStatus || 'prospect',
+        opportunity_value: '',
+        deal_currency: 'USD',
+        deal_value: '',
+        loss_reason: '',
+        loss_reason_other: '',
+        deferred_reason: '',
+        expected_followup_date: '',
+        notes: '',
+      });
+      setErrors({});
     }
   }, [isOpen, currentDealStatus]);
+
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (dealStatus === 'won' && !dealValue) {
-      toast.error('Deal value is required for Won deals');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    if (dealStatus === 'lost' && !lossReason) {
-      toast.error('Loss reason is required for Lost deals');
-      return;
-    }
+    await execute(
+      async () => {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          throw new Error('User not authenticated');
+        }
 
-    if (dealStatus === 'lost' && lossReason === 'Other' && !lossReasonOther.trim()) {
-      toast.error('Please specify the reason for "Other"');
-      return;
-    }
+        const updateData: any = {
+          deal_status: formData.deal_status,
+          status_updated_at: new Date().toISOString(),
+          notes: formData.notes || null,
+          opportunity_value: formData.opportunity_value ? parseFloat(formData.opportunity_value) : null,
+        };
 
-    if (dealStatus === 'deferred' && !deferredReason.trim()) {
-      toast.error('Reason is required for Deferred deals');
-      return;
-    }
+        // Clear conditional fields
+        updateData.deal_value = null;
+        updateData.loss_reason = null;
+        updateData.deferred_reason = null;
+        updateData.expected_followup_date = null;
 
-    if (dealStatus === 'deferred' && !expectedFollowupDate) {
-      toast.error('Expected follow-up date is required for Deferred deals');
-      return;
-    }
+        // Set conditional fields based on status
+        if (formData.deal_status === 'won' && formData.deal_value) {
+          updateData.deal_value = parseFloat(formData.deal_value);
+          updateData.deal_currency = formData.deal_currency;
+        }
 
-    setLoading(true);
-    try {
-      const updateData: any = {
-        deal_status: dealStatus,
-        status_updated_at: new Date().toISOString(),
-        notes: notes || null,
-        opportunity_value: opportunityValue ? parseFloat(opportunityValue) : null,
-      };
+        if (formData.deal_status === 'lost') {
+          const finalLossReason = formData.loss_reason === 'Other' ? formData.loss_reason_other : formData.loss_reason;
+          updateData.loss_reason = finalLossReason;
+        }
 
-      // Clear conditional fields
-      updateData.deal_value = null;
-      updateData.loss_reason = null;
-      updateData.deferred_reason = null;
-      updateData.expected_followup_date = null;
+        if (formData.deal_status === 'deferred') {
+          updateData.deferred_reason = formData.deferred_reason;
+          updateData.expected_followup_date = formData.expected_followup_date;
+        }
 
-      // Set conditional fields based on status
-      if (dealStatus === 'won' && dealValue) {
-        updateData.deal_value = parseFloat(dealValue);
-        updateData.deal_currency = dealCurrency;
+        const { error } = await supabase
+          .from('org_deal_tracking')
+          .update(updateData)
+          .eq('org_id', orgId);
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: `Deal status updated to ${DEAL_STATUSES.find(s => s.value === formData.deal_status)?.label}`,
+        errorMessage: 'Failed to update deal status',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error updating deal status:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'deal_status_update');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'deal_status_update',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
       }
-
-      if (dealStatus === 'lost') {
-        const finalLossReason = lossReason === 'Other' ? lossReasonOther : lossReason;
-        updateData.loss_reason = finalLossReason;
-      }
-
-      if (dealStatus === 'deferred') {
-        updateData.deferred_reason = deferredReason;
-        updateData.expected_followup_date = expectedFollowupDate;
-      }
-
-      const { error } = await supabase
-        .from('org_deal_tracking')
-        .update(updateData)
-        .eq('org_id', orgId);
-
-      if (error) throw error;
-
-      toast.success(`Deal status updated to ${DEAL_STATUSES.find(s => s.value === dealStatus)?.label}`);
-      onClose();
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error updating deal status:', error);
-      toast.error(error.message || 'Failed to update deal status');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   if (!isOpen) return null;
 
-  const selectedStatus = DEAL_STATUSES.find(s => s.value === dealStatus);
+  const selectedStatus = DEAL_STATUSES.find(s => s.value === formData.deal_status);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -161,8 +191,9 @@ export default function UpdateDealStatusModal({
             <p className="text-sm text-gray-500 mt-1">Manage the deal outcome for this organization</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -182,7 +213,7 @@ export default function UpdateDealStatusModal({
                 <label
                   key={status.value}
                   className={`flex items-start gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    dealStatus === status.value
+                    formData.deal_status === status.value
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
@@ -191,8 +222,8 @@ export default function UpdateDealStatusModal({
                     type="radio"
                     name="dealStatus"
                     value={status.value}
-                    checked={dealStatus === status.value}
-                    onChange={(e) => setDealStatus(e.target.value)}
+                    checked={formData.deal_status === status.value}
+                    onChange={(e) => handleInputChange('deal_status', e.target.value)}
                     className="w-4 h-4 text-blue-600 mt-0.5"
                   />
                   <div className="flex-1">
@@ -215,8 +246,8 @@ export default function UpdateDealStatusModal({
               </label>
               <input
                 type="number"
-                value={opportunityValue}
-                onChange={(e) => setOpportunityValue(e.target.value)}
+                value={formData.opportunity_value}
+                onChange={(e) => handleInputChange('opportunity_value', e.target.value)}
                 placeholder="Enter estimated deal value"
                 step="0.01"
                 min="0"
@@ -228,8 +259,8 @@ export default function UpdateDealStatusModal({
                 Currency
               </label>
               <select
-                value={dealCurrency}
-                onChange={(e) => setDealCurrency(e.target.value)}
+                value={formData.deal_currency}
+                onChange={(e) => handleInputChange('deal_currency', e.target.value)}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="USD">USD</option>
@@ -242,7 +273,7 @@ export default function UpdateDealStatusModal({
           </div>
 
           {/* Won Deal: Final Deal Value */}
-          {dealStatus === 'won' && (
+          {formData.deal_status === 'won' && (
             <div className="grid grid-cols-3 gap-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -250,8 +281,8 @@ export default function UpdateDealStatusModal({
                 </label>
                 <input
                   type="number"
-                  value={dealValue}
-                  onChange={(e) => setDealValue(e.target.value)}
+                  value={formData.deal_value}
+                  onChange={(e) => handleInputChange('deal_value', e.target.value)}
                   placeholder="Enter actual closed deal amount"
                   step="0.01"
                   min="0"
@@ -267,15 +298,15 @@ export default function UpdateDealStatusModal({
           )}
 
           {/* Lost Deal: Loss Reason */}
-          {dealStatus === 'lost' && (
+          {formData.deal_status === 'lost' && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Primary Loss Reason *
                 </label>
                 <select
-                  value={lossReason}
-                  onChange={(e) => setLossReason(e.target.value)}
+                  value={formData.loss_reason}
+                  onChange={(e) => handleInputChange('loss_reason', e.target.value)}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="">Select a reason...</option>
@@ -288,14 +319,14 @@ export default function UpdateDealStatusModal({
               </div>
 
               {/* Show text field if "Other" is selected */}
-              {lossReason === 'Other' && (
+              {formData.loss_reason === 'Other' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Please specify *
                   </label>
                   <textarea
-                    value={lossReasonOther}
-                    onChange={(e) => setLossReasonOther(e.target.value)}
+                    value={formData.loss_reason_other}
+                    onChange={(e) => handleInputChange('loss_reason_other', e.target.value)}
                     placeholder="Describe the reason..."
                     rows={2}
                     className="w-full px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
@@ -306,7 +337,7 @@ export default function UpdateDealStatusModal({
           )}
 
           {/* Deferred: Reason and Follow-up Date */}
-          {dealStatus === 'deferred' && (
+          {formData.deal_status === 'deferred' && (
             <div className="p-4 bg-accent-50 border border-accent-200 rounded-lg space-y-3">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -314,8 +345,8 @@ export default function UpdateDealStatusModal({
                 </label>
                 <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
                   <MentionTextEditor
-                    content={deferredReason}
-                    onChange={(html) => setDeferredReason(html)}
+                    content={formData.deferred_reason}
+                    onChange={(html) => handleInputChange('deferred_reason', html)}
                     placeholder="Why is this deal deferred? (e.g., Waiting for budget cycle, Product roadmap alignment pending, Team expansion planned, etc.)"
                     minHeight={100}
                   />
@@ -327,8 +358,8 @@ export default function UpdateDealStatusModal({
                 </label>
                 <input
                   type="date"
-                  value={expectedFollowupDate}
-                  onChange={(e) => setExpectedFollowupDate(e.target.value)}
+                  value={formData.expected_followup_date}
+                  onChange={(e) => handleInputChange('expected_followup_date', e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
@@ -344,8 +375,8 @@ export default function UpdateDealStatusModal({
             </label>
             <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
               <MentionTextEditor
-                content={notes}
-                onChange={(html) => setNotes(html)}
+                content={formData.notes}
+                onChange={(html) => handleInputChange('notes', html)}
                 placeholder="Any additional context or notes about this deal..."
                 minHeight={100}
               />
@@ -371,17 +402,17 @@ export default function UpdateDealStatusModal({
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

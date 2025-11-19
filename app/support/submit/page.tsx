@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import TemplateSelector from '@/components/support/TemplateSelector';
 import {
   LayoutDashboard,

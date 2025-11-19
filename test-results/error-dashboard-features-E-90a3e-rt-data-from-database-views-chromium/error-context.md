@@ -1,0 +1,124 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e19]: myRA AI
+      - navigation [ref=e20]:
+        - generic [ref=e21]:
+          - link "Dashboard" [ref=e22] [cursor=pointer]:
+            - /url: /support/dashboard
+            - img [ref=e23]
+            - generic [ref=e28]: Dashboard
+          - link "Notifications" [ref=e29] [cursor=pointer]:
+            - /url: /support/notifications
+            - img [ref=e30]
+            - generic [ref=e33]: Notifications
+          - link "Trial Orgs" [ref=e34] [cursor=pointer]:
+            - /url: /support/trials
+            - img [ref=e35]
+            - generic [ref=e39]: Trial Orgs
+          - link "Reports" [ref=e40] [cursor=pointer]:
+            - /url: /support/reports
+            - img [ref=e41]
+            - generic [ref=e43]: Reports
+          - link "Resources" [ref=e44] [cursor=pointer]:
+            - /url: /support/resources
+            - img [ref=e45]
+            - generic [ref=e47]: Resources
+          - link "Feature Requests" [ref=e48] [cursor=pointer]:
+            - /url: /support/feature-requests
+            - img [ref=e49]
+            - generic [ref=e51]: Feature Requests
+          - link "Tickets" [ref=e52] [cursor=pointer]:
+            - /url: /support/tickets
+            - img [ref=e53]
+            - generic [ref=e55]: Tickets
+          - link "Users" [ref=e56] [cursor=pointer]:
+            - /url: /support/users
+            - img [ref=e57]
+            - generic [ref=e61]: Users
+          - link "Roadmap" [ref=e62] [cursor=pointer]:
+            - /url: /support/admin/roadmap
+            - img [ref=e63]
+            - generic [ref=e65]: Roadmap
+          - link "Customer Support" [ref=e66] [cursor=pointer]:
+            - /url: /support/admin/customer-support
+            - img [ref=e67]
+            - generic [ref=e69]: Customer Support
+          - link "Bulk Activity Import" [ref=e70] [cursor=pointer]:
+            - /url: /support/admin/bulk-activity-import
+            - img [ref=e71]
+            - generic [ref=e74]: Bulk Activity Import
+        - generic [ref=e75]:
+          - link "Profile" [ref=e76] [cursor=pointer]:
+            - /url: /support/profile
+            - img [ref=e77]
+            - generic [ref=e80]: Profile
+          - button "Sign Out" [ref=e81] [cursor=pointer]:
+            - img [ref=e82]
+            - generic [ref=e85]: Sign Out
+      - generic [ref=e88]:
+        - generic [ref=e89]: A
+        - generic [ref=e90]:
+          - paragraph [ref=e91]: admin
+          - paragraph [ref=e92]: Team
+    - main [ref=e93]:
+      - generic [ref=e95]:
+        - generic:
+          - heading [level=1]
+        - button "Search ⌘K" [ref=e97] [cursor=pointer]:
+          - img [ref=e98]
+          - generic [ref=e101]: Search
+          - generic [ref=e102]: ⌘K
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - heading "Error Reports" [level=1] [ref=e106]
+          - paragraph [ref=e107]: Monitor and manage application errors
+        - generic [ref=e108]:
+          - button "Error List" [ref=e109] [cursor=pointer]
+          - button "Trends" [ref=e110] [cursor=pointer]
+          - button "Summary by Context" [ref=e111] [cursor=pointer]
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - heading "Daily Error Trends (Last 30 Days)" [level=3] [ref=e114]
+            - generic [ref=e116]:
+              - list [ref=e118]:
+                - listitem [ref=e119]:
+                  - img "Errors legend icon" [ref=e120]
+                  - text: Errors
+              - application [ref=e122]
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - heading "Errors by Type" [level=3] [ref=e130]
+              - application [ref=e133]
+            - generic [ref=e139]:
+              - heading "Errors by Context" [level=3] [ref=e140]
+              - application [ref=e143]
+          - generic [ref=e149]:
+            - heading "Status Distribution" [level=3] [ref=e150]
+            - application [ref=e153]
+    - button "Give feedback" [ref=e154] [cursor=pointer]:
+      - img [ref=e155]
+    - button "Open support chat" [ref=e157] [cursor=pointer]:
+      - img [ref=e158]
+  - generic [ref=e161]:
+    - generic [ref=e162]: Failed to load error summaries
+    - button [ref=e163] [cursor=pointer]:
+      - img [ref=e164]
+  - generic [ref=e171] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e172]:
+      - img [ref=e173]
+    - generic [ref=e176]:
+      - button "Open issues overlay" [ref=e177]:
+        - generic [ref=e178]:
+          - generic [ref=e179]: "0"
+          - generic [ref=e180]: "1"
+        - generic [ref=e181]: Issue
+      - button "Collapse issues badge" [ref=e182]:
+        - img [ref=e183]
+  - alert [ref=e185]
+```

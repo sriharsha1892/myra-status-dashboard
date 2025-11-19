@@ -1,9 +1,19 @@
 // @ts-nocheck
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { FormInput, FormSelect } from '@/components/forms';
+import type { SelectOption } from '@/components/forms';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  createPlatformUserSchema,
+  USER_JOURNEY_STAGES,
+} from '@/lib/validation/schemas/userManagement';
+import { z } from 'zod';
 
 interface AddPlatformUserModalProps {
   isOpen: boolean;
@@ -12,41 +22,31 @@ interface AddPlatformUserModalProps {
   onSuccess: () => void;
 }
 
+interface AccountManager {
+  id: string;
+  full_name: string;
+}
+
+interface SalesPOC {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// Journey stages with labels for display
 const JOURNEY_STAGES = [
-  { value: 'invited', label: 'Invited', color: 'gray' },
-  { value: 'onboarding', label: 'Onboarding', color: 'blue' },
-  { value: 'exploring', label: 'Exploring', color: 'cyan' },
-  { value: 'building', label: 'Building', color: 'purple' },
-  { value: 'testing', label: 'Testing', color: 'yellow' },
-  { value: 'integrating', label: 'Integrating', color: 'orange' },
-  { value: 'pilot', label: 'Pilot', color: 'indigo' },
-  { value: 'evaluating', label: 'Evaluating', color: 'pink' },
-  { value: 'production_ready', label: 'Production Ready', color: 'green' },
-  { value: 'blocked', label: 'Blocked', color: 'red' },
-  { value: 'stalled', label: 'Stalled', color: 'amber' },
-  { value: 'inactive', label: 'Inactive', color: 'gray-400' },
-];
-
-// Sample Account Managers (8)
-const ACCOUNT_MANAGERS = [
-  'John Doe',
-  'Sarah Johnson',
-  'Michael Chen',
-  'Emily Rodriguez',
-  'David Kumar',
-  'Jessica Lee',
-  'Robert Williams',
-  'Lisa Anderson',
-];
-
-// Sample Sales POCs (60 - showing first 20 for brevity, you'd load all 60)
-const SALES_POCS = [
-  'Alex Patterson', 'Brandon Mitchell', 'Catherine Davis', 'Daniel Foster',
-  'Elizabeth Garcia', 'Frank Jackson', 'Grace Martinez', 'Henry Miller',
-  'Iris Wilson', 'James Taylor', 'Kristine Thomas', 'Leonard Harris',
-  'Megan Clark', 'Nicholas Lewis', 'Olivia Young', 'Patrick Hall',
-  'Quinn White', 'Rachel Green', 'Samuel King', 'Tina Scott',
-  // Add more as needed to reach 60
+  { value: 'invited', label: 'Invited' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'exploring', label: 'Exploring' },
+  { value: 'building', label: 'Building' },
+  { value: 'testing', label: 'Testing' },
+  { value: 'integrating', label: 'Integrating' },
+  { value: 'pilot', label: 'Pilot' },
+  { value: 'evaluating', label: 'Evaluating' },
+  { value: 'production_ready', label: 'Production Ready' },
+  { value: 'blocked', label: 'Blocked' },
+  { value: 'stalled', label: 'Stalled' },
+  { value: 'inactive', label: 'Inactive' },
 ];
 
 export default function AddPlatformUserModal({
@@ -56,118 +56,226 @@ export default function AddPlatformUserModal({
   onSuccess,
 }: AddPlatformUserModalProps) {
   const supabase = createClient();
-  const [loading, setLoading] = useState(false);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
+  const [salesPOCs, setSalesPOCs] = useState<SalesPOC[]>([]);
+
+  // Form state - using schema type
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: '',
     phone: '',
     salesforce_id: '',
-    current_stage: 'invited',
-    account_manager: '',
-    sales_poc: '',
+    current_stage: 'invited' as typeof USER_JOURNEY_STAGES[number],
+    account_manager_id: '',
+    sales_poc_id: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
+
+  // Fetch Account Managers and Sales POCs on mount
+  useEffect(() => {
+    if (isOpen) {
+      fetchAccountManagersAndPOCs();
+    }
+  }, [isOpen]);
+
+  const fetchAccountManagersAndPOCs = async () => {
+    try {
+      // Fetch Account Managers
+      const { data: managers, error: managersError } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .eq('role', 'account_manager')
+        .order('full_name');
+
+      if (managersError) throw managersError;
+      setAccountManagers(managers || []);
+
+      // Fetch Sales POCs
+      const { data: pocs, error: pocsError } = await supabase
+        .from('sales_pocs')
+        .select('id, name, email')
+        .order('name');
+
+      if (pocsError) throw pocsError;
+      setSalesPOCs(pocs || []);
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+
+      // Get current user for error reporting
+      const { data: { user } } = await supabase.auth.getUser();
+      const errorDetails = getErrorMessage(error, 'api_call');
+
+      // Show error with report option
+      showErrorWithReport(
+        error,
+        'api_call',
+        errorDetails.message,
+        errorDetails.suggestion,
+        user?.email,
+        user?.id
+      );
+    }
+  };
+
+  // Handle input changes with error clearing
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user types
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate form with Zod schema
+  const validateForm = (): boolean => {
+    try {
+      createPlatformUserSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        err.errors.forEach((error) => {
+          if (error.path[0]) {
+            newErrors[error.path[0].toString()] = error.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      // Validation
-      if (!formData.name.trim()) {
-        toast.error('Name is required');
-        setLoading(false);
-        return;
-      }
-      if (!formData.email.trim()) {
-        toast.error('Email is required');
-        setLoading(false);
-        return;
-      }
-      if (!formData.account_manager) {
-        toast.error('Account Manager is required');
-        setLoading(false);
-        return;
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        toast.error('Invalid email format');
-        setLoading(false);
-        return;
-      }
-
-      // Insert into database
-      const { error } = await supabase.from('trial_users').insert({
-        org_id: orgId,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role || null,
-        phone: formData.phone || null,
-        salesforce_id: formData.salesforce_id || null,
-        current_stage: formData.current_stage,
-        account_manager: formData.account_manager,
-        sales_poc: formData.sales_poc || null,
-      });
-
-      if (error) throw error;
-
-      toast.success('Platform user added successfully!');
-      setFormData({
-        name: '',
-        email: '',
-        role: '',
-        phone: '',
-        salesforce_id: '',
-        current_stage: 'invited',
-        account_manager: '',
-        sales_poc: '',
-      });
-      onSuccess();
-      onClose();
-    } catch (error: any) {
-      console.error('Error adding platform user:', error);
-      if (error.message.includes('unique')) {
-        toast.error('This email is already registered for this organization');
-      } else {
-        toast.error('Failed to add platform user');
-      }
-    } finally {
-      setLoading(false);
+    // Validate form with Zod
+    if (!validateForm()) {
+      return;
     }
+
+    await execute(
+      async () => {
+        const { error } = await supabase.from('trial_users').insert({
+          org_id: orgId,
+          name: formData.name,
+          email: formData.email,
+          role: formData.role || null,
+          phone: formData.phone || null,
+          salesforce_id: formData.salesforce_id || null,
+          current_stage: formData.current_stage,
+          account_manager_id: formData.account_manager_id,
+          sales_poc_id: formData.sales_poc_id || null,
+        });
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Platform user added successfully!',
+        errorMessage: 'Failed to add platform user',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error adding platform user:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+
+          // Check for unique constraint violation
+          if (error.message?.includes('unique')) {
+            toast.error('This email is already registered for this organization');
+          } else {
+            const errorDetails = getErrorMessage(error, 'platform_user_create');
+
+            // Show error with report option
+            showErrorWithReport(
+              error,
+              'platform_user_create',
+              errorDetails.message,
+              errorDetails.suggestion,
+              user?.email,
+              user?.id
+            );
+          }
+        },
+      }
+    );
   };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      role: '',
+      phone: '',
+      salesforce_id: '',
+      current_stage: 'invited',
+      account_manager_id: '',
+      sales_poc_id: '',
+    });
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  // Convert account managers and sales POCs to select options
+  const accountManagerOptions: SelectOption[] = accountManagers.map((am) => ({
+    value: am.id,
+    label: am.full_name,
+  }));
+
+  const salesPOCOptions: SelectOption[] = salesPOCs.map((poc) => ({
+    value: poc.id,
+    label: `${poc.name} (${poc.email})`,
+  }));
+
+  // Convert journey stages to select options
+  const journeyStageOptions: SelectOption[] = JOURNEY_STAGES.map((stage) => ({
+    value: stage.value,
+    label: stage.label,
+  }));
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Add Platform User</h2>
-            <p className="text-blue-100 text-sm mt-1">Track actual users from this trial organization</p>
+            <h2 className="text-xl font-bold text-gray-900">Add Platform User</h2>
+            <p className="text-sm text-gray-500 mt-1">Track actual users from this trial organization</p>
           </div>
           <button
-            onClick={onClose}
-            className="text-white hover:text-blue-100 transition text-2xl"
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Close modal"
           >
-            ×
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Basic Information Section */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -177,78 +285,67 @@ export default function AddPlatformUserModal({
               Basic Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g., Jane Smith"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="e.g., jane@company.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role / Job Title</label>
-                <input
-                  type="text"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  placeholder="e.g., Data Analyst"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="e.g., +1 (555) 123-4567"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+              <FormInput
+                label="Name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                error={errors.name}
+                placeholder="e.g., Jane Smith"
+                helperText="Full name of the platform user"
+              />
+
+              <FormInput
+                label="Email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                error={errors.email}
+                placeholder="e.g., jane@company.com"
+                helperText="Work email address"
+              />
+
+              <FormInput
+                label="Role / Job Title"
+                type="text"
+                value={formData.role}
+                onChange={(e) => handleInputChange('role', e.target.value)}
+                error={errors.role}
+                placeholder="e.g., Data Analyst"
+                helperText="Optional job title or role"
+              />
+
+              <FormInput
+                label="Phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                error={errors.phone}
+                placeholder="e.g., +1 (555) 123-4567"
+                helperText="Optional contact number"
+              />
             </div>
           </div>
 
           {/* External IDs Section */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v10a2 2 0 002 2h5m0 0h5a2 2 0 002-2V8a2 2 0 00-2-2h-5m0 0V5a2 2 0 012-2h1a2 2 0 012 2v1m0 0h4a2 2 0 012 2v10a2 2 0 01-2 2h-4m0 0V5a2 2 0 00-2-2H9a2 2 0 00-2 2v1m0 0H4" />
               </svg>
               External IDs
             </h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Salesforce ID</label>
-              <input
-                type="text"
-                name="salesforce_id"
-                value={formData.salesforce_id}
-                onChange={handleChange}
-                placeholder="e.g., SF-00051234"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+            <FormInput
+              label="Salesforce ID"
+              type="text"
+              value={formData.salesforce_id}
+              onChange={(e) => handleInputChange('salesforce_id', e.target.value)}
+              error={errors.salesforce_id}
+              placeholder="e.g., SF-00051234"
+              helperText="Optional Salesforce identifier"
+            />
           </div>
 
           {/* Journey Tracking Section */}
@@ -259,26 +356,15 @@ export default function AddPlatformUserModal({
               </svg>
               Journey Tracking
             </h3>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Stage <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="current_stage"
-                value={formData.current_stage}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {JOURNEY_STAGES.map((stage) => (
-                  <option key={stage.value} value={stage.value}>
-                    {stage.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-2">
-                User will start at "{JOURNEY_STAGES.find((s) => s.value === formData.current_stage)?.label}"
-              </p>
-            </div>
+            <FormSelect
+              label="Current Stage"
+              required
+              options={journeyStageOptions}
+              value={formData.current_stage}
+              onChange={(e) => handleInputChange('current_stage', e.target.value)}
+              error={errors.current_stage}
+              helperText="Where is this user in their trial journey?"
+            />
           </div>
 
           {/* Account Management Section */}
@@ -290,61 +376,59 @@ export default function AddPlatformUserModal({
               Account Management
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Manager <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="account_manager"
-                  value={formData.account_manager}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select Account Manager</option>
-                  {ACCOUNT_MANAGERS.map((am) => (
-                    <option key={am} value={am}>
-                      {am}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-2">One of 8 Account Managers (required)</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sales POC</label>
-                <select
-                  name="sales_poc"
-                  value={formData.sales_poc}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Sales POC (optional)</option>
-                  {SALES_POCS.map((poc) => (
-                    <option key={poc} value={poc}>
-                      {poc}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-2">One of 60 sales team members</p>
-              </div>
+              <FormSelect
+                label="Account Manager"
+                required
+                options={accountManagerOptions}
+                value={formData.account_manager_id}
+                onChange={(e) => handleInputChange('account_manager_id', e.target.value)}
+                error={errors.account_manager_id}
+                placeholder="Select an account manager"
+                helperText="Responsible account manager for this user"
+              />
+
+              <FormSelect
+                label="Sales POC"
+                options={salesPOCOptions}
+                value={formData.sales_poc_id}
+                onChange={(e) => handleInputChange('sales_poc_id', e.target.value)}
+                error={errors.sales_poc_id}
+                placeholder="Select a sales POC (optional)"
+                helperText="Optional sales point of contact"
+              />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-6 border-t">
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+              onClick={handleClose}
+              className="flex-1 h-10 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
+              disabled={isLoading}
+              className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Adding...' : 'Add Platform User'}
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Add Platform User</span>
+                </>
+              )}
             </button>
           </div>
         </form>

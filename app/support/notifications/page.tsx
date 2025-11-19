@@ -28,16 +28,17 @@ import toast from 'react-hot-toast';
 
 interface Notification {
   id: string;
+  user_id: string;
+  type: string;
   title: string;
-  message: string | null;
-  notification_type: string;
-  priority_score: number;
-  category: 'priority' | 'recent' | 'archived';
-  status: 'unread' | 'read' | 'archived';
-  action_url: string;
+  message: string;
+  read: boolean;
+  error_id: string | null;
+  trial_org_id: string | null;
+  metadata: any;
   created_at: string;
-  entity_type: string;
-  entity_title: string | null;
+  read_at: string | null;
+  deleted_at: string | null;
 }
 
 // Notification type configuration with icons and colors
@@ -181,8 +182,7 @@ export default function NotificationsPage() {
         .from('notifications')
         .select('*')
         .eq('user_id', user?.id)
-        .eq('category', activeTab)
-        .order('priority_score', { ascending: false })
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ status: 'read', read_at: new Date().toISOString() })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq('id', notificationId);
 
       if (error) throw error;
@@ -214,10 +214,10 @@ export default function NotificationsPage() {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ status: 'read', read_at: new Date().toISOString() })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq('user_id', user?.id)
-        .eq('category', activeTab)
-        .eq('status', 'unread');
+        .eq('read', false)
+        .is('deleted_at', null);
 
       if (error) throw error;
       toast.success('All notifications marked as read');
@@ -233,9 +233,7 @@ export default function NotificationsPage() {
       const { error } = await supabase
         .from('notifications')
         .update({
-          status: 'archived',
-          category: 'archived',
-          archived_at: new Date().toISOString()
+          deleted_at: new Date().toISOString()
         })
         .eq('id', notificationId);
 
@@ -264,11 +262,15 @@ export default function NotificationsPage() {
     }
   };
 
-  const unreadCount = notifications.filter(n => n.status === 'unread').length;
+  const unreadCount = notifications.filter(n => !n.read).length;
   const groupedNotifications = groupNotificationsByDate(notifications);
 
   // Get notification type config
   const getNotificationConfig = (type: string) => {
+    // Handle 'error_assigned' notification type
+    if (type === 'error_assigned') {
+      return NOTIFICATION_TYPES.assignment;
+    }
     const normalizedType = type.toLowerCase().replace('_', '');
     return NOTIFICATION_TYPES[normalizedType] || NOTIFICATION_TYPES.default;
   };
@@ -435,10 +437,10 @@ export default function NotificationsPage() {
                 {!collapsedGroups.has(groupName) && (
                   <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                     {groupNotifications.map((notification) => {
-                      const config = getNotificationConfig(notification.notification_type);
+                      const config = getNotificationConfig(notification.type);
                       const Icon = config.icon;
-                      const isUnread = notification.status === 'unread';
-                      const isHighPriority = notification.priority_score >= 65;
+                      const isUnread = !notification.read;
+                      const isHighPriority = false; // No priority score in new schema
 
                       return (
                         <div
@@ -493,11 +495,6 @@ export default function NotificationsPage() {
                                       <Clock className="w-3 h-3" />
                                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                                     </span>
-                                    {notification.entity_title && (
-                                      <span className="px-2 py-1 rounded-md bg-neutral-100/80 backdrop-blur-sm truncate max-w-[200px]">
-                                        {notification.entity_title}
-                                      </span>
-                                    )}
                                     {isUnread && (
                                       <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100/80 text-blue-700 font-medium">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></div>
@@ -509,14 +506,16 @@ export default function NotificationsPage() {
 
                                 {/* Actions - Show on hover */}
                                 <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
-                                  <a
-                                    href={notification.action_url}
-                                    onClick={() => markAsRead(notification.id)}
-                                    className="p-2.5 rounded-xl backdrop-blur-sm bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 transition-all hover:scale-110"
-                                    title="View"
-                                  >
-                                    <ExternalLink className="w-4 h-4" />
-                                  </a>
+                                  {notification.error_id && (
+                                    <a
+                                      href={`/support/admin/errors?id=${notification.error_id}`}
+                                      onClick={() => markAsRead(notification.id)}
+                                      className="p-2.5 rounded-xl backdrop-blur-sm bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 transition-all hover:scale-110"
+                                      title="View"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  )}
                                   {isUnread && (
                                     <button
                                       onClick={() => markAsRead(notification.id)}

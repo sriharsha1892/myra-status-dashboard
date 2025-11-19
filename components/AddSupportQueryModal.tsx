@@ -5,6 +5,11 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import MentionTextEditor from '@/components/MentionTextEditor';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { useLoadingState } from '@/lib/hooks';
+import { createSupportQuerySchema } from '@/lib/validation/schemas/engagement';
+import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface TrialUser {
   user_id: string;
@@ -35,18 +40,28 @@ export default function AddSupportQueryModal({
   onSuccess,
   userId,
 }: AddSupportQueryModalProps) {
-  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
   const [trialUsers, setTrialUsers] = useState<TrialUser[]>([]);
   const [fetchingUsers, setFetchingUsers] = useState(false);
 
-  // Form state
-  const [queryType, setQueryType] = useState('general_support');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isUserLevel, setIsUserLevel] = useState(!!userId);
-  const [selectedUserId, setSelectedUserId] = useState(userId || '');
+  // Form validation hook
+  const {
+    formData,
+    errors,
+    handleInputChange,
+    validateForm,
+    resetForm,
+  } = useFormValidation(createSupportQuerySchema, {
+    query_type: 'general_support',
+    title: '',
+    description: '',
+    is_user_level: !!userId,
+    user_id: userId || '',
+  });
 
-  const supabase = createClient();
+  // Use loading state hook
+  const { isLoading, execute} = useLoadingState();
 
   useEffect(() => {
     if (isOpen && !userId) {
@@ -73,63 +88,68 @@ export default function AddSupportQueryModal({
     }
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
-      toast.error('Query title is required');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    if (isUserLevel && !selectedUserId) {
-      toast.error('Please select a user for user-level query');
-      return;
-    }
+    await execute(
+      async () => {
+        // Get current user info from auth
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-    setLoading(true);
-    try {
-      // Get current user info from auth
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        if (authError || !authUser) {
+          throw new Error('You must be logged in to create a support query');
+        }
 
-      if (authError || !authUser) {
-        toast.error('You must be logged in to create a support query');
-        setLoading(false);
-        return;
+        const { error } = await supabase.from('trial_support_queries').insert({
+          org_id: orgId,
+          user_id: formData.is_user_level ? formData.user_id : null,
+          query_type: formData.query_type,
+          title: formData.title,
+          description: formData.description || null,
+          status: 'open',
+          created_by: authUser.id,
+          created_by_role: authUser.user_metadata?.role === 'Admin' ? 'admin' : 'product',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (error) throw error;
+
+        return { success: true };
+      },
+      {
+        successMessage: 'Support query logged successfully!',
+        errorMessage: 'Failed to log support query',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error creating support query:', error);
+
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+          const errorDetails = getErrorMessage(error, 'support_query');
+
+          // Show error with report option
+          showErrorWithReport(
+            error,
+            'support_query',
+            errorDetails.message,
+            errorDetails.suggestion,
+            user?.email,
+            user?.id
+          );
+        },
       }
-
-      const { error } = await supabase.from('trial_support_queries').insert({
-        org_id: orgId,
-        user_id: isUserLevel ? selectedUserId : null,
-        query_type: queryType,
-        title: title,
-        description: description || null,
-        status: 'open',
-        created_by: authUser.id,
-        created_by_role: 'account_manager', // Will be set based on actual user role
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
-      if (error) throw error;
-
-      toast.success('Support query logged successfully');
-      resetForm();
-      onClose();
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating support query:', error);
-      toast.error(error.message || 'Failed to log support query');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetForm = () => {
-    setQueryType('general_support');
-    setTitle('');
-    setDescription('');
-    setIsUserLevel(!!userId);
-    setSelectedUserId(userId || '');
+    );
   };
 
   const handleClose = () => {
@@ -151,6 +171,7 @@ export default function AddSupportQueryModal({
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -166,8 +187,8 @@ export default function AddSupportQueryModal({
               Query Type *
             </label>
             <select
-              value={queryType}
-              onChange={(e) => setQueryType(e.target.value)}
+              value={formData.query_type}
+              onChange={(e) => handleInputChange('query_type', e.target.value)}
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {QUERY_TYPES.map((type) => (
@@ -185,8 +206,8 @@ export default function AddSupportQueryModal({
             </label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="e.g., Login page not loading"
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -199,8 +220,8 @@ export default function AddSupportQueryModal({
             </label>
             <div className="rounded-xl backdrop-blur-sm bg-white border border-gray-200">
               <MentionTextEditor
-                content={description}
-                onChange={(html) => setDescription(html)}
+                content={formData.description}
+                onChange={(html) => handleInputChange('description', html)}
                 placeholder="Provide additional context about this query..."
                 minHeight={120}
               />
@@ -217,10 +238,10 @@ export default function AddSupportQueryModal({
                     type="radio"
                     name="queryLevel"
                     value="org"
-                    checked={!isUserLevel}
+                    checked={!formData.is_user_level}
                     onChange={() => {
-                      setIsUserLevel(false);
-                      setSelectedUserId('');
+                      handleInputChange('is_user_level', false);
+                      handleInputChange('user_id', '');
                     }}
                     className="w-4 h-4 text-blue-600"
                   />
@@ -232,8 +253,8 @@ export default function AddSupportQueryModal({
                     type="radio"
                     name="queryLevel"
                     value="user"
-                    checked={isUserLevel}
-                    onChange={() => setIsUserLevel(true)}
+                    checked={formData.is_user_level}
+                    onChange={() => handleInputChange('is_user_level', true)}
                     className="w-4 h-4 text-blue-600"
                   />
                   <span className="text-sm text-gray-900 font-medium">User Level</span>
@@ -244,14 +265,14 @@ export default function AddSupportQueryModal({
           )}
 
           {/* User Selection (for user-level queries) */}
-          {isUserLevel && !userId && (
+          {formData.is_user_level && !userId && (
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
                 Select User *
               </label>
               <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
+                value={formData.user_id}
+                onChange={(e) => handleInputChange('user_id', e.target.value)}
                 disabled={fetchingUsers}
                 className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               >
@@ -288,10 +309,10 @@ export default function AddSupportQueryModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

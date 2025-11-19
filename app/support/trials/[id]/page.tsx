@@ -46,6 +46,10 @@ import LogActivityModal from '@/components/LogActivityModal';
 import LogPlatformQueryModal from '@/components/LogPlatformQueryModal';
 import PeopleEngagementTab from '@/components/PeopleEngagementTab';
 import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
+import AddTrialUserModal from '@/components/AddTrialUserModal';
+import AddPlatformUserModal from '@/components/AddPlatformUserModal';
+import SetUserPasswordModal from '@/components/SetUserPasswordModal';
+import { prepareTrialOrgForUpdate, validateTrialOrgForm, validateTrialOrgDates } from '@/lib/trial-org-helpers';
 
 type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support';
 
@@ -98,16 +102,11 @@ export default function TrialOrgPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLogQueryModal, setShowLogQueryModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [passwordUser, setPasswordUser] = useState<any>(null);
+  const [isUpdatingOrg, setIsUpdatingOrg] = useState(false);
 
   // Form states
   const [orgForm, setOrgForm] = useState<any>({});
-  const [userForm, setUserForm] = useState({
-    name: '',
-    email: '',
-    role: '',
-    current_stage: 'invited',
-    freshsales_url: '',
-  });
 
   // Auth check
   useEffect(() => {
@@ -135,12 +134,12 @@ export default function TrialOrgPage() {
 
       if (orgError) throw orgError;
 
-      // Fetch account manager details separately if account_manager exists
-      if (org && org.account_manager) {
+      // Fetch account manager details separately if account_manager_id exists
+      if (org && org.account_manager_id) {
         const { data: amData } = await supabase
           .from('users')
-          .select('user_id, username, email, full_name')
-          .eq('user_id', org.account_manager)
+          .select('id, username, email, full_name')
+          .eq('id', org.account_manager_id)
           .single();
 
         if (amData) {
@@ -214,46 +213,48 @@ export default function TrialOrgPage() {
 
   const handleUpdateOrg = async () => {
     try {
+      setIsUpdatingOrg(true);
+
+      // Validate form data
+      const { valid, errors } = validateTrialOrgForm(orgForm, 'update');
+      if (!valid) {
+        const firstError = Object.values(errors)[0];
+        toast.error(firstError || 'Please fix form errors');
+        return;
+      }
+
+      // Validate trial dates if both are present
+      if (orgForm.trial_start_date && orgForm.trial_end_date) {
+        const dateValidation = validateTrialOrgDates(orgForm.trial_start_date, orgForm.trial_end_date);
+        if (!dateValidation.valid) {
+          toast.error(dateValidation.error || 'Invalid trial dates');
+          return;
+        }
+      }
+
+      // Sanitize update data to only include allowed fields
+      const updateData = prepareTrialOrgForUpdate(orgForm);
+
       const { error } = await supabase
         .from('trial_organizations')
-        .update(orgForm)
+        .update(updateData)
         .eq('org_id', orgId);
 
       if (error) throw error;
 
-      setOrganization(orgForm);
+      // Refetch the organization to ensure we have the latest data
+      await fetchData();
+
       setShowEditOrgModal(false);
       toast.success('Organization updated successfully');
     } catch (error: any) {
       console.error('Error updating org:', error);
-      toast.error('Failed to update organization');
+      toast.error(error.message || 'Failed to update organization');
+    } finally {
+      setIsUpdatingOrg(false);
     }
   };
 
-  const handleAddUser = async () => {
-    if (!userForm.name || !userForm.email) {
-      toast.error('Name and email are required');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from('trial_users').insert({
-        org_id: orgId,
-        ...userForm,
-        account_manager: organization?.account_manager || '',
-      });
-
-      if (error) throw error;
-
-      toast.success('User added successfully');
-      setShowAddUserModal(false);
-      setUserForm({ name: '', email: '', role: '', current_stage: 'invited', freshsales_url: '' });
-      fetchData();
-    } catch (error: any) {
-      console.error('Error adding user:', error);
-      toast.error('Failed to add user');
-    }
-  };
 
   const handleUpdateUser = async () => {
     if (!editingUser) return;
@@ -501,6 +502,7 @@ export default function TrialOrgPage() {
               onAddUser={() => setShowAddUserModal(true)}
               onEditUser={setEditingUser}
               onDeleteUser={handleDeleteUser}
+              onSetPassword={setPasswordUser}
             />
           )}
 
@@ -547,8 +549,8 @@ export default function TrialOrgPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Account Manager *</label>
                 <select
-                  value={orgForm.account_manager || ''}
-                  onChange={(e) => setOrgForm({ ...orgForm, account_manager: e.target.value })}
+                  value={orgForm.account_manager_id || ''}
+                  onChange={(e) => setOrgForm({ ...orgForm, account_manager_id: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Account Manager</option>
@@ -650,9 +652,10 @@ export default function TrialOrgPage() {
               </button>
               <button
                 onClick={handleUpdateOrg}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                disabled={isUpdatingOrg}
+                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Save Changes
+                {isUpdatingOrg ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -660,74 +663,12 @@ export default function TrialOrgPage() {
       )}
 
       {/* Add User Modal */}
-      {showAddUserModal && (
-        <Modal title="Add User" onClose={() => setShowAddUserModal(false)}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-              <input
-                type="text"
-                value={userForm.name}
-                onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-              <input
-                type="email"
-                value={userForm.email}
-                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <input
-                type="text"
-                value={userForm.role}
-                onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                placeholder="Product Manager"
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
-              <select
-                value={userForm.current_stage}
-                onChange={(e) => setUserForm({ ...userForm, current_stage: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {USER_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Freshsales URL</label>
-              <input
-                type="url"
-                value={userForm.freshsales_url}
-                onChange={(e) => setUserForm({ ...userForm, freshsales_url: e.target.value })}
-                placeholder="https://myra.freshsales.io/contacts/..."
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="flex-1 px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
-              >
-                Add User
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <AddTrialUserModal
+        orgId={orgId}
+        isOpen={showAddUserModal}
+        onClose={() => setShowAddUserModal(false)}
+        onSuccess={fetchData}
+      />
 
       {/* Edit User Modal */}
       {editingUser && (
@@ -827,147 +768,20 @@ export default function TrialOrgPage() {
           router.push('/support/trials');
         }}
       />
-    </div>
-  );
-}
 
-// Users Tab Component
-function UsersTab({ users, onAddUser, onEditUser, onDeleteUser }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900">Users ({users.length})</h3>
-        <button
-          onClick={onAddUser}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-medium shadow-lg shadow-accent-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          Add User
-        </button>
-      </div>
-
-      {users.length === 0 ? (
-        <div className="text-center py-12 px-6 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40">
-          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <p className="text-sm text-gray-600 font-medium mb-1">No users yet</p>
-          <p className="text-xs text-gray-500">Add your first user to get started</p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {users.map((user: any) => (
-            <div
-              key={user.user_id}
-              className="p-6 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Avatar name={user.name} size="lg" stage={user.current_stage} />
-                  <div>
-                    <h4 className="text-base font-semibold text-gray-900">{user.name}</h4>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      {user.role && (
-                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                          {user.role}
-                        </span>
-                      )}
-                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                        user.current_stage === 'active' ? 'bg-green-100 text-green-700' :
-                        user.current_stage === 'onboarding' ? 'bg-accent-100 text-accent-700' :
-                        user.current_stage === 'invited' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {user.current_stage}
-                      </span>
-                      {user.freshsales_url && (
-                        <a
-                          href={user.freshsales_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Freshsales
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onEditUser(user)}
-                    className="px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteUser(user.user_id)}
-                    className="px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Details Tab Component
-function DetailsTab({ organization }: any) {
-  return (
-    <div className="space-y-6">
-      <div className="p-8 rounded-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-lg">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">Organization Details</h3>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="text-sm font-medium text-gray-600">Organization Name</label>
-            <p className="text-base text-gray-900 mt-1">{organization.org_name}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Domain</label>
-            <p className="text-base text-gray-900 mt-1">{organization.domain}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Account Manager</label>
-            <p className="text-base text-gray-900 mt-1">{organization.account_manager}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Sales POC</label>
-            <p className="text-base text-gray-900 mt-1">{organization.sales_poc || '-'}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Trial Period</label>
-            <p className="text-base text-gray-900 mt-1">
-              {format(new Date(organization.trial_start_date), 'MMM d, yyyy')} - {format(new Date(organization.trial_end_date), 'MMM d, yyyy')}
-            </p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Organization URL</label>
-            {organization.org_url ? (
-              <a href={organization.org_url} target="_blank" rel="noopener noreferrer" className="text-base text-blue-600 hover:underline mt-1 flex items-center gap-1">
-                {organization.org_url}
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            ) : (
-              <p className="text-base text-gray-900 mt-1">-</p>
-            )}
-          </div>
-          {organization.description && (
-            <div className="col-span-2">
-              <label className="text-sm font-medium text-gray-600">Description</label>
-              <p className="text-base text-gray-900 mt-1">{organization.description}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* AI & LLM News Panel - Feature Flag Controlled */}
-      {process.env.NEXT_PUBLIC_NEWS_LENS === 'on' && (
-        <AINewsPanel orgId={organization.org_id} orgName={organization.org_name} />
+      {/* Set Password Modal */}
+      {passwordUser && (
+        <SetUserPasswordModal
+          isOpen={!!passwordUser}
+          userName={passwordUser.name}
+          userEmail={passwordUser.email}
+          userId={passwordUser.user_id}
+          onClose={() => setPasswordUser(null)}
+          onSuccess={() => {
+            setPasswordUser(null);
+            fetchData();
+          }}
+        />
       )}
     </div>
   );

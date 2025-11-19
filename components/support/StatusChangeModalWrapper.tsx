@@ -16,25 +16,33 @@ interface StatusChangeModalWrapperProps {
   onSuccess: () => void;
 }
 
-const STATUSES = ['New', 'In Progress', 'Waiting on User', 'Resolved', 'Closed'];
+// Status values must match database CHECK constraint: ('open', 'in_progress', 'resolved', 'closed')
+const STATUSES = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
+];
 
 const STATUS_PROMPTS: Record<string, { title: string; placeholder: string }> = {
-  Resolved: {
+  resolved: {
     title: 'Add resolution note?',
     placeholder: 'Describe how this issue was resolved...',
   },
-  'Waiting on User': {
-    title: 'What info do you need?',
-    placeholder: 'Describe what information you need from the user...',
-  },
-  Closed: {
+  closed: {
     title: 'Add closing note?',
     placeholder: 'Add any final notes before closing...',
   },
-  'In Progress': {
+  in_progress: {
     title: 'Add a note about progress?',
     placeholder: "Describe what you're working on...",
   },
+};
+
+// Helper function to get display label for status value
+const getStatusLabel = (statusValue: string): string => {
+  const status = STATUSES.find((s) => s.value === statusValue);
+  return status?.label || statusValue;
 };
 
 export function StatusChangeModalWrapper({
@@ -67,7 +75,7 @@ export function StatusChangeModalWrapper({
       };
 
       // If resolved, set resolved_at
-      if (newStatus === 'Resolved' && !ticket.resolved_at) {
+      if (newStatus === 'resolved' && !ticket.resolved_at) {
         updateData.resolved_at = new Date().toISOString();
       }
 
@@ -101,9 +109,17 @@ export function StatusChangeModalWrapper({
 
       toast.success('Status updated successfully');
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
+
+      const errorMessage = error?.message || 'Failed to update status';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -137,8 +153,8 @@ export function StatusChangeModalWrapper({
               disabled={loading}
             >
               {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
+                <option key={status.value} value={status.value}>
+                  {status.label}
                 </option>
               ))}
             </select>
@@ -147,8 +163,8 @@ export function StatusChangeModalWrapper({
           {statusChanged && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                Changing from <span className="font-medium">{ticket.status}</span> to{' '}
-                <span className="font-medium">{selectedStatus}</span>
+                Changing from <span className="font-medium">{getStatusLabel(ticket.status)}</span> to{' '}
+                <span className="font-medium">{getStatusLabel(selectedStatus)}</span>
               </p>
             </div>
           )}

@@ -4,7 +4,14 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
-import { formatErrorForToast } from '@/lib/errorHandler';
+import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
+import { showErrorWithReport } from '@/components/ErrorToastWithReport';
+import { FormInput } from '@/components/forms';
+import { useLoadingState } from '@/lib/hooks';
+import {
+  createTrialUserSchema,
+} from '@/lib/validation/schemas/userManagement';
+import { z } from 'zod';
 
 interface AddTrialUserModalProps {
   orgId: string;
@@ -19,74 +26,131 @@ export default function AddTrialUserModal({
   onClose,
   onSuccess,
 }: AddTrialUserModalProps) {
-  const [loading, setLoading] = useState(false);
-
-  // Form state
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [designation, setDesignation] = useState('');
-  const [freshsalesId, setFreshsalesId] = useState('');
-
   const supabase = createClient();
+
+  // Form state - using schema type
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    designation: '',
+    salesforce_id: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Use loading state hook
+  const { isLoading, execute } = useLoadingState();
+
+  // Handle input changes with error clearing
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for this field when user types
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate form with Zod schema
+  const validateForm = (): boolean => {
+    try {
+      createTrialUserSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        err.errors.forEach((error) => {
+          if (error.path[0]) {
+            newErrors[error.path[0].toString()] = error.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fullName.trim()) {
-      toast.error('Full name is required');
+    // Validate form with Zod
+    if (!validateForm()) {
       return;
     }
 
-    if (!email.trim()) {
-      toast.error('Email is required');
-      return;
-    }
+    await execute(
+      async () => {
+        // Get account_manager_id from the organization
+        const { data: org, error: orgError } = await supabase
+          .from('trial_organizations')
+          .select('account_manager_id')
+          .eq('org_id', orgId)
+          .single();
 
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
+        if (orgError) throw orgError;
 
-    setLoading(true);
-    try {
-      // Get account_manager from the organization
-      const { data: org } = await supabase
-        .from('trial_organizations')
-        .select('account_manager_id')
-        .eq('org_id', orgId)
-        .single();
+        const { error } = await supabase.from('trial_users').insert({
+          org_id: orgId,
+          name: formData.full_name,
+          email: formData.email,
+          role: formData.designation || null,
+          salesforce_id: formData.salesforce_id || null,
+          current_stage: 'invited',
+          account_manager_id: org?.account_manager_id || null,
+          created_at: new Date().toISOString(),
+        });
 
-      const { error } = await supabase.from('trial_users').insert({
-        org_id: orgId,
-        name: fullName,
-        email: email,
-        role: designation || null,
-        salesforce_id: freshsalesId || null,
-        current_stage: 'invited',
-        account_manager: org?.account_manager_id || '',
-        created_at: new Date().toISOString(),
-      });
+        if (error) throw error;
 
-      if (error) throw error;
+        return { success: true };
+      },
+      {
+        successMessage: 'Trial user added successfully!',
+        errorMessage: 'Failed to add trial user',
+        onSuccess: () => {
+          resetForm();
+          onClose();
+          onSuccess();
+        },
+        onError: async (error) => {
+          console.error('Error adding trial user:', error);
 
-      toast.success('Trial user added successfully');
-      resetForm();
-      onClose();
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error adding trial user:', error);
-      toast.error(formatErrorForToast(error, 'user_create', true));
-    } finally {
-      setLoading(false);
-    }
+          // Get current user for error reporting
+          const { data: { user } } = await supabase.auth.getUser();
+
+          // Check for unique constraint violation
+          if (error.message?.includes('unique')) {
+            toast.error('This email is already registered for this organization');
+          } else {
+            const errorDetails = getErrorMessage(error, 'trial_user_create');
+
+            // Show error with report option
+            showErrorWithReport(
+              error,
+              'trial_user_create',
+              errorDetails.message,
+              errorDetails.suggestion,
+              user?.email,
+              user?.id
+            );
+          }
+        },
+      }
+    );
   };
 
   const resetForm = () => {
-    setFullName('');
-    setEmail('');
-    setDesignation('');
-    setFreshsalesId('');
+    setFormData({
+      full_name: '',
+      email: '',
+      designation: '',
+      salesforce_id: '',
+    });
+    setErrors({});
   };
 
   const handleClose = () => {
@@ -108,6 +172,7 @@ export default function AddTrialUserModal({
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -117,62 +182,47 @@ export default function AddTrialUserModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g., John Doe"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Full Name"
+            type="text"
+            required
+            value={formData.full_name}
+            onChange={(e) => handleInputChange('full_name', e.target.value)}
+            error={errors.full_name}
+            placeholder="e.g., John Doe"
+            helperText="Full name of the trial user"
+          />
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g., john@example.com"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Email Address"
+            type="email"
+            required
+            value={formData.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            error={errors.email}
+            placeholder="e.g., john@example.com"
+            helperText="Work email address"
+          />
 
-          {/* Designation */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Designation / Title
-            </label>
-            <input
-              type="text"
-              value={designation}
-              onChange={(e) => setDesignation(e.target.value)}
-              placeholder="e.g., Sales Manager, VP Operations"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+          <FormInput
+            label="Designation / Title"
+            type="text"
+            value={formData.designation}
+            onChange={(e) => handleInputChange('designation', e.target.value)}
+            error={errors.designation}
+            placeholder="e.g., Sales Manager, VP Operations"
+            helperText="Optional job title or designation"
+          />
 
-          {/* Salesforce ID */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Salesforce ID
-            </label>
-            <input
-              type="text"
-              value={freshsalesId}
-              onChange={(e) => setFreshsalesId(e.target.value)}
-              placeholder="e.g., SF123456"
-              className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-xs text-gray-500 mt-1">Optional: Link to Salesforce CRM contact</p>
-          </div>
+          <FormInput
+            label="Salesforce ID"
+            type="text"
+            value={formData.salesforce_id}
+            onChange={(e) => handleInputChange('salesforce_id', e.target.value)}
+            error={errors.salesforce_id}
+            placeholder="e.g., SF123456"
+            helperText="Optional: Link to Salesforce CRM contact"
+          />
 
           {/* User Status Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -195,10 +245,10 @@ export default function AddTrialUserModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="flex-1 h-10 px-4 bg-accent-500 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

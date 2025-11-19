@@ -7,7 +7,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirm } from '@/hooks/useConfirm';
 import { createClient } from '@/lib/supabase/client';
 import { authenticatedFetch } from '@/lib/api-client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { showUserCreatedToast, showUserDeletedToast, showUserUpdatedToast } from '@/utils/navalToasts';
