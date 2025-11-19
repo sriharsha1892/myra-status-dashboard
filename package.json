@@ -37,6 +37,7 @@
     "@emotion/styled": "^11.14.1",
     "@getbrevo/brevo": "^3.0.1",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.2.2",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@mui/material": "^7.3.5",
     "@mui/x-charts": "^8.17.0",
