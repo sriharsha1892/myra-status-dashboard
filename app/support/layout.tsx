@@ -21,7 +21,7 @@ import {
   User,
   MessageCircle,
   Lightbulb,
-  Upload
+  AlertCircle
 } from 'lucide-react';
 import FeedbackWidget from '@/components/support/FeedbackWidget';
 import CustomerSupportChat from '@/components/CustomerSupportChat';
@@ -320,18 +320,18 @@ export default function SupportLayout({
               </Link>
             )}
 
-            {/* Bulk Activity Import - Admin only */}
+            {/* Error Dashboard - Admin only */}
             {role === 'Admin' && (
               <Link
-                href="/support/admin/bulk-activity-import"
+                href="/support/admin/errors"
                 className={`relative flex items-center gap-3 h-10 px-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  pathname?.startsWith('/support/admin/bulk-activity-import')
+                  pathname?.startsWith('/support/admin/errors')
                     ? 'text-neutral-900 bg-accent-50 border border-accent-100'
                     : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                 }`}
               >
-                <Upload className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/bulk-activity-import') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
-                <span>Bulk Activity Import</span>
+                <AlertCircle className={`w-5 h-5 shrink-0 ${pathname?.startsWith('/support/admin/errors') ? 'text-accent-600' : 'text-neutral-400'}`} strokeWidth={2} />
+                <span>Error Dashboard</span>
               </Link>
             )}
 
@@ -398,7 +398,7 @@ export default function SupportLayout({
                 {pathname?.startsWith('/support/admin/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/trials/roadmap') && 'Roadmap'}
                 {pathname?.startsWith('/support/admin/customer-support') && 'Customer Support'}
-                {pathname?.startsWith('/support/admin/bulk-activity-import') && 'Bulk Activity Import'}
+                {pathname?.startsWith('/support/admin/errors') && 'Error Dashboard'}
                 {pathname === '/support/profile' && 'Profile'}
               </h1>
             </div>
