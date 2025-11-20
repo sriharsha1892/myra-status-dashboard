@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import AIAssistant from './roadmap/AIAssistant';
@@ -31,6 +31,7 @@ export default function AddRoadmapItemModal({
   initialDate,
 }: AddRoadmapItemModalProps) {
   const supabase = createClient();
+  const [availableCategories, setAvailableCategories] = useState<Array<{id: string; name: string}>>([]);
 
   // Use form validation hook
   const {
@@ -48,10 +49,31 @@ export default function AddRoadmapItemModal({
     target_date: '',
     estimated_completion_date: '',
     created_by: '',
+    strategic_categories: [] as string[],
+    item_type: 'task' as 'task' | 'macro-goal',
+    parent_item_id: null as string | null,
   });
 
   // Use loading state hook
   const { isLoading, execute } = useLoadingState();
+
+  // Fetch strategic categories from database
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCategories = async () => {
+        const { data, error } = await supabase
+          .from('strategic_categories')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('display_order');
+
+        if (!error && data) {
+          setAvailableCategories(data);
+        }
+      };
+      fetchCategories();
+    }
+  }, [isOpen, supabase]);
 
   // Pre-fill target date when modal opens with initialDate
   useEffect(() => {
@@ -80,6 +102,9 @@ export default function AddRoadmapItemModal({
             target_date: formData.target_date || null,
             estimated_completion_date: formData.estimated_completion_date || null,
             created_by: formData.created_by || null,
+            strategic_categories: formData.strategic_categories.length > 0 ? formData.strategic_categories : null,
+            item_type: formData.item_type || 'task',
+            parent_item_id: formData.parent_item_id || null,
           },
         ]);
 
@@ -271,6 +296,69 @@ export default function AddRoadmapItemModal({
               placeholder="Account manager or product name"
               className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Strategic Categories */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Strategic Categories
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {availableCategories.map((category) => (
+                <label key={category.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.strategic_categories.includes(category.name)}
+                    onChange={(e) => {
+                      const newCategories = e.target.checked
+                        ? [...formData.strategic_categories, category.name]
+                        : formData.strategic_categories.filter((c) => c !== category.name);
+                      handleInputChange('strategic_categories', newCategories);
+                    }}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-xs font-medium text-gray-700">{category.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Select one or more categories for strategic timeline view</p>
+          </div>
+
+          {/* Item Type */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Item Type
+            </label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors flex-1">
+                <input
+                  type="radio"
+                  name="item_type"
+                  value="task"
+                  checked={formData.item_type === 'task'}
+                  onChange={(e) => handleInputChange('item_type', e.target.value)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">Task</div>
+                  <div className="text-xs text-gray-500">Individual roadmap item</div>
+                </div>
+              </label>
+              <label className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors flex-1">
+                <input
+                  type="radio"
+                  name="item_type"
+                  value="macro-goal"
+                  checked={formData.item_type === 'macro-goal'}
+                  onChange={(e) => handleInputChange('item_type', e.target.value)}
+                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">Macro Goal</div>
+                  <div className="text-xs text-gray-500">High-level strategic goal</div>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Action Buttons */}

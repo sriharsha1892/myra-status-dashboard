@@ -14,6 +14,7 @@ import RoadmapKanbanView from './roadmap/RoadmapKanbanView';
 import RoadmapFilters from './roadmap/RoadmapFilters';
 import RoadmapAnalytics from './roadmap/RoadmapAnalytics';
 import CalendarView from './roadmap/CalendarView';
+import StrategicTimelineViewEnhanced from './strategic-timeline/StrategicTimelineViewEnhanced';
 import QuickStats from './roadmap/QuickStats';
 import SavedFilterViews from './roadmap/SavedFilterViews';
 import RoadmapPresence from './roadmap/RoadmapPresence';
@@ -86,7 +87,7 @@ interface ProductRoadmapTabProps {
   orgId: string;
 }
 
-type ViewMode = 'cards' | 'kanban' | 'analytics' | 'calendar';
+type ViewMode = 'cards' | 'kanban' | 'analytics' | 'calendar' | 'strategic';
 
 export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [items, setItems] = useState<RoadmapItem[]>([]);
@@ -476,6 +477,20 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
                 <Calendar className="w-4 h-4" />
                 <span className="hidden lg:inline">Calendar</span>
               </button>
+              <button
+                onClick={() => setViewMode('strategic')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'strategic'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Strategic Timeline View"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <span className="hidden lg:inline">Strategic</span>
+              </button>
             </div>
 
             {/* Add Button */}
@@ -491,7 +506,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       </div>
 
       {/* Filters */}
-      {viewMode !== 'analytics' && viewMode !== 'calendar' && (
+      {viewMode !== 'analytics' && viewMode !== 'calendar' && viewMode !== 'strategic' && (
         <RoadmapFilters
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -517,7 +532,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       )}
 
       {/* Quick Stats */}
-      {viewMode !== 'analytics' && (
+      {viewMode !== 'analytics' && viewMode !== 'strategic' && (
         <QuickStats items={filteredItems} allItems={items} />
       )}
 
@@ -532,6 +547,10 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
           milestones={milestones}
           onItemClick={setSelectedItemId}
           onUpdate={fetchAll}
+        />
+      ) : viewMode === 'strategic' ? (
+        <StrategicTimelineViewEnhanced
+          onItemClick={setSelectedItemId}
         />
       ) : viewMode === 'kanban' ? (
         <RoadmapKanbanView

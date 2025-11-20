@@ -491,14 +491,14 @@ function StatusPageContent() {
                     flexShrink: 0,
                   }}
                 >
-                  🎉
+                  ✅
                 </div>
 
                 {/* Content */}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                      Platform Updates - November 20, 2025
+                      All Systems Operational
                     </h3>
                     <span
                       style={{
@@ -513,7 +513,7 @@ function StatusPageContent() {
                         textTransform: 'uppercase',
                       }}
                     >
-                      New Features
+                      Resolved
                     </span>
                   </div>
                   <p
@@ -524,18 +524,13 @@ function StatusPageContent() {
                       lineHeight: '1.5',
                     }}
                   >
-                    <strong>✅ UI Improvements:</strong> Fixed notification visibility issues across the dashboard. All toast notifications now display with solid backgrounds and enhanced contrast for better readability.
-                    <br /><br />
-                    <strong>🚀 Strategic Roadmap:</strong> Launched the new Global Strategic Timeline view at <a href="/roadmap" style={{ color: '#60a5fa', textDecoration: 'underline' }}>/roadmap</a>.
-                    Features dynamic categorization (Datasets Expansion, Enterprise Integrations, Feature Development, Platform Optimizations, Expert Insights Network, Survey Panels),
-                    organization demand visualization, and adaptive time horizons for near/medium/long-term planning. Categories are now modular and managed via database for easy updates.
-                    <br /><br />
-                    All systems operational. No service disruptions expected.
+                    All myRA AI services have been fully restored and are operating normally. The previous service disruption has been resolved.
+                    We continue to monitor all systems closely to ensure optimal performance.
                   </p>
                   <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span>Posted: 20 Nov, 11:30 GMT</span>
+                    <span>Updated: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'GMT', timeZoneName: 'short' })}</span>
                     <span>•</span>
-                    <span>By: myRA AI Development Team</span>
+                    <span>By: myRA Operations Team</span>
                   </div>
                 </div>
               </div>
