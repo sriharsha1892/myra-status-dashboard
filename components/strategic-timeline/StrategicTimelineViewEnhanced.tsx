@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { startOfMonth, endOfMonth, addMonths, parseISO, format } from 'date-fns';
-import toast from 'react-hot-toast';
+import { useState, useMemo } from 'react';
 import { Filter, Loader2, CalendarDays, Sparkles, Zap, TrendingUp, Target, Rocket } from 'lucide-react';
 import { TimelineItem } from './TimelineItem';
 import { OrgDemandBadge } from './OrgDemandBadge';
+import { useRoadmapData } from '@/hooks/useRoadmapData';
 
 interface RoadmapItemData {
   id: string;
@@ -46,49 +44,16 @@ interface StrategicTimelineViewEnhancedProps {
 export default function StrategicTimelineViewEnhanced({
   onItemClick,
 }: StrategicTimelineViewEnhancedProps) {
-  const [items, setItems] = useState<RoadmapItemData[]>([]);
-  const [categories, setCategories] = useState<StrategicCategory[]>([]);
-  const [orgDemands, setOrgDemands] = useState<Record<string, OrgDemand>>({});
-  const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'timeline' | 'swim'>('swim');
 
-  const supabase = createClient();
+  // Use shared hook with caching - data is reused across tab switches!
+  const { data, isLoading: loading, error } = useRoadmapData();
 
-  useEffect(() => {
-    fetchTimelineData();
-  }, []);
-
-  const fetchTimelineData = async () => {
-    setLoading(true);
-    try {
-      const [itemsData, categoriesData, demandData] = await Promise.all([
-        supabase.from('org_product_roadmap').select('*').order('target_date', { ascending: true, nullsFirst: false }),
-        supabase.from('strategic_categories').select('*').eq('is_active', true).order('display_order'),
-        supabase.from('roadmap_org_demand').select('*'),
-      ]);
-
-      if (itemsData.error) throw itemsData.error;
-      if (categoriesData.error) console.warn('Categories error:', categoriesData.error);
-      if (demandData.error) console.warn('Demand error:', demandData.error);
-
-      setItems(itemsData.data || []);
-      setCategories(categoriesData.data || []);
-
-      if (demandData.data) {
-        const demandMap: Record<string, OrgDemand> = {};
-        demandData.data.forEach((d: any) => {
-          demandMap[d.roadmap_item_id] = d;
-        });
-        setOrgDemands(demandMap);
-      }
-    } catch (error: any) {
-      console.error('Error fetching timeline data:', error);
-      toast.error('Failed to load timeline data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Extract data from hook (with fallbacks)
+  const items = data?.items || [];
+  const categories = data?.categories || [];
+  const orgDemands = data?.orgDemands || {};
 
   const itemsByCategory = useMemo(() => {
     const categorized: Record<string, RoadmapItemData[]> = {};

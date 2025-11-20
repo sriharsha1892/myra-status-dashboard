@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import toast, { Toaster, Toast as RHToast } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { X } from 'lucide-react';
 import { EnhancedToast } from './toast/EnhancedToast';
@@ -8,9 +10,25 @@ import { toastManager } from '@/lib/toast/manager';
 import type { Toast } from '@/lib/toast/types';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Create QueryClient instance with optimized defaults
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 2 * 60 * 1000, // Data fresh for 2 minutes
+            cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+            refetchOnWindowFocus: false, // Don't refetch on window focus
+            retry: 1, // Only retry failed queries once
+          },
+        },
+      })
+  );
+
   return (
-    <AuthProvider>
-      {children}
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        {children}
       <Toaster
         position="top-right"
         containerStyle={{
@@ -140,6 +158,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           animation: leave 0.2s ease-in forwards;
         }
       `}</style>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

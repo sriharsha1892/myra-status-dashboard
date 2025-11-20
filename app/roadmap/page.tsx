@@ -214,11 +214,11 @@ export default function GlobalRoadmapPage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - Lazy load tabs (only mount active view) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {viewMode === 'global' ? (
-          <GlobalRoadmapView />
-        ) : viewMode === 'master' ? (
+        {viewMode === 'global' && <GlobalRoadmapView />}
+
+        {viewMode === 'master' && (
           <>
             <StrategicTimelineViewEnhanced onItemClick={setSelectedItemId} />
             {/* Detail Panel for Master Roadmap */}
@@ -235,7 +235,9 @@ export default function GlobalRoadmapPage() {
               />
             )}
           </>
-        ) : (
+        )}
+
+        {viewMode === 'organizations' && (
           <>
             {organizations.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

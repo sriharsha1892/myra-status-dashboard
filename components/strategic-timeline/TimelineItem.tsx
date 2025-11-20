@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Calendar, Clock, User, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { OrgDemandBadge } from './OrgDemandBadge';
 import { format, formatDistanceToNow, isPast, isFuture } from 'date-fns';
@@ -30,8 +31,9 @@ interface TimelineItemProps {
  * - Target date with urgency indicators
  * - Organization demand badge
  * - Responsive compact/full modes
+ * - Memoized to prevent unnecessary re-renders
  */
-export function TimelineItem({
+const TimelineItemComponent = ({
   id,
   title,
   status,
@@ -188,4 +190,25 @@ export function TimelineItem({
       )}
     </div>
   );
-}
+};
+
+/**
+ * Memoized TimelineItem with custom comparison
+ * Only re-renders if critical props change
+ */
+export const TimelineItem = memo(TimelineItemComponent, (prevProps, nextProps) => {
+  // Return true if props are equal (prevent re-render)
+  // Return false if props changed (allow re-render)
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.title === nextProps.title &&
+    prevProps.status === nextProps.status &&
+    prevProps.priority === nextProps.priority &&
+    prevProps.progressPercentage === nextProps.progressPercentage &&
+    prevProps.targetDate === nextProps.targetDate &&
+    prevProps.ownerName === nextProps.ownerName &&
+    prevProps.orgCount === nextProps.orgCount &&
+    prevProps.maxPriorityLevel === nextProps.maxPriorityLevel &&
+    prevProps.isCompact === nextProps.isCompact
+  );
+});
