@@ -23,22 +23,36 @@ export function ToastProvider() {
         className: '',
         duration: 5000,
         style: {
-          background: 'transparent',
-          boxShadow: 'none',
-          padding: 0,
-          margin: 0,
+          background: '#ffffff',
+          color: '#0f172a',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          border: '2px solid #cbd5e1',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+          maxWidth: '500px',
+          fontWeight: '500',
         },
 
         // Default options by type
         success: {
           duration: 5000,
+          style: {
+            background: '#f0fdf4',
+            border: '2px solid #86efac',
+            boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.2), 0 4px 6px -2px rgba(16, 185, 129, 0.15)',
+          },
           iconTheme: {
             primary: '#10b981',
             secondary: '#fff',
           },
         },
         error: {
-          duration: 0, // Don't auto-dismiss errors
+          duration: 6000,
+          style: {
+            background: '#fef2f2',
+            border: '2px solid #fca5a5',
+            boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(239, 68, 68, 0.15)',
+          },
           iconTheme: {
             primary: '#ef4444',
             secondary: '#fff',
@@ -46,8 +60,13 @@ export function ToastProvider() {
         },
         loading: {
           duration: Infinity,
+          style: {
+            background: '#fef3c7',
+            border: '2px solid #fde047',
+            boxShadow: '0 10px 15px -3px rgba(245, 158, 11, 0.2), 0 4px 6px -2px rgba(245, 158, 11, 0.15)',
+          },
           iconTheme: {
-            primary: '#3b82f6',
+            primary: '#f59e0b',
             secondary: '#fff',
           },
         },

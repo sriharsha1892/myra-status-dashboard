@@ -21,24 +21,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
         toastOptions={{
           duration: 5000,
           style: {
-            background: 'rgba(255, 255, 255, 0.98)',
+            background: '#ffffff',
             color: '#0f172a',
             padding: '16px 20px',
             borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            border: '2px solid #cbd5e1',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
             maxWidth: '500px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            backdropFilter: 'blur(8px)',
+            fontWeight: '500',
           },
           success: {
             duration: 4000,
             style: {
-              background: 'rgba(240, 253, 244, 0.98)',
-              border: '1px solid #86efac',
-              boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04)',
+              background: '#f0fdf4',
+              border: '2px solid #86efac',
+              boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.2), 0 4px 6px -2px rgba(16, 185, 129, 0.15)',
             },
             iconTheme: {
               primary: '#10b981',
@@ -48,9 +48,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           error: {
             duration: 6000,
             style: {
-              background: 'rgba(254, 242, 242, 0.98)',
-              border: '1px solid #fca5a5',
-              boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.1), 0 10px 10px -5px rgba(239, 68, 68, 0.04)',
+              background: '#fef2f2',
+              border: '2px solid #fca5a5',
+              boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.2), 0 4px 6px -2px rgba(239, 68, 68, 0.15)',
             },
             iconTheme: {
               primary: '#ef4444',
@@ -60,9 +60,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           loading: {
             duration: Infinity,
             style: {
-              background: 'rgba(254, 243, 199, 0.98)',
-              border: '1px solid #fde047',
-              boxShadow: '0 20px 25px -5px rgba(245, 158, 11, 0.1), 0 10px 10px -5px rgba(245, 158, 11, 0.04)',
+              background: '#fef3c7',
+              border: '2px solid #fde047',
+              boxShadow: '0 10px 15px -3px rgba(245, 158, 11, 0.2), 0 4px 6px -2px rgba(245, 158, 11, 0.15)',
             },
             iconTheme: {
               primary: '#f59e0b',
