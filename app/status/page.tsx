@@ -470,12 +470,12 @@ function StatusPageContent() {
             </p>
           </div>
 
-          {/* Service Advisory Notice */}
+          {/* Recent Updates Notice */}
           <div style={{ marginBottom: '16px' }}>
             <div
               style={{
-                background: 'rgba(245, 158, 11, 0.15)',
-                border: '2px solid rgba(245, 158, 11, 0.4)',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '2px solid rgba(16, 185, 129, 0.4)',
                 borderRadius: '12px',
                 padding: '16px 20px',
                 backdropFilter: 'blur(12px)',
@@ -491,14 +491,14 @@ function StatusPageContent() {
                     flexShrink: 0,
                   }}
                 >
-                  ⚠️
+                  🎉
                 </div>
 
                 {/* Content */}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                      Service Advisory
+                      Platform Updates - November 20, 2025
                     </h3>
                     <span
                       style={{
@@ -507,13 +507,13 @@ function StatusPageContent() {
                         fontWeight: 800,
                         padding: '3px 8px',
                         borderRadius: '4px',
-                        background: '#f59e0b',
+                        background: '#10b981',
                         color: '#ffffff',
                         letterSpacing: '0.5px',
                         textTransform: 'uppercase',
                       }}
                     >
-                      Important Notice
+                      New Features
                     </span>
                   </div>
                   <p
@@ -524,21 +524,18 @@ function StatusPageContent() {
                       lineHeight: '1.5',
                     }}
                   >
-                    We are currently experiencing intermittent service disruptions from several of our upstream infrastructure providers.
-                    Our team is actively monitoring the situation and working with our partners to restore full operational capacity.
-                    During this period, you may encounter delayed response times or temporary service interruptions. We appreciate your patience
-                    and will provide updates as the situation evolves.
+                    <strong>✅ UI Improvements:</strong> Fixed notification visibility issues across the dashboard. All toast notifications now display with solid backgrounds and enhanced contrast for better readability.
+                    <br /><br />
+                    <strong>🚀 Strategic Roadmap:</strong> Launched the new Global Strategic Timeline view at <a href="/roadmap" style={{ color: '#60a5fa', textDecoration: 'underline' }}>/roadmap</a>.
+                    Features dynamic categorization (Datasets Expansion, Enterprise Integrations, Feature Development, Platform Optimizations, Expert Insights Network, Survey Panels),
+                    organization demand visualization, and adaptive time horizons for near/medium/long-term planning. Categories are now modular and managed via database for easy updates.
+                    <br /><br />
+                    All systems operational. No service disruptions expected.
                   </p>
                   <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span>Posted: {new Date().toLocaleString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'GMT'
-                    })} GMT</span>
+                    <span>Posted: 20 Nov, 11:30 GMT</span>
                     <span>•</span>
-                    <span>By: myRA AI Operations Team</span>
+                    <span>By: myRA AI Development Team</span>
                   </div>
                 </div>
               </div>
