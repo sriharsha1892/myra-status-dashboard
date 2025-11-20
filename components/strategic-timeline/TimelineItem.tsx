@@ -47,7 +47,7 @@ const TimelineItemComponent = ({
   onClick,
   className = '',
   isCompact = false,
-}: TimelineItemProps) {
+}: TimelineItemProps) => {
   // Parse target date
   const target = targetDate ? new Date(targetDate) : null;
   const isOverdue = target && isPast(target) && status !== 'completed';
