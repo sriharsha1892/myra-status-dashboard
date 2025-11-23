@@ -70,3 +70,15 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 });
+
+// Polyfill File.prototype.text() for Jest environment
+if (typeof File !== 'undefined' && !File.prototype.text) {
+  File.prototype.text = async function() {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsText(this);
+    });
+  };
+}
