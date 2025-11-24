@@ -16,11 +16,15 @@ import {
 import { useFormValidation } from '@/lib/validation/hooks/useFormValidation';
 
 interface AddRoadmapItemModalProps {
-  orgId: string;
+  orgId?: string; // Optional - if not provided, user can select from dropdown
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   initialDate?: string; // Optional pre-filled date in yyyy-MM-dd format
+  initialStatus?: 'planned' | 'in_progress' | 'completed' | 'cancelled'; // Optional pre-filled status
+  initialPriority?: 'low' | 'medium' | 'high' | 'critical'; // Optional pre-filled priority
+  initialStrategicCategories?: string[]; // Optional pre-filled strategic categories
+  showOrgPicker?: boolean; // Show organization picker (for Master Roadmap)
 }
 
 export default function AddRoadmapItemModal({
@@ -29,9 +33,15 @@ export default function AddRoadmapItemModal({
   onClose,
   onSuccess,
   initialDate,
+  initialStatus,
+  initialPriority,
+  initialStrategicCategories,
+  showOrgPicker = false,
 }: AddRoadmapItemModalProps) {
   const supabase = createClient();
   const [availableCategories, setAvailableCategories] = useState<Array<{id: string; name: string}>>([]);
+  const [availableOrganizations, setAvailableOrganizations] = useState<Array<{org_id: string; org_name: string}>>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(orgId || ''); // Empty string = no org (Master Roadmap)
 
   // Use form validation hook
   const {
@@ -57,30 +67,54 @@ export default function AddRoadmapItemModal({
   // Use loading state hook
   const { isLoading, execute } = useLoadingState();
 
-  // Fetch strategic categories from database
+  // Fetch strategic categories and organizations from database
   useEffect(() => {
     if (isOpen) {
-      const fetchCategories = async () => {
-        const { data, error } = await supabase
+      const fetchData = async () => {
+        // Fetch categories
+        const { data: categoriesData, error: categoriesError } = await supabase
           .from('strategic_categories')
           .select('id, name')
           .eq('is_active', true)
           .order('display_order');
 
-        if (!error && data) {
-          setAvailableCategories(data);
+        if (!categoriesError && categoriesData) {
+          setAvailableCategories(categoriesData);
+        }
+
+        // Fetch organizations if org picker is enabled
+        if (showOrgPicker) {
+          const { data: orgsData, error: orgsError } = await supabase
+            .from('trial_organizations')
+            .select('org_id, org_name')
+            .order('org_name');
+
+          if (!orgsError && orgsData) {
+            setAvailableOrganizations(orgsData);
+            // Don't set a default org - allow empty selection for Master Roadmap items
+          }
         }
       };
-      fetchCategories();
+      fetchData();
     }
-  }, [isOpen, supabase]);
+  }, [isOpen, supabase, showOrgPicker, orgId]);
 
-  // Pre-fill target date when modal opens with initialDate
+  // Pre-fill fields when modal opens with initial values
   useEffect(() => {
-    if (isOpen && initialDate) {
-      setFormData((prev) => ({ ...prev, target_date: initialDate }));
+    if (isOpen) {
+      const updates: any = {};
+      if (initialDate) updates.target_date = initialDate;
+      if (initialStatus) updates.status = initialStatus;
+      if (initialPriority) updates.priority = initialPriority;
+      if (initialStrategicCategories && initialStrategicCategories.length > 0) {
+        updates.strategic_categories = initialStrategicCategories;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        setFormData((prev) => ({ ...prev, ...updates }));
+      }
     }
-  }, [isOpen, initialDate, setFormData]);
+  }, [isOpen, initialDate, initialStatus, initialPriority, initialStrategicCategories, setFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,9 +126,17 @@ export default function AddRoadmapItemModal({
 
     await execute(
       async () => {
+        const finalOrgId = showOrgPicker ? selectedOrgId : orgId;
+
+        // Validate: Either org_id is provided OR strategic categories are set
+        const hasStrategicCategories = formData.strategic_categories.length > 0;
+        if (!finalOrgId && !hasStrategicCategories) {
+          throw new Error('Either organization or strategic categories are required');
+        }
+
         const { error } = await supabase.from('org_product_roadmap').insert([
           {
-            org_id: orgId,
+            org_id: finalOrgId || null, // Allow null for Master Roadmap items
             title: formData.title.trim(),
             description: formData.description || null,
             status: formData.status,
@@ -156,7 +198,19 @@ export default function AddRoadmapItemModal({
           <div className="flex items-center justify-between mb-2">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Add Roadmap Item</h2>
-              <p className="text-sm text-gray-500 mt-1">Add a new item to the product roadmap</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Add a new item to the product roadmap
+                {(initialStatus || initialPriority) && (
+                  <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    Pre-filled from Analytics
+                  </span>
+                )}
+                {(initialStrategicCategories && initialStrategicCategories.length > 0) && (
+                  <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                    Pre-filled from Master Roadmap
+                  </span>
+                )}
+              </p>
             </div>
             <button
               onClick={handleClose}
@@ -191,6 +245,32 @@ export default function AddRoadmapItemModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Organization Picker (Master Roadmap only) */}
+          {showOrgPicker && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Organization {formData.strategic_categories.length === 0 && '*'}
+              </label>
+              <select
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">None (Master Roadmap Item)</option>
+                {availableOrganizations.map((org) => (
+                  <option key={org.org_id} value={org.org_id}>
+                    {org.org_name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.strategic_categories.length > 0
+                  ? 'Optional: Link to a specific organization, or leave blank for cross-org strategic items'
+                  : 'Required unless strategic categories are selected'}
+              </p>
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">

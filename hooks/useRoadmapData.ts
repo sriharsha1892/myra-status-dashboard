@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 
 interface RoadmapItem {
   id: string;
-  org_id: string;
+  org_id: string | null; // Nullable for Master Roadmap items
   title: string;
   description: string | null;
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
