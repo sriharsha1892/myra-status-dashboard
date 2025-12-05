@@ -32,8 +32,14 @@ export class StatusCache {
     const now = new Date();
     const age = now.getTime() - this.lastUpdate.getTime();
 
-    if (this.cache.length === 0 || age > this.CACHE_TTL) {
+    // Stale-while-revalidate: return cached data immediately if available
+    // and refresh in background if stale
+    if (this.cache.length === 0) {
+      // No cache at all - must wait for initial fetch
       await this.refresh();
+    } else if (age > this.CACHE_TTL) {
+      // Cache is stale - trigger background refresh but return stale data immediately
+      this.refresh().catch(err => console.error('Background refresh failed:', err));
     }
 
     return this.cache;

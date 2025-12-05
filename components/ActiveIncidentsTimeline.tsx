@@ -1,11 +1,11 @@
-// -nocheck
 'use client';
 
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
-import { getIncidentLifecycle, formatShortGMT, getTimeSinceGMT } from '@/lib/time-utils';
+import { formatShortGMT, getTimeSinceGMT } from '@/lib/time-utils';
+import { cn } from '@/lib/utils';
 
 interface ActiveIncidentsTimelineProps {
   providers: ProviderStatus[];
@@ -30,6 +30,230 @@ interface EnrichedIncident {
   reasoning: string;
 }
 
+// Severity styling configuration
+const SEVERITY_CONFIG = {
+  critical: {
+    bgGradient: 'from-red-600/15 to-white/[0.03]',
+    borderClass: 'border-red-500/40',
+    stripClass: 'bg-red-600',
+    stripGlow: 'shadow-[0_0_12px_rgba(220,38,38,0.5)]',
+    badgeClass: 'bg-red-500/25 text-red-400',
+    label: 'Critical',
+  },
+  high: {
+    bgGradient: 'from-orange-500/15 to-white/[0.03]',
+    borderClass: 'border-orange-500/40',
+    stripClass: 'bg-orange-500',
+    stripGlow: 'shadow-[0_0_12px_rgba(249,115,22,0.5)]',
+    badgeClass: 'bg-orange-500/25 text-orange-400',
+    label: 'High',
+  },
+  medium: {
+    bgGradient: 'from-amber-500/15 to-white/[0.03]',
+    borderClass: 'border-amber-500/40',
+    stripClass: 'bg-amber-500',
+    stripGlow: 'shadow-[0_0_12px_rgba(245,158,11,0.5)]',
+    badgeClass: 'bg-amber-500/25 text-amber-400',
+    label: 'Medium',
+  },
+  low: {
+    bgGradient: 'from-emerald-500/15 to-white/[0.03]',
+    borderClass: 'border-emerald-500/40',
+    stripClass: 'bg-emerald-500',
+    stripGlow: 'shadow-[0_0_12px_rgba(16,185,129,0.5)]',
+    badgeClass: 'bg-emerald-500/25 text-emerald-400',
+    label: 'Low',
+  },
+} as const;
+
+// Lifecycle styling configuration
+const LIFECYCLE_CONFIG = {
+  identified: {
+    dotClass: 'bg-red-500',
+    activeGlow: 'shadow-[0_0_12px_rgba(239,68,68,0.6)]',
+    lineClass: 'bg-red-500',
+    label: 'Identified',
+  },
+  acknowledged: {
+    dotClass: 'bg-amber-500',
+    activeGlow: 'shadow-[0_0_12px_rgba(245,158,11,0.6)]',
+    lineClass: 'bg-amber-500',
+    label: 'Investigating',
+  },
+  resolved: {
+    dotClass: 'bg-emerald-500',
+    activeGlow: 'shadow-[0_0_12px_rgba(16,185,129,0.6)]',
+    lineClass: 'bg-emerald-500',
+    label: 'Resolved',
+  },
+} as const;
+
+// Lifecycle progress indicator
+function LifecycleProgress({ currentState }: { currentState: IncidentLifecycleState }) {
+  const states: IncidentLifecycleState[] = ['identified', 'acknowledged', 'resolved'];
+
+  return (
+    <div className="flex items-center gap-1 w-full">
+      {states.map((state, index) => {
+        const config = LIFECYCLE_CONFIG[state];
+        const isActive = state === currentState;
+        const isPast =
+          (state === 'identified' && currentState !== 'identified') ||
+          (state === 'acknowledged' && currentState === 'resolved');
+
+        return (
+          <React.Fragment key={state}>
+            {index > 0 && (
+              <div
+                className={cn(
+                  'flex-1 h-0.5 rounded-full transition-all duration-300',
+                  isPast ? config.lineClass : 'bg-white/15'
+                )}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  'rounded-full transition-all duration-300',
+                  isActive || isPast ? config.dotClass : 'bg-white/20',
+                  isActive ? 'w-3.5 h-3.5 ring-4 ring-white/10' : 'w-2.5 h-2.5',
+                  isActive && config.activeGlow
+                )}
+              />
+              <span
+                className={cn(
+                  'text-[10px] whitespace-nowrap transition-all duration-200',
+                  isActive ? 'font-semibold text-white/90' : 'font-medium text-white/50'
+                )}
+              >
+                {config.label}
+              </span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// Duration badge component
+function DurationBadge({ duration }: { duration: number }) {
+  const formatDuration = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${minutes % 60}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+  };
+
+  return (
+    <div className="px-3 py-1.5 rounded-lg bg-white/8 border border-white/15 text-sm font-semibold text-white/80 whitespace-nowrap">
+      {formatDuration(duration)}
+    </div>
+  );
+}
+
+// Individual incident card
+function IncidentCard({
+  incident,
+  isAdminView,
+}: {
+  incident: EnrichedIncident;
+  isAdminView: boolean;
+}) {
+  const config = SEVERITY_CONFIG[incident.severity];
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-xl border backdrop-blur-xl',
+        'transition-all duration-200 hover:scale-[1.01]',
+        `bg-gradient-to-br ${config.bgGradient}`,
+        config.borderClass
+      )}
+    >
+      {/* Severity indicator strip */}
+      <div
+        className={cn(
+          'absolute left-0 top-0 bottom-0 w-1',
+          config.stripClass,
+          config.stripGlow
+        )}
+      />
+
+      <div className="pl-5 pr-5 py-5">
+        {/* Header */}
+        <div className="flex justify-between items-start gap-4 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+              <span
+                className={cn(
+                  'text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider',
+                  config.badgeClass
+                )}
+              >
+                {config.label}
+              </span>
+              <span className="text-[11px] font-semibold text-white/50">
+                {getProviderDisplayName(
+                  { displayName: incident.providerName, userFacingName: incident.providerUserName } as any,
+                  isAdminView
+                )}
+              </span>
+            </div>
+            <h3 className="text-base font-semibold text-white/95 leading-snug">
+              {incident.name}
+            </h3>
+          </div>
+
+          <DurationBadge duration={incident.duration} />
+        </div>
+
+        {/* Lifecycle Progress */}
+        <div className="mb-4 px-2">
+          <LifecycleProgress currentState={incident.lifecycleState} />
+        </div>
+
+        {/* Reasoning (Admin only) */}
+        {isAdminView && (
+          <div className="mb-4 p-3 bg-blue-500/12 border border-blue-500/25 rounded-lg">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-1.5">
+              <span>🧠</span>
+              <span>Severity Reasoning</span>
+            </div>
+            <div className="text-xs text-white/85 leading-relaxed">
+              {incident.reasoning}
+            </div>
+          </div>
+        )}
+
+        {/* Metadata */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
+          <div>
+            <span className="font-semibold">Started:</span>{' '}
+            {formatShortGMT(incident.created_at)}
+          </div>
+          {incident.updated_at !== incident.created_at && (
+            <div>
+              <span className="font-semibold">Updated:</span>{' '}
+              {formatShortGMT(incident.updated_at)}
+            </div>
+          )}
+          <div>
+            <span className="font-semibold">Duration:</span>{' '}
+            {getTimeSinceGMT(incident.created_at)}
+          </div>
+          <div>
+            <span className="font-semibold">Impact:</span>{' '}
+            <span className="capitalize">{incident.impact}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTimelineProps) {
   const { isAdminView } = useViewMode();
 
@@ -40,24 +264,20 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
     duration: number,
     providerPriority?: string
   ): 'critical' | 'high' | 'medium' | 'low' => {
-    // Critical: Major outage lasting > 30 min OR critical impact on primary provider
     if (impact === 'critical' || impact === 'major') {
       if (duration > 30 * 60 * 1000) return 'critical';
       if (providerPriority === 'primary') return 'critical';
       return 'high';
     }
 
-    // High: Partial outage or degraded performance on primary provider
     if (impact === 'minor' && providerPriority === 'primary') {
       return duration > 60 * 60 * 1000 ? 'high' : 'medium';
     }
 
-    // Medium: Degraded performance or short outages
     if (status === 'investigating' || impact === 'minor') {
       return 'medium';
     }
 
-    // Low: All other cases
     return 'low';
   };
 
@@ -98,7 +318,6 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
       return 'acknowledged';
     }
 
-    // investigating, identified, etc.
     return 'identified';
   };
 
@@ -144,7 +363,6 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
         });
     })
     .sort((a, b) => {
-      // Sort by severity, then by duration
       const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
       if (severityOrder[a.severity] !== severityOrder[b.severity]) {
         return severityOrder[a.severity] - severityOrder[b.severity];
@@ -156,267 +374,41 @@ export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTi
     return null;
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return '#dc2626';
-      case 'high':
-        return '#ef4444';
-      case 'medium':
-        return '#f59e0b';
-      case 'low':
-        return '#10b981';
-      default:
-        return '#6b7280';
-    }
-  };
-
-  const getLifecycleColor = (state: IncidentLifecycleState) => {
-    switch (state) {
-      case 'identified':
-        return '#ef4444';
-      case 'acknowledged':
-        return '#f59e0b';
-      case 'resolved':
-        return '#10b981';
-      default:
-        return '#6b7280';
-    }
-  };
-
-  const getLifecycleLabel = (state: IncidentLifecycleState) => {
-    switch (state) {
-      case 'identified':
-        return 'Problem Identified';
-      case 'acknowledged':
-        return 'Acknowledged';
-      case 'resolved':
-        return 'Resolved';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const formatDuration = (ms: number) => {
-    const minutes = Math.floor(ms / 60000);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ${minutes % 60}m`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h`;
-  };
-
   return (
-    <div style={{ marginBottom: '24px' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.95)', marginBottom: '8px', letterSpacing: '-0.01em' }}>
-          Infrastructure Partner Incidents ({activeIncidents.length})
-        </h2>
-        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+    <div className="mb-6">
+      {/* Section Header */}
+      <div className="mb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <h2 className="text-lg font-bold text-white/95 tracking-tight">
+            Active Incidents
+          </h2>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+            {activeIncidents.length}
+          </span>
+        </div>
+        <p className="text-sm text-white/60">
           Real-time tracking of infrastructure partner incidents affecting myRA AI
         </p>
       </div>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      {/* Incidents Grid */}
+      <div className="grid gap-4">
         {activeIncidents.map((incident) => (
-          <div
+          <IncidentCard
             key={incident.id}
-            style={{
-              background: `linear-gradient(135deg, ${getSeverityColor(incident.severity)}15 0%, rgba(255,255,255,0.03) 100%)`,
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${getSeverityColor(incident.severity)}40`,
-              borderRadius: '12px',
-              padding: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Severity indicator bar */}
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: '4px',
-                background: getSeverityColor(incident.severity),
-                boxShadow: `0 0 12px ${getSeverityColor(incident.severity)}`,
-              }}
-            />
+            incident={incident}
+            isAdminView={isAdminView}
+          />
+        ))}
+      </div>
 
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      background: `${getSeverityColor(incident.severity)}25`,
-                      color: getSeverityColor(incident.severity),
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    {incident.severity}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: 'rgba(255,255,255,0.5)',
-                    }}
-                  >
-                    {getProviderDisplayName({ displayName: incident.providerName, userFacingName: incident.providerUserName } as any, isAdminView)}
-                  </span>
-                </div>
-                <h3
-                  style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.95)',
-                    marginBottom: '8px',
-                    lineHeight: '1.4',
-                  }}
-                >
-                  {incident.name}
-                </h3>
-              </div>
-
-              {/* Duration badge */}
-              <div
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'rgba(255,255,255,0.8)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {formatDuration(incident.duration)}
-              </div>
-            </div>
-
-            {/* Lifecycle Progress */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                {(['identified', 'acknowledged', 'resolved'] as IncidentLifecycleState[]).map((state, index) => {
-                  const isActive = state === incident.lifecycleState;
-                  const isPast =
-                    (state === 'identified' && incident.lifecycleState !== 'identified') ||
-                    (state === 'acknowledged' && incident.lifecycleState === 'resolved');
-
-                  return (
-                    <React.Fragment key={state}>
-                      {index > 0 && (
-                        <div
-                          style={{
-                            flex: 1,
-                            height: '2px',
-                            background: isPast ? getLifecycleColor(state) : 'rgba(255,255,255,0.15)',
-                            transition: 'all 0.3s ease',
-                          }}
-                        />
-                      )}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                        <div
-                          style={{
-                            width: isActive ? '14px' : '10px',
-                            height: isActive ? '14px' : '10px',
-                            borderRadius: '50%',
-                            background: isActive || isPast ? getLifecycleColor(state) : 'rgba(255,255,255,0.2)',
-                            border: isActive ? `3px solid ${getLifecycleColor(state)}40` : 'none',
-                            boxShadow: isActive ? `0 0 12px ${getLifecycleColor(state)}` : 'none',
-                            transition: 'all 0.3s ease',
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: isActive ? 600 : 500,
-                            color: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)',
-                            textAlign: 'center',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {getLifecycleLabel(state)}
-                        </span>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Reasoning (Admin only) */}
-            {isAdminView && (
-              <div
-                style={{
-                  padding: '12px 14px',
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
-                  borderRadius: '8px',
-                  marginBottom: '12px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: '#60a5fa',
-                    marginBottom: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <span>🧠</span>
-                  <span>Severity Reasoning</span>
-                </div>
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: 'rgba(255,255,255,0.85)',
-                    lineHeight: '1.5',
-                  }}
-                >
-                  {incident.reasoning}
-                </div>
-              </div>
-            )}
-
-            {/* Metadata */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '16px',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.5)',
-                flexWrap: 'wrap',
-              }}
-            >
-              <div>
-                <span style={{ fontWeight: 600 }}>Started:</span> {formatShortGMT(incident.created_at)}
-              </div>
-              {incident.updated_at !== incident.created_at && (
-                <div>
-                  <span style={{ fontWeight: 600 }}>Updated:</span> {formatShortGMT(incident.updated_at)}
-                </div>
-              )}
-              <div>
-                <span style={{ fontWeight: 600 }}>Duration:</span> {getTimeSinceGMT(incident.created_at)}
-              </div>
-              <div>
-                <span style={{ fontWeight: 600 }}>Impact:</span> {incident.impact}
-              </div>
-            </div>
+      {/* Legend */}
+      <div className="mt-4 pt-4 border-t border-white/8 flex items-center gap-5 flex-wrap text-[11px]">
+        <span className="text-white/40 font-medium">Severity:</span>
+        {Object.entries(SEVERITY_CONFIG).map(([key, cfg]) => (
+          <div key={key} className="flex items-center gap-1.5">
+            <div className={cn('w-2 h-2 rounded-full', cfg.stripClass)} />
+            <span className="text-white/50 capitalize">{key}</span>
           </div>
         ))}
       </div>

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { StatusResponse, ProviderStatus } from '@/lib/types';
-import AnimatedStat from '@/components/AnimatedStat';
 import ServiceStatusCard from '@/components/ServiceStatusCard';
 import HeroStatusBanner from '@/components/HeroStatusBanner';
 import WorkflowStatus from '@/components/WorkflowStatus';
@@ -13,22 +12,30 @@ import IncidentHistory from '@/components/IncidentHistory';
 import StatusHistory from '@/components/StatusHistory';
 import ServiceDependencies from '@/components/ServiceDependencies';
 import ActiveIncidentsTimeline from '@/components/ActiveIncidentsTimeline';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
+import SubscribeModal from '@/components/SubscribeModal';
 import { useStatusNotifications } from '@/hooks/useStatusNotifications';
 import { ViewModeProvider } from '@/contexts/ViewModeContext';
+import { cn } from '@/lib/utils';
+
+interface Announcement {
+  id: string;
+  type: 'feature' | 'update' | 'maintenance' | 'alert';
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  status: string;
+  title: string;
+  message: string;
+  created_at: string;
+  updated_at: string;
+}
 
 // Lazy load NetworkDiagnostics for better initial load performance
 const NetworkDiagnostics = dynamic(() => import('@/components/NetworkDiagnostics'), {
-  loading: () => <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>Loading diagnostics...</div>,
-  ssr: false // Don't render on server for performance
+  loading: () => (
+    <div className="py-5 text-center text-white/50">Loading diagnostics...</div>
+  ),
+  ssr: false,
 });
-
-interface InternalStatus {
-  organization: string;
-  status: string;
-  message: string;
-  timestamp: string;
-  updatedBy?: string;
-}
 
 interface Toast {
   id: string;
@@ -37,27 +44,108 @@ interface Toast {
   providerId?: string;
 }
 
-interface Announcement {
-  id: string;
+// Toast styling configuration
+const TOAST_CONFIG = {
+  success: {
+    bgClass: 'bg-emerald-500/15',
+    borderClass: 'border-emerald-500/40',
+    iconBgClass: 'bg-emerald-500',
+    icon: '✓',
+  },
+  error: {
+    bgClass: 'bg-red-500/15',
+    borderClass: 'border-red-500/40',
+    iconBgClass: 'bg-red-500',
+    icon: '✕',
+  },
+  warning: {
+    bgClass: 'bg-amber-500/15',
+    borderClass: 'border-amber-500/40',
+    iconBgClass: 'bg-amber-500',
+    icon: '⚠',
+  },
+  info: {
+    bgClass: 'bg-blue-500/15',
+    borderClass: 'border-blue-500/40',
+    iconBgClass: 'bg-blue-500',
+    icon: 'i',
+  },
+} as const;
+
+// Section Header component
+function SectionHeader({
+  title,
+  subtitle,
+  accentColor = 'purple',
+}: {
   title: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'maintenance';
-  active: boolean;
-  createdAt: string;
-  createdBy?: string;
-  expiresAt?: string;
+  subtitle: string;
+  accentColor?: 'purple' | 'blue' | 'amber';
+}) {
+  const borderColors = {
+    purple: 'border-purple-500/30',
+    blue: 'border-blue-500/30',
+    amber: 'border-amber-500/30',
+  };
+
+  return (
+    <div className={cn('mb-5 pb-4 border-b-2', borderColors[accentColor])}>
+      <h2 className="text-base font-bold text-white/95 mb-1.5 tracking-tight uppercase">
+        {title}
+      </h2>
+      <p className="text-xs text-white/50 leading-relaxed">{subtitle}</p>
+    </div>
+  );
+}
+
+// Toast notification component
+function ToastNotification({
+  toast,
+  onDismiss,
+}: {
+  toast: Toast;
+  onDismiss: () => void;
+}) {
+  const config = TOAST_CONFIG[toast.type];
+
+  return (
+    <div
+      className={cn(
+        'px-4 py-3.5 rounded-xl backdrop-blur-xl border cursor-pointer',
+        'shadow-[0_8px_32px_rgba(0,0,0,0.2)]',
+        'animate-[slideInRight_0.3s_ease-out]',
+        'transition-transform duration-200 hover:-translate-x-1',
+        'flex items-center gap-3',
+        config.bgClass,
+        config.borderClass
+      )}
+      onClick={onDismiss}
+    >
+      <div
+        className={cn(
+          'w-6 h-6 rounded-full flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0',
+          config.iconBgClass
+        )}
+      >
+        {config.icon}
+      </div>
+      <div className="flex-1">
+        <div className="text-[13px] font-semibold text-white/95">{toast.message}</div>
+      </div>
+    </div>
+  );
 }
 
 function StatusPageContent() {
   const [statusData, setStatusData] = useState<StatusResponse | null>(null);
-  const [internalStatuses, setInternalStatuses] = useState<InternalStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdateText, setLastUpdateText] = useState('Just now');
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   // Enable status change notifications
   useStatusNotifications(statusData?.providers || []);
@@ -65,10 +153,10 @@ function StatusPageContent() {
   const addToast = (message: string, type: Toast['type'], providerId?: string) => {
     const id = Date.now().toString();
     const newToast: Toast = { id, message, type, providerId };
-    setToasts(prev => [...prev, newToast]);
+    setToasts((prev) => [...prev, newToast]);
 
     setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 5000);
   };
 
@@ -76,43 +164,38 @@ function StatusPageContent() {
     if (isManualRefresh) setRefreshing(true);
 
     try {
-      // Add timestamp to prevent browser caching
       const timestamp = Date.now();
-      const [statusResponse, internalResponse] = await Promise.all([
-        fetch(`/api/status/current?_t=${timestamp}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        }),
-        fetch(`/api/internal/status?_t=${timestamp}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        })
-      ]);
+      const statusResponse = await fetch(`/api/status/current?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
 
       if (!statusResponse.ok) throw new Error('Failed to fetch status');
       const data: StatusResponse = await statusResponse.json();
 
       // Detect status changes and show toasts
       if (statusData && !isManualRefresh) {
-        data.providers.forEach((newProvider: any) => {
-          const oldProvider = statusData.providers.find((p: any) => p.provider.id === newProvider.provider.id);
+        data.providers.forEach((newProvider: ProviderStatus) => {
+          const oldProvider = statusData.providers.find(
+            (p: ProviderStatus) => p.provider.id === newProvider.provider.id
+          );
           if (oldProvider && oldProvider.status !== newProvider.status) {
             const statusMap: Record<string, string> = {
               operational: '✅',
               degraded_performance: '⚠️',
               partial_outage: '🔴',
               major_outage: '🚨',
-              under_maintenance: '🔧'
+              under_maintenance: '🔧',
             };
             const icon = statusMap[newProvider.status] || '📊';
             const statusText = newProvider.status.replace(/_/g, ' ');
             addToast(
               `${icon} ${newProvider.provider.displayName}: ${statusText}`,
-              newProvider.status === 'operational' ? 'success' : newProvider.status.includes('outage') ? 'error' : 'warning',
+              newProvider.status === 'operational'
+                ? 'success'
+                : newProvider.status.includes('outage')
+                ? 'error'
+                : 'warning',
               newProvider.provider.id
             );
           }
@@ -120,14 +203,6 @@ function StatusPageContent() {
       }
 
       setStatusData(data);
-
-      if (internalResponse.ok) {
-        const internalData = await internalResponse.json();
-        if (internalData.success) {
-          setInternalStatuses(internalData.statuses);
-        }
-      }
-
       setLoading(false);
       setError(null);
     } catch (err) {
@@ -140,12 +215,30 @@ function StatusPageContent() {
     }
   };
 
+  const fetchAnnouncements = async () => {
+    try {
+      const timestamp = Date.now();
+      const response = await fetch(`/api/announcements?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      const data = await response.json();
+      if (data.success && data.announcements) {
+        setAnnouncements(data.announcements);
+      }
+    } catch (err) {
+      console.error('Failed to fetch announcements:', err);
+    }
+  };
+
   // Update relative time text
   useEffect(() => {
     if (!statusData) return;
 
     const updateTimeText = () => {
-      const seconds = Math.floor((Date.now() - new Date(statusData.lastUpdated).getTime()) / 1000);
+      const seconds = Math.floor(
+        (Date.now() - new Date(statusData.lastUpdated).getTime()) / 1000
+      );
       if (seconds < 10) setLastUpdateText('Just now');
       else if (seconds < 60) setLastUpdateText(`${seconds}s ago`);
       else if (seconds < 3600) setLastUpdateText(`${Math.floor(seconds / 60)}m ago`);
@@ -157,91 +250,52 @@ function StatusPageContent() {
     return () => clearInterval(interval);
   }, [statusData]);
 
-  const fetchAnnouncements = async () => {
-    try {
-      const timestamp = Date.now();
-      const response = await fetch(`/api/announcements?_t=${timestamp}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setAnnouncements(data.announcements);
-      }
-    } catch (err) {
-      console.error('Failed to fetch announcements:', err);
-    }
-  };
-
   useEffect(() => {
     fetchStatus();
     fetchAnnouncements();
-    const interval = setInterval(() => {
-      fetchStatus();
-      fetchAnnouncements();
-    }, 60000);
+    const statusInterval = setInterval(() => fetchStatus(), 60000);
+    const announcementsInterval = setInterval(() => fetchAnnouncements(), 120000); // Check announcements every 2 minutes
 
     // Keyboard shortcuts
     const handleKeyPress = (e: KeyboardEvent) => {
-      // R to refresh
       if (e.key === 'r' || e.key === 'R') {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
           fetchStatus(true);
+          fetchAnnouncements();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
-
     return () => {
-      clearInterval(interval);
+      clearInterval(statusInterval);
+      clearInterval(announcementsInterval);
       window.removeEventListener('keydown', handleKeyPress);
     };
   }, []);
 
+  // Loading state
   if (loading && !statusData) {
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: '40px' }}>
-        {/* Header */}
-        <header style={{
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          background: 'linear-gradient(180deg, rgba(88, 80, 236, 0.04) 0%, rgba(30, 31, 38, 0.95) 100%)',
-          backdropFilter: 'blur(16px)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
-        }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
-            <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
-                  myRA AI System Status
-                </h1>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>
-                  Loading...
-                </span>
-              </div>
+      <div className="min-h-screen pb-10">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-b from-purple-500/[0.04] to-slate-900/95 backdrop-blur-xl shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="h-16 flex items-center justify-between">
+              <h1 className="text-[15px] font-semibold text-white/90 tracking-tight">
+                myRA AI System Status
+              </h1>
+              <span className="text-[13px] text-white/40 font-medium">Loading...</span>
             </div>
           </div>
         </header>
 
-        {/* Main Content with Skeleton Cards */}
-        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '16px', letterSpacing: '-0.01em' }}>
+        <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+          <div className="mb-8">
+            <h2 className="text-[13px] font-semibold text-white/90 mb-4 tracking-tight">
               Core Services
             </h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
-              gap: '16px'
-            }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <SkeletonCard />
               <SkeletonCard />
               <SkeletonCard />
@@ -253,25 +307,17 @@ function StatusPageContent() {
     );
   }
 
+  // Error state
   if (error || !statusData) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <div className="glass" style={{ padding: '32px', borderRadius: '16px', maxWidth: '400px', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>Unable to load status</h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginBottom: '24px' }}>{error || 'An unknown error occurred'}</p>
+      <div className="min-h-screen flex items-center justify-center p-5">
+        <div className="glass-card-dark p-8 rounded-2xl max-w-md text-center">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-lg font-semibold text-white mb-2">Unable to load status</h2>
+          <p className="text-sm text-white/80 mb-6">{error || 'An unknown error occurred'}</p>
           <button
             onClick={() => fetchStatus(true)}
-            className="card"
-            style={{
-              padding: '10px 24px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              color: '#667eea',
-              border: 'none'
-            }}
+            className="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-colors"
           >
             Retry
           </button>
@@ -280,159 +326,87 @@ function StatusPageContent() {
     );
   }
 
-  const operationalCount = statusData.providers.filter((p: any) => p.status === 'operational').length;
-  const hasIssues = statusData.overallStatus !== 'operational';
-  const timeSinceUpdate = Math.round((Date.now() - new Date(statusData.lastUpdated).getTime()) / 1000);
-
-  // Calculate weighted system health based on provider priority
-  const calculateSystemHealth = () => {
-    const primaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'primary');
-    const secondaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'secondary');
-
-    const primaryWeight = 0.8;
-    const secondaryWeight = 0.2;
-
-    const primaryOperational = primaryProviders.filter((p: any) => p.status === 'operational').length;
-    const secondaryOperational = secondaryProviders.filter((p: any) => p.status === 'operational').length;
-
-    const primaryScore = primaryProviders.length > 0 ? (primaryOperational / primaryProviders.length) * primaryWeight : 0;
-    const secondaryScore = secondaryProviders.length > 0 ? (secondaryOperational / secondaryProviders.length) * secondaryWeight : 0;
-
-    return Math.round((primaryScore + secondaryScore) * 100);
-  };
-
-  // Get current active issues from all providers (prioritize primary)
-  const getCurrentStatusData = () => {
-    const primaryProviders = statusData.providers.filter((p: any) => p.provider.priority === 'primary');
-    const affectedProviders = primaryProviders.filter((p: any) => p.status !== 'operational');
-
-    if (affectedProviders.length === 0) {
-      return {
-        allOperational: true,
-        issueCount: 0,
-        affectedServices: [],
-      };
-    }
-
-    return {
-      allOperational: false,
-      issueCount: affectedProviders.length,
-      affectedServices: affectedProviders.map((p: any) => ({
-        name: p.provider.displayName,
-        status: p.status,
-      })),
-    };
-  };
-
-  const systemHealth = calculateSystemHealth();
-  const currentStatus = getCurrentStatusData();
-
-  // Collect all incidents for timeline view - only show last 30 days
-  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-  const allIncidents = statusData.providers.flatMap((p: any) =>
-    p.incidents
-      .filter((i: any) => new Date(i.created_at).getTime() > thirtyDaysAgo)
-      .map((i: any) => ({ ...i, provider: p.provider }))
-  ).sort((a: any, b: any) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: '40px', position: 'relative' }}>
+    <div className="min-h-screen pb-10 relative">
       <AnimatedBackground />
+
       {/* Header */}
-      <header style={{
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'linear-gradient(180deg, rgba(88, 80, 236, 0.04) 0%, rgba(30, 31, 38, 0.95) 100%)',
-        backdropFilter: 'blur(16px)',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', letterSpacing: '-0.01em' }}>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-b from-purple-500/[0.04] to-slate-900/95 backdrop-blur-xl shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          <div className="h-16 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-[15px] font-semibold text-white/90 tracking-tight">
                 myRA AI System Status
               </h1>
               <a
                 href="https://ask-myra.ai"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
-                }}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-lg text-[13px] font-semibold text-white',
+                  'bg-gradient-to-r from-purple-600 to-violet-600',
+                  'shadow-[0_2px_8px_rgba(102,126,234,0.3)]',
+                  'hover:shadow-[0_4px_12px_rgba(102,126,234,0.4)]',
+                  'hover:-translate-y-0.5 transition-all duration-200',
+                  'flex items-center gap-1.5 whitespace-nowrap'
+                )}
               >
                 myRA AI
-                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
                 </svg>
               </a>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)', fontWeight: 500 }}>
-                {lastUpdateText}
-              </span>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[13px] text-white/60 font-medium">{lastUpdateText}</span>
+              <button
+                onClick={() => setShowSubscribeModal(true)}
+                className={cn(
+                  'px-4 py-2 rounded-lg text-[13px] font-semibold',
+                  'bg-blue-500/20 border border-blue-500/40 text-blue-300',
+                  'hover:bg-blue-500/30 hover:border-blue-500/50',
+                  'flex items-center gap-1.5 transition-all duration-200'
+                )}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Subscribe</span>
+              </button>
               <button
                 onClick={() => fetchStatus(true)}
                 disabled={refreshing}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  background: refreshing
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : 'rgba(255, 255, 255, 0.1)',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: refreshing ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s',
-                  opacity: refreshing ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!refreshing) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = refreshing
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                }}
+                className={cn(
+                  'px-4 py-2 rounded-lg text-[13px] font-semibold',
+                  'border border-white/20 text-white/90',
+                  'flex items-center gap-1.5 transition-all duration-200',
+                  refreshing
+                    ? 'bg-white/5 opacity-60 cursor-not-allowed'
+                    : 'bg-white/10 hover:bg-white/15 hover:border-white/30'
+                )}
               >
-                <span style={{
-                  display: 'inline-block',
-                  animation: refreshing ? 'spin 1s linear infinite' : 'none',
-                }}>
-                  ↻
-                </span>
+                <span className={cn(refreshing && 'animate-spin')}>↻</span>
                 Refresh
               </button>
             </div>
@@ -441,282 +415,51 @@ function StatusPageContent() {
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px', paddingLeft: '16px', paddingRight: '16px' }}>
-
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
         {/* Team Communications Section */}
-        <div style={{ marginBottom: '32px' }}>
-          {/* Section Header */}
-          <div style={{
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid rgba(139, 92, 246, 0.3)'
-          }}>
-            <h2 style={{
-              fontSize: '16px',
-              fontWeight: 700,
-              color: 'rgba(255, 255, 255, 0.95)',
-              marginBottom: '6px',
-              letterSpacing: '-0.01em',
-              textTransform: 'uppercase'
-            }}>
-              Team Communications
-            </h2>
-            <p style={{
-              fontSize: '12px',
-              color: 'rgba(255, 255, 255, 0.5)',
-              lineHeight: '1.5'
-            }}>
-              Official updates and announcements from the myRA AI operations team
-            </p>
-          </div>
+        <section className="mb-8">
+          <SectionHeader
+            title="Team Communications"
+            subtitle="Official updates and announcements from the myRA AI operations team"
+            accentColor="purple"
+          />
 
-          {/* Recent Updates Notice */}
-          <div style={{ marginBottom: '16px' }}>
-            <div
-              style={{
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '2px solid rgba(16, 185, 129, 0.4)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                backdropFilter: 'blur(12px)',
-                boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                {/* Icon */}
-                <div
-                  style={{
-                    fontSize: '24px',
-                    lineHeight: '1',
-                    flexShrink: 0,
-                  }}
-                >
-                  ✅
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                      All Systems Operational
-                    </h3>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        fontSize: '9px',
-                        fontWeight: 800,
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        background: '#10b981',
-                        color: '#ffffff',
-                        letterSpacing: '0.5px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Resolved
+          {/* Announcements from Database */}
+          {announcements.length > 0 ? (
+            <AnnouncementBanner announcements={announcements} />
+          ) : (
+            // Default operational message when no announcements
+            <div className="bg-emerald-500/15 border-2 border-emerald-500/40 rounded-xl p-4 sm:p-5 backdrop-blur-xl shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl flex-shrink-0">✅</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <h3 className="text-sm font-bold text-white">All Systems Operational</h3>
+                    <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500 text-white uppercase tracking-wider">
+                      Normal
                     </span>
                   </div>
-                  <p
-                    style={{
-                      fontSize: '13px',
-                      color: 'rgba(255, 255, 255, 0.85)',
-                      margin: '0 0 8px 0',
-                      lineHeight: '1.5',
-                    }}
-                  >
-                    All myRA AI services have been fully restored and are operating normally. The previous service disruption has been resolved.
-                    We continue to monitor all systems closely to ensure optimal performance.
+                  <p className="text-[13px] text-white/85 leading-relaxed mb-2">
+                    All myRA AI services are operating normally. No scheduled maintenance or known issues at this time.
                   </p>
-                  <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span>Updated: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'GMT', timeZoneName: 'short' })}</span>
-                    <span>•</span>
-                    <span>By: myRA Operations Team</span>
+                  <div className="text-[11px] text-white/50">
+                    No active announcements
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Team Content */}
-          {(() => {
-            return (
-              <>
-                {/* Team Status Update - Commented out to show only Service Advisory */}
-                {false && (
-                  <div style={{ marginBottom: '16px' }}>
-                  {(() => {
-                    const getStatusConfig = (s: string) => {
-                      switch(s) {
-                        case 'operational':
-                          return {
-                            color: '#10b981',
-                            bg: 'rgba(16, 185, 129, 0.15)',
-                            border: 'rgba(16, 185, 129, 0.4)',
-                            icon: '✓',
-                            label: 'All Systems Operational'
-                          };
-                        case 'degraded_performance':
-                          return {
-                            color: '#f59e0b',
-                            bg: 'rgba(245, 158, 11, 0.15)',
-                            border: 'rgba(245, 158, 11, 0.4)',
-                            icon: '⚠',
-                            label: 'Performance Issues'
-                          };
-                        case 'partial_outage':
-                          return {
-                            color: '#ef4444',
-                            bg: 'rgba(239, 68, 68, 0.15)',
-                            border: 'rgba(239, 68, 68, 0.4)',
-                            icon: '!',
-                            label: 'Partial Outage'
-                          };
-                        case 'major_outage':
-                          return {
-                            color: '#dc2626',
-                            bg: 'rgba(220, 38, 38, 0.15)',
-                            border: 'rgba(220, 38, 38, 0.4)',
-                            icon: '✕',
-                            label: 'Major Outage'
-                          };
-                        case 'under_maintenance':
-                          return {
-                            color: '#8b5cf6',
-                            bg: 'rgba(139, 92, 246, 0.15)',
-                            border: 'rgba(139, 92, 246, 0.4)',
-                            icon: '🔧',
-                            label: 'Scheduled Maintenance'
-                          };
-                        default:
-                          return {
-                            color: '#6b7280',
-                            bg: 'rgba(107, 114, 128, 0.15)',
-                            border: 'rgba(107, 114, 128, 0.4)',
-                            icon: '?',
-                            label: 'Status Unknown'
-                          };
-                      }
-                    };
-
-                    const config = getStatusConfig(teamStatus.status);
-                    const timestamp = new Date(teamStatus.timestamp).toLocaleString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'GMT'
-                    }) + ' GMT';
-
-                    return (
-                      <div
-                        style={{
-                          background: config.bg,
-                          border: `2px solid ${config.border}`,
-                          borderRadius: '12px',
-                          padding: '16px 20px',
-                          backdropFilter: 'blur(12px)',
-                          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                          {/* Icon */}
-                          <div
-                            style={{
-                              fontSize: '24px',
-                              lineHeight: '1',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {config.icon}
-                          </div>
-
-                          {/* Content */}
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                                myRA AI Team Update
-                              </h3>
-                              <span
-                                style={{
-                                  display: 'inline-block',
-                                  fontSize: '9px',
-                                  fontWeight: 800,
-                                  padding: '3px 8px',
-                                  borderRadius: '4px',
-                                  background: config.color,
-                                  color: '#ffffff',
-                                  letterSpacing: '0.5px',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                {config.label}
-                              </span>
-                            </div>
-                            <p
-                              style={{
-                                fontSize: '13px',
-                                color: 'rgba(255, 255, 255, 0.85)',
-                                margin: '0 0 8px 0',
-                                lineHeight: '1.5',
-                              }}
-                            >
-                              {teamStatus.message}
-                            </p>
-                            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <span>Posted: {timestamp}</span>
-                              {teamStatus.updatedBy && (
-                                <>
-                                  <span>•</span>
-                                  <span>By: {teamStatus.updatedBy}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-              </>
-            );
-          })()}
-        </div>
+          )}
+        </section>
 
         {/* Infrastructure Status Section */}
-        <div style={{ marginTop: '32px', marginBottom: '32px' }}>
-          {/* Section Header */}
-          <div style={{
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid rgba(59, 130, 246, 0.3)'
-          }}>
-            <h2 style={{
-              fontSize: '16px',
-              fontWeight: 700,
-              color: 'rgba(255, 255, 255, 0.95)',
-              marginBottom: '6px',
-              letterSpacing: '-0.01em',
-              textTransform: 'uppercase'
-            }}>
-              Infrastructure Status
-            </h2>
-            <p style={{
-              fontSize: '12px',
-              color: 'rgba(255, 255, 255, 0.5)',
-              lineHeight: '1.5'
-            }}>
-              Real-time monitoring of infrastructure partner health and service dependencies that power myRA AI operations
-            </p>
-          </div>
+        <section className="mb-8">
+          <SectionHeader
+            title="Infrastructure Status"
+            subtitle="Real-time monitoring of infrastructure partner health and service dependencies that power myRA AI operations"
+            accentColor="blue"
+          />
 
-          {/* Infrastructure Content */}
-          <div style={{
-            padding: '24px',
-            background: 'rgba(59, 130, 246, 0.03)',
-            border: '2px solid rgba(59, 130, 246, 0.2)',
-            borderRadius: '16px'
-          }}>
+          <div className="p-4 sm:p-6 bg-blue-500/[0.03] border-2 border-blue-500/20 rounded-2xl">
             {/* Hero Status Banner */}
             <HeroStatusBanner
               providers={statusData.providers}
@@ -726,33 +469,29 @@ function StatusPageContent() {
             {/* Workflow Status - Primary View */}
             <WorkflowStatus providers={statusData.providers} />
 
-            {/* Active Incidents Timeline with Cognitive Severity Assessment */}
+            {/* Active Incidents Timeline */}
             <ActiveIncidentsTimeline providers={statusData.providers} />
 
-            {/* Impact Radius - Shows only when there are issues */}
+            {/* Impact Radius */}
             <ServiceDependencies providers={statusData.providers} />
 
             {/* Incident History */}
             <IncidentHistory providers={statusData.providers} />
 
             {/* Infrastructure Partners Cards */}
-            <div style={{ marginTop: '24px' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', marginBottom: '4px', letterSpacing: '-0.01em' }}>
+            <div className="mt-6">
+              <div className="mb-4">
+                <h3 className="text-[13px] font-semibold text-white/90 mb-1 tracking-tight">
                   Service Status Details
                 </h3>
-                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: '1.4' }}>
+                <p className="text-[11px] text-white/50 leading-snug">
                   Detailed status of individual infrastructure partner services
                 </p>
               </div>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 500px), 1fr))',
-                gap: '16px'
-              }}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {statusData.providers
-                  .filter((p: any) => p.provider.priority === 'primary')
-                  .map((providerStatus: any) => (
+                  .filter((p: ProviderStatus) => p.provider.priority === 'primary')
+                  .map((providerStatus: ProviderStatus) => (
                     <ServiceStatusCard
                       key={providerStatus.provider.id}
                       providerStatus={providerStatus}
@@ -762,191 +501,114 @@ function StatusPageContent() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Diagnostic Tools Section */}
-        <div style={{ marginTop: '32px', marginBottom: '32px' }}>
-          {/* Section Header */}
-          <div style={{
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid rgba(245, 158, 11, 0.3)'
-          }}>
-            <h2 style={{
-              fontSize: '16px',
-              fontWeight: 700,
-              color: 'rgba(255, 255, 255, 0.95)',
-              marginBottom: '6px',
-              letterSpacing: '-0.01em',
-              textTransform: 'uppercase'
-            }}>
-              Diagnostic Tools
-            </h2>
-            <p style={{
-              fontSize: '12px',
-              color: 'rgba(255, 255, 255, 0.5)',
-              lineHeight: '1.5'
-            }}>
-              Connectivity testing and network diagnostics to isolate performance issues between your environment and myRA AI services
-            </p>
-          </div>
+        <section className="mb-8">
+          <SectionHeader
+            title="Diagnostic Tools"
+            subtitle="Connectivity testing and network diagnostics to isolate performance issues between your environment and myRA AI services"
+            accentColor="amber"
+          />
 
-          {/* Diagnostic Content */}
-          <details open={showDiagnostics} onToggle={(e: any) => setShowDiagnostics(e.target.open)}>
+          <details
+            open={showDiagnostics}
+            onToggle={(e: React.SyntheticEvent<HTMLDetailsElement>) =>
+              setShowDiagnostics(e.currentTarget.open)
+            }
+          >
             <summary
-              style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.85)',
-                marginBottom: '12px',
-                cursor: 'pointer',
-                listStyle: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '14px 18px',
-                background: 'rgba(245, 158, 11, 0.08)',
-                border: '2px solid rgba(245, 158, 11, 0.2)',
-                borderRadius: '12px',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
-                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.2)';
-              }}
+              className={cn(
+                'text-[13px] font-semibold text-white/85 cursor-pointer',
+                'flex items-center gap-2 list-none',
+                'px-4 py-3.5 rounded-xl transition-all duration-200',
+                'bg-amber-500/8 border-2 border-amber-500/20',
+                'hover:bg-amber-500/12 hover:border-amber-500/30'
+              )}
             >
-              <span style={{ transition: 'transform 0.2s', transform: showDiagnostics ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+              <span
+                className={cn(
+                  'transition-transform duration-200',
+                  showDiagnostics && 'rotate-90'
+                )}
+              >
                 ▸
               </span>
               Run Network Tests
-              <span style={{ fontSize: '11px', fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 'auto' }}>
+              <span className="text-[11px] font-normal text-white/40 ml-auto">
                 {showDiagnostics ? 'Hide' : 'Show'} detailed diagnostics
               </span>
             </summary>
-            <div style={{
-              marginTop: '12px',
-              padding: '20px',
-              background: 'rgba(245, 158, 11, 0.03)',
-              border: '2px solid rgba(245, 158, 11, 0.15)',
-              borderRadius: '12px'
-            }}>
+            <div className="mt-3 p-5 bg-amber-500/[0.03] border-2 border-amber-500/15 rounded-xl">
               <NetworkDiagnostics />
             </div>
           </details>
-        </div>
+        </section>
 
         {/* Status History */}
         <StatusHistory providers={statusData.providers} />
       </main>
 
       {/* Toast Notifications */}
-      <div style={{ position: 'fixed', top: '90px', right: '20px', zIndex: 200, display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px' }}>
-        {toasts.map((toast) => {
-          const toastColors = {
-            success: { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#10b981', icon: '✓' },
-            error: { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', icon: '✕' },
-            warning: { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#f59e0b', icon: '⚠' },
-            info: { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#3b82f6', icon: 'i' }
-          };
-          const colors = toastColors[toast.type];
-
-          return (
-            <div
-              key={toast.id}
-              style={{
-                padding: '14px 18px',
-                borderRadius: '10px',
-                background: colors.bg,
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${colors.border}`,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                animation: 'slideInRight 0.3s ease-out',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-              onClick={() => {
-                setToasts(prev => prev.filter(t => t.id !== toast.id));
-                if (toast.providerId) {
-                  document.getElementById(`provider-${toast.providerId}`)?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-5px)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
-            >
-              <div
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  background: colors.text,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {colors.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
-                  {toast.message}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="fixed top-[90px] right-4 sm:right-5 z-[200] flex flex-col gap-3 max-w-[400px] w-full sm:w-auto">
+        {toasts.map((toast) => (
+          <ToastNotification
+            key={toast.id}
+            toast={toast}
+            onDismiss={() => {
+              setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+              if (toast.providerId) {
+                document
+                  .getElementById(`provider-${toast.providerId}`)
+                  ?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          />
+        ))}
       </div>
 
+      {/* Subscribe Modal */}
+      <SubscribeModal
+        isOpen={showSubscribeModal}
+        onClose={() => setShowSubscribeModal(false)}
+        providers={statusData.providers.map((p: ProviderStatus) => ({
+          name: p.provider.id,
+          displayName: p.provider.displayName,
+        }))}
+      />
+
       {/* Footer */}
-      <footer className="glass" style={{
-        borderTop: '1px solid rgba(255,255,255,0.2)',
-        marginTop: '40px'
-      }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px', textAlign: 'center' }}>
-          <p style={{ fontSize: '14px', color: '#fff', marginBottom: '6px' }}>
-            <strong style={{ fontWeight: 700 }}>myRA AI</strong> Status Dashboard
+      <footer className="glass-card-dark border-t border-white/20 mt-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-center">
+          <p className="text-sm text-white mb-1.5">
+            <strong className="font-bold">myRA AI</strong> Status Dashboard
           </p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '12px' }}>
+          <p className="text-xs text-white/60 mb-3">
             A joint undertaking of Mordor Intelligence and Prodgain
           </p>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="flex gap-4 items-center justify-center">
             <a
               href="/widget-demo"
-              style={{
-                fontSize: '12px',
-                color: '#60a5fa',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
             >
               Embed Widget
-              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                />
               </svg>
             </a>
           </div>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

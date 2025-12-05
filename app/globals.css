@@ -130,6 +130,38 @@ p {
   }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+
 @keyframes countUp {
   from {
     opacity: 0;
@@ -580,4 +612,182 @@ nav a:hover {
   will-change: transform;
   backface-visibility: hidden;
   perspective: 1000px;
+}
+
+/* ============================================================
+   GLASSMORPHISM IMPORT STUDIO STYLES
+   ============================================================ */
+
+/* Animation delays for staggered blob effects */
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 6s;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism card base - dark theme variant */
+.glass-card-dark {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-dark:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Glowing text effect */
+.text-glow {
+  text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6, #14B8A6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer button effect */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: translateX(-100%);
+  transition: transform 500ms ease;
+}
+
+.btn-shimmer:hover::before {
+  transform: translateX(100%);
+}
+
+/* Progress ring styles */
+.progress-ring-bg {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.progress-ring-fill {
+  stroke: url(#progressGradient);
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+  transition: stroke-dasharray 500ms ease;
+}
+
+/* Stat orb hover effect */
+.stat-orb {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-orb:hover {
+  transform: scale(1.05) translateY(-4px);
+}
+
+/* Input glow on focus */
+.input-glow:focus {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.2);
+}
+
+/* Batch card selection ring */
+.batch-card-selected {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.8), 0 0 40px rgba(139, 92, 246, 0.3);
+}
+
+/* Gradient background animation */
+.bg-gradient-animated {
+  background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* ============================================================
+   STATUS PAGE ANIMATIONS
+   ============================================================ */
+
+/* Slow pulse for operational status indicators */
+@keyframes pulseSlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 3s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeInAnimation {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInAnimation 0.3s ease-out forwards;
+}
+
+/* Flow animation for pipeline connectors */
+@keyframes flow {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(1000%);
+  }
+}
+
+.animate-flow {
+  animation: flow 2s linear infinite;
+}
+
+/* Spin animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
 }

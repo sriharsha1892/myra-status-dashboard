@@ -3,11 +3,67 @@
 import { ProviderStatus } from '@/lib/types';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
-import { getTimeSinceGMT, formatShortGMT } from '@/lib/time-utils';
+import { getTimeSinceGMT } from '@/lib/time-utils';
+import { cn } from '@/lib/utils';
 
 interface HeroStatusBannerProps {
   providers: ProviderStatus[];
   lastUpdated: string;
+}
+
+// Status indicator with animated glow
+function StatusIndicator({ status }: { status: 'operational' | 'degraded' | 'critical' }) {
+  const config = {
+    operational: {
+      color: 'bg-emerald-500',
+      glow: 'shadow-[0_0_30px_rgba(16,185,129,0.5)]',
+      pulse: 'animate-pulse-slow',
+    },
+    degraded: {
+      color: 'bg-amber-500',
+      glow: 'shadow-[0_0_30px_rgba(245,158,11,0.5)]',
+      pulse: 'animate-pulse',
+    },
+    critical: {
+      color: 'bg-red-500',
+      glow: 'shadow-[0_0_30px_rgba(239,68,68,0.5)]',
+      pulse: 'animate-pulse',
+    },
+  };
+
+  const c = config[status];
+
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Outer glow ring */}
+      <div className={cn(
+        'absolute w-20 h-20 rounded-full opacity-20',
+        c.color,
+        c.pulse
+      )} />
+      {/* Inner solid circle */}
+      <div className={cn(
+        'relative w-16 h-16 rounded-full flex items-center justify-center',
+        c.color,
+        c.glow,
+        'transition-all duration-500'
+      )}>
+        {status === 'operational' ? (
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : status === 'degraded' ? (
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        ) : (
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusBannerProps) {
@@ -21,171 +77,114 @@ export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusB
   );
   const degradedServices = primaryProviders.filter((p) => p.status === 'degraded_performance');
 
-  // Determine banner color and message
-  const getBannerStyle = () => {
-    if (allOperational) {
-      return {
-        bg: 'rgba(16, 185, 129, 0.12)',
-        border: 'rgba(16, 185, 129, 0.35)',
-        statusBadge: 'OPERATIONAL',
-        statusBadgeBg: '#10b981',
-        message: 'All Systems Operational',
-        subtext: 'myRA AI services and infrastructure partners are functioning normally',
-      };
-    }
-    if (criticalIssues.length > 0) {
-      return {
-        bg: 'rgba(239, 68, 68, 0.12)',
-        border: 'rgba(239, 68, 68, 0.35)',
-        statusBadge: 'DEGRADED',
-        statusBadgeBg: '#ef4444',
-        message: 'Service Disruption Detected',
-        subtext: `Infrastructure partner issues affecting ${issuesCount} ${issuesCount === 1 ? 'service' : 'services'}. Some capabilities may be temporarily unavailable.`,
-      };
-    }
-    return {
-      bg: 'rgba(245, 158, 11, 0.12)',
-      border: 'rgba(245, 158, 11, 0.35)',
-      statusBadge: 'DEGRADED',
-      statusBadgeBg: '#f59e0b',
-      message: 'Performance Issues Detected',
-      subtext: `Infrastructure partner issues affecting ${issuesCount} ${issuesCount === 1 ? 'service' : 'services'}. Core functionality remains available.`,
-    };
+  // Determine status level
+  const statusLevel = allOperational ? 'operational' : criticalIssues.length > 0 ? 'critical' : 'degraded';
+
+  // Status configuration
+  const statusConfig = {
+    operational: {
+      badge: 'ALL SYSTEMS OPERATIONAL',
+      badgeClass: 'bg-emerald-500',
+      cardClass: 'bg-emerald-500/[0.08] border-emerald-500/30',
+      headline: 'All Systems Operational',
+      subtext: 'myRA AI services and all infrastructure partners are functioning normally.',
+    },
+    degraded: {
+      badge: 'PERFORMANCE ISSUES',
+      badgeClass: 'bg-amber-500',
+      cardClass: 'bg-amber-500/[0.08] border-amber-500/30',
+      headline: 'Performance Issues Detected',
+      subtext: `${issuesCount} infrastructure ${issuesCount === 1 ? 'partner is' : 'partners are'} experiencing issues. Core functionality remains available.`,
+    },
+    critical: {
+      badge: 'SERVICE DISRUPTION',
+      badgeClass: 'bg-red-500',
+      cardClass: 'bg-red-500/[0.08] border-red-500/30',
+      headline: 'Service Disruption Detected',
+      subtext: `${issuesCount} infrastructure ${issuesCount === 1 ? 'partner is' : 'partners are'} experiencing issues. Some capabilities may be temporarily unavailable.`,
+    },
   };
 
-  const style = getBannerStyle();
+  const config = statusConfig[statusLevel];
+  const affectedPartners = criticalIssues.length > 0 ? criticalIssues : degradedServices;
 
   return (
-    <div
-      style={{
-        background: style.bg,
-        border: `2px solid ${style.border}`,
-        borderRadius: '12px',
-        padding: '16px 20px',
-        marginBottom: '16px',
-        backdropFilter: 'blur(12px)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '250px' }}>
-          {/* Status Badge */}
-          <div style={{ marginBottom: '10px' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                fontSize: '10px',
-                fontWeight: 900,
-                padding: '6px 12px',
-                borderRadius: '6px',
-                background: style.statusBadgeBg,
-                color: '#ffffff',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                boxShadow: `0 2px 8px ${style.statusBadgeBg}40`,
-              }}
-            >
-              {style.statusBadge}
-            </span>
+    <div className={cn(
+      'relative overflow-hidden rounded-2xl border-2 backdrop-blur-xl mb-6 transition-all duration-300',
+      config.cardClass
+    )}>
+      <div className="p-6 md:p-8">
+        <div className="flex flex-col md:flex-row md:items-center gap-6">
+          {/* Status Indicator */}
+          <div className="flex-shrink-0">
+            <StatusIndicator status={statusLevel} />
           </div>
 
-          {/* Main Message */}
-          <div
-            style={{
-              fontSize: '18px',
-              fontWeight: 700,
-              color: 'rgba(255, 255, 255, 0.98)',
-              marginBottom: '6px',
-              lineHeight: '1.3',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            {style.message}
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Status Badge */}
+            <div className="mb-3">
+              <span className={cn(
+                'inline-block text-[10px] font-black px-3 py-1.5 rounded-md text-white uppercase tracking-widest',
+                config.badgeClass,
+                'shadow-lg'
+              )}>
+                {config.badge}
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
+              {config.headline}
+            </h1>
+
+            {/* Subtext */}
+            <p className="text-sm md:text-base text-white/70 leading-relaxed max-w-2xl">
+              {config.subtext}
+            </p>
+
+            {/* Timestamp */}
+            <div className="mt-4 flex items-center gap-2 text-xs text-white/50">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Last checked: {getTimeSinceGMT(lastUpdated)}</span>
+            </div>
           </div>
 
-          {/* Subtext - only show when there are issues */}
-          {!allOperational && (
-            <div
-              style={{
-                fontSize: '13px',
-                color: 'rgba(255, 255, 255, 0.7)',
-                marginBottom: '10px',
-                lineHeight: '1.4',
-              }}
-            >
-              {style.subtext}
+          {/* Affected Services Panel */}
+          {!allOperational && affectedPartners.length > 0 && (
+            <div className="flex-shrink-0 w-full md:w-auto">
+              <div className="bg-black/20 border border-white/10 rounded-xl p-4 min-w-[200px]">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/50 mb-3">
+                  Affected Partners
+                </div>
+                <div className="space-y-2">
+                  {affectedPartners.map((p) => (
+                    <div
+                      key={p.provider.id}
+                      className="flex items-center gap-2"
+                    >
+                      <div className={cn(
+                        'w-2 h-2 rounded-full',
+                        p.status === 'major_outage' || p.status === 'partial_outage'
+                          ? 'bg-red-500'
+                          : 'bg-amber-500'
+                      )} />
+                      <span className="text-sm font-medium text-white/85">
+                        {getProviderDisplayName(p.provider, isAdminView)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-
-          {/* Timestamp */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '11px',
-              color: 'rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            <span>Last checked: {getTimeSinceGMT(lastUpdated)}</span>
-          </div>
         </div>
-
-        {/* Affected Services */}
-        {!allOperational && (
-          <div
-            style={{
-              background: 'rgba(0, 0, 0, 0.2)',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              minWidth: '200px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                marginBottom: '8px',
-              }}
-            >
-              Affected Partners
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {criticalIssues.length > 0 &&
-                criticalIssues.map((p) => (
-                  <div
-                    key={p.provider.id}
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      color: 'rgba(255, 255, 255, 0.85)',
-                    }}
-                  >
-                    • {getProviderDisplayName(p.provider, isAdminView)}
-                  </div>
-                ))}
-              {degradedServices.length > 0 &&
-                criticalIssues.length === 0 &&
-                degradedServices.map((p) => (
-                  <div
-                    key={p.provider.id}
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      color: 'rgba(255, 255, 255, 0.85)',
-                    }}
-                  >
-                    • {getProviderDisplayName(p.provider, isAdminView)}
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Decorative gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
     </div>
   );
 }
