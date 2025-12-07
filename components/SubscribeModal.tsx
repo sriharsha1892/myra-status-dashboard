@@ -10,16 +10,46 @@ interface SubscribeModalProps {
 }
 
 interface SubscriptionPreferences {
-  email: string;
+  type: 'push' | 'email';
+  email?: string;
   allChanges: boolean;
   outagesOnly: boolean;
   majorOutagesOnly: boolean;
   selectedProviders: string[];
+  pushEndpoint?: string;
 }
 
 const STORAGE_KEY = 'statusSubscription';
 
+// Check if push notifications are supported
+function isPushSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
+}
+
+// Convert base64 to Uint8Array for push subscription
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
 export default function SubscribeModal({ isOpen, onClose, providers = [] }: SubscribeModalProps) {
+  const [subscriptionType, setSubscriptionType] = useState<'push' | 'email'>('push');
   const [email, setEmail] = useState('');
   const [preferences, setPreferences] = useState({
     allChanges: false,
@@ -31,6 +61,18 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  // Check push support on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPushSupported(isPushSupported());
+      if ('Notification' in window) {
+        setNotificationPermission(Notification.permission);
+      }
+    }
+  }, []);
 
   // Load existing subscription from localStorage
   useEffect(() => {
@@ -39,7 +81,8 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
       if (stored) {
         try {
           const parsed: SubscriptionPreferences = JSON.parse(stored);
-          setEmail(parsed.email);
+          setSubscriptionType(parsed.type || 'push');
+          if (parsed.email) setEmail(parsed.email);
           setPreferences({
             allChanges: parsed.allChanges,
             outagesOnly: parsed.outagesOnly,
@@ -88,6 +131,80 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
     );
   };
 
+  // Subscribe to push notifications
+  const subscribeToPush = async () => {
+    // Request notification permission
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission !== 'granted') {
+      throw new Error('Notification permission denied. Please enable notifications in your browser settings.');
+    }
+
+    // Register service worker if not already registered
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+
+    // Get VAPID public key
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) {
+      throw new Error('Push notifications not configured on this server');
+    }
+
+    // Subscribe to push
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+    });
+
+    // Send subscription to server
+    const response = await fetch('/api/status/push-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        preferences: {
+          allChanges: preferences.allChanges,
+          outagesOnly: preferences.outagesOnly,
+          majorOutagesOnly: preferences.majorOutagesOnly,
+        },
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to subscribe');
+    }
+
+    return subscription.endpoint;
+  };
+
+  // Subscribe to email notifications
+  const subscribeToEmail = async () => {
+    const response = await fetch('/api/status/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        preferences: {
+          allChanges: preferences.allChanges,
+          outagesOnly: preferences.outagesOnly,
+          majorOutagesOnly: preferences.majorOutagesOnly,
+        },
+        providers: selectedProviders.length > 0 ? selectedProviders : undefined,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to subscribe');
+    }
+
+    return email;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -95,29 +212,19 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
     setErrorMessage('');
 
     try {
-      const response = await fetch('/api/status/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          preferences: {
-            allChanges: preferences.allChanges,
-            outagesOnly: preferences.outagesOnly,
-            majorOutagesOnly: preferences.majorOutagesOnly,
-          },
-          providers: selectedProviders.length > 0 ? selectedProviders : undefined,
-        }),
-      });
+      let endpoint: string;
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to subscribe');
+      if (subscriptionType === 'push') {
+        endpoint = await subscribeToPush();
+      } else {
+        endpoint = await subscribeToEmail();
       }
 
       // Save to localStorage for UI feedback
       const subscriptionData: SubscriptionPreferences = {
-        email,
+        type: subscriptionType,
+        email: subscriptionType === 'email' ? email : undefined,
+        pushEndpoint: subscriptionType === 'push' ? endpoint : undefined,
         ...preferences,
         selectedProviders,
       };
@@ -142,17 +249,40 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
   const handleUnsubscribe = async () => {
     setIsSubmitting(true);
     try {
-      // Call API to unsubscribe
-      const response = await fetch('/api/status/subscribe', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      // Get stored subscription info
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const parsed = stored ? JSON.parse(stored) : null;
+      const storedType = parsed?.type || subscriptionType;
 
-      const data = await response.json();
+      if (storedType === 'push') {
+        // Unsubscribe from push
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to unsubscribe');
+        if (subscription) {
+          // Unsubscribe from browser
+          await subscription.unsubscribe();
+
+          // Remove from server
+          await fetch('/api/status/push-subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: subscription.endpoint }),
+          });
+        }
+      } else {
+        // Unsubscribe from email
+        const response = await fetch('/api/status/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: parsed?.email || email }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to unsubscribe');
+        }
       }
 
       // Clear localStorage
@@ -165,6 +295,7 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
       });
       setSelectedProviders([]);
       setIsSubscribed(false);
+      setSubscriptionType('push');
       setSubmitStatus('success');
       setErrorMessage('');
 
@@ -243,26 +374,93 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          {/* Email Input */}
+          {/* Subscription Type Selector */}
           <div>
             <label className="block text-sm font-medium text-white/70 mb-2">
-              Email Address
+              Notification Method
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              required
-              className={cn(
-                'w-full px-4 py-3 rounded-xl',
-                'bg-white/5 border border-white/10',
-                'text-white placeholder:text-white/30',
-                'focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20',
-                'transition-all duration-200'
-              )}
-            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSubscriptionType('push')}
+                disabled={!pushSupported}
+                className={cn(
+                  'flex-1 px-4 py-3 rounded-xl text-sm font-medium',
+                  'border transition-all duration-200',
+                  'flex items-center justify-center gap-2',
+                  subscriptionType === 'push'
+                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10',
+                  !pushSupported && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Browser Push
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubscriptionType('email')}
+                className={cn(
+                  'flex-1 px-4 py-3 rounded-xl text-sm font-medium',
+                  'border transition-all duration-200',
+                  'flex items-center justify-center gap-2',
+                  subscriptionType === 'email'
+                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                )}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Email
+              </button>
+            </div>
+            {!pushSupported && (
+              <p className="text-xs text-amber-400/80 mt-2">
+                Push notifications are not supported in this browser
+              </p>
+            )}
+            {subscriptionType === 'push' && notificationPermission === 'denied' && (
+              <p className="text-xs text-red-400/80 mt-2">
+                Notifications are blocked. Please enable them in browser settings.
+              </p>
+            )}
           </div>
+
+          {/* Email Input - Only show for email type */}
+          {subscriptionType === 'email' && (
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                required
+                className={cn(
+                  'w-full px-4 py-3 rounded-xl',
+                  'bg-white/5 border border-white/10',
+                  'text-white placeholder:text-white/30',
+                  'focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20',
+                  'transition-all duration-200'
+                )}
+              />
+            </div>
+          )}
+
+          {/* Push Info - Only show for push type */}
+          {subscriptionType === 'push' && (
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-300">
+                You'll receive desktop notifications when service status changes.
+                No email required.
+              </p>
+            </div>
+          )}
 
           {/* Alert Preferences */}
           <div>
@@ -337,7 +535,9 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Successfully subscribed to status alerts!
+              {subscriptionType === 'push'
+                ? 'Push notifications enabled!'
+                : 'Successfully subscribed to status alerts!'}
             </div>
           )}
 
@@ -359,7 +559,12 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
             )}
             <button
               type="submit"
-              disabled={isSubmitting || !preferences.allChanges && !preferences.outagesOnly && !preferences.majorOutagesOnly}
+              disabled={
+                isSubmitting ||
+                (!preferences.allChanges && !preferences.outagesOnly && !preferences.majorOutagesOnly) ||
+                (subscriptionType === 'push' && notificationPermission === 'denied') ||
+                (subscriptionType === 'email' && !email)
+              }
               className={cn(
                 'flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold',
                 'bg-blue-500 hover:bg-blue-600 text-white',
@@ -374,10 +579,12 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Subscribing...
+                  {subscriptionType === 'push' ? 'Enabling...' : 'Subscribing...'}
                 </>
               ) : isSubscribed ? (
                 'Update Preferences'
+              ) : subscriptionType === 'push' ? (
+                'Enable Notifications'
               ) : (
                 'Subscribe'
               )}

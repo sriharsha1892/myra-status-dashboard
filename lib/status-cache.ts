@@ -2,6 +2,7 @@ import { ProviderStatus, ServiceStatus } from './types';
 import { PROVIDERS } from './providers';
 import { StatusFetcher } from './status-fetcher';
 import { NotificationService } from './notifications';
+import { sendStatusPush } from './push/sendPush';
 
 interface HistoricalStatusCheck {
   timestamp: string;
@@ -16,6 +17,7 @@ export class StatusCache {
   private updateInterval: NodeJS.Timeout | null = null;
   private listeners: Set<(data: ProviderStatus[]) => void> = new Set();
   private history: Map<string, HistoricalStatusCheck[]> = new Map(); // providerId -> checks (last 24h)
+  private previousOverallStatus: ServiceStatus | null = null; // Track status changes for push notifications
 
   private constructor() {
     // Private constructor for singleton
@@ -82,6 +84,27 @@ export class StatusCache {
       // Check for status changes and send notifications
       const notificationService = NotificationService.getInstance();
       await notificationService.checkAndNotify(statuses);
+
+      // Check for overall status change and send push notifications
+      const newOverallStatus = this.calculateOverallStatus(statuses);
+      if (this.previousOverallStatus !== null && this.previousOverallStatus !== newOverallStatus) {
+        console.log(`Status changed: ${this.previousOverallStatus} -> ${newOverallStatus}`);
+
+        // Get list of affected services
+        const affectedServices = statuses
+          .filter(p => p.status !== 'operational' && p.status !== 'unknown')
+          .map(p => p.provider.displayName);
+
+        // Send push notifications in the background
+        sendStatusPush(newOverallStatus, this.previousOverallStatus, affectedServices)
+          .then(result => {
+            console.log(`Push notifications sent: ${result.sent} sent, ${result.failed} failed`);
+          })
+          .catch(err => {
+            console.error('Failed to send push notifications:', err);
+          });
+      }
+      this.previousOverallStatus = newOverallStatus;
 
       // Notify all listeners
       this.notifyListeners(statuses);
@@ -191,12 +214,17 @@ export class StatusCache {
   }
 
   public getOverallStatus(): ServiceStatus {
-    if (this.cache.length === 0) {
+    return this.calculateOverallStatus(this.cache);
+  }
+
+  // Helper to calculate overall status from a list of provider statuses
+  private calculateOverallStatus(providers: ProviderStatus[]): ServiceStatus {
+    if (providers.length === 0) {
       return 'unknown';
     }
 
     // Filter out unknown statuses when calculating overall status
-    const statuses = this.cache
+    const statuses = providers
       .map(p => p.status)
       .filter(s => s !== 'unknown');
 
