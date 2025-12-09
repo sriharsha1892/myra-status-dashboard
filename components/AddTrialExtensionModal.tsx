@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
@@ -22,7 +21,7 @@ interface AddTrialExtensionModalProps {
   onSuccess: () => void;
 }
 
-export default function AddTrialExtensionModal({
+const AddTrialExtensionModal = memo(function AddTrialExtensionModal({
   orgId,
   currentExpiryDate,
   isOpen,
@@ -279,4 +278,6 @@ export default function AddTrialExtensionModal({
       </div>
     </div>
   );
-}
+});
+
+export default AddTrialExtensionModal;

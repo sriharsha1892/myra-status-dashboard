@@ -1,6 +1,7 @@
 'use client';
 
 import TimelineView from './timeline/TimelineView';
+import ActivityTimeline from './trial/ActivityTimeline';
 
 interface UnifiedTimelineTabProps {
   orgId: string;
@@ -18,7 +19,12 @@ export default function UnifiedTimelineTab({
   onAddActivity,
 }: UnifiedTimelineTabProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Activity History Timeline */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <ActivityTimeline orgId={orgId} />
+      </div>
+
       {/* Unified Timeline with AI-Powered Import */}
       <TimelineView
         orgId={orgId}

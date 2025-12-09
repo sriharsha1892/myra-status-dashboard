@@ -372,7 +372,7 @@ export default function SupportLayout({
                 <p className="text-xs font-medium text-neutral-900 truncate">
                   {user?.email?.split('@')[0] || 'Admin'}
                 </p>
-                <p className="text-[10px] text-neutral-500 truncate">Team</p>
+                <p className="text-[10px] text-neutral-600 truncate">Team</p>
               </div>
             </div>
           </div>

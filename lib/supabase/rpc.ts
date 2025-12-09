@@ -14,7 +14,7 @@ export interface TrialOrganizationData {
   org_name: string;
   domain?: string;
   account_manager_id?: string; // UUID of account manager
-  org_lifecycle_stage?: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned';
+  org_lifecycle_stage?: 'prospect' | 'trial_pending' | 'trial_active' | 'trial_expired' | 'customer' | 'lost';
   trial_start_date?: string; // ISO date string
   trial_end_date?: string; // ISO date string
   org_url?: string;

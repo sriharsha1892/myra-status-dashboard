@@ -35,7 +35,11 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ notes: notes || [] });
+    return NextResponse.json({ notes: notes || [] }, {
+      headers: {
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error: any) {
     console.error('Error fetching activity notes:', error);
     return NextResponse.json(

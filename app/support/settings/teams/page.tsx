@@ -3,11 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
-import { MessageSquare, CheckCircle, XCircle, Settings, AlertCircle } from 'lucide-react';
+import { MessageSquare, AlertCircle } from 'lucide-react';
 
 interface TeamsConfig {
   id?: string;
@@ -24,23 +23,20 @@ interface TeamsConfig {
 }
 
 export default function TeamsIntegrationPage() {
-  const { user, loading: authLoading, role } = useAuth();
-  const router = useRouter();
+  const { user, loading: authLoading, role, is_super_admin } = useAuth();
+  const supabase = createClient();
   const [config, setConfig] = useState<TeamsConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || role !== 'Admin')) {
-      router.push('/support/dashboard');
-    }
-  }, [user, authLoading, role, router]);
-
-  useEffect(() => {
-    if (user && role?.toLowerCase() === 'admin') {
+    if (user && role !== undefined && (role?.toLowerCase() === 'admin' || is_super_admin)) {
       fetchConfig();
+    } else if (!authLoading && role !== undefined) {
+      // Role is loaded but user doesn't have access - stop loading spinner
+      setLoading(false);
     }
-  }, [user, role]);
+  }, [user, role, is_super_admin, authLoading]);
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -104,7 +100,9 @@ export default function TeamsIntegrationPage() {
     }
   };
 
-  if (authLoading || loading) {
+  // Show loading while auth loads or while user details (role/is_super_admin) are still being fetched
+  // We need to wait for fetchUserDetails to complete, which sets role from null to a value
+  if (authLoading || (user && role === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-sm text-gray-500">Loading...</div>
@@ -112,34 +110,32 @@ export default function TeamsIntegrationPage() {
     );
   }
 
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
-        <div className="h-14 px-4 flex items-center border-b border-gray-200">
-          <h1 className="text-sm font-semibold text-gray-900">myRA AI Support</h1>
+  // Access denied check (after auth is fully loaded)
+  if (!user || (role?.toLowerCase() !== 'admin' && !is_super_admin)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Access Denied</h2>
+          <p className="text-sm text-gray-500">Admin access required to view this page</p>
         </div>
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          <button onClick={() => router.push('/support/dashboard')} className="flex items-center gap-3 px-3 h-8 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors w-full">
-            Dashboard
-          </button>
-          <button onClick={() => router.push('/support/settings/users')} className="flex items-center gap-3 px-3 h-8 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors w-full">
-            Users
-          </button>
-          <button onClick={() => router.push('/support/settings/templates')} className="flex items-center gap-3 px-3 h-8 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors w-full">
-            Templates
-          </button>
-          <button className="flex items-center gap-3 px-3 h-8 text-sm font-medium text-gray-900 bg-gray-100 rounded-md transition-colors w-full">
-            MS Teams
-          </button>
-        </nav>
-      </aside>
+      </div>
+    );
+  }
 
-      <main className="flex-1 overflow-y-auto">
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-lg font-semibold text-gray-900">MS Teams Integration</h2>
-        </header>
+  // Show loading while fetching config
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-sm text-gray-500">Loading Teams configuration...</div>
+      </div>
+    );
+  }
 
-        <div className="p-6 max-w-4xl">
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -193,18 +189,16 @@ export default function TeamsIntegrationPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={handleSave} disabled={saving} className="px-4 h-9 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Save Configuration'}
-                </button>
-                <button onClick={() => setConfig(null)} className="px-4 h-9 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+        <div className="flex gap-3">
+          <button onClick={handleSave} disabled={saving} className="px-4 h-9 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Configuration'}
+          </button>
+          <button onClick={() => setConfig(null)} className="px-4 h-9 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
         </div>
-      </main>
+      </div>
+    )}
     </div>
   );
 }

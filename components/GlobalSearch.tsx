@@ -225,7 +225,7 @@ export function GlobalSearch() {
       >
         <Search className="w-4 h-4" />
         <span>Search</span>
-        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-semibold text-gray-500 bg-white border border-gray-200 rounded">
+        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded">
           ⌘K
         </kbd>
       </button>
@@ -270,7 +270,7 @@ export function GlobalSearch() {
           <div className="flex-1 overflow-y-auto">
             {!query.trim() && recentSearches.length > 0 && (
               <div className="p-3">
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">
+                <div className="text-xs font-semibold text-gray-600 uppercase mb-2 px-2">
                   Recent Searches
                 </div>
                 <div className="space-y-1">
@@ -291,7 +291,7 @@ export function GlobalSearch() {
             {!query.trim() && recentSearches.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Search className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-600">
                   Search across timeline events, trials, users, and resources
                 </p>
                 <p className="text-xs text-gray-400 mt-2">
@@ -313,7 +313,7 @@ export function GlobalSearch() {
                 {/* Timeline Events */}
                 {categorized.timeline.length > 0 && (
                   <div className="mb-4">
-                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2 px-5">
+                    <div className="text-xs font-semibold text-gray-600 uppercase mb-2 px-5">
                       Timeline Events ({categorized.timeline.length})
                     </div>
                     <div className="space-y-1 px-2">
@@ -334,7 +334,7 @@ export function GlobalSearch() {
                 {/* Trials */}
                 {categorized.trials.length > 0 && (
                   <div className="mb-4">
-                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2 px-5">
+                    <div className="text-xs font-semibold text-gray-600 uppercase mb-2 px-5">
                       Trial Organizations ({categorized.trials.length})
                     </div>
                     <div className="space-y-1 px-2">
@@ -355,7 +355,7 @@ export function GlobalSearch() {
                 {/* Users */}
                 {categorized.users.length > 0 && (
                   <div className="mb-4">
-                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2 px-5">
+                    <div className="text-xs font-semibold text-gray-600 uppercase mb-2 px-5">
                       Users ({categorized.users.length})
                     </div>
                     <div className="space-y-1 px-2">
@@ -376,7 +376,7 @@ export function GlobalSearch() {
                 {/* Resources */}
                 {categorized.resources.length > 0 && (
                   <div className="mb-4">
-                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2 px-5">
+                    <div className="text-xs font-semibold text-gray-600 uppercase mb-2 px-5">
                       Resources ({categorized.resources.length})
                     </div>
                     <div className="space-y-1 px-2">
@@ -398,7 +398,7 @@ export function GlobalSearch() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-2 border-t border-gray-200 text-xs text-gray-600">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
                 <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded">↑</kbd>
@@ -448,7 +448,7 @@ function ResultItem({ result, isSelected, onSelect, getIcon, getLabel }: ResultI
           <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
             {result.title}
           </span>
-          <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-gray-100 rounded">
+          <span className="text-xs text-gray-600 px-1.5 py-0.5 bg-gray-100 rounded">
             {getLabel(result.type)}
           </span>
         </div>
@@ -460,7 +460,7 @@ function ResultItem({ result, isSelected, onSelect, getIcon, getLabel }: ResultI
         {result.match_reasons.length > 0 && (
           <div className="flex items-center gap-1 mt-1">
             {result.match_reasons.slice(0, 2).map((reason, idx) => (
-              <span key={idx} className="text-xs text-gray-500">
+              <span key={idx} className="text-xs text-gray-600">
                 {reason}
               </span>
             ))}
@@ -468,7 +468,7 @@ function ResultItem({ result, isSelected, onSelect, getIcon, getLabel }: ResultI
         )}
       </div>
       {isSelected && (
-        <kbd className="text-xs text-gray-500 px-1.5 py-0.5 bg-white border border-gray-300 rounded">
+        <kbd className="text-xs text-gray-600 px-1.5 py-0.5 bg-white border border-gray-300 rounded">
           ↵
         </kbd>
       )}

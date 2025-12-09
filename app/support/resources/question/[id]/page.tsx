@@ -149,42 +149,61 @@ export default function QuestionDetailPage() {
 
       if (error) throw error;
 
-      // Fetch author info and vote counts for each answer
-      const answersWithDetails = await Promise.all(
-        (answersData || []).map(async (answer: any) => {
-          const { data: authorData } = await supabase
-            .from('users')
-            .select('full_name, email')
-            .eq('id', answer.author_id)
-            .single();
+      if (!answersData || answersData.length === 0) {
+        setAnswers([]);
+        return;
+      }
 
-          const { count: upvotes } = await supabase
-            .from('resource_discussion_reactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('discussion_id', answer.id)
-            .eq('reaction_type', 'upvote');
+      // Collect all unique author IDs and answer IDs for batch fetching
+      const authorIds = [...new Set(answersData.map((a: any) => a.author_id).filter(Boolean))];
+      const answerIds = answersData.map((a: any) => a.id);
 
-          let parsedContent: any = {};
-          try {
-            parsedContent = typeof answer.content === 'string'
-              ? JSON.parse(answer.content)
-              : answer.content;
-          } catch (e) {
-            parsedContent = { content: answer.content };
-          }
+      // Batch fetch all data in parallel (2 queries instead of N*2)
+      const [authorsResult, reactionsResult] = await Promise.all([
+        authorIds.length > 0
+          ? supabase.from('users').select('id, full_name, email').in('id', authorIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from('resource_discussion_reactions')
+          .select('discussion_id')
+          .in('discussion_id', answerIds)
+          .eq('reaction_type', 'upvote')
+      ]);
 
-          return {
-            id: answer.id,
-            content: parsedContent.content || parsedContent.answer || '',
-            author_id: answer.author_id,
-            author_name: authorData?.full_name || 'Unknown',
-            author_email: authorData?.email || '',
-            created_at: answer.created_at,
-            upvote_count: upvotes || 0,
-            is_accepted_answer: answer.is_accepted_answer || false,
-          };
-        })
+      // Create lookup maps for O(1) access
+      const authorMap = new Map(
+        (authorsResult.data || []).map((a: any) => [a.id, { full_name: a.full_name, email: a.email }])
       );
+
+      // Count upvotes per answer
+      const upvoteMap = new Map<string, number>();
+      (reactionsResult.data || []).forEach((r: any) => {
+        upvoteMap.set(r.discussion_id, (upvoteMap.get(r.discussion_id) || 0) + 1);
+      });
+
+      // Map answers with all the data (no more N+1!)
+      const answersWithDetails = answersData.map((answer: any) => {
+        let parsedContent: any = {};
+        try {
+          parsedContent = typeof answer.content === 'string'
+            ? JSON.parse(answer.content)
+            : answer.content;
+        } catch (e) {
+          parsedContent = { content: answer.content };
+        }
+
+        const author = authorMap.get(answer.author_id);
+
+        return {
+          id: answer.id,
+          content: parsedContent.content || parsedContent.answer || '',
+          author_id: answer.author_id,
+          author_name: author?.full_name || 'Unknown',
+          author_email: author?.email || '',
+          created_at: answer.created_at,
+          upvote_count: upvoteMap.get(answer.id) || 0,
+          is_accepted_answer: answer.is_accepted_answer || false,
+        };
+      });
 
       setAnswers(answersWithDetails);
     } catch (error) {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,6 +21,12 @@ interface AddSupportQueryModalProps {
   onClose: () => void;
   onSuccess: () => void;
   userId?: string;
+  defaultValues?: {
+    title?: string;
+    description?: string;
+    priority?: string;
+    category?: string;
+  };
 }
 
 const QUERY_TYPES = [
@@ -39,11 +44,26 @@ export default function AddSupportQueryModal({
   onClose,
   onSuccess,
   userId,
+  defaultValues,
 }: AddSupportQueryModalProps) {
   const supabase = createClient();
 
   const [trialUsers, setTrialUsers] = useState<TrialUser[]>([]);
   const [fetchingUsers, setFetchingUsers] = useState(false);
+
+  // Map category to query_type
+  const getQueryType = (category?: string) => {
+    const categoryMap: Record<string, string> = {
+      'bug': 'functionality_related',
+      'feature_request': 'other',
+      'question': 'general_support',
+      'integration': 'technical_guidance',
+      'performance': 'functionality_related',
+      'security': 'security_related',
+      'documentation': 'general_support',
+    };
+    return categoryMap[category || ''] || 'general_support';
+  };
 
   // Form validation hook
   const {
@@ -52,13 +72,26 @@ export default function AddSupportQueryModal({
     handleInputChange,
     validateForm,
     resetForm,
+    setFormData,
   } = useFormValidation(createSupportQuerySchema, {
-    query_type: 'general_support',
-    title: '',
-    description: '',
+    query_type: getQueryType(defaultValues?.category),
+    title: defaultValues?.title || '',
+    description: defaultValues?.description || '',
     is_user_level: !!userId,
     user_id: userId || '',
   });
+
+  // Update form when defaultValues change (for command interface prefill)
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData(prev => ({
+        ...prev,
+        title: defaultValues.title || prev.title,
+        description: defaultValues.description || prev.description,
+        query_type: getQueryType(defaultValues.category) || prev.query_type,
+      }));
+    }
+  }, [defaultValues, setFormData]);
 
   // Use loading state hook
   const { isLoading, execute} = useLoadingState();

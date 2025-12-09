@@ -14,12 +14,19 @@ const DEFAULT_MAX_HISTORY = 50;
 const DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
+ * Check if we're in a browser environment (not SSR)
+ */
+const isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+/**
  * Save toast to history
  */
 export function saveToHistory(
   toast: Toast,
   dismissedBy: 'user' | 'auto' | 'system' = 'user'
 ): void {
+  if (!isBrowser) return;
+
   try {
     const history = getHistory();
     const item: ToastHistoryItem = {
@@ -45,6 +52,8 @@ export function saveToHistory(
  * Get toast history
  */
 export function getHistory(): ToastHistoryItem[] {
+  if (!isBrowser) return [];
+
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.HISTORY);
     if (!stored) return [];
@@ -63,6 +72,8 @@ export function getHistory(): ToastHistoryItem[] {
  * Clear toast history
  */
 export function clearHistory(): void {
+  if (!isBrowser) return;
+
   try {
     localStorage.removeItem(STORAGE_KEYS.HISTORY);
   } catch (error) {
@@ -77,6 +88,8 @@ export function savePersistentToast(toast: Toast): void {
   if (!toast.metadata?.persist || !toast.metadata?.persistKey) {
     return;
   }
+
+  if (!isBrowser) return;
 
   try {
     const persistent = getPersistentToasts();
@@ -95,6 +108,8 @@ export function savePersistentToast(toast: Toast): void {
  * Get all persistent toasts
  */
 export function getPersistentToasts(): Record<string, Toast> {
+  if (!isBrowser) return {};
+
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.PERSISTENT_TOASTS);
     if (!stored) return {};
@@ -110,6 +125,8 @@ export function getPersistentToasts(): Record<string, Toast> {
  * Remove persistent toast
  */
 export function removePersistentToast(persistKey: string): void {
+  if (!isBrowser) return;
+
   try {
     const persistent = getPersistentToasts();
     delete persistent[persistKey];
@@ -127,6 +144,8 @@ export function removePersistentToast(persistKey: string): void {
  * Clear all persistent toasts
  */
 export function clearPersistentToasts(): void {
+  if (!isBrowser) return;
+
   try {
     localStorage.removeItem(STORAGE_KEYS.PERSISTENT_TOASTS);
   } catch (error) {

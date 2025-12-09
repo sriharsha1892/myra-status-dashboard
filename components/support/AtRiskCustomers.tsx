@@ -44,15 +44,34 @@ export default function AtRiskCustomers() {
 
       if (orgError) throw orgError;
 
-      // Analyze health for each organization
-      const orgHealthPromises = (organizations || []).map(async (org) => {
-        // Fetch tickets
-        const { data: tickets } = await supabase
-          .from('support_tickets')
-          .select('id, title, priority, status, created_at')
-          .eq('org_id', org.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+      if (!organizations || organizations.length === 0) {
+        setAtRiskOrgs([]);
+        return;
+      }
+
+      // Collect all org IDs for batch fetching
+      const orgIds = organizations.map(org => org.id);
+
+      // Batch fetch all tickets for all orgs in one query
+      const { data: allTickets } = await supabase
+        .from('support_tickets')
+        .select('id, title, priority, status, created_at, org_id')
+        .in('org_id', orgIds)
+        .order('created_at', { ascending: false });
+
+      // Group tickets by org_id for O(1) lookup
+      const ticketsByOrg = new Map<string, any[]>();
+      (allTickets || []).forEach((ticket: any) => {
+        const existing = ticketsByOrg.get(ticket.org_id) || [];
+        if (existing.length < 10) { // Limit to 10 per org
+          existing.push(ticket);
+        }
+        ticketsByOrg.set(ticket.org_id, existing);
+      });
+
+      // Analyze health for each organization (no more N+1 queries)
+      const orgHealthData = organizations.map((org) => {
+        const tickets = ticketsByOrg.get(org.id) || [];
 
         // Generate mock activity logs (in production, fetch from database)
         const mockActivityLogs = generateMockActivityLogs();
@@ -61,7 +80,7 @@ export default function AtRiskCustomers() {
         // Analyze health
         const health = analyzeOrganizationHealth(
           org,
-          tickets || [],
+          tickets,
           mockActivityLogs,
           mockFeaturesUsed,
           org.last_outreach,
@@ -69,9 +88,9 @@ export default function AtRiskCustomers() {
         );
 
         // Count critical issues
-        const criticalIssuesCount = tickets?.filter(
-          (t) => t.priority === 'critical' && t.status !== 'resolved'
-        ).length || 0;
+        const criticalIssuesCount = tickets.filter(
+          (t: any) => t.priority === 'critical' && t.status !== 'resolved'
+        ).length;
 
         return {
           organization: org,
@@ -79,8 +98,6 @@ export default function AtRiskCustomers() {
           criticalIssuesCount,
         };
       });
-
-      const orgHealthData = await Promise.all(orgHealthPromises);
 
       // Sort by health score (lowest first) and filter at-risk (score < 70)
       const atRisk = orgHealthData

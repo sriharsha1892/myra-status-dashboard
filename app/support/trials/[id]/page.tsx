@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
@@ -36,20 +37,35 @@ import Avatar, { AvatarGroup } from '@/components/Avatar';
 import ActivityFeed from '@/components/support/ActivityFeed';
 import AINewsPanel from '@/components/support/AINewsPanel';
 import Breadcrumbs from '@/components/Breadcrumbs';
-import DeleteOrganizationModal from '@/components/DeleteOrganizationModal';
 import UnifiedNotesPanel from '@/components/UnifiedNotesPanel';
 import DocumentLibrary2027 from '@/components/DocumentLibrary2027';
 import SupportQueriesTab from '@/components/SupportQueriesTab';
 import TrialExtensionsTab from '@/components/TrialExtensionsTab';
 import OverviewTab from '@/components/OverviewTab';
-import LogActivityModal from '@/components/LogActivityModal';
-import LogPlatformQueryModal from '@/components/LogPlatformQueryModal';
 import PeopleEngagementTab from '@/components/PeopleEngagementTab';
 import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
-import AddTrialUserModal from '@/components/AddTrialUserModal';
-import AddPlatformUserModal from '@/components/AddPlatformUserModal';
-import SetUserPasswordModal from '@/components/SetUserPasswordModal';
+import ProspectInfoSection from '@/components/trial/ProspectInfoSection';
 import { prepareTrialOrgForUpdate, validateTrialOrgForm, validateTrialOrgDates } from '@/lib/trial-org-helpers';
+
+// Lazy load modals for code splitting - only loaded when triggered
+const DeleteOrganizationModal = dynamic(() => import('@/components/DeleteOrganizationModal'), {
+  loading: () => null,
+});
+const LogActivityModal = dynamic(() => import('@/components/LogActivityModal'), {
+  loading: () => null,
+});
+const LogPlatformQueryModal = dynamic(() => import('@/components/LogPlatformQueryModal'), {
+  loading: () => null,
+});
+const AddTrialUserModal = dynamic(() => import('@/components/AddTrialUserModal'), {
+  loading: () => null,
+});
+const AddPlatformUserModal = dynamic(() => import('@/components/AddPlatformUserModal'), {
+  loading: () => null,
+});
+const SetUserPasswordModal = dynamic(() => import('@/components/SetUserPasswordModal'), {
+  loading: () => null,
+});
 
 type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support';
 
@@ -302,7 +318,90 @@ export default function TrialOrgPage() {
   };
 
   if (authLoading || loading) {
-    return <LoadingState message="Loading trial organization..." />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb skeleton */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+          </div>
+
+          {/* Header skeleton */}
+          <div className="mb-8 p-8 rounded-3xl backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-gray-200 animate-pulse" />
+                <div>
+                  <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-3" />
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 w-24 bg-gray-200 rounded-lg animate-pulse" />
+                    <div className="h-6 w-16 bg-gray-200 rounded-lg animate-pulse" />
+                    <div className="h-6 w-32 bg-gray-200 rounded-lg animate-pulse" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-28 bg-gray-200 rounded-xl animate-pulse" />
+                <div className="h-10 w-28 bg-gray-200 rounded-xl animate-pulse" />
+              </div>
+            </div>
+
+            {/* Stats row skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="p-4 rounded-xl bg-white/50 border border-white/40">
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-8 w-12 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabs skeleton */}
+          <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse" />
+            ))}
+          </div>
+
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="bg-white/70 rounded-2xl p-6 border border-white/40 h-96">
+                <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-4" />
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-white/70 rounded-2xl p-6 border border-white/40 h-48">
+                <div className="h-5 w-24 bg-gray-200 rounded animate-pulse mb-3" />
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white/70 rounded-2xl p-6 border border-white/40 h-48">
+                <div className="h-5 w-24 bg-gray-200 rounded animate-pulse mb-3" />
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!organization) {
@@ -338,6 +437,20 @@ export default function TrialOrgPage() {
             { label: organization.org_name }
           ]} />
         </div>
+
+        {/* Prospect Info Section - Only shown for prospects */}
+        {organization.is_prospect && (
+          <ProspectInfoSection
+            orgId={organization.org_id}
+            orgName={organization.org_name}
+            prospectStage={organization.prospect_stage}
+            prospectSource={organization.prospect_source}
+            icpFitScore={organization.icp_fit_score}
+            createdAt={organization.created_at}
+            onRefresh={fetchData}
+          />
+        )}
+
         {/* Glassmorphism Header */}
         <div className="mb-8 p-8 rounded-3xl backdrop-blur-xl bg-white/70 border border-white/40 shadow-2xl relative overflow-hidden">
           {/* Background gradient animation */}

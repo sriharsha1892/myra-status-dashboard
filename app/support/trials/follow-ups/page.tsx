@@ -33,6 +33,7 @@ export default function FollowUpsPage() {
   const fetchOrganizations = async () => {
     setLoading(true);
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('trial_organizations')
         .select('*')

@@ -70,21 +70,30 @@ export default function InternalDocumentsSection() {
 
       if (resourcesError) throw resourcesError;
 
-      // Get discussion counts for each resource
-      const resourcesWithCounts = await Promise.all(
-        (resourcesData || []).map(async (resource: any) => {
-          const { count } = await supabase
-            .from('resource_discussions')
-            .select('*', { count: 'exact', head: true })
-            .eq('resource_id', resource.id);
+      if (!resourcesData || resourcesData.length === 0) {
+        setResources([]);
+        return;
+      }
 
-          return {
-            ...resource,
-            folder_name: resource.folder?.name,
-            discussion_count: count || 0,
-          };
-        })
-      );
+      // Batch fetch all discussion counts in one query
+      const resourceIds = resourcesData.map((r: any) => r.id);
+      const { data: discussionsData } = await supabase
+        .from('resource_discussions')
+        .select('resource_id')
+        .in('resource_id', resourceIds);
+
+      // Count discussions per resource
+      const discussionCountMap = new Map<string, number>();
+      (discussionsData || []).forEach((d: any) => {
+        discussionCountMap.set(d.resource_id, (discussionCountMap.get(d.resource_id) || 0) + 1);
+      });
+
+      // Map resources with counts (no more N+1!)
+      const resourcesWithCounts = resourcesData.map((resource: any) => ({
+        ...resource,
+        folder_name: resource.folder?.name,
+        discussion_count: discussionCountMap.get(resource.id) || 0,
+      }));
 
       setResources(resourcesWithCounts);
     } catch (error: any) {

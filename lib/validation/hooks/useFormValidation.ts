@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { z } from 'zod';
 
 /**
@@ -58,7 +58,7 @@ import { z } from 'zod';
  * }
  * ```
  */
-export function useFormValidation<TSchema extends z.ZodSchema>(
+export function useFormValidation<TSchema extends z.ZodObject<any>>(
   schema: TSchema,
   initialData: z.infer<TSchema>
 ) {
@@ -74,7 +74,7 @@ export function useFormValidation<TSchema extends z.ZodSchema>(
    */
   const handleInputChange = (field: string, value: any) => {
     // Update form data
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }) as z.infer<TSchema>);
 
     // Clear error for this field if it exists
     if (errors[field]) {
@@ -108,11 +108,12 @@ export function useFormValidation<TSchema extends z.ZodSchema>(
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
 
-        // Extract error messages for each field
-        err.errors.forEach((error) => {
-          if (error.path[0]) {
-            const fieldName = error.path[0].toString();
-            newErrors[fieldName] = error.message;
+        // Extract error messages for each field (Zod v4 uses .issues)
+        const issues = (err as any).issues || (err as any).errors || [];
+        issues.forEach((issue: any) => {
+          if (issue.path && issue.path[0]) {
+            const fieldName = issue.path[0].toString();
+            newErrors[fieldName] = issue.message;
           }
         });
 
@@ -142,14 +143,77 @@ export function useFormValidation<TSchema extends z.ZodSchema>(
    * @param value - New value for the field
    */
   const setFieldValue = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }) as z.infer<TSchema>);
   };
+
+  /**
+   * Validates a single field on blur
+   * Provides immediate feedback when user leaves a field
+   *
+   * @param field - Name of the field to validate
+   */
+  const validateField = useCallback((field: string) => {
+    try {
+      // Create partial data with just this field
+      const partialData = { [field]: formData[field as keyof typeof formData] };
+
+      // Try to parse just this field using pick if it's an object schema
+      if (schema instanceof z.ZodObject) {
+        const fieldSchema = (schema as z.ZodObject<any>).shape[field];
+        if (fieldSchema) {
+          fieldSchema.parse(partialData[field]);
+          // Clear error on success
+          if (errors[field]) {
+            setErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors[field];
+              return newErrors;
+            });
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const issues = (err as any).issues || (err as any).errors || [];
+        const fieldError = issues[0];
+        if (fieldError) {
+          setErrors((prev) => ({
+            ...prev,
+            [field]: fieldError.message,
+          }));
+        }
+      }
+    }
+  }, [schema, formData, errors]);
+
+  /**
+   * Handler for blur events that validates the field
+   *
+   * @param field - Name of the field
+   */
+  const handleBlur = useCallback((field: string) => {
+    validateField(field);
+  }, [validateField]);
+
+  /**
+   * Check if form has any errors
+   */
+  const hasErrors = Object.keys(errors).length > 0;
+
+  /**
+   * Check if form has been modified from initial state
+   */
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
 
   return {
     formData,
     errors,
+    hasErrors,
+    isDirty,
     handleInputChange,
+    handleBlur,
     validateForm,
+    validateField,
     resetForm,
     setFieldValue,
     setFormData, // Exposed for advanced use cases

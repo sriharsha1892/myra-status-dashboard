@@ -1,9 +1,10 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/support/ui/Button';
 import { Input } from '@/components/support/ui/Input';
@@ -12,8 +13,12 @@ import { Modal } from '@/components/support/ui/Modal';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import CredentialsModal from '@/components/CredentialsModal';
 import { authenticatedFetch } from '@/lib/api-client';
+
+// Lazy load modal for code splitting
+const CredentialsModal = dynamic(() => import('@/components/CredentialsModal'), {
+  loading: () => null,
+});
 
 interface User {
   id: string;

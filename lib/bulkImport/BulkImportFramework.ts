@@ -65,6 +65,21 @@ export interface BulkImportConfig<TInput, TOutput> {
     title: string;
     details?: string;
   };
+
+  /**
+   * Custom importer function for multi-entity or complex imports
+   * If provided, this will be used instead of the default single-table insertion
+   */
+  customImporter?: (
+    items: TOutput[],
+    onProgress?: (progress: ImportProgress) => void
+  ) => Promise<{
+    successful: number;
+    failed: number;
+    skipped: number;
+    errors: Array<{ item: TOutput; error: string }>;
+    results?: TOutput[];
+  }>;
 }
 
 export interface ImportParser<T> {
@@ -130,7 +145,7 @@ export type ProgressCallback = (progress: ImportProgress) => void;
 // =====================================================
 
 export class BulkImporter<TInput, TOutput> {
-  private config: BulkImportConfig<TInput, TOutput>;
+  readonly config: BulkImportConfig<TInput, TOutput>;
   private _supabase?: ReturnType<typeof createClient>;
 
   /**
@@ -227,16 +242,54 @@ export class BulkImporter<TInput, TOutput> {
         message: `Importing ${deduplicated.length} ${this.config.entityPlural}...`,
       });
 
-      const importResult = await this.importToDatabase(deduplicated, (batchProgress) => {
-        const progressPercent = 60 + (batchProgress.percentComplete / 100) * 35;
-        onProgress?.({
-          stage: 'importing',
-          currentItem: batchProgress.processedCount,
-          totalItems: batchProgress.totalCount,
-          percentComplete: progressPercent,
-          message: batchProgress.status,
+      let importResult: ProcessingResult<TOutput, TOutput>;
+
+      if (this.config.customImporter) {
+        // Use custom importer for multi-entity imports
+        const customResult = await this.config.customImporter(deduplicated, (progress) => {
+          onProgress?.(progress);
         });
-      });
+
+        // Convert custom result to ProcessingResult format
+        importResult = {
+          summary: {
+            successful: customResult.successful,
+            failed: customResult.failed,
+            batches: 1,
+            retriedBatches: 0,
+          },
+          success: customResult.results || deduplicated.slice(0, customResult.successful),
+          failed: customResult.errors.map((e, idx) => ({
+            item: e.item,
+            error: new Error(e.error),
+            batchIndex: idx,
+          })),
+          batchResults: [{
+            batchIndex: 0,
+            results: customResult.results || [],
+            failed: customResult.errors.map((e, idx) => ({
+              item: e.item,
+              error: new Error(e.error),
+              batchIndex: idx,
+            })),
+            errors: customResult.errors.map(e => new Error(e.error)),
+            duration: 0,
+            retries: 0,
+          }],
+        };
+      } else {
+        // Use standard single-table insertion
+        importResult = await this.importToDatabase(deduplicated, (batchProgress) => {
+          const progressPercent = 60 + (batchProgress.percentComplete / 100) * 35;
+          onProgress?.({
+            stage: 'importing',
+            currentItem: batchProgress.processedCount,
+            totalItems: batchProgress.totalCount,
+            percentComplete: progressPercent,
+            message: batchProgress.status,
+          });
+        });
+      }
 
       // Stage 6: Build result
       onProgress?.({
@@ -429,8 +482,33 @@ export class BulkImporter<TInput, TOutput> {
         batchSize: this.config.database.batchSize || 50,
         totalBatches: importResult.summary.batches,
         retriedBatches: importResult.summary.retriedBatches,
+        // Extract entity IDs from successful imports for enrichment
+        importedEntityIds: this.extractEntityIds(importResult.success),
       },
     };
+  }
+
+  /**
+   * Extracts entity IDs from successful import records
+   * Looks for common ID field names: id, org_id, user_id, event_id, etc.
+   */
+  private extractEntityIds(records: TOutput[]): string[] {
+    const ids: string[] = [];
+    const idFields = ['id', 'org_id', 'user_id', 'event_id', 'entity_id', 'record_id'];
+
+    for (const record of records) {
+      if (!record || typeof record !== 'object') continue;
+
+      for (const field of idFields) {
+        const value = (record as any)[field];
+        if (value && typeof value === 'string' && !ids.includes(value)) {
+          ids.push(value);
+          break; // Found ID for this record
+        }
+      }
+    }
+
+    return ids;
   }
 
   /**

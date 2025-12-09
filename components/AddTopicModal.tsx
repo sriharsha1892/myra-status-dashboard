@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
@@ -102,12 +101,12 @@ export default function AddTopicModal({
 
           // Get current user for error reporting
           const { data: { user } } = await supabase.auth.getUser();
-          const errorDetails = getErrorMessage(error, 'topic_create');
+          const errorDetails = getErrorMessage(error, 'generic');
 
           // Show error with report option
           showErrorWithReport(
             error,
-            'topic_create',
+            'generic',
             errorDetails.message,
             errorDetails.suggestion,
             user?.email,

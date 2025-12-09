@@ -1,13 +1,18 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { format, isAfter, isBefore, subDays, isPast } from 'date-fns';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import AddMeetingNoteModal from '@/components/AddMeetingNoteModal';
+
+// Lazy load modal for code splitting
+const AddMeetingNoteModal = dynamic(() => import('@/components/AddMeetingNoteModal'), {
+  loading: () => null,
+});
 
 interface MeetingNote {
   meeting_id: string;

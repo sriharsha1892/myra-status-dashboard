@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyUserAccess } from '@/lib/auth-helper';
-import { parseNarrativeWithLLM, ParseContext } from '@/lib/timeline/llmParser';
+import { parseTimelineText, ParseContext } from '@/lib/timeline/timelineEventsImporter';
 import { getRecentEvents } from '@/lib/timeline/duplicateDetector';
 
 // Create Supabase Admin client
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       })),
     };
 
-    // Parse with LLM
-    const parseResult = await parseNarrativeWithLLM(text, context);
+    // Parse with unified AIParser
+    const parseResult = await parseTimelineText(text, context);
 
     if (!parseResult.success) {
       return NextResponse.json(
@@ -106,8 +106,15 @@ export async function POST(request: NextRequest) {
       success: true,
       events: parseResult.events.map(event => ({
         ...event,
-        event_timestamp: event.event_timestamp.toISOString(),
-        follow_up_date: event.follow_up_date?.toISOString() || null,
+        // Handle both Date objects and strings
+        event_timestamp: event.event_timestamp instanceof Date
+          ? event.event_timestamp.toISOString()
+          : event.event_timestamp,
+        follow_up_date: event.follow_up_date
+          ? (event.follow_up_date instanceof Date
+              ? event.follow_up_date.toISOString()
+              : event.follow_up_date)
+          : null,
       })),
       confidence_summary: parseResult.confidence_summary,
       processing_time_ms: parseResult.processing_time_ms,

@@ -3,6 +3,7 @@
 /**
  * Toast Provider Component
  * Wraps react-hot-toast Toaster with custom configuration
+ * Includes WCAG 2.1 AA accessibility features
  */
 
 import { Toaster } from 'react-hot-toast';
@@ -14,10 +15,15 @@ export function ToastProvider() {
       reverseOrder={false}
       gutter={8}
       containerClassName="toast-container"
+      // Accessibility: role="status" and aria-live for screen readers
       containerStyle={{
+        position: 'fixed',
         top: 20,
         right: 20,
+        zIndex: 9999,
       }}
+      // Add accessibility attributes to toast container
+      containerAriaLabel="Notifications"
       toastOptions={{
         // Default options for all toasts
         className: '',

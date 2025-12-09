@@ -8,14 +8,14 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Announcement {
   id: string;
-  type: 'feature' | 'update' | 'maintenance' | 'alert';
+  announcement_type: 'feature' | 'update' | 'maintenance' | 'alert';
   priority: 'low' | 'normal' | 'high' | 'critical';
   status: 'draft' | 'active' | 'archived';
   title: string;
-  message: string;
+  content: string;
   created_at: string;
   updated_at: string;
-  created_by?: string;
+  posted_by?: string;
 }
 
 interface AnnouncementManagementModalProps {
@@ -34,11 +34,11 @@ export default function AnnouncementManagementModal({
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const [formData, setFormData] = useState({
-    type: 'feature' as Announcement['type'],
+    announcement_type: 'feature' as Announcement['announcement_type'],
     priority: 'normal' as Announcement['priority'],
     status: 'draft' as Announcement['status'],
     title: '',
-    message: '',
+    content: '',
   });
 
   const supabase = createClient();
@@ -59,8 +59,9 @@ export default function AnnouncementManagementModal({
 
       if (error) throw error;
       setAnnouncements(data || []);
-    } catch (error: any) {
-      console.error('Error fetching announcements:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error fetching announcements:', errorMessage);
       toast.error('Failed to load announcements');
     } finally {
       setLoading(false);
@@ -87,7 +88,10 @@ export default function AnnouncementManagementModal({
         // Create new announcement
         const { error } = await supabase
           .from('announcements')
-          .insert([formData]);
+          .insert([{
+            ...formData,
+            posted_by: 'admin',
+          }]);
 
         if (error) throw error;
         toast.success('Announcement created successfully');
@@ -95,20 +99,23 @@ export default function AnnouncementManagementModal({
 
       resetForm();
       fetchAnnouncements();
-    } catch (error: any) {
-      console.error('Error saving announcement:', error);
-      toast.error(editingId ? 'Failed to update announcement' : 'Failed to create announcement');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message :
+        typeof error === 'object' && error !== null && 'message' in error ? String((error as { message: unknown }).message) :
+        JSON.stringify(error);
+      console.error('Error saving announcement:', errorMessage, error);
+      toast.error(`${editingId ? 'Failed to update' : 'Failed to create'}: ${errorMessage}`);
     }
   };
 
   const handleEdit = (announcement: Announcement) => {
     setEditingId(announcement.id);
     setFormData({
-      type: announcement.type,
+      announcement_type: announcement.announcement_type,
       priority: announcement.priority,
       status: announcement.status,
       title: announcement.title,
-      message: announcement.message,
+      content: announcement.content,
     });
   };
 
@@ -124,9 +131,10 @@ export default function AnnouncementManagementModal({
       if (error) throw error;
       toast.success('Announcement deleted');
       fetchAnnouncements();
-    } catch (error: any) {
-      console.error('Error deleting announcement:', error);
-      toast.error('Failed to delete announcement');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error deleting announcement:', errorMessage);
+      toast.error(`Failed to delete: ${errorMessage}`);
     }
   };
 
@@ -140,20 +148,21 @@ export default function AnnouncementManagementModal({
       if (error) throw error;
       toast.success(`Announcement ${newStatus}`);
       fetchAnnouncements();
-    } catch (error: any) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error updating status:', errorMessage);
+      toast.error(`Failed to update status: ${errorMessage}`);
     }
   };
 
   const resetForm = () => {
     setEditingId(null);
     setFormData({
-      type: 'feature',
+      announcement_type: 'feature',
       priority: 'normal',
       status: 'draft',
       title: '',
-      message: '',
+      content: '',
     });
   };
 
@@ -216,7 +225,7 @@ export default function AnnouncementManagementModal({
   };
 
   const filteredAnnouncements = announcements.filter((announcement) => {
-    if (filterType !== 'all' && announcement.type !== filterType) return false;
+    if (filterType !== 'all' && announcement.announcement_type !== filterType) return false;
     if (filterStatus !== 'all' && announcement.status !== filterStatus) return false;
     return true;
   });
@@ -265,14 +274,14 @@ export default function AnnouncementManagementModal({
                     />
                   </div>
 
-                  {/* Message */}
+                  {/* Content */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
                       Message
                     </label>
                     <textarea
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                       placeholder="Enter announcement message"
                       rows={4}
                       className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all resize-none"
@@ -287,8 +296,8 @@ export default function AnnouncementManagementModal({
                         Type
                       </label>
                       <select
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value as Announcement['type'] })}
+                        value={formData.announcement_type}
+                        onChange={(e) => setFormData({ ...formData, announcement_type: e.target.value as Announcement['announcement_type'] })}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                       >
                         <option value="feature">Feature</option>
@@ -415,8 +424,8 @@ export default function AnnouncementManagementModal({
                             {announcement.title}
                           </h4>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${getTypeColor(announcement.type)}`}>
-                              {getTypeLabel(announcement.type)}
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${getTypeColor(announcement.announcement_type)}`}>
+                              {getTypeLabel(announcement.announcement_type)}
                             </span>
                             <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${getPriorityColor(announcement.priority)}`}>
                               {getPriorityLabel(announcement.priority)}
@@ -428,9 +437,9 @@ export default function AnnouncementManagementModal({
                         </div>
                       </div>
 
-                      {/* Message */}
+                      {/* Content */}
                       <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                        {announcement.message}
+                        {announcement.content}
                       </p>
 
                       {/* Footer */}

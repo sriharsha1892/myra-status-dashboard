@@ -16,8 +16,27 @@ import ProductRoadmapTab from '@/components/ProductRoadmapTab';
 import GlobalRoadmapView from '@/components/GlobalRoadmapView';
 import StrategicTimelineViewEnhanced from '@/components/strategic-timeline/StrategicTimelineViewEnhanced';
 import RoadmapDetailPanel from '@/components/roadmap/RoadmapDetailPanel';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+
+// Lazy load modals for code splitting - only loaded when triggered
+const AddRoadmapItemModal = dynamic(() => import('@/components/AddRoadmapItemModal'), {
+  loading: () => null,
+});
+const LinkOrgsToRoadmapModal = dynamic(() => import('@/components/LinkOrgsToRoadmapModal'), {
+  loading: () => null,
+});
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+
+interface LinkedOrg {
+  org_id: string;
+  org_name: string;
+  domain: string;
+  link_type: string;
+  priority: string;
+  notes: string;
+}
 
 type ViewMode = 'global' | 'organizations' | 'master';
 
@@ -30,6 +49,15 @@ export default function GlobalRoadmapPage() {
   const [companyFilter, setCompanyFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [showMasterRoadmapModal, setShowMasterRoadmapModal] = useState(false);
+  const [masterRoadmapCategoryPrefill, setMasterRoadmapCategoryPrefill] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Link orgs modal state
+  const [showLinkOrgsModal, setShowLinkOrgsModal] = useState(false);
+  const [linkedOrgsForSelectedItem, setLinkedOrgsForSelectedItem] = useState<LinkedOrg[]>([]);
+  const [selectedItemTitle, setSelectedItemTitle] = useState('');
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,6 +77,76 @@ export default function GlobalRoadmapPage() {
       fetchOrganizations();
     }
   }, [user, role, companyFilter]);
+
+  // Handle creating item from Master Roadmap
+  const handleCreateFromMasterRoadmap = (categoryName?: string) => {
+    setMasterRoadmapCategoryPrefill(categoryName || null);
+    setShowMasterRoadmapModal(true);
+    if (categoryName) {
+      toast.success(`Creating item for ${categoryName} category`);
+    }
+  };
+
+  const handleMasterRoadmapSuccess = () => {
+    setShowMasterRoadmapModal(false);
+    setMasterRoadmapCategoryPrefill(null);
+    setRefreshKey(prev => prev + 1); // Force refresh of strategic timeline
+    // Toast is handled by the modal itself via useLoadingState
+  };
+
+  // Fetch linked orgs when an item is selected in master roadmap
+  useEffect(() => {
+    if (selectedItemId && viewMode === 'master') {
+      fetchLinkedOrgs(selectedItemId);
+      fetchSelectedItemTitle(selectedItemId);
+    } else {
+      setLinkedOrgsForSelectedItem([]);
+      setSelectedItemTitle('');
+    }
+  }, [selectedItemId, viewMode]);
+
+  const fetchLinkedOrgs = async (itemId: string) => {
+    try {
+      const { data, error } = await (supabase as any)
+        .rpc('get_linked_orgs_for_roadmap', { p_roadmap_id: itemId });
+
+      if (error) throw error;
+      setLinkedOrgsForSelectedItem(data || []);
+    } catch (error: any) {
+      console.error('Error fetching linked orgs:', error);
+      setLinkedOrgsForSelectedItem([]);
+    }
+  };
+
+  const fetchSelectedItemTitle = async (itemId: string) => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('org_product_roadmap')
+        .select('title')
+        .eq('id', itemId)
+        .is('org_id', null)
+        .single();
+
+      if (error) throw error;
+      setSelectedItemTitle(data?.title || '');
+    } catch (error: any) {
+      console.error('Error fetching item title:', error);
+      setSelectedItemTitle('');
+    }
+  };
+
+  const handleOpenLinkOrgs = () => {
+    if (selectedItemId) {
+      setShowLinkOrgsModal(true);
+    }
+  };
+
+  const handleLinkOrgsSuccess = () => {
+    if (selectedItemId) {
+      fetchLinkedOrgs(selectedItemId);
+    }
+    setRefreshKey(prev => prev + 1);
+  };
 
   const fetchOrganizations = async () => {
     setLoading(true);
@@ -220,7 +318,11 @@ export default function GlobalRoadmapPage() {
 
         {viewMode === 'master' && (
           <>
-            <StrategicTimelineViewEnhanced onItemClick={setSelectedItemId} />
+            <StrategicTimelineViewEnhanced
+              key={refreshKey}
+              onItemClick={setSelectedItemId}
+              onCreateItem={handleCreateFromMasterRoadmap}
+            />
             {/* Detail Panel for Master Roadmap */}
             {selectedItemId && (
               <RoadmapDetailPanel
@@ -228,10 +330,16 @@ export default function GlobalRoadmapPage() {
                 orgId="" // Global view - no specific org
                 isOpen={!!selectedItemId}
                 onClose={() => setSelectedItemId(null)}
-                onUpdate={() => {}}
+                onUpdate={() => setRefreshKey(prev => prev + 1)}
+                onDelete={() => {
+                  setSelectedItemId(null);
+                  setRefreshKey(prev => prev + 1);
+                }}
                 allItems={[]}
                 labels={[]}
                 milestones={[]}
+                linkedOrgs={linkedOrgsForSelectedItem}
+                onOpenLinkOrgs={handleOpenLinkOrgs}
               />
             )}
           </>
@@ -257,6 +365,32 @@ export default function GlobalRoadmapPage() {
           </>
         )}
       </div>
+
+      {/* Add Roadmap Item Modal - Master Roadmap */}
+      {viewMode === 'master' && (
+        <AddRoadmapItemModal
+          isOpen={showMasterRoadmapModal}
+          onClose={() => {
+            setShowMasterRoadmapModal(false);
+            setMasterRoadmapCategoryPrefill(null);
+          }}
+          onSuccess={handleMasterRoadmapSuccess}
+          mode="master"
+          initialStrategicCategories={masterRoadmapCategoryPrefill ? [masterRoadmapCategoryPrefill] : undefined}
+        />
+      )}
+
+      {/* Link Organizations Modal - Master Roadmap */}
+      {viewMode === 'master' && selectedItemId && (
+        <LinkOrgsToRoadmapModal
+          isOpen={showLinkOrgsModal}
+          onClose={() => setShowLinkOrgsModal(false)}
+          roadmapItemId={selectedItemId}
+          roadmapItemTitle={selectedItemTitle}
+          linkedOrgs={linkedOrgsForSelectedItem}
+          onSuccess={handleLinkOrgsSuccess}
+        />
+      )}
     </div>
   );
 }

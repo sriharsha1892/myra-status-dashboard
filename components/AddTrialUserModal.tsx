@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
@@ -18,6 +17,11 @@ interface AddTrialUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultValues?: {
+    name?: string;
+    email?: string;
+    role?: string;
+  };
 }
 
 export default function AddTrialUserModal({
@@ -25,16 +29,29 @@ export default function AddTrialUserModal({
   isOpen,
   onClose,
   onSuccess,
+  defaultValues,
 }: AddTrialUserModalProps) {
   const supabase = createClient();
 
   // Form state - using schema type
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    designation: '',
+    full_name: defaultValues?.name || '',
+    email: defaultValues?.email || '',
+    designation: defaultValues?.role || '',
     salesforce_id: '',
   });
+
+  // Update form when defaultValues change (for command interface prefill)
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData(prev => ({
+        ...prev,
+        full_name: defaultValues.name || prev.full_name,
+        email: defaultValues.email || prev.email,
+        designation: defaultValues.role || prev.designation,
+      }));
+    }
+  }, [defaultValues]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 

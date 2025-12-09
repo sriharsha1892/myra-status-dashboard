@@ -1,50 +1,122 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTrialOrganizations, useInvalidateTrialOrganizations, useBulkUpdateTrialOrganizations, trialOrganizationsKeys, type OrgWithUsers } from '@/hooks/useTrialOrganizations';
+import { useRealtimeTrialOrganizations, useRealtimeTrialUsers } from '@/hooks/useRealtimeTrialOrganizations';
+import { usePrefetchTrialDetail } from '@/hooks/usePrefetchTrialDetail';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import toast from 'react-hot-toast';
 import { format, differenceInDays, addDays, formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
-import CreateOrganizationModal from '@/components/CreateOrganizationModal';
 import Breadcrumbs from '@/components/Breadcrumbs';
+
+// Lazy load modals for code splitting - they're only shown when triggered
+const CreateOrganizationModal = dynamic(() => import('@/components/CreateOrganizationModal'), {
+  loading: () => null, // Modal has its own loading state
+});
+const AddProspectModal = dynamic(() => import('@/components/trial/AddProspectModal'), {
+  loading: () => null,
+});
+const BulkImportProspectsModal = dynamic(() => import('@/components/BulkImportProspectsModal'), {
+  loading: () => null,
+});
 import NavalLoadingBar from '@/components/NavalLoadingBar';
-import { SkeletonCard } from '@/components/skeletons';
+import { SkeletonTrialGrid } from '@/components/skeletons';
 import { TrialProgressBar } from '@/components/TrialProgressBar';
+import { TrialCard } from '@/components/trials/TrialCard';
+import { BatchEnrichmentModal } from '@/components/enrichment';
+import { Sparkles } from 'lucide-react';
+import { VirtualizedTrialGrid } from '@/components/trials/VirtualizedTrialGrid';
 import { showTrialUpdatedToast, showBulkActionToast, showExportSuccessToast } from '@/utils/navalToasts';
 import { createAccountManagerMap, resolveAccountManagerName, getInitials } from '@/lib/utils/accountManagerUtils';
 import { authenticatedFetch } from '@/lib/api-client';
 import { FormInput, FormSelect } from '@/components/forms';
 import type { SelectOption } from '@/components/forms';
 import { ORG_LIFECYCLE_STAGES } from '@/lib/validation/schemas/trialOrganization';
+import {
+  getActivityStatus,
+  getRecencyMetrics,
+  formatLastActivity,
+  getDaysUntilExpiry,
+  isExpiringSoon,
+  getCompletenessStatus,
+  type ActivityStatus,
+} from '@/lib/trial-org-recency';
+import QuickActivityLog from '@/components/trial/QuickActivityLog';
+import { TrialTabs, useTrialTab, type TrialTabType } from '@/components/trial/TrialTabs';
+import { ProspectsList } from '@/components/trial/ProspectsList';
+import { ProspectKanban } from '@/components/trial/ProspectKanban';
+
+// Lazy load bulk modals - only loaded when bulk actions are triggered
+const BulkActivityLog = dynamic(() => import('@/components/trial/BulkActivityLog'), {
+  loading: () => null,
+});
+const ActivityExport = dynamic(() => import('@/components/trial/ActivityExport'), {
+  loading: () => null,
+});
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { usePagePerformance } from '@/lib/hooks/usePagePerformance';
+import { EngagementTierIcon } from '@/components/trials/EngagementTierBadge';
 
 type TrialOrg = Database['public']['Tables']['trial_organizations']['Row'];
 type TrialUser = Database['public']['Tables']['trial_users']['Row'];
 
-interface OrgWithUsers extends TrialOrg {
-  user_count: number;
-  active_users: number;
-}
-
 const ITEMS_PER_PAGE = 50;
 
 export default function TrialOrganizationsPage() {
+  // Track page performance
+  usePagePerformance('trials');
+
   const { user, loading: authLoading, signOut, role, parent_company, is_super_admin } = useAuth();
   const router = useRouter();
-  const [organizations, setOrganizations] = useState<OrgWithUsers[]>([]);
-  const [totalCount, setTotalCount] = useState(0); // Total count for pagination
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [stageFilter, setStageFilter] = useState<string>('all');
-  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const searchParams = useSearchParams();
+
+  // Tab navigation for prospect lifecycle
+  const activeTab = useTrialTab();
+
+  // Initialize filters from URL params for persistence
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [stageFilter, setStageFilter] = useState<string>(searchParams.get('stage') || 'all');
+  const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get('company') || 'all');
+  const [accountManagerFilter, setAccountManagerFilter] = useState<string>(searchParams.get('am') || 'all');
+  const [trialStatusFilter, setTrialStatusFilter] = useState<string>(searchParams.get('status') || 'all');
+  const [activityFilter, setActivityFilter] = useState<string>(searchParams.get('activity') || 'all');
+  const [expiryFilter, setExpiryFilter] = useState<string>(searchParams.get('expiry') || 'all');
+  const [completenessFilter, setCompletenessFilter] = useState<string>(searchParams.get('completeness') || 'all');
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [showAddProspectModal, setShowAddProspectModal] = useState(false);
+  const [showBulkImportProspectsModal, setShowBulkImportProspectsModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [sortBy, setSortBy] = useState<string>(searchParams.get('sort') || 'created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>((searchParams.get('order') as 'asc' | 'desc') || 'desc');
+
+  // Search input ref for keyboard shortcuts
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Debounce search query for better performance (300ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Keyboard shortcut: Cmd/Ctrl + K to focus search
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      metaKey: true,
+      callback: () => searchInputRef.current?.focus(),
+      description: 'Focus search input',
+    },
+    {
+      key: 'k',
+      ctrlKey: true,
+      callback: () => searchInputRef.current?.focus(),
+      description: 'Focus search input',
+    },
+  ]);
 
   // Bulk operations state
   const [selectedOrgIds, setSelectedOrgIds] = useState<Set<string>>(new Set());
@@ -53,6 +125,10 @@ export default function TrialOrganizationsPage() {
   const [showBulkStageModal, setShowBulkStageModal] = useState(false);
   const [showBulkTrialStatusModal, setShowBulkTrialStatusModal] = useState(false);
   const [showBulkTrialExtensionModal, setShowBulkTrialExtensionModal] = useState(false);
+  const [showBulkActivityLogModal, setShowBulkActivityLogModal] = useState(false);
+  const [showActivityExportModal, setShowActivityExportModal] = useState(false);
+  const [showBatchEnrichmentModal, setShowBatchEnrichmentModal] = useState(false);
+  const [exportSelectedOnly, setExportSelectedOnly] = useState(false);
   const [showQuickEditPanel, setShowQuickEditPanel] = useState(false);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
@@ -67,7 +143,62 @@ export default function TrialOrganizationsPage() {
   const [extensionDays, setExtensionDays] = useState<number>(7);
   const [accountManagers, setAccountManagers] = useState<Array<{ user_id: string; email: string; full_name: string | null }>>([]);
 
+  // View mode for prospects tab (list or kanban)
+  const [prospectViewMode, setProspectViewMode] = useState<'list' | 'kanban'>('kanban');
+
   const supabase = createClient();
+
+  // React Query hooks for data management
+  const queryClient = useQueryClient();
+  const bulkUpdateMutation = useBulkUpdateTrialOrganizations();
+  const invalidateTrialOrgs = useInvalidateTrialOrganizations();
+
+  // Helper function for optimistic updates using React Query cache
+  const updateCacheOptimistically = useCallback((
+    orgIds: Set<string> | string[],
+    updates: Partial<OrgWithUsers>
+  ) => {
+    const idSet = orgIds instanceof Set ? orgIds : new Set(orgIds);
+    queryClient.setQueriesData(
+      { queryKey: trialOrganizationsKeys.lists() },
+      (old: { organizations: OrgWithUsers[]; totalCount: number } | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          organizations: old.organizations.map((org) =>
+            idSet.has(org.org_id) ? { ...org, ...updates } : org
+          ),
+        };
+      }
+    );
+  }, [queryClient]);
+
+  // React Query hook for fetching trial organizations with automatic caching
+  const queryFilters = useMemo(() => ({
+    sortBy,
+    sortOrder,
+    page: currentPage,
+    pageSize: ITEMS_PER_PAGE,
+    is_super_admin,
+    parent_company,
+  }), [sortBy, sortOrder, currentPage, is_super_admin, parent_company]);
+
+  const {
+    data: queryData,
+    isLoading: loading,
+    error: queryError,
+  } = useTrialOrganizations(queryFilters);
+
+  // Derived state from React Query
+  const organizations = queryData?.organizations ?? [];
+  const totalCount = queryData?.totalCount ?? 0;
+
+  // Prefetch detail page data on card hover for instant navigation
+  const prefetchTrialDetail = usePrefetchTrialDetail();
+
+  // Enable real-time updates - automatically refreshes when database changes
+  useRealtimeTrialOrganizations(true);
+  useRealtimeTrialUsers(true); // User changes affect org user counts
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,10 +208,9 @@ export default function TrialOrganizationsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchOrganizations();
       fetchAccountManagers();
     }
-  }, [user, currentPage]); // Re-fetch when page changes
+  }, [user]); // Only fetch account managers once
 
   // Update trial end date when start date changes
   useEffect(() => {
@@ -93,61 +223,27 @@ export default function TrialOrganizationsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, stageFilter, companyFilter]);
+  }, [debouncedSearchQuery, stageFilter, companyFilter, accountManagerFilter, trialStatusFilter, activityFilter, expiryFilter, completenessFilter]);
 
-  const fetchOrganizations = async () => {
-    setLoading(true);
-    try {
-      // Calculate range for server-side pagination
-      const from = (currentPage - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
+  // Update URL params when filters change (for bookmarking/sharing)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (stageFilter !== 'all') params.set('stage', stageFilter);
+    if (companyFilter !== 'all') params.set('company', companyFilter);
+    if (accountManagerFilter !== 'all') params.set('am', accountManagerFilter);
+    if (trialStatusFilter !== 'all') params.set('status', trialStatusFilter);
+    if (activityFilter !== 'all') params.set('activity', activityFilter);
+    if (expiryFilter !== 'all') params.set('expiry', expiryFilter);
+    if (completenessFilter !== 'all') params.set('completeness', completenessFilter);
+    if (currentPage > 1) params.set('page', String(currentPage));
+    if (sortBy !== 'created_at') params.set('sort', sortBy);
+    if (sortOrder !== 'desc') params.set('order', sortOrder);
 
-      // Build query with role-based filtering and join trial_users
-      let query = supabase
-        .from('trial_organizations')
-        .select(`
-          *,
-          trial_users(current_stage)
-        `, { count: 'exact' }); // Get total count for pagination
-
-      // Account Managers can see all trials in their company (not just assigned ones)
-      // No need to filter by account_manager_id
-
-      // If not super admin: filter by parent company
-      if (!is_super_admin && parent_company) {
-        query = query.eq('parent_company', parent_company);
-      }
-      // If super admin: show all orgs (no company filter)
-
-      const { data: orgs, error, count } = await query
-        .order('created_at', { ascending: false })
-        .range(from, to); // SERVER-SIDE PAGINATION
-
-      if (error) throw error;
-
-      // Set total count for pagination controls
-      setTotalCount(count || 0);
-
-      // Process joined data
-      // @ts-ignore - Supabase typing issue with dynamic columns
-      const orgsWithUsers: OrgWithUsers[] = (orgs || []).map((org: any) => {
-        const orgUsers = org.trial_users || [];
-        return {
-          ...org,
-          user_count: orgUsers.length,
-          active_users: orgUsers.filter((u: any) => u.current_stage === 'active').length,
-          trial_users: undefined, // Remove the nested data to avoid confusion
-        };
-      });
-
-      setOrganizations(orgsWithUsers);
-    } catch (error: any) {
-      console.error('Error fetching organizations:', error);
-      toast.error('Failed to load organizations');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [searchQuery, stageFilter, companyFilter, accountManagerFilter, trialStatusFilter, activityFilter, expiryFilter, completenessFilter, currentPage, sortBy, sortOrder]);
 
   const fetchAccountManagers = async () => {
     try {
@@ -167,9 +263,59 @@ export default function TrialOrganizationsPage() {
     }
   };
 
+  // Calculate tab counts for the tabs UI (before other filters, using all organizations)
+  const tabCounts = useMemo(() => {
+    const counts = {
+      prospects: 0,
+      activeTrials: 0,
+      pipeline: 0,
+      customers: 0,
+    };
+
+    for (const org of organizations) {
+      // Type assertion for new fields (will exist after migration)
+      const isProspect = (org as any).is_prospect === true;
+      const dealOutcome = (org as any).deal_outcome;
+      const trialStatus = org.trial_status;
+
+      if (isProspect) {
+        counts.prospects++;
+      } else if (dealOutcome === 'won') {
+        counts.customers++;
+      } else if (['ended', 'expired'].includes(trialStatus || '')) {
+        counts.pipeline++;
+      } else if (['active', 'pending', 'paused'].includes(trialStatus || '')) {
+        counts.activeTrials++;
+      }
+    }
+
+    return counts;
+  }, [organizations]);
+
   // Memoized filtering logic
   const filteredOrgs = useMemo(() => {
     let filtered = [...organizations];
+
+    // Tab filter (prospect lifecycle) - applied first
+    if (activeTab === 'prospects') {
+      filtered = filtered.filter((org) => (org as any).is_prospect === true);
+    } else if (activeTab === 'active_trials') {
+      filtered = filtered.filter((org) =>
+        (org as any).is_prospect !== true &&
+        ['active', 'pending', 'paused'].includes(org.trial_status || '')
+      );
+    } else if (activeTab === 'pipeline') {
+      filtered = filtered.filter((org) =>
+        (org as any).is_prospect !== true &&
+        !(org as any).deal_outcome &&
+        ['ended', 'expired'].includes(org.trial_status || '')
+      );
+    } else if (activeTab === 'customers') {
+      filtered = filtered.filter((org) =>
+        (org as any).is_prospect !== true &&
+        (org as any).deal_outcome === 'won'
+      );
+    }
 
     // Search filter (using debounced query)
     if (debouncedSearchQuery) {
@@ -191,13 +337,57 @@ export default function TrialOrganizationsPage() {
       filtered = filtered.filter((org) => org.parent_company === companyFilter);
     }
 
+    // Account Manager filter
+    if (accountManagerFilter !== 'all') {
+      filtered = filtered.filter((org) => org.account_manager === accountManagerFilter);
+    }
+
+    // Trial Status filter
+    if (trialStatusFilter !== 'all') {
+      filtered = filtered.filter((org) => org.trial_status === trialStatusFilter);
+    }
+
+    // Activity filter (based on last_activity_at)
+    if (activityFilter !== 'all') {
+      filtered = filtered.filter((org) => {
+        const activityStatus = getActivityStatus(org.last_activity_at);
+        return activityStatus === activityFilter;
+      });
+    }
+
+    // Expiry filter
+    if (expiryFilter !== 'all') {
+      filtered = filtered.filter((org) => {
+        if (expiryFilter === 'expiring_soon') {
+          return isExpiringSoon(org.trial_end_date, 7);
+        } else if (expiryFilter === 'expiring_14days') {
+          return isExpiringSoon(org.trial_end_date, 14);
+        } else if (expiryFilter === 'expiring_30days') {
+          return isExpiringSoon(org.trial_end_date, 30);
+        }
+        return true;
+      });
+    }
+
+    // Completeness filter (data quality)
+    if (completenessFilter !== 'all') {
+      filtered = filtered.filter((org) => {
+        const status = getCompletenessStatus(org.completeness_score || 0);
+        return status === completenessFilter;
+      });
+    }
+
     return filtered;
-  }, [organizations, debouncedSearchQuery, stageFilter, companyFilter]);
+  }, [organizations, activeTab, debouncedSearchQuery, stageFilter, companyFilter, accountManagerFilter, trialStatusFilter, activityFilter, expiryFilter, completenessFilter]);
+
+  // Defer filtered results to keep UI responsive during heavy filtering
+  const deferredFilteredOrgs = useDeferredValue(filteredOrgs);
+  const isFiltering = deferredFilteredOrgs !== filteredOrgs;
 
   // Server-side pagination - just return filtered orgs (already paginated by server)
   const paginatedOrgs = useMemo(() => {
-    return filteredOrgs; // No client-side slicing - already paginated by Supabase
-  }, [filteredOrgs]);
+    return deferredFilteredOrgs; // No client-side slicing - already paginated by Supabase
+  }, [deferredFilteredOrgs]);
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE); // Use totalCount from server
 
@@ -221,199 +411,251 @@ export default function TrialOrganizationsPage() {
   };
 
   const handleBulkAssignAccountManager = async () => {
-    setBulkProcessing(true);
+    if (!bulkAccountManager) {
+      toast.error('Please select an account manager');
+      return;
+    }
+
+    const selectedManager = accountManagers.find(m => m.user_id === bulkAccountManager);
+    if (!selectedManager) {
+      toast.error('Selected account manager not found');
+      return;
+    }
+
+    const orgIdsArray = Array.from(selectedOrgIds);
+    const updates = {
+      account_manager: selectedManager.user_id,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Optimistic update using React Query cache
+    updateCacheOptimistically(selectedOrgIds, updates);
+
+    // Close modal and clear selection immediately for better UX
+    setShowBulkAccountManagerModal(false);
+    setBulkAccountManager('');
+    setSelectedOrgIds(new Set());
+    showBulkActionToast('Assigned account manager to', orgIdsArray.length);
+
+    // Perform actual mutation in background
     try {
-      if (!bulkAccountManager) {
-        toast.error('Please select an account manager');
-        return;
-      }
-
-      // Find the selected manager's details
-      const selectedManager = accountManagers.find(m => m.user_id === bulkAccountManager);
-
-      if (!selectedManager) {
-        toast.error('Selected account manager not found');
-        return;
-      }
-
-      const managerDisplayName = selectedManager.full_name || selectedManager.email;
-
-      console.log(`💾 Bulk updating ${selectedOrgIds.size} organizations with account manager:`, managerDisplayName);
-
-      // Update account_manager field with user_id (UUID) so it can be resolved by the map
       const { error } = await supabase
         .from('trial_organizations')
-        .update({
-          account_manager: selectedManager.user_id,
-          updated_at: new Date().toISOString(),
-        })
-        .in('org_id', Array.from(selectedOrgIds));
+        .update(updates)
+        .in('org_id', orgIdsArray);
 
-      if (error) throw error;
-
-      showBulkActionToast('Assigned account manager to', selectedOrgIds.size);
-      setShowBulkAccountManagerModal(false);
-      setBulkAccountManager('');
-      setSelectedOrgIds(new Set());
-      await fetchOrganizations();
+      if (error) {
+        // Refetch to get correct state on error
+        invalidateTrialOrgs();
+        toast.error('Failed to update account managers');
+        console.error('Error updating account managers:', error);
+      }
     } catch (error: any) {
-      console.error('Error updating account managers:', error);
+      // Refetch to get correct state on error
+      invalidateTrialOrgs();
       toast.error('Failed to update account managers');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error updating account managers:', error);
     }
   };
 
   const handleBulkUpdateTrialDates = async () => {
-    setBulkProcessing(true);
+    if (!bulkTrialStartDate || !bulkTrialEndDate) {
+      toast.error('Please enter both start and end dates');
+      return;
+    }
+
+    let orgsToUpdate = Array.from(selectedOrgIds);
+
+    if (onlyUpdateMissingDates) {
+      const orgsWithMissingDates = organizations.filter(
+        (org) => selectedOrgIds.has(org.org_id) && (!org.trial_start_date || !org.trial_end_date)
+      );
+      orgsToUpdate = orgsWithMissingDates.map((org) => org.org_id);
+    }
+
+    if (orgsToUpdate.length === 0) {
+      toast.error('No organizations need date updates');
+      return;
+    }
+
+    const updates = {
+      trial_start_date: bulkTrialStartDate,
+      trial_end_date: bulkTrialEndDate,
+    };
+
+    // Optimistic update using React Query cache
+    updateCacheOptimistically(orgsToUpdate, updates);
+
+    // Close modal and clear state immediately
+    setShowBulkTrialDatesModal(false);
+    setBulkTrialStartDate('');
+    setBulkTrialEndDate('');
+    setOnlyUpdateMissingDates(false);
+    setSelectedOrgIds(new Set());
+    showBulkActionToast('Updated trial dates for', orgsToUpdate.length);
+
+    // Perform actual mutation
     try {
-      if (!bulkTrialStartDate || !bulkTrialEndDate) {
-        toast.error('Please enter both start and end dates');
-        return;
-      }
-
-      let orgsToUpdate = Array.from(selectedOrgIds);
-
-      if (onlyUpdateMissingDates) {
-        const orgsWithMissingDates = organizations.filter(
-          (org) => selectedOrgIds.has(org.org_id) && (!org.trial_start_date || !org.trial_end_date)
-        );
-        orgsToUpdate = orgsWithMissingDates.map((org) => org.org_id);
-      }
-
-      if (orgsToUpdate.length === 0) {
-        toast.error('No organizations need date updates');
-        return;
-      }
-
       const { error } = await supabase
         .from('trial_organizations')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        .update({
-          trial_start_date: bulkTrialStartDate,
-          trial_end_date: bulkTrialEndDate,
-        })
+        .update(updates)
         .in('org_id', orgsToUpdate);
 
-      if (error) throw error;
-
-      showBulkActionToast('Updated trial dates for', orgsToUpdate.length);
-      setShowBulkTrialDatesModal(false);
-      setBulkTrialStartDate('');
-      setBulkTrialEndDate('');
-      setOnlyUpdateMissingDates(false);
-      setSelectedOrgIds(new Set());
-      await fetchOrganizations();
+      if (error) {
+        invalidateTrialOrgs();
+        toast.error('Failed to update trial dates');
+        console.error('Error updating trial dates:', error);
+      }
     } catch (error: any) {
-      console.error('Error updating trial dates:', error);
+      invalidateTrialOrgs();
       toast.error('Failed to update trial dates');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error updating trial dates:', error);
     }
   };
 
   const handleBulkChangeStage = async () => {
-    setBulkProcessing(true);
-    try {
-      if (!bulkStage) {
-        toast.error('Please select a stage');
-        return;
-      }
+    if (!bulkStage) {
+      toast.error('Please select a stage');
+      return;
+    }
 
+    const orgIdsArray = Array.from(selectedOrgIds);
+    const updates = { org_lifecycle_stage: bulkStage as any };
+
+    // Optimistic update using React Query cache
+    updateCacheOptimistically(selectedOrgIds, updates);
+
+    // Close modal and clear state immediately
+    setShowBulkStageModal(false);
+    setBulkStage('');
+    setSelectedOrgIds(new Set());
+    showBulkActionToast('Changed stage for', orgIdsArray.length);
+
+    // Perform actual mutation
+    try {
       const { error } = await supabase
         .from('trial_organizations')
-        // @ts-ignore - Supabase typing issue with dynamic columns
-        .update({ org_lifecycle_stage: bulkStage as any })
-        .in('org_id', Array.from(selectedOrgIds));
+        .update(updates)
+        .in('org_id', orgIdsArray);
 
-      if (error) throw error;
-
-      showBulkActionToast('Changed stage for', selectedOrgIds.size);
-      setShowBulkStageModal(false);
-      setBulkStage('');
-      setSelectedOrgIds(new Set());
-      await fetchOrganizations();
+      if (error) {
+        invalidateTrialOrgs();
+        toast.error('Failed to update stage');
+        console.error('Error updating stage:', error);
+      }
     } catch (error: any) {
-      console.error('Error updating stage:', error);
+      invalidateTrialOrgs();
       toast.error('Failed to update stage');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error updating stage:', error);
     }
   };
 
   const handleBulkChangeTrialStatus = async () => {
-    setBulkProcessing(true);
-    try {
-      if (!bulkTrialStatus) {
-        toast.error('Please select a trial status');
-        return;
-      }
+    if (!bulkTrialStatus) {
+      toast.error('Please select a trial status');
+      return;
+    }
 
+    const orgIdsArray = Array.from(selectedOrgIds);
+    const updates = { trial_status: bulkTrialStatus };
+
+    // Optimistic update using React Query cache
+    updateCacheOptimistically(selectedOrgIds, updates);
+
+    // Close modal and clear state immediately
+    setShowBulkTrialStatusModal(false);
+    setBulkTrialStatus('');
+    setSelectedOrgIds(new Set());
+    showBulkActionToast('Changed trial status for', orgIdsArray.length);
+
+    // Perform actual mutation
+    try {
       const { error } = await supabase
         .from('trial_organizations')
-        .update({ trial_status: bulkTrialStatus })
-        .in('org_id', Array.from(selectedOrgIds));
+        .update(updates)
+        .in('org_id', orgIdsArray);
 
-      if (error) throw error;
-
-      showBulkActionToast('Changed trial status for', selectedOrgIds.size);
-      setShowBulkTrialStatusModal(false);
-      setBulkTrialStatus('');
-      setSelectedOrgIds(new Set());
-      await fetchOrganizations();
+      if (error) {
+        invalidateTrialOrgs();
+        toast.error('Failed to update trial status');
+        console.error('Error updating trial status:', error);
+      }
     } catch (error: any) {
-      console.error('Error updating trial status:', error);
+      invalidateTrialOrgs();
       toast.error('Failed to update trial status');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error updating trial status:', error);
     }
   };
 
   const handleBulkExtendTrial = async () => {
-    setBulkProcessing(true);
+    if (!extensionDays || extensionDays <= 0) {
+      toast.error('Please enter a valid number of days');
+      return;
+    }
+
+    // Get selected organizations with current trial_end_date
+    const orgsToExtend = organizations.filter((org) => selectedOrgIds.has(org.org_id));
+    const orgsWithEndDate = orgsToExtend.filter((org) => org.trial_end_date);
+
+    if (orgsWithEndDate.length === 0) {
+      toast.error('None of the selected organizations have trial end dates');
+      return;
+    }
+
+    // Calculate new end dates for each org
+    const orgUpdates = orgsWithEndDate.map(org => {
+      const currentEndDate = new Date(org.trial_end_date!);
+      const newEndDate = addDays(currentEndDate, extensionDays);
+      return {
+        org_id: org.org_id,
+        trial_end_date: format(newEndDate, 'yyyy-MM-dd'),
+      };
+    });
+
+    // Optimistic update using React Query cache - update each org's trial_end_date
+    const updatesMap = new Map(orgUpdates.map(u => [u.org_id, u.trial_end_date]));
+    queryClient.setQueriesData(
+      { queryKey: trialOrganizationsKeys.lists() },
+      (old: { organizations: OrgWithUsers[]; totalCount: number } | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          organizations: old.organizations.map((org) => {
+            const newEndDate = updatesMap.get(org.org_id);
+            return newEndDate ? { ...org, trial_end_date: newEndDate } : org;
+          }),
+        };
+      }
+    );
+
+    // Close modal and clear state immediately
+    const countExtended = orgsWithEndDate.length;
+    setShowBulkTrialExtensionModal(false);
+    setExtensionDays(7);
+    setSelectedOrgIds(new Set());
+    showBulkActionToast(`Extended trial by ${extensionDays} days for`, countExtended);
+
+    // Perform actual mutations
     try {
-      if (!extensionDays || extensionDays <= 0) {
-        toast.error('Please enter a valid number of days');
-        return;
-      }
-
-      // Get selected organizations with current trial_end_date
-      const orgsToExtend = organizations.filter((org) => selectedOrgIds.has(org.org_id));
-
-      // Filter out orgs without trial_end_date
-      const orgsWithEndDate = orgsToExtend.filter((org) => org.trial_end_date);
-
-      if (orgsWithEndDate.length === 0) {
-        toast.error('None of the selected organizations have trial end dates');
-        return;
-      }
-
-      // Update each organization with extended date
-      for (const org of orgsWithEndDate) {
-        const currentEndDate = new Date(org.trial_end_date!);
-        const newEndDate = addDays(currentEndDate, extensionDays);
-
-        const { error } = await supabase
+      const updatePromises = orgUpdates.map(update =>
+        supabase
           .from('trial_organizations')
-          .update({
-            trial_end_date: format(newEndDate, 'yyyy-MM-dd'),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('org_id', org.org_id);
+          .update({ trial_end_date: update.trial_end_date, updated_at: new Date().toISOString() })
+          .eq('org_id', update.org_id)
+      );
 
-        if (error) throw error;
+      const results = await Promise.all(updatePromises);
+      const hasError = results.some(r => r.error);
+
+      if (hasError) {
+        invalidateTrialOrgs();
+        toast.error('Failed to extend some trials');
+        console.error('Error extending trials:', results.filter(r => r.error));
       }
-
-      showBulkActionToast(`Extended trial by ${extensionDays} days for`, orgsWithEndDate.length);
-      setShowBulkTrialExtensionModal(false);
-      setExtensionDays(7);
-      setSelectedOrgIds(new Set());
-      await fetchOrganizations();
     } catch (error: any) {
-      console.error('Error extending trial:', error);
+      invalidateTrialOrgs();
       toast.error('Failed to extend trial');
-    } finally {
-      setBulkProcessing(false);
+      console.error('Error extending trial:', error);
     }
   };
 
@@ -492,7 +734,7 @@ export default function TrialOrganizationsPage() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-        <div className="text-sm text-gray-500">Loading...</div>
+        <div className="text-sm text-gray-600">Loading...</div>
       </div>
     );
   }
@@ -512,22 +754,34 @@ export default function TrialOrganizationsPage() {
           <div className="flex items-center justify-between mt-2">
             <div>
               <h2 className="text-xl font-bold text-gray-900 tracking-tight">Trial Organizations</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Manage and track trial organizations</p>
+              <p className="text-xs text-gray-600 mt-0.5">Manage and track trial organizations</p>
             </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/support/trials/bulk-edit')}
-              className="flex items-center gap-2 h-9 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+              className="flex items-center gap-2 h-9 px-4 bg-green-700 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
               <span>Bulk Edit All</span>
             </button>
+            <button
+              onClick={() => {
+                setExportSelectedOnly(false);
+                setShowActivityExportModal(true);
+              }}
+              className="flex items-center gap-2 h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Export Activities</span>
+            </button>
             {selectedOrgIds.size > 0 && (
               <button
                 onClick={() => setShowQuickEditPanel(true)}
-                className="flex items-center gap-2 h-9 px-4 bg-accent-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+                className="flex items-center gap-2 h-9 px-4 bg-accent-800 hover:bg-purple-900 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -542,11 +796,12 @@ export default function TrialOrganizationsPage() {
         {/* Content */}
         <div className="p-8">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
-            </div>
+            <SkeletonTrialGrid count={6} />
           ) : (
             <>
+              {/* Tab Navigation for Prospect Lifecycle */}
+              <TrialTabs activeTab={activeTab} counts={tabCounts} />
+
               {/* Stat Cards */}
               <div className="grid grid-cols-3 gap-6 mb-8">
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-6 hover:shadow-xl hover:shadow-gray-900/5 transition-all duration-300 hover:-translate-y-1">
@@ -568,7 +823,7 @@ export default function TrialOrganizationsPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Hot Leads</p>
                       <p className="text-3xl font-bold text-gray-900">{hotLeads}</p>
-                      <p className="text-xs text-gray-500 mt-1">Engagement &gt; 75%</p>
+                      <p className="text-xs text-gray-600 mt-1">Engagement &gt; 75%</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -583,7 +838,7 @@ export default function TrialOrganizationsPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">At Risk</p>
                       <p className="text-3xl font-bold text-gray-900">{atRisk}</p>
-                      <p className="text-xs text-gray-500 mt-1">Engagement &lt; 30%</p>
+                      <p className="text-xs text-gray-600 mt-1">Engagement &lt; 30%</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -676,245 +931,432 @@ export default function TrialOrganizationsPage() {
               </div>
 
               {/* Filters */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search organizations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <select
-                  value={stageFilter}
-                  onChange={(e) => setStageFilter(e.target.value)}
-                  className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Stages</option>
-                  <option value="prospect">Prospect</option>
-                  <option value="demo_scheduled">Demo Scheduled</option>
-                  <option value="trial_active">Trial Active</option>
-                  <option value="converted">Converted</option>
-                  <option value="churned">Churned</option>
-                </select>
-                {is_super_admin && (
+              <div className="space-y-4 mb-6">
+                {/* First Row - Search and Primary Filters */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Search organizations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      aria-label="Search organizations"
+                      className="w-full h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                   <select
-                    value={companyFilter}
-                    onChange={(e) => setCompanyFilter(e.target.value)}
+                    value={stageFilter}
+                    onChange={(e) => setStageFilter(e.target.value)}
+                    aria-label="Filter by stage"
                     className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="all">All Companies</option>
-                    <option value="Mordor Intelligence">MI - Mordor Intelligence</option>
-                    <option value="GMI">GMI</option>
+                    <option value="all">All Stages</option>
+                    <option value="prospect">Prospect</option>
+                    <option value="demo_scheduled">Demo Scheduled</option>
+                    <option value="trial_active">Trial Active</option>
+                    <option value="converted">Converted</option>
+                    <option value="churned">Churned</option>
                   </select>
-                )}
+                  {is_super_admin && (
+                    <select
+                      value={companyFilter}
+                      onChange={(e) => setCompanyFilter(e.target.value)}
+                      aria-label="Filter by company"
+                      className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="all">All Companies</option>
+                      <option value="Mordor Intelligence">MI - Mordor Intelligence</option>
+                      <option value="GMI">GMI</option>
+                    </select>
+                  )}
+                </div>
+
+                {/* Sort Control */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
+                  <select
+                    id="sort-select"
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [field, order] = e.target.value.split('-');
+                      setSortBy(field);
+                      setSortOrder(order as 'asc' | 'desc');
+                    }}
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="created_at-desc">Newest First</option>
+                    <option value="created_at-asc">Oldest First</option>
+                    <option value="org_name-asc">Name (A-Z)</option>
+                    <option value="org_name-desc">Name (Z-A)</option>
+                    <option value="trial_end_date-asc">Trial Expiry (Soonest)</option>
+                    <option value="trial_end_date-desc">Trial Expiry (Latest)</option>
+                    <option value="last_activity_at-desc">Recently Active</option>
+                    <option value="last_activity_at-asc">Least Active</option>
+                    <option value="completeness_score-desc">Completeness (High-Low)</option>
+                    <option value="completeness_score-asc">Completeness (Low-High)</option>
+                  </select>
+                </div>
               </div>
+
+                {/* Second Row - Advanced Filters */}
+                <div className="flex items-center gap-4">
+                  <select
+                    value={accountManagerFilter}
+                    onChange={(e) => setAccountManagerFilter(e.target.value)}
+                    aria-label="Filter by account manager"
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Account Managers</option>
+                    {accountManagers.map((am) => (
+                      <option key={am.user_id} value={am.user_id}>
+                        {am.full_name || am.email}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={trialStatusFilter}
+                    onChange={(e) => setTrialStatusFilter(e.target.value)}
+                    aria-label="Filter by trial status"
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Trial Statuses</option>
+                    <option value="requested">Requested</option>
+                    <option value="approved">Approved</option>
+                    <option value="active">Active</option>
+                    <option value="extended">Extended</option>
+                    <option value="expired">Expired</option>
+                    <option value="converted">Converted</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <select
+                    value={activityFilter}
+                    onChange={(e) => setActivityFilter(e.target.value)}
+                    aria-label="Filter by activity level"
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Activity Levels</option>
+                    <option value="active">Active (&lt;7 days)</option>
+                    <option value="quiet">Quiet (7-14 days)</option>
+                    <option value="stale">Stale (14-30 days)</option>
+                    <option value="dormant">Dormant (30+ days)</option>
+                    <option value="never_active">No Activity</option>
+                  </select>
+                  <select
+                    value={expiryFilter}
+                    onChange={(e) => setExpiryFilter(e.target.value)}
+                    aria-label="Filter by expiry date"
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Expiry Dates</option>
+                    <option value="expiring_soon">Expiring in 7 days</option>
+                    <option value="expiring_14days">Expiring in 14 days</option>
+                    <option value="expiring_30days">Expiring in 30 days</option>
+                  </select>
+                  <select
+                    value={completenessFilter}
+                    onChange={(e) => setCompletenessFilter(e.target.value)}
+                    aria-label="Filter by data completeness"
+                    className="h-10 px-4 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="all">All Data Quality</option>
+                    <option value="complete">Complete (70%+)</option>
+                    <option value="partial">Partial (40-69%)</option>
+                    <option value="incomplete">Incomplete (&lt;40%)</option>
+                  </select>
+
+                  {/* Add Prospect Button & View Mode Toggle - Only for Prospects Tab */}
+                  {activeTab === 'prospects' && (
+                    <div className="flex items-center gap-3 ml-auto">
+                      <button
+                        onClick={() => setShowAddProspectModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Prospect
+                      </button>
+                      <button
+                        onClick={() => setShowBulkImportProspectsModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Import CSV
+                      </button>
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setProspectViewMode('kanban')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          prospectViewMode === 'kanban'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="Kanban View"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                        </svg>
+                        Kanban
+                      </button>
+                      <button
+                        onClick={() => setProspectViewMode('list')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          prospectViewMode === 'list'
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                        title="List View"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        List
+                      </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
               {/* Organizations Card Grid - Modern & Engaging */}
               {filteredOrgs.length === 0 ? (
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 p-12 text-center animate-fade-in">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+                    <svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No organizations found</h3>
-                  <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {searchQuery || stageFilter !== 'all' || accountManagerFilter !== 'all' || activityFilter !== 'all'
+                      ? "No organizations found"
+                      : role?.toLowerCase() === 'account_manager'
+                        ? "No trials assigned yet"
+                        : "No organizations found"
+                    }
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+                    {searchQuery || stageFilter !== 'all' || accountManagerFilter !== 'all' || activityFilter !== 'all' ?
+                      "No organizations match your current filters. Try adjusting your search or filter criteria." :
+                      role?.toLowerCase() === 'account_manager' ?
+                        "You don't have any trials assigned to you yet. Ask your admin to assign trials, or create a new one using Paste & Extract." :
+                        "Get started by adding your first trial organization."
+                    }
+                  </p>
+                  {(searchQuery || stageFilter !== 'all' || accountManagerFilter !== 'all' || activityFilter !== 'all' || completenessFilter !== 'all') ? (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setStageFilter('all');
+                        setAccountManagerFilter('all');
+                        setActivityFilter('all');
+                        setExpiryFilter('all');
+                        setCompletenessFilter('all');
+                      }}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Clear All Filters
+                    </button>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <button
+                        onClick={() => router.push('/support/trials/parse')}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Paste & Extract
+                      </button>
+                      <button
+                        onClick={() => setShowCreateOrgModal(true)}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-all duration-200 border border-gray-300"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Manual Entry
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedOrgs.map((org) => {
-                    const daysLeft = org.trial_end_date ? differenceInDays(new Date(org.trial_end_date), new Date()) : null;
-                    const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft >= 0;
-                    const isExpired = daysLeft !== null && daysLeft < 0;
+                {/* Conditional rendering based on active tab */}
+                {activeTab === 'prospects' ? (
+                  // Prospects view with list/kanban toggle
+                  prospectViewMode === 'kanban' ? (
+                    <ProspectKanban
+                      prospects={paginatedOrgs.map(org => ({
+                        org_id: org.org_id,
+                        org_name: org.org_name,
+                        prospect_stage: org.prospect_stage || undefined,
+                        prospect_source: org.prospect_source || undefined,
+                        icp_fit_score: org.icp_fit_score || undefined,
+                        created_at: org.created_at || new Date().toISOString(),
+                        last_activity_at: org.last_activity_date,
+                        account_manager: org.account_manager,
+                        domain: org.org_domain,
+                      }))}
+                      onStageChange={async (orgId, newStage) => {
+                        // OPTIMIZATION: Validate stage before update
+                        const VALID_STAGES = ['cold_lead', 'contacted', 'responded', 'screening', 'demo_scheduled', 'demo_done', 'disqualified'];
+                        if (!VALID_STAGES.includes(newStage)) {
+                          toast.error('Invalid prospect stage');
+                          return;
+                        }
+                        try {
+                          const { error } = await supabase
+                            .from('trial_organizations')
+                            .update({ prospect_stage: newStage })
+                            .eq('org_id', orgId);
+                          if (error) throw error;
+                          invalidateTrialOrgs();
+                          toast.success(`Moved to ${newStage.replace(/_/g, ' ')}`);
+                        } catch (err) {
+                          toast.error('Failed to update stage');
+                        }
+                      }}
+                      onQuickAction={async (action, orgId) => {
+                        const org = paginatedOrgs.find(o => o.org_id === orgId);
+                        const orgName = org?.org_name || '';
 
-                    // Get stage color for border accent
-                    // Get stage gradient background
-                    const getStageGradient = (stage: string) => {
-                      switch (stage) {
-                        case 'trial_active': return 'bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/80';
-                        case 'trial_scheduled': return 'bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80';
-                        case 'trial_expired': return 'bg-gradient-to-br from-rose-50/80 via-white to-red-50/80';
-                        case 'converted': return 'bg-gradient-to-br from-purple-50/80 via-white to-pink-50/80';
-                        case 'not_converted': return 'bg-gradient-to-br from-gray-50/80 via-white to-slate-50/80';
-                        default: return 'bg-gradient-to-br from-gray-50/80 via-white to-gray-50/80';
-                      }
-                    };
+                        if (action === 'convert_to_trial') {
+                          router.push(`/support/trials/${orgId}?action=convert`);
+                          return;
+                        }
 
-                    // Get stage shadow color
-                    const getStageShadow = (stage: string) => {
-                      switch (stage) {
-                        case 'trial_active': return 'shadow-emerald-100/50 hover:shadow-emerald-200/50';
-                        case 'trial_scheduled': return 'shadow-blue-100/50 hover:shadow-blue-200/50';
-                        case 'trial_expired': return 'shadow-rose-100/50 hover:shadow-rose-200/50';
-                        case 'converted': return 'shadow-purple-100/50 hover:shadow-purple-200/50';
-                        case 'not_converted': return 'shadow-gray-100/50 hover:shadow-gray-200/50';
-                        default: return 'shadow-gray-100/50 hover:shadow-gray-200/50';
-                      }
-                    };
+                        if (action === 'add_note') {
+                          router.push(`/support/trials/${orgId}`);
+                          return;
+                        }
 
-                    // Get stage dot color
-                    const getStageDotColor = (stage: string) => {
-                      switch (stage) {
-                        case 'trial_active': return 'bg-emerald-500';
-                        case 'trial_scheduled': return 'bg-blue-500';
-                        case 'trial_expired': return 'bg-rose-500';
-                        case 'converted': return 'bg-purple-500';
-                        case 'not_converted': return 'bg-gray-400';
-                        default: return 'bg-gray-300';
-                      }
-                    };
+                        let commandText = '';
+                        if (action === 'log_outreach') {
+                          commandText = `Log outreach email for ${orgName}`;
+                        } else if (action === 'schedule_demo') {
+                          commandText = `Schedule demo for ${orgName}`;
+                        }
 
-                    return (
-                      <div
-                        key={org.org_id}
-                        data-testid="org-card"
-                        className={`group relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-gray-200/50 shadow-lg ${getStageGradient(org.org_lifecycle_stage)} ${getStageShadow(org.org_lifecycle_stage)} hover:shadow-xl min-h-[320px] flex flex-col`}
-                        style={{
-                          backdropFilter: 'blur(8px)',
-                        }}
-                      >
-                        {/* Selection Checkbox - Top Right */}
-                        <div className="absolute top-4 right-4 z-10">
-                          <input
-                            type="checkbox"
-                            checked={selectedOrgIds.has(org.org_id)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleSelectOrg(org.org_id);
-                            }}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer transition-transform hover:scale-110"
-                          />
-                        </div>
+                        if (commandText) {
+                          try {
+                            const response = await fetch('/api/command/process', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                commands: [commandText],
+                                auto_execute_high_confidence: true,
+                                session_context: {
+                                  focused_org_id: orgId,
+                                  focused_org_name: orgName,
+                                },
+                              }),
+                            });
 
-                        {/* Card Body */}
-                        <div className="p-6 space-y-4 flex-1">
-                          {/* Header: Avatar + Name + Domain */}
-                          <div className="flex items-start gap-3.5">
-                            {/* Modern gradient avatar */}
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-white/50">
-                              <span className="text-base font-bold text-white">
-                                {org.org_name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-
-                            {/* Name + Domain with better typography */}
-                            <div className="flex-1 min-w-0 pt-0.5">
-                              <h3 className="text-xl font-bold text-gray-900 mb-1 truncate leading-tight">
-                                {org.org_name}
-                              </h3>
-                              <p className="text-xs font-medium text-gray-500 truncate">
-                                {org.domain || 'No domain'}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Status Row: Stage + Company as dots */}
-                          <div className="flex items-center gap-4 text-sm">
-                            {/* Stage with dot */}
-                            <div className="flex items-center gap-1.5">
-                              <div className={`w-2 h-2 rounded-full ${getStageDotColor(org.org_lifecycle_stage)}`}></div>
-                              <span className="text-gray-700 font-medium">{formatStage(org.org_lifecycle_stage)}</span>
-                            </div>
-
-                            {/* Separator */}
-                            <div className="w-px h-3 bg-gray-300"></div>
-
-                            {/* Last Activity */}
-                            <span className="text-gray-600 text-xs">
-                              {org.last_activity_date
-                                ? `Active ${formatDistanceToNow(new Date(org.last_activity_date), { addSuffix: true })}`
-                                : 'No activity yet'
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.results?.[0]?.executionResult?.success) {
+                                toast.success(data.results[0].executionResult.summary || 'Action completed');
+                                invalidateTrialOrgs();
+                              } else {
+                                toast.error('Action could not be completed');
                               }
-                            </span>
-                          </div>
+                            }
+                          } catch (err) {
+                            toast.error('Failed to process action');
+                          }
+                        }
+                      }}
+                    />
+                  ) : (
+                    <ProspectsList
+                      prospects={paginatedOrgs.map(org => ({
+                        org_id: org.org_id,
+                        org_name: org.org_name,
+                        prospect_stage: org.prospect_stage || undefined,
+                        prospect_source: org.prospect_source || undefined,
+                        icp_fit_score: org.icp_fit_score || undefined,
+                        created_at: org.created_at || new Date().toISOString(),
+                        last_activity_at: org.last_activity_date,
+                        account_manager: org.account_manager,
+                        domain: org.org_domain,
+                        description: org.comments, // Using comments as description
+                      }))}
+                      selectedIds={selectedOrgIds}
+                      onSelectionChange={setSelectedOrgIds}
+                      onQuickAction={async (action, orgId) => {
+                        // Find the org name for command context
+                        const org = paginatedOrgs.find(o => o.org_id === orgId);
+                        const orgName = org?.org_name || '';
 
-                          {/* Days Left - Compact */}
-                          {daysLeft !== null && (
-                            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                isExpired ? 'bg-red-500' :
-                                isExpiringSoon ? 'bg-amber-500' :
-                                'bg-gray-400'
-                              }`}></div>
-                              <span className={`text-xs font-medium ${
-                                isExpired ? 'text-red-700' :
-                                isExpiringSoon ? 'text-amber-700' :
-                                'text-gray-600'
-                              }`}>
-                                {isExpired ? 'Expired' :
-                                 isExpiringSoon ? `${daysLeft} days left` :
-                                 `${daysLeft} days remaining`}
-                              </span>
-                            </div>
-                          )}
+                        if (action === 'convert_to_trial') {
+                          router.push(`/support/trials/${orgId}?action=convert`);
+                          return;
+                        }
 
-                          {/* Trial Progress Bar */}
-                          <TrialProgressBar
-                            trialStartDate={org.trial_start_date}
-                            trialEndDate={org.trial_end_date}
-                            engagementScore={org.engagement_score}
-                            lastActivityDate={org.last_activity_date}
-                            className="pt-3"
-                          />
+                        if (action === 'create_prospect') {
+                          setShowCreateOrgModal(true);
+                          return;
+                        }
 
-                          {/* Account Manager - Minimal */}
-                          {(() => {
-                            const accountManagerValue = org.account_manager_id || org.account_manager;
-                            const manager = accountManagers.find(am => am.user_id === accountManagerValue);
-                            const managerName = manager?.full_name || manager?.email?.split('@')[0];
-                            const isAssigned = !!managerName;
+                        // Map quick actions to command strings
+                        let commandText = '';
+                        if (action === 'log_outreach') {
+                          commandText = `Log outreach email for ${orgName}`;
+                        } else if (action === 'schedule_demo') {
+                          commandText = `Schedule demo for ${orgName}`;
+                        }
 
-                            return (
-                              <div className="flex items-center gap-2.5 pt-3 border-t border-gray-100">
-                                {isAssigned ? (
-                                  <>
-                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                      <span className="text-[9px] font-semibold text-blue-700">
-                                        {getInitials(managerName!)}
-                                      </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-xs text-gray-900 font-medium truncate">{managerName}</div>
-                                      <div className="text-[10px] text-gray-500">Account Manager</div>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                      <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                      </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-xs text-gray-400 font-medium">Unassigned</div>
-                                      <div className="text-[10px] text-gray-400">Account Manager</div>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                        if (commandText) {
+                          try {
+                            const response = await fetch('/api/command/process', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                commands: [commandText],
+                                auto_execute_high_confidence: true,
+                                session_context: {
+                                  focused_org_id: orgId,
+                                  focused_org_name: orgName,
+                                },
+                              }),
+                            });
 
-                        {/* Card Footer - Modern */}
-                        <div className="border-t border-white/50 px-6 py-4 backdrop-blur-sm bg-white/30">
-                          <button
-                            onClick={() => router.push(`/support/trials/${org.org_id}`)}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-semibold text-gray-700 hover:text-white bg-white/60 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md group/btn"
-                          >
-                            <span>View Details</span>
-                            <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.results?.[0]?.executionResult?.success) {
+                                toast.success(data.results[0].executionResult.summary || 'Action completed');
+                                invalidateTrialOrgs();
+                              } else {
+                                toast.error('Action could not be completed');
+                              }
+                            } else {
+                              toast.error('Failed to process action');
+                            }
+                          } catch (err) {
+                            console.error('Quick action error:', err);
+                            toast.error('Failed to process action');
+                          }
+                        }
+                      }}
+                    />
+                  )
+                ) : (
+                  // Standard trial grid for other tabs
+                  <VirtualizedTrialGrid
+                    organizations={paginatedOrgs}
+                    selectedOrgIds={selectedOrgIds}
+                    onSelect={handleSelectOrg}
+                    accountManagers={accountManagers}
+                    formatStage={formatStage}
+                    onActivityLogged={() => invalidateTrialOrgs()}
+                    onPrefetch={prefetchTrialDetail}
+                  />
+                )}
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
@@ -1032,6 +1474,22 @@ export default function TrialOrganizationsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Extend Trial</span>
+                </button>
+                <button
+                  onClick={() => setShowBulkActivityLogModal(true)}
+                  className="flex items-center gap-2 h-9 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-all duration-200 border border-gray-300 hover:border-gray-400"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span>Log Activity</span>
+                </button>
+                <button
+                  onClick={() => setShowBatchEnrichmentModal(true)}
+                  className="flex items-center gap-2 h-9 px-4 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Enrich Data</span>
                 </button>
                 <button
                   onClick={handleExportCSV}
@@ -1447,12 +1905,35 @@ export default function TrialOrganizationsPage() {
                 </button>
 
                 <button
+                  onClick={() => setShowBulkActivityLogModal(true)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Log Activity to All</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+
+                <button
                   onClick={handleExportCSV}
                   className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 rounded-lg transition-all group"
                 >
-                  <span className="text-sm font-medium text-gray-900">Export to CSV</span>
+                  <span className="text-sm font-medium text-gray-900">Export Orgs to CSV</span>
                   <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setExportSelectedOnly(true);
+                    setShowActivityExportModal(true);
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 rounded-lg transition-all group"
+                >
+                  <span className="text-sm font-medium text-gray-900">Export Activities Report</span>
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </button>
               </div>
@@ -1474,11 +1955,60 @@ export default function TrialOrganizationsPage() {
         </>
       )}
 
+      {/* Bulk Activity Log Modal */}
+      {showBulkActivityLogModal && (
+        <BulkActivityLog
+          selectedOrgIds={selectedOrgIds}
+          organizationNames={new Map(organizations.map(org => [org.org_id, org.org_name]))}
+          onSuccess={() => {
+            invalidateTrialOrgs();
+            setSelectedOrgIds(new Set());
+          }}
+          onClose={() => setShowBulkActivityLogModal(false)}
+        />
+      )}
+
+      {/* Batch Enrichment Modal */}
+      {showBatchEnrichmentModal && (
+        <BatchEnrichmentModal
+          orgIds={Array.from(selectedOrgIds)}
+          orgNames={new Map(organizations.map(org => [org.org_id, org.org_name]))}
+          onClose={() => setShowBatchEnrichmentModal(false)}
+          onComplete={() => {
+            setShowBatchEnrichmentModal(false);
+            setSelectedOrgIds(new Set());
+            invalidateTrialOrgs();
+          }}
+        />
+      )}
+
+      {/* Activity Export Modal */}
+      {showActivityExportModal && (
+        <ActivityExport
+          organizationIds={exportSelectedOnly ? Array.from(selectedOrgIds) : undefined}
+          onClose={() => setShowActivityExportModal(false)}
+        />
+      )}
+
       {/* Create Organization Modal */}
       <CreateOrganizationModal
         isOpen={showCreateOrgModal}
         onClose={() => setShowCreateOrgModal(false)}
-        onSuccess={fetchOrganizations}
+        onSuccess={invalidateTrialOrgs}
+      />
+
+      {/* Add Prospect Modal */}
+      <AddProspectModal
+        isOpen={showAddProspectModal}
+        onClose={() => setShowAddProspectModal(false)}
+        onSuccess={invalidateTrialOrgs}
+      />
+
+      {/* Bulk Import Prospects Modal */}
+      <BulkImportProspectsModal
+        isOpen={showBulkImportProspectsModal}
+        onClose={() => setShowBulkImportProspectsModal(false)}
+        onSuccess={invalidateTrialOrgs}
       />
     </div>
   );

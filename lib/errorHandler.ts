@@ -34,12 +34,16 @@ export interface ErrorReport {
   additional_info?: Record<string, any>;
 }
 
+interface AppError extends Error {
+  code?: string;
+}
+
 /**
  * Detect error type from error object or message
  */
-function detectErrorType(error: any): string {
-  const errorMessage = error?.message?.toLowerCase() || String(error).toLowerCase();
-  const errorCode = error?.code?.toLowerCase() || '';
+function detectErrorType(error: unknown): string {
+  const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const errorCode = (error as AppError)?.code?.toLowerCase() || '';
 
   // Network errors
   if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorCode === 'network_error') {
@@ -82,9 +86,9 @@ function detectErrorType(error: any): string {
 /**
  * Get humorous, context-aware error message
  */
-export function getErrorMessage(error: any, context: ErrorContext = 'generic'): ErrorDetails {
+export function getErrorMessage(error: unknown, context: ErrorContext = 'generic'): ErrorDetails {
   const errorType = detectErrorType(error);
-  const technicalMessage = error?.message || String(error);
+  const technicalMessage = error instanceof Error ? error.message : String(error);
 
   // Network Errors
   if (errorType === 'network') {
@@ -277,7 +281,7 @@ export function getErrorMessage(error: any, context: ErrorContext = 'generic'): 
 /**
  * Format error for toast display
  */
-export function formatErrorForToast(error: any, context: ErrorContext = 'generic', showTechnical: boolean = false): string {
+export function formatErrorForToast(error: unknown, context: ErrorContext = 'generic', showTechnical: boolean = false): string {
   const details = getErrorMessage(error, context);
 
   let message = details.message;
@@ -297,7 +301,7 @@ export function formatErrorForToast(error: any, context: ErrorContext = 'generic
 /**
  * Format error for API response
  */
-export function formatErrorForAPI(error: any, context: ErrorContext = 'api_call'): {
+export function formatErrorForAPI(error: unknown, context: ErrorContext = 'api_call'): {
   error: string;
   message: string;
   suggestion?: string;
@@ -318,7 +322,7 @@ export function formatErrorForAPI(error: any, context: ErrorContext = 'api_call'
  * Sends error details to support for investigation
  */
 export async function reportErrorToSupport(
-  error: any,
+  error: unknown,
   context: ErrorContext,
   userEmail?: string,
   userId?: string,
@@ -326,8 +330,8 @@ export async function reportErrorToSupport(
 ): Promise<{ success: boolean; ticketId?: string; error?: string }> {
   try {
     const errorReport: ErrorReport = {
-      error_message: error?.message || String(error),
-      error_stack: error?.stack,
+      error_message: error instanceof Error ? error.message : String(error),
+      error_stack: error instanceof Error ? error.stack : undefined,
       context,
       user_email: userEmail,
       user_id: userId,
@@ -349,9 +353,10 @@ export async function reportErrorToSupport(
 
     const data = await response.json();
     return { success: true, ticketId: data.ticketId };
-  } catch (reportError: any) {
+  } catch (reportError: unknown) {
     console.error('Failed to report error:', reportError);
-    return { success: false, error: reportError.message };
+    const message = reportError instanceof Error ? reportError.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }
 
@@ -360,7 +365,7 @@ export async function reportErrorToSupport(
  * Shows user-friendly error with option to report to support
  */
 export function formatErrorWithReportOption(
-  error: any,
+  error: unknown,
   context: ErrorContext = 'generic',
   onReport?: () => void
 ): string {
@@ -383,7 +388,7 @@ export function formatErrorWithReportOption(
  * Uses the enhanced toast system with progressive disclosure and actions
  */
 export function showEnhancedError(
-  error: any,
+  error: unknown,
   context: ErrorContext = 'generic',
   options?: {
     onRetry?: () => void | Promise<void>;
@@ -417,7 +422,7 @@ export function showEnhancedError(
       dedupeKey: `error_${context}_${details.message}`,
       context,
       technicalDetails: process.env.NODE_ENV === 'development' ? details.technical : undefined,
-      errorCode: (error as any)?.code,
+      errorCode: (error as AppError)?.code,
     },
   };
 

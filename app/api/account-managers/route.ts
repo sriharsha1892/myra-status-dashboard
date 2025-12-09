@@ -44,7 +44,11 @@ export async function GET(request: NextRequest) {
       role: user.role || 'Team',
     }));
 
-    return NextResponse.json({ managers });
+    return NextResponse.json({ managers }, {
+      headers: {
+        'Cache-Control': 's-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('Error in GET /api/account-managers:', error);
     return NextResponse.json(

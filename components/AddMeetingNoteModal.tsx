@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createClient } from '@/lib/supabase/client';
@@ -89,7 +88,7 @@ const ACTION_ITEM_SUGGESTIONS: Record<string, Array<{ description: string; defau
   ],
 };
 
-export default function AddMeetingNoteModal({
+const AddMeetingNoteModal = memo(function AddMeetingNoteModal({
   isOpen,
   onClose,
   onSuccess,
@@ -644,4 +643,6 @@ export default function AddMeetingNoteModal({
       </div>
     </div>
   );
-}
+});
+
+export default AddMeetingNoteModal;

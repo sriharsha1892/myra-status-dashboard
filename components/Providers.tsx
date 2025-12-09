@@ -2,24 +2,48 @@
 
 import { useState } from 'react';
 import toast, { Toaster, Toast as RHToast } from 'react-hot-toast';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CommandModalProvider } from '@/contexts/CommandModalContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { X } from 'lucide-react';
 import { EnhancedToast } from './toast/EnhancedToast';
 import { toastManager } from '@/lib/toast/manager';
 import type { Toast } from '@/lib/toast/types';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Create QueryClient instance with optimized defaults
+  // Create QueryClient instance with optimized defaults and global error handling
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error, query) => {
+            // Only show error toast for background refetch failures
+            // Initial fetch errors are handled by component error boundaries
+            if (query.state.data !== undefined) {
+              toast.error(`Background refresh failed: ${error.message}`);
+            }
+          },
+        }),
+        mutationCache: new MutationCache({
+          onError: (error, _variables, _context, mutation) => {
+            // Show error toast for mutations without their own error handling
+            if (!mutation.options.onError) {
+              toast.error(`Operation failed: ${error.message}`);
+            }
+          },
+        }),
         defaultOptions: {
           queries: {
-            staleTime: 2 * 60 * 1000, // Data fresh for 2 minutes
-            cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-            refetchOnWindowFocus: false, // Don't refetch on window focus
+            staleTime: 2 * 60 * 1000, // Data fresh for 2 minutes (reduced from 5)
+            gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+            refetchOnWindowFocus: true, // Refresh data when user returns to tab
+            refetchOnMount: true, // Refresh on component mount
             retry: 1, // Only retry failed queries once
+            refetchInterval: false, // Components can override for auto-refresh
+          },
+          mutations: {
+            retry: 0, // Don't retry mutations by default
           },
         },
       })
@@ -27,8 +51,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
+      <ErrorBoundary>
+        <AuthProvider>
+          <CommandModalProvider>
+            {children}
       <Toaster
         position="top-right"
         containerStyle={{
@@ -158,7 +184,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           animation: leave 0.2s ease-in forwards;
         }
       `}</style>
-      </AuthProvider>
+          </CommandModalProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

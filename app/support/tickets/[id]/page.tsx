@@ -1,9 +1,10 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
@@ -23,19 +24,27 @@ import {
 } from 'lucide-react';
 import { WatchButton } from '@/components/support/WatchButton';
 import { WatchersList } from '@/components/support/WatchersList';
-import { StatusChangeModalWrapper } from '@/components/support/StatusChangeModalWrapper';
 import { TicketLinks } from '@/components/support/TicketLinks';
 import { CommentForm } from '@/components/support/CommentForm';
 import { CommentList } from '@/components/support/CommentList';
 import { LinkedTicketsPanel } from '@/components/support/LinkedTicketsPanel';
-import { LinkTicketModal } from '@/components/support/LinkTicketModal';
-import { MergeTicketsModal } from '@/components/support/MergeTicketsModal';
 import { notifyNewComment } from '@/lib/support/notifications';
 import { linkTickets, mergeTickets } from '@/lib/support/ticketLinks';
 import EmailThreadViewer from '@/components/support/email/EmailThreadViewer';
 import CalendarEventList from '@/components/support/calendar/CalendarEventList';
 import CalendarEventForm from '@/components/support/calendar/CalendarEventForm';
 import Breadcrumbs from '@/components/Breadcrumbs';
+
+// Lazy load modals for code splitting
+const StatusChangeModalWrapper = dynamic(() => import('@/components/support/StatusChangeModalWrapper').then(mod => ({ default: mod.StatusChangeModalWrapper })), {
+  loading: () => null,
+});
+const LinkTicketModal = dynamic(() => import('@/components/support/LinkTicketModal').then(mod => ({ default: mod.LinkTicketModal })), {
+  loading: () => null,
+});
+const MergeTicketsModal = dynamic(() => import('@/components/support/MergeTicketsModal').then(mod => ({ default: mod.MergeTicketsModal })), {
+  loading: () => null,
+});
 
 type Ticket = Database['public']['Tables']['tickets']['Row'];
 type TicketComment = Database['public']['Tables']['ticket_comments']['Row'];

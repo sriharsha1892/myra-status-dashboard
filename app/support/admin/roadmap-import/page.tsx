@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
@@ -19,7 +19,11 @@ import {
   Trash2,
   Plus,
   Save,
+  Target,
+  Building2,
 } from 'lucide-react';
+
+type ImportMode = 'org-specific' | 'master';
 
 type RoadmapRow = {
   id: string;
@@ -39,6 +43,9 @@ type RoadmapRow = {
   rationale?: string;
   version_planned?: string;
   assigned_to?: string;
+  strategic_categories?: string; // Comma-separated list for master import
+  item_type?: 'task' | 'macro-goal';
+  org_name?: string; // For org-specific import
   _validationErrors?: string[];
   _isValid?: boolean;
 };
@@ -46,6 +53,7 @@ type RoadmapRow = {
 const STATUSES = ['planned', 'in_progress', 'completed', 'cancelled', 'suggested'] as const;
 const PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
 const SOURCE_TYPES = ['admin', 'feature_request', 'account_manager'] as const;
+const ITEM_TYPES = ['task', 'macro-goal'] as const;
 
 export default function RoadmapImportPage() {
   const { user, loading: authLoading, role } = useAuth();
@@ -56,8 +64,23 @@ export default function RoadmapImportPage() {
   const [importProgress, setImportProgress] = useState(0);
   const [importResults, setImportResults] = useState({ success: 0, failed: 0 });
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; field: string } | null>(null);
+  const [importMode, setImportMode] = useState<ImportMode>('org-specific');
+  const [availableCategories, setAvailableCategories] = useState<Array<{id: string; name: string}>>([]);
 
   const supabase = createClient();
+
+  // Fetch strategic categories for master import mode
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('strategic_categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('display_order');
+      if (data) setAvailableCategories(data);
+    };
+    fetchCategories();
+  }, [supabase]);
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -88,6 +111,10 @@ export default function RoadmapImportPage() {
       version_planned: ['version planned', 'planned version', 'target version'],
       assigned_to: ['assigned to', 'assignee', 'developer', 'owner'],
       notes: ['notes', 'comments', 'remarks', 'additional info'],
+      // Master import fields
+      strategic_categories: ['strategic categories', 'strategic_categories', 'categories', 'strategic'],
+      item_type: ['item type', 'item_type', 'type', 'roadmap type'],
+      org_name: ['organization', 'org_name', 'org', 'company'],
     };
 
     for (const [field, synonyms] of Object.entries(mappings)) {
@@ -149,6 +176,8 @@ export default function RoadmapImportPage() {
         status: 'planned',
         priority: 'medium',
         source_type: 'admin',
+        item_type: importMode === 'master' ? 'macro-goal' : 'task', // Default based on mode
+        strategic_categories: '', // For master mode
       };
 
       Object.keys(row).forEach((key) => {
@@ -272,15 +301,15 @@ export default function RoadmapImportPage() {
           .eq('title', row.title)
           .maybeSingle();
 
-        // Only include fields that exist in org_product_roadmap schema
-        const itemData = {
+        // Build item data based on import mode
+        const itemData: Record<string, unknown> = {
           title: row.title,
           description: row.description || null,
           status: row.status,
           priority: row.priority,
           target_date: row.due_date || null,  // Map due_date to target_date
           created_by: user.email,
-          org_id: null,  // NULL for general company roadmap items
+          org_id: null,  // NULL for master/company roadmap items
           proposer: row.proposer || null,
           goal: row.goal || null,
           area: row.area || null,
@@ -289,18 +318,32 @@ export default function RoadmapImportPage() {
           assigned_to: row.assigned_to || null,
         };
 
+        // Add master mode specific fields
+        if (importMode === 'master') {
+          // Parse strategic_categories from comma-separated string
+          const categories = row.strategic_categories
+            ? row.strategic_categories.split(',').map((c: string) => c.trim()).filter(Boolean)
+            : [];
+          itemData.strategic_categories = categories.length > 0 ? categories : null;
+          itemData.item_type = row.item_type || 'macro-goal';
+        } else {
+          itemData.item_type = row.item_type || 'task';
+        }
+
         if (existingItem) {
           // Update existing
-          const { error } = await supabase
-            .from('org_product_roadmap')
-            .update({ ...itemData, updated_at: new Date().toISOString() })
-            .eq('id', existingItem.id);
+          const existingId = (existingItem as { id: string }).id;
+          const updateData = { ...itemData, updated_at: new Date().toISOString() };
+          const { error } = await (supabase
+            .from('org_product_roadmap') as any)
+            .update(updateData)
+            .eq('id', existingId);
 
           if (error) throw error;
         } else {
           // Insert new
-          const { error } = await supabase
-            .from('org_product_roadmap')
+          const { error } = await (supabase
+            .from('org_product_roadmap') as any)
             .insert(itemData);
 
           if (error) throw error;
@@ -341,43 +384,88 @@ export default function RoadmapImportPage() {
   };
 
   const downloadTemplate = () => {
-    const template = [
-      {
-        title: 'Example Feature',
-        description: 'Detailed description of the feature',
-        status: 'planned',  // Options: planned, in_progress, completed, cancelled, suggested (or use: Done, Planned, In Progress, etc.)
-        priority: 'medium',  // Options: low, medium, high, critical
-        category: 'UI/UX',
-        goal: 'Improve user experience',
-        area: 'Dashboard',
-        rationale: 'User feedback from trials',
-        proposer: 'Account Manager',
-        version_planned: 'v2.1',
-        assigned_to: 'Dev Team',
-        due_date: '2025-12-31',
-        notes: 'Additional notes',
-      },
-      {
-        title: 'Another Feature Example',
-        description: 'Second example showing Done status',
-        status: 'Done',  // Will be converted to 'completed'
-        priority: 'High',  // Will be converted to 'high'
-        category: 'Backend',
-        goal: 'Performance',
-        area: 'API',
-        rationale: 'System optimization',
-        proposer: 'Dev Team',
-        version_planned: 'v2.0',
-        assigned_to: 'Backend Team',
-        due_date: '2025-06-30',
-        notes: 'Shows alternative status/priority formats',
-      },
-    ];
+    let template;
+    let fileName;
+
+    if (importMode === 'master') {
+      // Master roadmap template with strategic categories
+      template = [
+        {
+          title: 'Enterprise SSO Integration',
+          description: 'Add SAML/OAuth enterprise SSO support',
+          status: 'planned',
+          priority: 'high',
+          strategic_categories: 'Enterprise Integrations, Security', // Comma-separated
+          item_type: 'macro-goal',
+          goal: 'Enable enterprise adoption',
+          rationale: 'Required by multiple enterprise prospects',
+          due_date: '2025-12-31',
+        },
+        {
+          title: 'Mobile App Support',
+          description: 'Native iOS and Android applications',
+          status: 'in_progress',
+          priority: 'critical',
+          strategic_categories: 'Mobile, User Experience',
+          item_type: 'macro-goal',
+          goal: 'Mobile accessibility',
+          rationale: 'High demand from existing customers',
+          due_date: '2025-06-30',
+        },
+        {
+          title: 'Advanced Analytics Dashboard',
+          description: 'Custom reporting and analytics',
+          status: 'planned',
+          priority: 'medium',
+          strategic_categories: 'Analytics, Enterprise Features',
+          item_type: 'task',
+          goal: 'Better insights for users',
+          rationale: 'Competitive feature',
+          due_date: '2025-09-15',
+        },
+      ];
+      fileName = 'master_roadmap_import_template.xlsx';
+    } else {
+      // Original org-specific template
+      template = [
+        {
+          title: 'Example Feature',
+          description: 'Detailed description of the feature',
+          status: 'planned',
+          priority: 'medium',
+          category: 'UI/UX',
+          goal: 'Improve user experience',
+          area: 'Dashboard',
+          rationale: 'User feedback from trials',
+          proposer: 'Account Manager',
+          version_planned: 'v2.1',
+          assigned_to: 'Dev Team',
+          due_date: '2025-12-31',
+          notes: 'Additional notes',
+        },
+        {
+          title: 'Another Feature Example',
+          description: 'Second example showing Done status',
+          status: 'Done',
+          priority: 'High',
+          category: 'Backend',
+          goal: 'Performance',
+          area: 'API',
+          rationale: 'System optimization',
+          proposer: 'Dev Team',
+          version_planned: 'v2.0',
+          assigned_to: 'Backend Team',
+          due_date: '2025-06-30',
+          notes: 'Shows alternative status/priority formats',
+        },
+      ];
+      fileName = 'roadmap_import_template.xlsx';
+    }
 
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Roadmap Template');
-    XLSX.writeFile(wb, 'roadmap_import_template.xlsx');
+    XLSX.writeFile(wb, fileName);
 
     toast.success('Template downloaded!');
   };
@@ -404,6 +492,53 @@ export default function RoadmapImportPage() {
               <p className="text-sm text-neutral-600">
                 Upload your roadmap data from CSV or Excel. We'll intelligently map columns and let you edit before importing.
               </p>
+            </div>
+
+            {/* Import Mode Toggle */}
+            <div className="mb-6 p-4 bg-neutral-50 rounded-xl">
+              <h3 className="text-sm font-semibold text-neutral-900 mb-3">Import Mode</h3>
+              <div className="flex gap-3">
+                <label className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer border transition-all flex-1 ${
+                  importMode === 'org-specific'
+                    ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-300'
+                    : 'bg-white border-neutral-200 hover:bg-neutral-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="importMode"
+                    checked={importMode === 'org-specific'}
+                    onChange={() => setImportMode('org-specific')}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div className="text-sm font-medium text-neutral-900">Org-Specific Items</div>
+                      <div className="text-xs text-neutral-500">Company roadmap items (org_id = null)</div>
+                    </div>
+                  </div>
+                </label>
+                <label className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer border transition-all flex-1 ${
+                  importMode === 'master'
+                    ? 'bg-purple-50 border-purple-300 ring-1 ring-purple-300'
+                    : 'bg-white border-neutral-200 hover:bg-neutral-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="importMode"
+                    checked={importMode === 'master'}
+                    onChange={() => setImportMode('master')}
+                    className="w-4 h-4 text-purple-600"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <div className="text-sm font-medium text-neutral-900">Master Roadmap Items</div>
+                      <div className="text-xs text-neutral-500">Strategic items with categories</div>
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Download Template */}

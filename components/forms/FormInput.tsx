@@ -41,7 +41,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             </span>
           )}
           {!required && showOptional && (
-            <span className="text-neutral-500 ml-1 font-normal">
+            <span className="text-neutral-600 ml-1 font-normal">
               (optional)
             </span>
           )}
@@ -68,10 +68,10 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             w-full px-3 py-2
             border rounded-lg
             text-base text-neutral-900
-            placeholder:text-neutral-500
+            placeholder:text-neutral-600
             transition-colors duration-200
             focus:outline-none focus:ring-2 focus:ring-offset-1
-            disabled:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-500
+            disabled:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-600
             ${
               hasError
                 ? 'border-accent-600 focus:border-accent-600 focus:ring-accent-500/30'

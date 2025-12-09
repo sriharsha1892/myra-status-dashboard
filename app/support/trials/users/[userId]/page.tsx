@@ -1,16 +1,25 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import LogUserActivityModal from '@/components/LogUserActivityModal';
-import AddTopicModal from '@/components/AddTopicModal';
-import AddIssueModal from '@/components/AddIssueModal';
+
+// Lazy load modals for code splitting
+const LogUserActivityModal = dynamic(() => import('@/components/LogUserActivityModal'), {
+  loading: () => null,
+});
+const AddTopicModal = dynamic(() => import('@/components/AddTopicModal'), {
+  loading: () => null,
+});
+const AddIssueModal = dynamic(() => import('@/components/AddIssueModal'), {
+  loading: () => null,
+});
 
 interface PlatformUser {
   user_id: string;

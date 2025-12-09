@@ -4,6 +4,8 @@ import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Vi
 import { format, differenceInDays } from 'date-fns';
 import TrialExtensionsTab from './TrialExtensionsTab';
 import UpdateDealStatusModal from './UpdateDealStatusModal';
+import MyraUsageWidget from './myra/MyraUsageWidget';
+import { HealthStatusPrompt, DealMomentumPrompt } from './enrichment';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -152,6 +154,34 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
           </div>
         </div>
       </div>
+
+      {/* Inline Enrichment Prompts - Show when data is missing */}
+      {(!organization.health_status || !organization.deal_momentum) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {!organization.health_status && (
+            <HealthStatusPrompt
+              orgId={orgId}
+              currentValue={organization.health_status}
+              onUpdate={() => {
+                // Force re-render by updating local state
+                // Parent component should refetch
+              }}
+            />
+          )}
+          {!organization.deal_momentum && (
+            <DealMomentumPrompt
+              orgId={orgId}
+              currentValue={organization.deal_momentum}
+              onUpdate={() => {
+                // Parent component should refetch
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* myRA AI Activity Widget */}
+      <MyraUsageWidget orgId={orgId} variant="compact" />
 
       {/* Quick Actions */}
       <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">

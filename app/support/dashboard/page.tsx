@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
@@ -9,12 +9,13 @@ import { formatDistanceToNow, format, differenceInDays } from 'date-fns';
 import {
   FileText, AlertTriangle, TrendingUp, Building2, Zap,
   Target, ArrowRight, Activity, Sparkles, ChevronRight, Calendar,
-  Users, TrendingDown, ChevronDown, BarChart3
+  Users, TrendingDown, ChevronDown, BarChart3, RefreshCw
 } from 'lucide-react';
 import AnnouncementsBulletin from '@/components/support/AnnouncementsBulletin';
 import TodosWidget from '@/components/support/TodosWidget';
 import PersonalImpactWidget from '@/components/support/PersonalImpactWidget';
 import PasswordReminderBanner from '@/components/PasswordReminderBanner';
+import DataCompletenessWidget from '@/components/support/DataCompletenessWidget';
 import { OnboardingChecklist } from '@/components/OnboardingChecklist';
 import { MagneticCard } from '@/components/animations/MagneticCard';
 import { HolographicOverlay } from '@/components/animations/HolographicOverlay';
@@ -33,8 +34,14 @@ export default function EnterpriseCommandCenter() {
   const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [avgEngagementScore, setAvgEngagementScore] = useState(0);
   const [showAllMetrics, setShowAllMetrics] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const supabase = createClient();
+
+  // Auto-refresh interval (30 seconds)
+  const AUTO_REFRESH_INTERVAL = 30 * 1000;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,8 +51,39 @@ export default function EnterpriseCommandCenter() {
 
     if (user && !authLoading) {
       fetchAllData();
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        refreshData();
+      }, AUTO_REFRESH_INTERVAL);
     }
+
+    // Cleanup interval on unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
   }, [user, authLoading, role, router]);
+
+  // Silent refresh (doesn't show full loading state)
+  const refreshData = useCallback(async () => {
+    if (isRefreshing) return; // Prevent concurrent refreshes
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchTickets(),
+        fetchOrganizations(),
+        fetchUpcomingDemos(),
+        fetchActiveUsers(),
+      ]);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Dashboard refresh error:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing]);
 
   // Memoized calculations - MUST be before any conditional returns (Rules of Hooks)
   const activeTrials = useMemo(() =>
@@ -88,7 +126,6 @@ export default function EnterpriseCommandCenter() {
 
   const fetchAllData = async () => {
     setLoading(true);
-    const startTime = performance.now();
     try {
       // Fetch in parallel for maximum speed
       await Promise.all([
@@ -97,8 +134,7 @@ export default function EnterpriseCommandCenter() {
         fetchUpcomingDemos(),
         fetchActiveUsers(),
       ]);
-      const endTime = performance.now();
-      console.log(`✅ Dashboard data loaded in ${Math.round(endTime - startTime)}ms`);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Dashboard fetch error:', error);
     } finally {
@@ -109,22 +145,14 @@ export default function EnterpriseCommandCenter() {
   const fetchTickets = async () => {
     try {
       if (role?.toLowerCase() === 'account_manager') {
-        const { data: userOrgs } = await supabase
-          .from('trial_organizations')
-          .select('org_id')
-          .eq('account_manager_id', user?.id);
-
-        const orgIds = (userOrgs || []).map((org: any) => org.org_id);
-        if (orgIds.length === 0) {
-          setTickets([]);
-          return;
-        }
-
-        // Limit to 500 most recent tickets for performance - plenty for dashboard metrics
+        // Use JOIN instead of 2 sequential queries to fix N+1 pattern
         const { data, error } = await supabase
           .from('tickets')
-          .select('*')
-          .in('trial_org_id', orgIds)
+          .select(`
+            *,
+            trial_organizations!inner(account_manager_id)
+          `)
+          .eq('trial_organizations.account_manager_id', user?.id)
           .order('created_at', { ascending: false })
           .limit(500);
 
@@ -190,24 +218,20 @@ export default function EnterpriseCommandCenter() {
 
   const fetchActiveUsers = async () => {
     try {
-      // Count total trial users across all organizations
-      const { count, error } = await supabase
-        .from('trial_users')
-        .select('*', { count: 'exact', head: true });
+      // Run both queries in parallel for better performance
+      const [usersResult, scoresResult] = await Promise.all([
+        supabase.from('trial_users').select('*', { count: 'exact', head: true }),
+        supabase.from('trial_organizations').select('engagement_score').not('engagement_score', 'is', null)
+      ]);
 
-      if (error) throw error;
-      setActiveUsersCount(count || 0);
+      // Handle user count
+      if (usersResult.error) throw usersResult.error;
+      setActiveUsersCount(usersResult.count || 0);
 
-      // Calculate average engagement score from all organizations with engagement_score
-      const { data: orgsWithScores, error: scoreError } = await supabase
-        .from('trial_organizations')
-        .select('engagement_score')
-        .not('engagement_score', 'is', null);
-
-      if (scoreError) throw scoreError;
-
-      if (orgsWithScores && orgsWithScores.length > 0) {
-        const avgScore = orgsWithScores.reduce((sum, org) => sum + (org.engagement_score || 0), 0) / orgsWithScores.length;
+      // Handle engagement scores
+      if (scoresResult.error) throw scoresResult.error;
+      if (scoresResult.data && scoresResult.data.length > 0) {
+        const avgScore = scoresResult.data.reduce((sum, org) => sum + (org.engagement_score || 0), 0) / scoresResult.data.length;
         setAvgEngagementScore(Math.round(avgScore));
       }
     } catch (error: any) {
@@ -267,13 +291,31 @@ export default function EnterpriseCommandCenter() {
           )}
 
           {/* Greeting Section */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight mb-1">
-              {greeting}, {userName}
-            </h1>
-            <p className="text-sm text-neutral-600">
-              {format(new Date(), 'EEEE, MMMM d, yyyy')} · {format(new Date(), 'h:mm a')}
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight mb-1">
+                {greeting}, {userName}
+              </h1>
+              <p className="text-sm text-neutral-600">
+                {format(new Date(), 'EEEE, MMMM d, yyyy')} · {format(new Date(), 'h:mm a')}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {lastUpdated && (
+                <span className="text-xs text-neutral-500">
+                  Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+                </span>
+              )}
+              <button
+                onClick={refreshData}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 rounded-lg hover:border-neutral-300 transition-all duration-200 disabled:opacity-50"
+                title="Refresh dashboard"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Updating...' : 'Refresh'}
+              </button>
+            </div>
           </div>
 
           {/* Primary Metrics Grid - Simplified Layout */}
@@ -681,6 +723,9 @@ export default function EnterpriseCommandCenter() {
 
               {/* Todos Widget - Always visible */}
               <TodosWidget userId={user?.id} />
+
+              {/* Data Completeness Widget - Shows when data is incomplete */}
+              <DataCompletenessWidget organizations={organizations} />
 
               {/* Upcoming Demos */}
               {role?.toLowerCase() === 'admin' && upcomingDemos.length > 0 && (

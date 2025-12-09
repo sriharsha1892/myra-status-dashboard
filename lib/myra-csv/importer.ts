@@ -24,6 +24,10 @@ import {
 import { batchMatchEntities } from './entityMatcher';
 import { batchAnalyzeQueries } from './aiProcessor';
 
+// Import shared utilities from bulk import framework
+import { calculateTier, averageConfidence } from '@/lib/bulkImport/confidence';
+import { hasErrors as issuesHaveErrors } from '@/lib/bulkImport/issues';
+
 // ============================================================================
 // CSV PARSING
 // ============================================================================
@@ -128,14 +132,11 @@ export async function analyzeCSVData(rows: CSVRow[]): Promise<AnalyzedQuery[]> {
     // Detect issues
     const issues = detectIssues(row, entityMatch, aiResult);
 
-    // Calculate overall confidence and tier
-    const confidences = [
+    // Calculate overall confidence using shared utility
+    const overallConfidence = averageConfidence([
       entityMatch.overallConfidence,
       aiResult.categoryConfidence,
-    ];
-    const overallConfidence = Math.round(
-      confidences.reduce((sum, c) => sum + c, 0) / confidences.length
-    );
+    ]);
 
     const tier = determineTier(overallConfidence, issues);
 
@@ -248,24 +249,17 @@ function detectIssues(row: CSVRow, entityMatch: any, aiResult: any): QueryIssue[
 
 /**
  * Determine overall tier based on confidence and issues
+ * Uses shared calculateTier from bulk import framework
  */
 function determineTier(
   overallConfidence: number,
   issues: QueryIssue[]
 ): ConfidenceTier {
-  // If any error severity issues, requires fix
-  if (issues.some((i) => i.severity === 'error')) {
-    return ConfidenceTier.REQUIRES_FIX;
-  }
+  // Check if any issues have error severity
+  const hasErrors = issues.some((i) => i.severity === 'error');
 
-  // Based on confidence
-  if (overallConfidence >= 90) {
-    return ConfidenceTier.AUTO_APPROVE;
-  } else if (overallConfidence >= 70) {
-    return ConfidenceTier.NEEDS_REVIEW;
-  } else {
-    return ConfidenceTier.REQUIRES_FIX;
-  }
+  // Use shared tier calculator
+  return calculateTier(overallConfidence, hasErrors);
 }
 
 /**

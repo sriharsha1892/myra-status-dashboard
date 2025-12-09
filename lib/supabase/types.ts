@@ -253,8 +253,8 @@ export interface Database {
           org_name: string
           org_domain: string | null
           account_manager: string | null
-          org_lifecycle_stage: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned'
-          trial_status: 'requested' | 'approved' | 'in_progress' | 'active' | 'extended' | 'completed' | 'closed' | null
+          org_lifecycle_stage: 'prospect' | 'trial_pending' | 'trial_active' | 'trial_expired' | 'customer' | 'lost'
+          trial_status: 'requested' | 'approved' | 'active' | 'extended' | 'completed' | 'cancelled' | null
           trial_start_date: string | null
           trial_end_date: string | null
           engagement_score: number
@@ -262,14 +262,35 @@ export interface Database {
           comments: string | null
           created_at: string
           updated_at: string
+          // Engagement tracking columns
+          first_login_date: string | null
+          first_query_date: string | null
+          activation_date: string | null
+          total_logins: number
+          total_queries: number
+          unique_active_users: number
+          last_query_date: string | null
+          engagement_tier: 'hot' | 'warm' | 'cold' | 'dormant' | null
+          engagement_score_breakdown: Json | null
+          customer_health_status: 'onboarding' | 'healthy' | 'warning' | 'at_risk' | 'churning' | null
+          // Prospect lifecycle columns
+          is_prospect: boolean
+          prospect_stage: 'cold_lead' | 'contacted' | 'responded' | 'screening' | 'demo_scheduled' | 'demo_done' | 'disqualified' | null
+          prospect_source: 'cold_outreach' | 'inbound' | 'referral' | 'event' | 'linkedin' | 'other' | null
+          icp_fit_score: number | null
+          // Deal stage columns
+          deal_stage: 'evaluation' | 'trial_expired' | 'negotiation' | 'closed' | null
+          deal_outcome: 'won' | 'lost' | 'deferred' | null
+          deal_outcome_reason: string | null
+          deal_deferred_until: string | null
         }
         Insert: {
           org_id?: string
           org_name: string
           org_domain?: string | null
           account_manager?: string | null
-          org_lifecycle_stage?: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned'
-          trial_status?: 'requested' | 'approved' | 'in_progress' | 'active' | 'extended' | 'completed' | 'closed' | null
+          org_lifecycle_stage?: 'prospect' | 'trial_pending' | 'trial_active' | 'trial_expired' | 'customer' | 'lost'
+          trial_status?: 'requested' | 'approved' | 'active' | 'extended' | 'completed' | 'cancelled' | null
           trial_start_date?: string | null
           trial_end_date?: string | null
           engagement_score?: number
@@ -277,13 +298,34 @@ export interface Database {
           comments?: string | null
           created_at?: string
           updated_at?: string
+          first_login_date?: string | null
+          first_query_date?: string | null
+          activation_date?: string | null
+          total_logins?: number
+          total_queries?: number
+          unique_active_users?: number
+          last_query_date?: string | null
+          engagement_tier?: 'hot' | 'warm' | 'cold' | 'dormant' | null
+          engagement_score_breakdown?: Json | null
+          customer_health_status?: 'onboarding' | 'healthy' | 'warning' | 'at_risk' | 'churning' | null
+          // Prospect lifecycle columns
+          is_prospect?: boolean
+          prospect_stage?: 'cold_lead' | 'contacted' | 'responded' | 'screening' | 'demo_scheduled' | 'demo_done' | 'disqualified' | null
+          prospect_source?: 'cold_outreach' | 'inbound' | 'referral' | 'event' | 'linkedin' | 'other' | null
+          icp_fit_score?: number | null
+          // Deal stage columns
+          deal_stage?: 'evaluation' | 'trial_expired' | 'negotiation' | 'closed' | null
+          deal_outcome?: 'won' | 'lost' | 'deferred' | null
+          deal_outcome_reason?: string | null
+          deal_deferred_until?: string | null
         }
         Update: {
           org_id?: string
           org_name?: string
           org_domain?: string | null
           account_manager?: string | null
-          org_lifecycle_stage?: 'prospect' | 'demo_scheduled' | 'trial_active' | 'converted' | 'churned'
+          org_lifecycle_stage?: 'prospect' | 'trial_pending' | 'trial_active' | 'trial_expired' | 'customer' | 'lost'
+          trial_status?: 'requested' | 'approved' | 'active' | 'extended' | 'completed' | 'cancelled' | null
           trial_start_date?: string | null
           trial_end_date?: string | null
           engagement_score?: number
@@ -291,6 +333,120 @@ export interface Database {
           comments?: string | null
           created_at?: string
           updated_at?: string
+          first_login_date?: string | null
+          first_query_date?: string | null
+          activation_date?: string | null
+          total_logins?: number
+          total_queries?: number
+          unique_active_users?: number
+          last_query_date?: string | null
+          engagement_tier?: 'hot' | 'warm' | 'cold' | 'dormant' | null
+          engagement_score_breakdown?: Json | null
+          customer_health_status?: 'onboarding' | 'healthy' | 'warning' | 'at_risk' | 'churning' | null
+          // Prospect lifecycle columns
+          is_prospect?: boolean
+          prospect_stage?: 'cold_lead' | 'contacted' | 'responded' | 'screening' | 'demo_scheduled' | 'demo_done' | 'disqualified' | null
+          prospect_source?: 'cold_outreach' | 'inbound' | 'referral' | 'event' | 'linkedin' | 'other' | null
+          icp_fit_score?: number | null
+          // Deal stage columns
+          deal_stage?: 'evaluation' | 'trial_expired' | 'negotiation' | 'closed' | null
+          deal_outcome?: 'won' | 'lost' | 'deferred' | null
+          deal_outcome_reason?: string | null
+          deal_deferred_until?: string | null
+        }
+      }
+      prospects: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          email: string | null
+          title: string | null
+          phone: string | null
+          linkedin_url: string | null
+          is_primary_contact: boolean
+          source: 'cold_outreach' | 'linkedin' | 'referral' | 'inbound' | 'event' | 'other' | null
+          status: 'active' | 'converted' | 'unresponsive' | 'opted_out'
+          assigned_to: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+          converted_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          email?: string | null
+          title?: string | null
+          phone?: string | null
+          linkedin_url?: string | null
+          is_primary_contact?: boolean
+          source?: 'cold_outreach' | 'linkedin' | 'referral' | 'inbound' | 'event' | 'other' | null
+          status?: 'active' | 'converted' | 'unresponsive' | 'opted_out'
+          assigned_to?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          converted_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          email?: string | null
+          title?: string | null
+          phone?: string | null
+          linkedin_url?: string | null
+          is_primary_contact?: boolean
+          source?: 'cold_outreach' | 'linkedin' | 'referral' | 'inbound' | 'event' | 'other' | null
+          status?: 'active' | 'converted' | 'unresponsive' | 'opted_out'
+          assigned_to?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+          converted_user_id?: string | null
+        }
+      }
+      prospect_activities: {
+        Row: {
+          id: string
+          prospect_id: string | null
+          org_id: string | null
+          activity_type: 'email_sent' | 'email_received' | 'call' | 'linkedin' | 'meeting' | 'note' | 'screening' | 'demo'
+          direction: 'outbound' | 'inbound' | null
+          subject: string | null
+          content: string | null
+          response_status: 'no_response' | 'positive' | 'negative' | 'neutral' | 'pending' | null
+          logged_by: string | null
+          activity_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          prospect_id?: string | null
+          org_id?: string | null
+          activity_type: 'email_sent' | 'email_received' | 'call' | 'linkedin' | 'meeting' | 'note' | 'screening' | 'demo'
+          direction?: 'outbound' | 'inbound' | null
+          subject?: string | null
+          content?: string | null
+          response_status?: 'no_response' | 'positive' | 'negative' | 'neutral' | 'pending' | null
+          logged_by?: string | null
+          activity_date?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          prospect_id?: string | null
+          org_id?: string | null
+          activity_type?: 'email_sent' | 'email_received' | 'call' | 'linkedin' | 'meeting' | 'note' | 'screening' | 'demo'
+          direction?: 'outbound' | 'inbound' | null
+          subject?: string | null
+          content?: string | null
+          response_status?: 'no_response' | 'positive' | 'negative' | 'neutral' | 'pending' | null
+          logged_by?: string | null
+          activity_date?: string
+          created_at?: string
         }
       }
       trial_users: {

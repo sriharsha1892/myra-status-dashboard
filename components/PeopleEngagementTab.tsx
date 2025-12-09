@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Users, Activity, UserCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import UpdatesTab from './UpdatesTab';
+import { UserInfluencePrompt } from './enrichment';
 import toast from 'react-hot-toast';
 
 interface PeopleEngagementTabProps {
@@ -91,6 +92,8 @@ export default function PeopleEngagementTab({
           onAddUser={onAddUser}
           onEditUser={onEditUser}
           onDeleteUser={onDeleteUser}
+          onRefresh={fetchPlatformUsers}
+          onSetPassword={onSetPassword}
         />
       )}
 
@@ -109,6 +112,8 @@ function MergedPeopleSection({
   onAddUser,
   onEditUser,
   onDeleteUser,
+  onRefresh,
+  onSetPassword,
 }: {
   stakeholders: any[];
   platformUsers: any[];
@@ -116,6 +121,8 @@ function MergedPeopleSection({
   onAddUser: () => void;
   onEditUser: (user: any) => void;
   onDeleteUser: (userId: string) => void;
+  onRefresh?: () => void;
+  onSetPassword?: (user: any) => void;
 }) {
   // Determine if a user is an active platform user
   const isActivePlatformUser = (user: any) => {
@@ -129,7 +136,8 @@ function MergedPeopleSection({
       ...user,
       isPlatformUser: !!platformUser,
       isActive: platformUser ? isActivePlatformUser(platformUser) : false,
-      platformStage: platformUser?.current_stage
+      platformStage: platformUser?.current_stage,
+      influence: platformUser?.influence || user.influence
     };
   });
 
@@ -221,6 +229,17 @@ function MergedPeopleSection({
                   </span>
                 )}
               </div>
+              {/* Inline Enrichment for missing influence */}
+              {!user.influence && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <UserInfluencePrompt
+                    userId={user.user_id}
+                    currentValue={user.influence}
+                    onUpdate={() => onRefresh?.()}
+                  />
+                </div>
+              )}
+
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => onEditUser(user)}

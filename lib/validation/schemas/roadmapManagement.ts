@@ -15,6 +15,7 @@ import { nonEmptyString } from './common';
 
 export const ROADMAP_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled'] as const;
 export const ROADMAP_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
+export const ROADMAP_ITEM_TYPES = ['task', 'macro-goal'] as const;
 
 // ============================================================================
 // Type Exports
@@ -22,6 +23,7 @@ export const ROADMAP_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const
 
 export type RoadmapStatus = typeof ROADMAP_STATUSES[number];
 export type RoadmapPriority = typeof ROADMAP_PRIORITIES[number];
+export type RoadmapItemType = typeof ROADMAP_ITEM_TYPES[number];
 
 // ============================================================================
 // Schemas
@@ -29,7 +31,7 @@ export type RoadmapPriority = typeof ROADMAP_PRIORITIES[number];
 
 /**
  * Schema for creating a new roadmap item
- * Used by: AddRoadmapItemModal
+ * Used by: AddRoadmapItemModal (unified modal for both org-specific and master items)
  */
 export const createRoadmapItemSchema = z.object({
   title: nonEmptyString('Title is required'),
@@ -43,6 +45,10 @@ export const createRoadmapItemSchema = z.object({
   target_date: z.string().optional(),
   estimated_completion_date: z.string().optional(),
   created_by: z.string().optional(),
+  // Fields for master roadmap items
+  strategic_categories: z.array(z.string()).default([]),
+  item_type: z.enum(ROADMAP_ITEM_TYPES).default('task'),
+  parent_item_id: z.string().nullable().optional(),
 });
 
 export type CreateRoadmapItemInput = z.infer<typeof createRoadmapItemSchema>;

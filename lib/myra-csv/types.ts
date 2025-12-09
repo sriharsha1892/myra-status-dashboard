@@ -1,15 +1,15 @@
 // Type definitions for myRA CSV Import System
 // Provides type safety and contracts for AI-powered import pipeline
 
+// Import shared types from bulk import framework
+import { ConfidenceTier } from '@/lib/bulkImport/confidence';
+
+// Re-export for backward compatibility
+export { ConfidenceTier };
+
 // ============================================================================
 // ENUMS
 // ============================================================================
-
-export enum ConfidenceTier {
-  AUTO_APPROVE = 'auto_approve', // >90% confidence - green tier
-  NEEDS_REVIEW = 'needs_review', // 70-90% confidence - yellow tier
-  REQUIRES_FIX = 'requires_fix', // <70% confidence - red tier
-}
 
 export enum QueryCategory {
   MARKET_SIZE = 'market_size',

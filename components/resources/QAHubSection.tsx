@@ -60,7 +60,7 @@ export default function QAHubSection() {
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      // Fetch questions with author info
+      // Fetch questions first
       const { data: questionsData, error } = await supabase
         .from('resource_discussions')
         .select(`
@@ -79,57 +79,82 @@ export default function QAHubSection() {
         throw error;
       }
 
-      // Parse content and fetch stats for each question
-      const questionsWithStats = await Promise.all(
-        (questionsData || []).map(async (question: any) => {
-          // Parse JSON content
-          let parsedContent: any = {};
-          try {
-            parsedContent = typeof question.content === 'string'
-              ? JSON.parse(question.content)
-              : question.content;
-          } catch (e) {
-            parsedContent = { question: 'Untitled', details: question.content, tags: [] };
-          }
+      if (!questionsData || questionsData.length === 0) {
+        setQuestions([]);
+        return;
+      }
 
-          // Get author info
-          const { data: authorData } = await supabase
-            .from('users')
-            .select('full_name, email')
-            .eq('id', question.author_id)
-            .single();
+      // Collect all unique author IDs and question IDs for batch fetching
+      const authorIds = [...new Set(questionsData.map(q => q.author_id).filter(Boolean))];
+      const questionIds = questionsData.map(q => q.id);
 
-          // Get upvote count
-          const { count: upvotes } = await supabase
-            .from('resource_discussion_reactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('discussion_id', question.id)
-            .eq('reaction_type', 'upvote');
+      // Batch fetch all data in parallel (3 queries instead of N*3)
+      const [authorsResult, reactionsResult, answersResult] = await Promise.all([
+        // Fetch all authors at once
+        authorIds.length > 0
+          ? supabase.from('users').select('id, full_name, email').in('id', authorIds)
+          : Promise.resolve({ data: [] }),
+        // Fetch all reactions at once
+        supabase.from('resource_discussion_reactions')
+          .select('discussion_id')
+          .in('discussion_id', questionIds)
+          .eq('reaction_type', 'upvote'),
+        // Fetch all answers at once
+        supabase.from('resource_discussions')
+          .select('parent_discussion_id, is_accepted_answer')
+          .in('parent_discussion_id', questionIds)
+          .eq('discussion_type', 'answer')
+      ]);
 
-          // Get answer count and check for accepted answer
-          const { data: answers } = await supabase
-            .from('resource_discussions')
-            .select('id, is_accepted_answer')
-            .eq('parent_discussion_id', question.id)
-            .eq('discussion_type', 'answer');
-
-          const hasAcceptedAnswer = answers?.some(a => a.is_accepted_answer) || false;
-
-          return {
-            id: question.id,
-            question: parsedContent.question || 'Untitled Question',
-            details: parsedContent.details || parsedContent.content || '',
-            tags: parsedContent.tags || [],
-            author_id: question.author_id,
-            author_name: authorData?.full_name || 'Unknown',
-            author_email: authorData?.email || '',
-            created_at: question.created_at,
-            answer_count: answers?.length || 0,
-            upvote_count: upvotes || 0,
-            has_accepted_answer: hasAcceptedAnswer,
-          };
-        })
+      // Create lookup maps for O(1) access
+      const authorMap = new Map(
+        (authorsResult.data || []).map((a: any) => [a.id, { full_name: a.full_name, email: a.email }])
       );
+
+      // Count upvotes per question
+      const upvoteMap = new Map<string, number>();
+      (reactionsResult.data || []).forEach((r: any) => {
+        upvoteMap.set(r.discussion_id, (upvoteMap.get(r.discussion_id) || 0) + 1);
+      });
+
+      // Count answers and check for accepted per question
+      const answerCountMap = new Map<string, number>();
+      const acceptedMap = new Map<string, boolean>();
+      (answersResult.data || []).forEach((a: any) => {
+        answerCountMap.set(a.parent_discussion_id, (answerCountMap.get(a.parent_discussion_id) || 0) + 1);
+        if (a.is_accepted_answer) {
+          acceptedMap.set(a.parent_discussion_id, true);
+        }
+      });
+
+      // Map questions with all the data
+      const questionsWithStats = questionsData.map((question: any) => {
+        // Parse JSON content
+        let parsedContent: any = {};
+        try {
+          parsedContent = typeof question.content === 'string'
+            ? JSON.parse(question.content)
+            : question.content;
+        } catch (e) {
+          parsedContent = { question: 'Untitled', details: question.content, tags: [] };
+        }
+
+        const author = authorMap.get(question.author_id);
+
+        return {
+          id: question.id,
+          question: parsedContent.question || 'Untitled Question',
+          details: parsedContent.details || parsedContent.content || '',
+          tags: parsedContent.tags || [],
+          author_id: question.author_id,
+          author_name: author?.full_name || 'Unknown',
+          author_email: author?.email || '',
+          created_at: question.created_at,
+          answer_count: answerCountMap.get(question.id) || 0,
+          upvote_count: upvoteMap.get(question.id) || 0,
+          has_accepted_answer: acceptedMap.get(question.id) || false,
+        };
+      });
 
       // Apply filter sorting
       let sortedQuestions = [...questionsWithStats];

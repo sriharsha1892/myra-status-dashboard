@@ -62,19 +62,15 @@ export default function CustomerSupportDashboard() {
 
       // If user doesn't exist in users table, deny access
       if (!userData) {
-        console.log('User not found in users table. User ID:', authUser.id);
         toast.error('User account not found. Please contact support.');
         router.push('/support/dashboard');
         return;
       }
 
-      console.log('User role check:', { role: userData?.role, is_super_admin: userData?.is_super_admin });
-
       const isAdmin = userData?.role === 'Admin';
       const isSuperAdmin = userData?.is_super_admin === true;
 
       if (!isAdmin && !isSuperAdmin) {
-        console.log('Access denied. Role:', userData?.role, 'is_super_admin:', userData?.is_super_admin);
         toast.error('Access denied. Admin access required.');
         router.push('/support/dashboard');
         return;

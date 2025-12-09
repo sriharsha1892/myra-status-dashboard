@@ -128,17 +128,14 @@ export function useRoadmapData() {
     queryKey: ['roadmap', 'all'],
     queryFn: fetchRoadmapData,
     staleTime: 2 * 60 * 1000, // 2 minutes - data considered fresh
-    cacheTime: 5 * 60 * 1000, // 5 minutes - keep in cache
+    gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache (formerly cacheTime)
     refetchOnMount: false, // Don't refetch if data is fresh
     refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 }
 
 /**
- * Invalidate roadmap cache (call after create/update/delete)
+ * Get the query key for roadmap cache invalidation
+ * Use with queryClient.invalidateQueries() after create/update/delete
  */
-export function invalidateRoadmapCache() {
-  const supabase = createClient();
-  // This will be available via QueryClient in components
-  return ['roadmap', 'all'];
-}
+export const ROADMAP_QUERY_KEY = ['roadmap', 'all'] as const;

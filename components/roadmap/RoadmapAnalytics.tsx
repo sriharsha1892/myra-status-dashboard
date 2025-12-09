@@ -38,6 +38,7 @@ interface RoadmapItem {
 
 interface RoadmapAnalyticsProps {
   items: RoadmapItem[];
+  onCreateItem?: (prefill: { status?: string; priority?: string }) => void;
 }
 
 const STATUS_COLORS = {
@@ -54,7 +55,7 @@ const PRIORITY_COLORS = {
   critical: '#EF4444',
 };
 
-export default function RoadmapAnalytics({ items }: RoadmapAnalyticsProps) {
+export default function RoadmapAnalytics({ items, onCreateItem }: RoadmapAnalyticsProps) {
   const analytics = useMemo(() => {
     const total = items.length;
     const byStatus = {
@@ -140,8 +141,34 @@ export default function RoadmapAnalytics({ items }: RoadmapAnalyticsProps) {
     { name: 'Critical', value: analytics.byPriority.critical, color: PRIORITY_COLORS.critical },
   ].filter((item) => item.value > 0);
 
+  // Helper text for creating items
+  const hasCreateHandler = !!onCreateItem;
+
+  // Map display names back to database values
+  const statusNameToValue: Record<string, string> = {
+    'Planned': 'planned',
+    'In Progress': 'in_progress',
+    'Completed': 'completed',
+    'Cancelled': 'cancelled',
+  };
+
+  const priorityNameToValue: Record<string, string> = {
+    'Low': 'low',
+    'Medium': 'medium',
+    'High': 'high',
+    'Critical': 'critical',
+  };
+
   return (
     <div className="space-y-6">
+      {/* Helper Text */}
+      {hasCreateHandler && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold">Interactive Charts:</span> Click on any chart segment below to create a roadmap item with pre-filled status or priority values.
+          </p>
+        </div>
+      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Items */}
@@ -214,27 +241,58 @@ export default function RoadmapAnalytics({ items }: RoadmapAnalyticsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Distribution */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Distribution</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+            <span>Status Distribution</span>
+            {hasCreateHandler && (
+              <span className="text-xs text-gray-500 font-normal">Click segments to create items</span>
+            )}
+          </h3>
           {statusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className={hasCreateHandler ? 'cursor-pointer' : ''}>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    onClick={(data) => {
+                      if (onCreateItem && data && data.name) {
+                        const statusValue = statusNameToValue[data.name];
+                        if (statusValue) {
+                          onCreateItem({ status: statusValue });
+                        }
+                      }
+                    }}
+                    style={{ cursor: hasCreateHandler ? 'pointer' : 'default' }}
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        style={{
+                          cursor: hasCreateHandler ? 'pointer' : 'default',
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (hasCreateHandler) {
+                            e.currentTarget.style.opacity = '0.7';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                        }}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-[300px] flex items-center justify-center text-gray-500">
               No data available
@@ -244,21 +302,46 @@ export default function RoadmapAnalytics({ items }: RoadmapAnalyticsProps) {
 
         {/* Priority Distribution */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Priority Distribution</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+            <span>Priority Distribution</span>
+            {hasCreateHandler && (
+              <span className="text-xs text-gray-500 font-normal">Click segments to create items</span>
+            )}
+          </h3>
           {priorityData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <div className={hasCreateHandler ? 'cursor-pointer' : ''}>
+              <ResponsiveContainer width="100%" height={300}>
               <BarChart data={priorityData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="value" fill="#8884d8">
+                <Bar
+                  dataKey="value"
+                  fill="#8884d8"
+                  onClick={(data) => {
+                    if (onCreateItem && data && data.name) {
+                      const priorityValue = priorityNameToValue[data.name];
+                      if (priorityValue) {
+                        onCreateItem({ priority: priorityValue });
+                      }
+                    }
+                  }}
+                  cursor={hasCreateHandler ? 'pointer' : 'default'}
+                >
                   {priorityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                      style={{
+                        cursor: hasCreateHandler ? 'pointer' : 'default',
+                      }}
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-[300px] flex items-center justify-center text-gray-500">
               No data available

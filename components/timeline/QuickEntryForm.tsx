@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { X, Loader2, Calendar, Copy, Check } from 'lucide-react';
 import { searchEventTypes, getDisplayName } from '@/lib/timeline/activityMatcher';
-import { EVENT_TAXONOMY } from '@/lib/timeline/llmParser';
+import { EVENT_TAXONOMY } from '@/lib/timeline/timelineEventsImporter';
 import toast from 'react-hot-toast';
 
 interface QuickEntryFormProps {

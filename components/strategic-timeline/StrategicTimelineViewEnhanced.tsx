@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Filter, Loader2, CalendarDays, Sparkles, Zap, TrendingUp, Target, Rocket } from 'lucide-react';
+import { Filter, Loader2, CalendarDays, Sparkles, Zap, TrendingUp, Target, Rocket, Plus } from 'lucide-react';
 import { TimelineItem } from './TimelineItem';
 import { OrgDemandBadge } from './OrgDemandBadge';
 import { useRoadmapData } from '@/hooks/useRoadmapData';
@@ -39,10 +39,12 @@ interface StrategicCategory {
 
 interface StrategicTimelineViewEnhancedProps {
   onItemClick?: (itemId: string) => void;
+  onCreateItem?: (categoryName?: string) => void;
 }
 
 export default function StrategicTimelineViewEnhanced({
   onItemClick,
+  onCreateItem,
 }: StrategicTimelineViewEnhancedProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'timeline' | 'swim'>('swim');
@@ -132,14 +134,26 @@ export default function StrategicTimelineViewEnhanced({
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl shadow-lg">
                   <Rocket className="w-7 h-7 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h1 className="text-4xl font-black bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
                     Strategic Timeline
                   </h1>
                   <p className="text-slate-600 text-sm font-medium mt-1">
                     Global Product Roadmap • {items.length} Active Items
+                    {onCreateItem && (
+                      <span className="ml-2 text-xs text-blue-600">• Click categories to add items or use button →</span>
+                    )}
                   </p>
                 </div>
+                {onCreateItem && (
+                  <button
+                    onClick={() => onCreateItem()}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-bold"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Item
+                  </button>
+                )}
               </div>
 
               {/* Quick Stats */}
@@ -218,14 +232,23 @@ export default function StrategicTimelineViewEnhanced({
               <div className={`bg-gradient-to-br ${colors.bg} backdrop-blur-xl border-2 ${colors.border} rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500`}>
                 {/* Category Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
+                  <div
+                    className={`flex items-center gap-4 flex-1 ${onCreateItem ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''}`}
+                    onClick={() => onCreateItem && onCreateItem(categoryName)}
+                    title={onCreateItem ? `Click to add item to ${categoryName}` : ''}
+                  >
                     <div className="p-2 bg-white/80 rounded-xl shadow">
                       <Target className="w-6 h-6" style={{ color: colors.from }} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black" style={{ color: colors.from }}>
-                        {categoryName}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-2xl font-black" style={{ color: colors.from }}>
+                          {categoryName}
+                        </h2>
+                        {onCreateItem && (
+                          <Plus className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" style={{ color: colors.from }} />
+                        )}
+                      </div>
                       {categoryInfo?.description && (
                         <p className="text-sm text-slate-600 mt-1">{categoryInfo.description}</p>
                       )}

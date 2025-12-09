@@ -1,6 +1,6 @@
-// @ts-nocheck
 'use client';
 
+import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
@@ -19,6 +19,12 @@ interface AddFeatureRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  defaultValues?: {
+    title?: string;
+    description?: string;
+    use_case?: string;
+    priority?: string;
+  };
 }
 
 // Priority options with descriptive labels
@@ -34,6 +40,7 @@ export default function AddFeatureRequestModal({
   isOpen,
   onClose,
   onSuccess,
+  defaultValues,
 }: AddFeatureRequestModalProps) {
   const supabase = createClient();
 
@@ -44,12 +51,26 @@ export default function AddFeatureRequestModal({
     handleInputChange,
     validateForm,
     resetForm,
+    setFormData,
   } = useFormValidation(createFeatureRequestSchema, {
-    title: '',
-    description: '',
-    use_case: '',
-    priority: 'medium' as typeof FEATURE_REQUEST_PRIORITIES[number],
+    title: defaultValues?.title || '',
+    description: defaultValues?.description || '',
+    use_case: defaultValues?.use_case || '',
+    priority: (defaultValues?.priority as typeof FEATURE_REQUEST_PRIORITIES[number]) || 'medium',
   });
+
+  // Update form when defaultValues change (for command interface prefill)
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData(prev => ({
+        ...prev,
+        title: defaultValues.title || prev.title,
+        description: defaultValues.description || prev.description,
+        use_case: defaultValues.use_case || prev.use_case,
+        priority: (defaultValues.priority as typeof FEATURE_REQUEST_PRIORITIES[number]) || prev.priority,
+      }));
+    }
+  }, [defaultValues, setFormData]);
 
   // Use loading state hook
   const { isLoading, execute } = useLoadingState();

@@ -58,7 +58,7 @@ export default function CommunityFeedSection() {
   const fetchDiscussions = async () => {
     setLoading(true);
     try {
-      // Fetch discussions with author info and stats
+      // Fetch discussions first
       const { data: discussionsData, error } = await supabase
         .from('resource_discussions')
         .select(`
@@ -78,54 +78,77 @@ export default function CommunityFeedSection() {
         throw error;
       }
 
-      // Parse content and fetch stats for each discussion
-      const discussionsWithStats = await Promise.all(
-        (discussionsData || []).map(async (discussion: any) => {
-          // Parse JSON content
-          let parsedContent: any = {};
-          try {
-            parsedContent = typeof discussion.content === 'string'
-              ? JSON.parse(discussion.content)
-              : discussion.content;
-          } catch (e) {
-            parsedContent = { title: 'Untitled', content: discussion.content, tags: [] };
-          }
+      if (!discussionsData || discussionsData.length === 0) {
+        setDiscussions([]);
+        return;
+      }
 
-          // Get author info
-          const { data: authorData } = await supabase
-            .from('users')
-            .select('full_name, email')
-            .eq('id', discussion.author_id)
-            .single();
+      // Collect all unique author IDs and discussion IDs for batch fetching
+      const authorIds = [...new Set(discussionsData.map(d => d.author_id).filter(Boolean))];
+      const discussionIds = discussionsData.map(d => d.id);
 
-          // Get vote count
-          const { count: upvotes } = await supabase
-            .from('resource_discussion_reactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('discussion_id', discussion.id)
-            .eq('reaction_type', 'upvote');
+      // Batch fetch all data in parallel (3 queries instead of N*3)
+      const [authorsResult, reactionsResult, repliesResult] = await Promise.all([
+        // Fetch all authors at once
+        authorIds.length > 0
+          ? supabase.from('users').select('id, full_name, email').in('id', authorIds)
+          : Promise.resolve({ data: [] }),
+        // Fetch all reactions at once
+        supabase.from('resource_discussion_reactions')
+          .select('discussion_id')
+          .in('discussion_id', discussionIds)
+          .eq('reaction_type', 'upvote'),
+        // Fetch all reply counts at once
+        supabase.from('resource_discussions')
+          .select('parent_discussion_id')
+          .in('parent_discussion_id', discussionIds)
+      ]);
 
-          // Get reply count
-          const { count: replies } = await supabase
-            .from('resource_discussions')
-            .select('*', { count: 'exact', head: true })
-            .eq('parent_discussion_id', discussion.id);
-
-          return {
-            id: discussion.id,
-            title: parsedContent.title || 'Untitled Discussion',
-            content: parsedContent.content || parsedContent.details || '',
-            tags: parsedContent.tags || [],
-            author_id: discussion.author_id,
-            author_name: authorData?.full_name || 'Unknown',
-            author_email: authorData?.email || '',
-            is_pinned: discussion.is_pinned,
-            created_at: discussion.created_at,
-            upvote_count: upvotes || 0,
-            reply_count: replies || 0,
-          };
-        })
+      // Create lookup maps for O(1) access
+      const authorMap = new Map(
+        (authorsResult.data || []).map((a: any) => [a.id, { full_name: a.full_name, email: a.email }])
       );
+
+      // Count upvotes per discussion
+      const upvoteMap = new Map<string, number>();
+      (reactionsResult.data || []).forEach((r: any) => {
+        upvoteMap.set(r.discussion_id, (upvoteMap.get(r.discussion_id) || 0) + 1);
+      });
+
+      // Count replies per discussion
+      const replyMap = new Map<string, number>();
+      (repliesResult.data || []).forEach((r: any) => {
+        replyMap.set(r.parent_discussion_id, (replyMap.get(r.parent_discussion_id) || 0) + 1);
+      });
+
+      // Map discussions with all the data
+      const discussionsWithStats = discussionsData.map((discussion: any) => {
+        // Parse JSON content
+        let parsedContent: any = {};
+        try {
+          parsedContent = typeof discussion.content === 'string'
+            ? JSON.parse(discussion.content)
+            : discussion.content;
+        } catch (e) {
+          parsedContent = { title: 'Untitled', content: discussion.content, tags: [] };
+        }
+
+        const author = authorMap.get(discussion.author_id);
+
+        return {
+          id: discussion.id,
+          title: parsedContent.title || 'Untitled Discussion',
+          content: parsedContent.content || parsedContent.details || '',
+          tags: parsedContent.tags || [],
+          author_id: discussion.author_id,
+          author_name: author?.full_name || 'Unknown',
+          author_email: author?.email || '',
+          is_pinned: discussion.is_pinned,
+          created_at: discussion.created_at,
+          upvote_count: upvoteMap.get(discussion.id) || 0,
+          reply_count: replyMap.get(discussion.id) || 0,
+        };
+      });
 
       // Sort by trending (upvotes) if that's the filter
       if (filter === 'trending') {

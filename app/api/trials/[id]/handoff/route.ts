@@ -9,9 +9,11 @@ interface HandoffRequest {
   context_notes?: string;
 }
 
+type RouteContext = { params: Promise<{ id: string }> };
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const supabase = await createClient();
@@ -21,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orgId = params.id;
+    const { id: orgId } = await context.params;
     const body: HandoffRequest = await request.json();
 
     const { new_account_manager, handoff_reason, context_notes } = body;

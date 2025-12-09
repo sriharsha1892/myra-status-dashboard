@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -11,7 +12,11 @@ import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import { showUserCreatedToast, showUserDeletedToast, showUserUpdatedToast } from '@/utils/navalToasts';
-import CredentialsModal from '@/components/CredentialsModal';
+
+// Lazy load modal for code splitting
+const CredentialsModal = dynamic(() => import('@/components/CredentialsModal'), {
+  loading: () => null,
+});
 
 interface User {
   id: string;

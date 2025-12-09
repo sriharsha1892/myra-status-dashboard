@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -89,7 +88,7 @@ export default function AddPlatformUserModal({
       const { data: managers, error: managersError } = await supabase
         .from('users')
         .select('id, full_name')
-        .eq('role', 'account_manager')
+        .eq('role', 'Account Manager')
         .order('full_name');
 
       if (managersError) throw managersError;

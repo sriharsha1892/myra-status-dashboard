@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Flag, User, Clock, Edit2, Check, ChevronDown, ChevronUp, MessageSquare, Send, Building2, Link2 } from 'lucide-react';
+import { X, Calendar, Flag, User, Clock, Edit2, Check, ChevronDown, ChevronUp, MessageSquare, Send, Building2, Link2, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -85,7 +85,7 @@ const PRIORITY_OPTIONS = [
   { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' },
 ];
 
-export default function RoadmapDetailPanel({
+const RoadmapDetailPanel = memo(function RoadmapDetailPanel({
   itemId,
   orgId,
   isOpen,
@@ -123,6 +123,10 @@ export default function RoadmapDetailPanel({
     relationships: false,
     notes: false,
   });
+
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const supabase = createClient();
 
@@ -434,6 +438,40 @@ export default function RoadmapDetailPanel({
     }
   };
 
+  const handleDelete = async () => {
+    if (!item) return;
+
+    setDeleting(true);
+    try {
+      const tableName = 'org_product_roadmap';
+      let query = supabase.from(tableName).delete().eq('id', item.id);
+
+      // For org-specific roadmap items, filter by org_id
+      // For global roadmap items (orgId is null/undefined), use IS NULL check
+      if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+        query = query.eq('org_id', orgId);
+      } else if (!orgId || orgId === 'null' || orgId === 'undefined') {
+        query = query.is('org_id', null);
+      }
+
+      const { error } = await query;
+
+      if (error) throw error;
+
+      toast.success('Roadmap item deleted');
+      setShowDeleteConfirm(false);
+      onClose();
+      onDelete?.();
+    } catch (error: any) {
+      handleError(error, {
+        context: 'deleting roadmap item',
+        additionalContext: { itemId: item.id, orgId }
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -459,13 +497,65 @@ export default function RoadmapDetailPanel({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Roadmap Item</h2>
-              <button
-                onClick={handleClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              <div className="flex items-center gap-2">
+                {onDelete && (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
+                    title="Delete item"
+                  >
+                    <Trash2 className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
+                  </button>
+                )}
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            {showDeleteConfirm && (
+              <div className="px-6 py-4 bg-red-50 border-b border-red-200">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 p-2 bg-red-100 rounded-full">
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-900">Delete this roadmap item?</p>
+                    <p className="text-xs text-red-700 mt-0.5">This action cannot be undone.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={deleting}
+                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {deleting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -1019,4 +1109,6 @@ export default function RoadmapDetailPanel({
       )}
     </AnimatePresence>
   );
-}
+});
+
+export default RoadmapDetailPanel;

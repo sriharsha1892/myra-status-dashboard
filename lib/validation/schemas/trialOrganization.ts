@@ -45,27 +45,115 @@ export const PARENT_COMPANIES = ['Mordor Intelligence', 'GMI'] as const;
 
 /**
  * Trial Organization Lifecycle Stages
+ * Matches database constraint: prospect, trial_pending, trial_active, trial_expired, customer, lost
  */
 export const ORG_LIFECYCLE_STAGES = [
   'prospect',
-  'qualified',
-  'active_trial',
-  'closed_won',
-  'closed_lost',
-  'nurturing',
+  'trial_pending',
+  'trial_active',
+  'trial_expired',
+  'customer',
+  'lost',
 ] as const;
 
 /**
- * Trial Status Options
+ * Trial Status Options (Workflow State)
+ * Matches database constraint: requested, approved, active, extended, completed, cancelled
+ * Note: 'in_progress' and 'closed' were removed as redundant
  */
 export const TRIAL_STATUSES = [
   'requested',
   'approved',
   'active',
   'extended',
-  'expired',
-  'converted',
+  'completed',
   'cancelled',
+] as const;
+
+/**
+ * Customer Health Status (Post-Conversion)
+ * Tracks health of converted customers
+ */
+export const CUSTOMER_HEALTH_STATUSES = [
+  'onboarding',
+  'healthy',
+  'warning',
+  'at_risk',
+  'churning',
+] as const;
+
+/**
+ * Engagement Tier (Trial Activity Level)
+ * Calculated based on activity recency and query count
+ */
+export const ENGAGEMENT_TIERS = [
+  'hot',      // Active in last 3 days, 10+ queries
+  'warm',     // Active in last 7 days, 3+ queries
+  'cold',     // Active in last 14 days, 1+ queries
+  'dormant',  // No activity in 14+ days
+] as const;
+
+/**
+ * Loss Categories (for Win/Loss Analysis)
+ * Structured reasons for lost deals
+ */
+export const LOSS_CATEGORIES = [
+  'competitor_won',
+  'budget_constraints',
+  'no_decision',
+  'timing_not_right',
+  'product_fit',
+  'champion_left',
+  'internal_politics',
+  'pricing_objection',
+  'other',
+] as const;
+
+/**
+ * Win Categories (for Win/Loss Analysis)
+ * Structured reasons for won deals
+ */
+export const WIN_CATEGORIES = [
+  'champion_driven',
+  'competitive_win',
+  'expansion',
+  'inbound_lead',
+  'outbound_sales',
+  'referral',
+  'partnership',
+] as const;
+
+/**
+ * Contract Types
+ */
+export const CONTRACT_TYPES = [
+  'annual',
+  'multi_year',
+  'month_to_month',
+  'pilot',
+] as const;
+
+/**
+ * Renewal Statuses
+ */
+export const RENEWAL_STATUSES = [
+  'upcoming',
+  'in_negotiation',
+  'renewed',
+  'churned',
+  'expanded',
+] as const;
+
+/**
+ * Payment Terms
+ */
+export const PAYMENT_TERMS = [
+  'net_15',
+  'net_30',
+  'net_45',
+  'net_60',
+  'upfront',
+  'custom',
 ] as const;
 
 /**

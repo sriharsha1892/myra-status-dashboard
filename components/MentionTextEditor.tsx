@@ -453,7 +453,7 @@ export default function MentionTextEditor({
           <div className="flex-1" />
 
           {/* Mentions Hint */}
-          <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
             <AtSign className="w-3.5 h-3.5" />
             <span>@ mention</span>
           </div>
@@ -468,7 +468,7 @@ export default function MentionTextEditor({
       {/* Footer with Actions */}
       {onSubmit && (
         <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-200 bg-neutral-50">
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
+          <div className="flex items-center gap-2 text-xs text-neutral-600">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Markdown supported</span>
           </div>

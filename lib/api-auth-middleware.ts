@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { User, SupabaseClient } from '@supabase/supabase-js';
+
+interface AuthContext {
+  user: User;
+  supabase: SupabaseClient;
+}
+
+interface AdminContext extends AuthContext {
+  userData: {
+    role: string;
+    is_super_admin: boolean;
+  };
+}
 
 /**
  * Authentication middleware for API routes
@@ -56,16 +69,17 @@ export async function requireAdmin(request: NextRequest) {
  * Returns 401 if auth fails, otherwise calls handler
  */
 export function withAuth(
-  handler: (request: NextRequest, context: { user: any; supabase: any }) => Promise<NextResponse>
+  handler: (request: NextRequest, context: AuthContext) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, routeParams?: any) => {
+  return async (request: NextRequest) => {
     try {
       const { user, supabase } = await requireAuth(request);
       return await handler(request, { user, supabase });
-    } catch (error: any) {
-      const status = error.message.includes('Forbidden') ? 403 : 401;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unauthorized';
+      const status = message.includes('Forbidden') ? 403 : 401;
       return NextResponse.json(
-        { error: error.message || 'Unauthorized' },
+        { error: message },
         { status }
       );
     }
@@ -77,16 +91,17 @@ export function withAuth(
  * Returns 401/403 if auth fails, otherwise calls handler
  */
 export function withAdmin(
-  handler: (request: NextRequest, context: { user: any; supabase: any; userData: any }) => Promise<NextResponse>
+  handler: (request: NextRequest, context: AdminContext) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, routeParams?: any) => {
+  return async (request: NextRequest) => {
     try {
       const { user, supabase, userData } = await requireAdmin(request);
       return await handler(request, { user, supabase, userData });
-    } catch (error: any) {
-      const status = error.message.includes('Forbidden') ? 403 : 401;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unauthorized';
+      const status = message.includes('Forbidden') ? 403 : 401;
       return NextResponse.json(
-        { error: error.message || 'Unauthorized' },
+        { error: message },
         { status }
       );
     }

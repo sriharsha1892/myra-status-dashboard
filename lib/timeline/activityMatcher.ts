@@ -4,7 +4,7 @@
  * Learns from user corrections over time
  */
 
-import { EVENT_TAXONOMY } from './llmParser';
+import { EVENT_TAXONOMY } from './timelineEventsImporter';
 
 // ===================================
 // TYPES & INTERFACES

@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Globe, Users, Sparkles } from 'lucide-react';
 import ExternalResourcesTab from '@/components/resources/ExternalResourcesTab';
 import InternalResourcesTab from '@/components/resources/InternalResourcesTab';
-import AnnouncementManagementModal from '@/components/resources/AnnouncementManagementModal';
 import { createClient } from '@/lib/supabase/client';
+
+// Lazy load modal for code splitting
+const AnnouncementManagementModal = dynamic(() => import('@/components/resources/AnnouncementManagementModal'), {
+  loading: () => null,
+});
 
 type TabType = 'external' | 'internal';
 

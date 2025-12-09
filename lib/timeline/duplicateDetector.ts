@@ -4,7 +4,7 @@
  * Uses fuzzy matching on dates, titles, and content
  */
 
-import { ParsedEvent } from './llmParser';
+import { ParsedEvent } from './timelineEventsImporter';
 
 // ===================================
 // TYPES & INTERFACES

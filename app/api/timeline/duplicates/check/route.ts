@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyUserAccess } from '@/lib/auth-helper';
 import { batchCheckDuplicates, getRecentEvents } from '@/lib/timeline/duplicateDetector';
-import { ParsedEvent } from '@/lib/timeline/llmParser';
+import { ParsedEvent } from '@/lib/timeline/timelineEventsImporter';
 
 // Create Supabase Admin client
 function getSupabaseAdmin() {

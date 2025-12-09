@@ -101,6 +101,12 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
   const [showCloneModal, setShowCloneModal] = useState<RoadmapItem | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
+  // State for pre-filling modal from Analytics
+  const [modalPrefill, setModalPrefill] = useState<{
+    status?: 'planned' | 'in_progress' | 'completed' | 'cancelled';
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+  }>({});
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -169,24 +175,34 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
       if (itemsError) throw itemsError;
 
-      // Fetch owners for each roadmap item
-      const itemsWithOwners = await Promise.all(
-        (itemsData || []).map(async (item) => {
-          const { data: ownersData } = await supabase
-            .from('roadmap_owner_assignments')
-            .select('id, user_name, role')
-            .eq('roadmap_item_id', item.id)
-            .eq('org_id', orgId)
-            .order('role', { ascending: true }); // primary first
+      if (!itemsData || itemsData.length === 0) {
+        setItems([]);
+      } else {
+        // Batch fetch all owners for all roadmap items in one query
+        const itemIds = itemsData.map((item) => item.id);
+        const { data: allOwnersData } = await supabase
+          .from('roadmap_owner_assignments')
+          .select('id, user_name, role, roadmap_item_id')
+          .in('roadmap_item_id', itemIds)
+          .eq('org_id', orgId)
+          .order('role', { ascending: true }); // primary first
 
-          return {
-            ...item,
-            owners: ownersData || []
-          };
-        })
-      );
+        // Group owners by roadmap_item_id for O(1) lookup
+        const ownersByItem = new Map<string, Owner[]>();
+        (allOwnersData || []).forEach((owner: any) => {
+          const existing = ownersByItem.get(owner.roadmap_item_id) || [];
+          existing.push({ id: owner.id, user_name: owner.user_name, role: owner.role });
+          ownersByItem.set(owner.roadmap_item_id, existing);
+        });
 
-      setItems(itemsWithOwners);
+        // Map items with owners (no more N+1!)
+        const itemsWithOwners = itemsData.map((item) => ({
+          ...item,
+          owners: ownersByItem.get(item.id) || []
+        }));
+
+        setItems(itemsWithOwners);
+      }
 
       // Fetch labels
       const { data: labelsData, error: labelsError } = await supabase
@@ -362,6 +378,16 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
     return blockers.some((blocker) => blocker.status !== 'completed');
   };
 
+  // Handle creating item from Analytics view with prefilled values
+  const handleCreateFromAnalytics = (prefill: { status?: string; priority?: string }) => {
+    setModalPrefill({
+      status: prefill.status as any,
+      priority: prefill.priority as any,
+    });
+    setShowAddModal(true);
+    toast.success(`Creating item with ${prefill.status ? `status: ${prefill.status}` : `priority: ${prefill.priority}`}`);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -382,19 +408,19 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       />
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Left: Title and Description */}
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900">Product Roadmap</h2>
-            <p className="text-sm text-gray-600 mt-1">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Product Roadmap</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
               {filteredItems.length !== items.length && ` (filtered from ${items.length})`}
             </p>
           </div>
 
           {/* Right: Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             {/* Saved Filter Views */}
             <div className="flex items-center gap-3">
               <SavedFilterViews
@@ -425,10 +451,10 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
             </div>
 
             {/* Divider */}
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
+            <div className="hidden lg:block w-px h-10 bg-gray-200" />
 
             {/* View Mode Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1 overflow-x-auto">
               <button
                 onClick={() => setViewMode('cards')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
@@ -496,7 +522,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
             {/* Add Button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-sm flex items-center gap-2 text-sm font-medium"
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-sm flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Add Item</span>
@@ -538,7 +564,7 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
 
       {/* Content */}
       {viewMode === 'analytics' ? (
-        <RoadmapAnalytics items={items} />
+        <RoadmapAnalytics items={items} onCreateItem={handleCreateFromAnalytics} />
       ) : viewMode === 'calendar' ? (
         <CalendarView
           orgId={orgId}
@@ -829,8 +855,13 @@ export default function ProductRoadmapTab({ orgId }: ProductRoadmapTabProps) {
       <AddRoadmapItemModal
         orgId={orgId}
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setModalPrefill({}); // Clear prefill when closing
+        }}
         onSuccess={fetchAll}
+        initialStatus={modalPrefill.status}
+        initialPriority={modalPrefill.priority}
       />
 
       {/* Detail Panel */}
