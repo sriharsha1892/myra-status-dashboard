@@ -1,9 +1,67 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { ServiceStatus } from '@/lib/types';
 
-export default function AnimatedBackground() {
+interface AnimatedBackgroundProps {
+  /** Overall system status - affects ambient color */
+  status?: ServiceStatus;
+}
+
+// Status-based color configurations
+const STATUS_COLORS = {
+  operational: {
+    primary: { h: 145, s: 80, l: 55 },    // Emerald green
+    secondary: { h: 170, s: 75, l: 45 },  // Teal
+    tertiary: { h: 200, s: 70, l: 50 },   // Cyan-blue
+    particleHue: [140, 180],              // Green-teal range
+    glowOpacity: 0.08,
+  },
+  degraded_performance: {
+    primary: { h: 38, s: 90, l: 55 },     // Amber
+    secondary: { h: 30, s: 85, l: 50 },   // Orange-amber
+    tertiary: { h: 45, s: 80, l: 55 },    // Yellow-amber
+    particleHue: [25, 50],                // Amber-orange range
+    glowOpacity: 0.12,
+  },
+  partial_outage: {
+    primary: { h: 25, s: 90, l: 55 },     // Orange
+    secondary: { h: 15, s: 85, l: 50 },   // Red-orange
+    tertiary: { h: 35, s: 80, l: 50 },    // Orange-amber
+    particleHue: [15, 40],                // Orange range
+    glowOpacity: 0.14,
+  },
+  major_outage: {
+    primary: { h: 0, s: 85, l: 55 },      // Red
+    secondary: { h: 350, s: 80, l: 50 },  // Red-pink
+    tertiary: { h: 15, s: 75, l: 50 },    // Orange-red
+    particleHue: [350, 20],               // Red range
+    glowOpacity: 0.16,
+  },
+  under_maintenance: {
+    primary: { h: 220, s: 80, l: 55 },    // Blue
+    secondary: { h: 200, s: 75, l: 50 },  // Cyan-blue
+    tertiary: { h: 240, s: 70, l: 55 },   // Purple-blue
+    particleHue: [200, 240],              // Blue range
+    glowOpacity: 0.10,
+  },
+  unknown: {
+    primary: { h: 260, s: 70, l: 55 },    // Purple (default)
+    secondary: { h: 180, s: 65, l: 50 },  // Teal
+    tertiary: { h: 280, s: 60, l: 55 },   // Violet
+    particleHue: [240, 280],              // Purple-blue range
+    glowOpacity: 0.08,
+  },
+};
+
+export default function AnimatedBackground({ status = 'unknown' }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const statusRef = useRef(status);
+
+  // Update ref when status changes (allows animation to pick up new colors)
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,7 +91,17 @@ export default function AnimatedBackground() {
 
     const particleCount = window.innerWidth < 768 ? 30 : 50; // Reduced for performance
 
+    // Get colors based on current status
+    const getStatusColors = () => STATUS_COLORS[statusRef.current] || STATUS_COLORS.unknown;
+
     for (let i = 0; i < particleCount; i++) {
+      const colors = getStatusColors();
+      const [hueMin, hueMax] = colors.particleHue;
+      // Handle wrap-around for red hues (350-20)
+      const hue = hueMax > hueMin
+        ? Math.random() * (hueMax - hueMin) + hueMin
+        : Math.random() * (360 - hueMin + hueMax) + hueMin;
+
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
@@ -41,7 +109,7 @@ export default function AnimatedBackground() {
         vy: (Math.random() - 0.5) * 0.6,
         size: Math.random() * 3 + 1.5,
         opacity: Math.random() * 0.5 + 0.3,
-        hue: Math.random() < 0.7 ? Math.random() * 40 + 240 : Math.random() * 30 + 170, // Mix of purple-blue (240-280) and teal-cyan (170-200)
+        hue: hue % 360,
       });
     }
 
@@ -76,6 +144,14 @@ export default function AnimatedBackground() {
       ctx.fillStyle = 'rgba(17, 24, 39, 0.95)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Get current status colors
+      const colors = getStatusColors();
+      const { primary, secondary, tertiary, glowOpacity } = colors;
+
+      // Helper to create HSL color string
+      const hsl = (c: { h: number; s: number; l: number }, a: number) =>
+        `hsla(${c.h}, ${c.s}%, ${c.l}%, ${a})`;
+
       // Animate mesh points
       meshPoints.forEach((point) => {
         point.angle += point.speed;
@@ -83,7 +159,7 @@ export default function AnimatedBackground() {
         point.y = point.baseY + Math.sin(point.angle) * point.radius;
       });
 
-      // Draw animated gradient mesh with unique teal-purple mix
+      // Draw animated gradient mesh with status-aware colors
       const gradient = ctx.createRadialGradient(
         meshPoints[0].x,
         meshPoints[0].y,
@@ -92,13 +168,13 @@ export default function AnimatedBackground() {
         meshPoints[0].y,
         canvas.width * 0.6
       );
-      gradient.addColorStop(0, 'rgba(88, 80, 236, 0.25)');
-      gradient.addColorStop(0.4, 'rgba(94, 114, 228, 0.12)');
+      gradient.addColorStop(0, hsl(primary, glowOpacity * 2.5));
+      gradient.addColorStop(0.4, hsl(primary, glowOpacity * 1.2));
       gradient.addColorStop(1, 'rgba(17, 24, 39, 0)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Secondary gradient with teal accent
+      // Secondary gradient with status color
       const gradient2 = ctx.createRadialGradient(
         meshPoints[2]?.x || canvas.width / 2,
         meshPoints[2]?.y || canvas.height / 2,
@@ -107,13 +183,13 @@ export default function AnimatedBackground() {
         meshPoints[2]?.y || canvas.height / 2,
         canvas.width * 0.5
       );
-      gradient2.addColorStop(0, 'rgba(45, 212, 191, 0.18)');
-      gradient2.addColorStop(0.4, 'rgba(59, 130, 246, 0.10)');
+      gradient2.addColorStop(0, hsl(secondary, glowOpacity * 1.8));
+      gradient2.addColorStop(0.4, hsl(secondary, glowOpacity));
       gradient2.addColorStop(1, 'rgba(17, 24, 39, 0)');
       ctx.fillStyle = gradient2;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Third gradient for more depth
+      // Third gradient for depth
       const gradient3 = ctx.createRadialGradient(
         meshPoints[5]?.x || canvas.width * 0.7,
         meshPoints[5]?.y || canvas.height * 0.3,
@@ -122,8 +198,8 @@ export default function AnimatedBackground() {
         meshPoints[5]?.y || canvas.height * 0.3,
         canvas.width * 0.45
       );
-      gradient3.addColorStop(0, 'rgba(139, 92, 246, 0.15)');
-      gradient3.addColorStop(0.5, 'rgba(168, 85, 247, 0.08)');
+      gradient3.addColorStop(0, hsl(tertiary, glowOpacity * 1.5));
+      gradient3.addColorStop(0.5, hsl(tertiary, glowOpacity * 0.8));
       gradient3.addColorStop(1, 'rgba(17, 24, 39, 0)');
       ctx.fillStyle = gradient3;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -206,6 +282,16 @@ export default function AnimatedBackground() {
     };
   }, []);
 
+  // Get current overlay colors based on status
+  const colors = STATUS_COLORS[status] || STATUS_COLORS.unknown;
+  const { primary, secondary, glowOpacity } = colors;
+
+  // Generate overlay gradient based on status
+  const overlayGradient = `
+    radial-gradient(ellipse at 50% 0%, hsla(${primary.h}, ${primary.s}%, ${primary.l}%, ${glowOpacity * 1.2}) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 50%, hsla(${secondary.h}, ${secondary.s}%, ${secondary.l}%, ${glowOpacity * 0.75}) 0%, transparent 50%)
+  `;
+
   return (
     <>
       <canvas
@@ -220,7 +306,7 @@ export default function AnimatedBackground() {
           pointerEvents: 'none',
         }}
       />
-      {/* Additional overlay for depth with unique teal-purple accent */}
+      {/* Status-aware overlay for ambient glow effect */}
       <div
         style={{
           position: 'fixed',
@@ -229,8 +315,9 @@ export default function AnimatedBackground() {
           width: '100%',
           height: '100%',
           zIndex: -1,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(88, 80, 236, 0.1) 0%, transparent 40%), radial-gradient(ellipse at 80% 50%, rgba(45, 212, 191, 0.06) 0%, transparent 50%)',
+          background: overlayGradient,
           pointerEvents: 'none',
+          transition: 'background 1s ease-in-out',
         }}
       />
     </>

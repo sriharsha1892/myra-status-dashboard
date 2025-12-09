@@ -9,6 +9,37 @@ interface HistoricalStatusCheck {
   status: ServiceStatus;
 }
 
+// Critical priority services (Orchestrator and Web Scout)
+const CRITICAL_PRIORITY_SERVICES = ['anthropic', 'exa'];
+
+// Status message templates
+const STATUS_MESSAGES: Record<ServiceStatus, { title: string; message: string }> = {
+  degraded_performance: {
+    title: 'Service Degradation Detected',
+    message: 'is experiencing degraded performance. Some features may be slower than usual.',
+  },
+  partial_outage: {
+    title: 'Partial Service Outage',
+    message: 'is experiencing a partial outage. Some features may be temporarily unavailable.',
+  },
+  major_outage: {
+    title: 'Major Service Outage',
+    message: 'is currently unavailable. Our team is working to restore service.',
+  },
+  under_maintenance: {
+    title: 'Scheduled Maintenance',
+    message: 'is undergoing scheduled maintenance.',
+  },
+  operational: {
+    title: 'Service Restored',
+    message: 'is now fully operational.',
+  },
+  unknown: {
+    title: 'Service Status Unknown',
+    message: 'status is currently being checked.',
+  },
+};
+
 export class StatusCache {
   private static instance: StatusCache;
   private cache: ProviderStatus[] = [];
@@ -18,9 +49,105 @@ export class StatusCache {
   private listeners: Set<(data: ProviderStatus[]) => void> = new Set();
   private history: Map<string, HistoricalStatusCheck[]> = new Map(); // providerId -> checks (last 24h)
   private previousOverallStatus: ServiceStatus | null = null; // Track status changes for push notifications
+  private previousProviderStatuses: Map<string, ServiceStatus> = new Map(); // Track per-provider status changes
+  private activeAutoAnnouncements: Map<string, string> = new Map(); // providerId -> announcementId
 
   private constructor() {
     // Private constructor for singleton
+  }
+
+  // Create or update auto-announcement when service status changes
+  private async handleAutoAnnouncement(
+    providerId: string,
+    providerName: string,
+    previousStatus: ServiceStatus | undefined,
+    newStatus: ServiceStatus
+  ): Promise<void> {
+    const wasOperational = !previousStatus || previousStatus === 'operational' || previousStatus === 'unknown';
+    const isNowOperational = newStatus === 'operational';
+    const hasIssues = !isNowOperational && newStatus !== 'unknown';
+
+    try {
+      // Status went from operational to having issues -> Create announcement
+      if (wasOperational && hasIssues) {
+        const statusInfo = STATUS_MESSAGES[newStatus];
+        const priority = CRITICAL_PRIORITY_SERVICES.includes(providerId) ? 'critical' : 'high';
+
+        console.log(`[AutoAnnouncement] Creating alert for ${providerName} (${newStatus})`);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'alert',
+            priority,
+            status: 'active',
+            title: `${statusInfo.title}: ${providerName}`,
+            message: `${providerName} ${statusInfo.message}`,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.announcement?.id) {
+            this.activeAutoAnnouncements.set(providerId, data.announcement.id);
+            console.log(`[AutoAnnouncement] Created announcement ${data.announcement.id} for ${providerName}`);
+          }
+        } else {
+          console.error(`[AutoAnnouncement] Failed to create announcement for ${providerName}`);
+        }
+      }
+
+      // Status went from having issues to operational -> Archive announcement
+      if (!wasOperational && isNowOperational) {
+        const announcementId = this.activeAutoAnnouncements.get(providerId);
+
+        if (announcementId) {
+          console.log(`[AutoAnnouncement] Archiving announcement ${announcementId} for ${providerName}`);
+
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: announcementId,
+              status: 'archived',
+              title: `✅ Resolved: ${providerName}`,
+              message: `${providerName} ${STATUS_MESSAGES.operational.message}`,
+            }),
+          });
+
+          if (response.ok) {
+            this.activeAutoAnnouncements.delete(providerId);
+            console.log(`[AutoAnnouncement] Archived announcement for ${providerName}`);
+          }
+        }
+      }
+
+      // Status changed between different issue states -> Update announcement
+      if (!wasOperational && hasIssues && previousStatus !== newStatus) {
+        const announcementId = this.activeAutoAnnouncements.get(providerId);
+
+        if (announcementId) {
+          const statusInfo = STATUS_MESSAGES[newStatus];
+          const priority = CRITICAL_PRIORITY_SERVICES.includes(providerId) ? 'critical' : 'high';
+
+          console.log(`[AutoAnnouncement] Updating announcement ${announcementId} for ${providerName} (${previousStatus} -> ${newStatus})`);
+
+          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: announcementId,
+              priority,
+              title: `${statusInfo.title}: ${providerName}`,
+              message: `${providerName} ${statusInfo.message}`,
+            }),
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`[AutoAnnouncement] Error handling announcement for ${providerName}:`, error);
+    }
   }
 
   public static getInstance(): StatusCache {
@@ -70,9 +197,13 @@ export class StatusCache {
       const now = new Date().toISOString();
       const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
 
-      statuses.forEach(providerStatus => {
+      // Process each provider status
+      for (const providerStatus of statuses) {
         const providerId = providerStatus.provider.id;
+        const previousStatus = this.previousProviderStatuses.get(providerId);
+        const newStatus = providerStatus.status;
 
+        // Store historical data
         if (!this.history.has(providerId)) {
           this.history.set(providerId, []);
         }
@@ -91,7 +222,20 @@ export class StatusCache {
         );
 
         this.history.set(providerId, filtered);
-      });
+
+        // Handle auto-announcements for status changes
+        if (previousStatus !== newStatus) {
+          await this.handleAutoAnnouncement(
+            providerId,
+            providerStatus.provider.userFacingName || providerStatus.provider.displayName,
+            previousStatus,
+            newStatus
+          );
+        }
+
+        // Update previous status tracking
+        this.previousProviderStatuses.set(providerId, newStatus);
+      }
 
       // Check for status changes and send notifications
       const notificationService = NotificationService.getInstance();

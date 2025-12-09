@@ -125,9 +125,35 @@ function UptimeRing({ percentage }: { percentage: number }) {
 }
 
 export default function ServiceStatusCard({ providerStatus, onNotificationSubscribe }: ServiceStatusCardProps) {
-  const { provider, status, incidents } = providerStatus;
+  const { provider, status, incidents, lastUpdated } = providerStatus;
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [lastCheckedText, setLastCheckedText] = React.useState('');
   const { isAdminView } = useViewMode();
+
+  // Update "last checked" text every second
+  React.useEffect(() => {
+    if (!lastUpdated) return;
+
+    const updateText = () => {
+      const now = Date.now();
+      const then = new Date(lastUpdated).getTime();
+      const diffSeconds = Math.floor((now - then) / 1000);
+
+      if (diffSeconds < 5) {
+        setLastCheckedText('Just now');
+      } else if (diffSeconds < 60) {
+        setLastCheckedText(`${diffSeconds}s ago`);
+      } else if (diffSeconds < 3600) {
+        setLastCheckedText(`${Math.floor(diffSeconds / 60)}m ago`);
+      } else {
+        setLastCheckedText(`${Math.floor(diffSeconds / 3600)}h ago`);
+      }
+    };
+
+    updateText();
+    const interval = setInterval(updateText, 1000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const isOperational = status === 'operational';
   const hasIssues = !isOperational;
@@ -192,6 +218,26 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
             </span>
           </div>
         </div>
+
+        {/* Last Checked Indicator */}
+        {lastCheckedText && (
+          <div className="flex items-center gap-1.5 text-[10px] text-white/40 mb-2">
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Checked {lastCheckedText}</span>
+          </div>
+        )}
 
         {/* Incident timing - subtle */}
         {incidents && incidents.length > 0 && (

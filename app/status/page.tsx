@@ -372,7 +372,7 @@ function StatusPageContent() {
 
   return (
     <div className="min-h-screen pb-10 relative">
-      <AnimatedBackground />
+      <AnimatedBackground status={statusData?.overallStatus} />
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-b from-purple-500/[0.04] to-slate-900/95 backdrop-blur-xl shadow-sm">
