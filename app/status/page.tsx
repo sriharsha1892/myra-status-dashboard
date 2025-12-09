@@ -279,28 +279,57 @@ function StatusPageContent() {
   if (loading && !statusData) {
     return (
       <div className="min-h-screen pb-10">
+        <AnimatedBackground />
         <header className="sticky top-0 z-50 border-b border-white/10 bg-gradient-to-b from-purple-500/[0.04] to-slate-900/95 backdrop-blur-xl shadow-sm">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
             <div className="h-16 flex items-center justify-between">
               <h1 className="text-[15px] font-semibold text-white/90 tracking-tight">
                 myRA AI System Status
               </h1>
-              <span className="text-[13px] text-white/40 font-medium">Loading...</span>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+                </span>
+                <span className="text-[13px] text-white/60 font-medium">Checking status...</span>
+              </div>
             </div>
           </div>
         </header>
 
         <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
-          <div className="mb-8">
-            <h2 className="text-[13px] font-semibold text-white/90 mb-4 tracking-tight">
-              Core Services
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
+          {/* Hero skeleton */}
+          <div className="mb-6 p-6 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white/10 animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-6 w-48 bg-white/10 rounded animate-pulse" />
+                <div className="h-4 w-64 bg-white/5 rounded animate-pulse" />
+              </div>
             </div>
+          </div>
+
+          {/* Service cards skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="p-5 rounded-xl bg-white/[0.02] border border-white/10 backdrop-blur-sm"
+              >
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-white/10 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-32 bg-white/10 rounded animate-pulse" />
+                    <div className="h-3 w-20 bg-white/5 rounded animate-pulse" />
+                  </div>
+                  <div className="w-16 h-6 bg-white/5 rounded-full animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-white/5 rounded animate-pulse" />
+                  <div className="h-3 w-3/4 bg-white/5 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         </main>
       </div>
