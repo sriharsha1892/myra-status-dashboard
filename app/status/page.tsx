@@ -146,40 +146,9 @@ function StatusPageContent() {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
 
   // Enable status change notifications
   useStatusNotifications(statusData?.providers || []);
-
-  // Share functionality
-  const handleShare = async (platform: 'copy' | 'twitter' | 'linkedin') => {
-    const url = typeof window !== 'undefined' ? window.location.href : 'https://status.ask-myra.ai';
-    const title = 'myRA AI System Status';
-    const overallStatus = statusData?.overallStatus || 'operational';
-    const statusText = overallStatus === 'operational'
-      ? 'All systems operational'
-      : `Status: ${overallStatus.replace(/_/g, ' ')}`;
-
-    switch (platform) {
-      case 'copy':
-        try {
-          await navigator.clipboard.writeText(url);
-          addToast('Link copied to clipboard', 'success');
-        } catch {
-          addToast('Failed to copy link', 'error');
-        }
-        break;
-      case 'twitter':
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title} - ${statusText}`)}&url=${encodeURIComponent(url)}`;
-        window.open(twitterUrl, '_blank', 'width=550,height=420');
-        break;
-      case 'linkedin':
-        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        window.open(linkedinUrl, '_blank', 'width=550,height=420');
-        break;
-    }
-    setShowShareMenu(false);
-  };
 
   const addToast = (message: string, type: Toast['type'], providerId?: string) => {
     const id = Date.now().toString();
@@ -445,75 +414,6 @@ function StatusPageContent() {
 
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[13px] text-white/60 font-medium">{lastUpdateText}</span>
-
-              {/* Share Button with Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowShareMenu(!showShareMenu)}
-                  className={cn(
-                    'px-4 py-2 rounded-lg text-[13px] font-semibold',
-                    'bg-white/10 border border-white/20 text-white/90',
-                    'hover:bg-white/15 hover:border-white/30',
-                    'flex items-center gap-1.5 transition-all duration-200'
-                  )}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                    />
-                  </svg>
-                  <span className="hidden sm:inline">Share</span>
-                </button>
-
-                {/* Share Dropdown Menu */}
-                {showShareMenu && (
-                  <>
-                    {/* Backdrop to close menu */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowShareMenu(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-48 py-2 bg-slate-800/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl z-50">
-                      <button
-                        onClick={() => handleShare('copy')}
-                        className="w-full px-4 py-2.5 text-left text-[13px] text-white/90 hover:bg-white/10 flex items-center gap-3 transition-colors"
-                      >
-                        <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                        </svg>
-                        Copy Link
-                      </button>
-                      <button
-                        onClick={() => handleShare('twitter')}
-                        className="w-full px-4 py-2.5 text-left text-[13px] text-white/90 hover:bg-white/10 flex items-center gap-3 transition-colors"
-                      >
-                        <svg className="w-4 h-4 text-white/60" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        Share on X
-                      </button>
-                      <button
-                        onClick={() => handleShare('linkedin')}
-                        className="w-full px-4 py-2.5 text-left text-[13px] text-white/90 hover:bg-white/10 flex items-center gap-3 transition-colors"
-                      >
-                        <svg className="w-4 h-4 text-white/60" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                        </svg>
-                        Share on LinkedIn
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-
               <button
                 onClick={() => setShowSubscribeModal(true)}
                 className={cn(
