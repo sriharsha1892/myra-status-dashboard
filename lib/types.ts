@@ -60,4 +60,6 @@ export interface StatusResponse {
   providers: ProviderStatus[];
   lastUpdated: string;
   overallStatus: ServiceStatus;
+  isStale?: boolean;
+  isColdStart?: boolean;
 }

@@ -275,17 +275,17 @@ function StatusPageContent() {
     };
   }, []);
 
-  // Fast retry when status is "unknown" (cold start scenario)
+  // Fast retry when data is stale or cold start (get real data quickly)
   useEffect(() => {
     if (!statusData) return;
 
-    const hasUnknownStatus = statusData.providers.some(
-      (p: ProviderStatus) => p.status === 'unknown'
-    );
+    // Use the isStale flag from API, or fallback to checking for unknown status
+    const needsRefresh = statusData.isStale || statusData.isColdStart ||
+      statusData.providers.some((p: ProviderStatus) => p.status === 'unknown');
 
-    if (hasUnknownStatus) {
-      // Retry quickly to get real data
-      const fastRetry = setTimeout(() => fetchStatus(), 3000);
+    if (needsRefresh) {
+      // Retry quickly to get real data (1.5s instead of 3s)
+      const fastRetry = setTimeout(() => fetchStatus(), 1500);
       return () => clearTimeout(fastRetry);
     }
   }, [statusData]);

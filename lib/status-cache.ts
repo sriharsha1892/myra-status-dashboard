@@ -157,21 +157,23 @@ export class StatusCache {
     return StatusCache.instance;
   }
 
-  public async getStatuses(): Promise<ProviderStatus[]> {
+  public async getStatuses(): Promise<{ providers: ProviderStatus[]; isStale: boolean; isColdStart: boolean }> {
     const now = new Date();
     const age = now.getTime() - this.lastUpdate.getTime();
+    const isColdStart = this.cache.length === 0;
+    const isStale = isColdStart || age > this.CACHE_TTL;
 
-    // Non-blocking: never wait for initial fetch on cold start
-    if (this.cache.length === 0) {
-      // Cold start: trigger background refresh, return optimistic defaults immediately
-      this.refresh().catch(err => console.error('Background refresh failed:', err));
-      return this.getOptimisticDefaults();
-    } else if (age > this.CACHE_TTL) {
-      // Cache is stale - trigger background refresh but return stale data immediately
+    // Trigger background refresh if stale (non-blocking)
+    if (isStale) {
       this.refresh().catch(err => console.error('Background refresh failed:', err));
     }
 
-    return this.cache;
+    // Always return immediately - cached data or optimistic defaults
+    return {
+      providers: isColdStart ? this.getOptimisticDefaults() : this.cache,
+      isStale,
+      isColdStart,
+    };
   }
 
   // Return placeholder data for instant page load on cold start

@@ -169,7 +169,7 @@ function getImpactDescription(providerId: string, status: string): string {
 export async function GET() {
   try {
     const cache = StatusCache.getInstance();
-    const providers = await cache.getStatuses();
+    const { providers, isStale, isColdStart } = await cache.getStatuses();
     const overallStatus = cache.getOverallStatus();
 
     // Sanitize provider data - strip sensitive information
@@ -224,6 +224,8 @@ export async function GET() {
       providers: sanitizedProviders,
       lastUpdated: new Date().toISOString(),
       overallStatus,
+      isStale,
+      isColdStart,
     };
 
     return NextResponse.json(response, {
