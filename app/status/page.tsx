@@ -275,6 +275,21 @@ function StatusPageContent() {
     };
   }, []);
 
+  // Fast retry when status is "unknown" (cold start scenario)
+  useEffect(() => {
+    if (!statusData) return;
+
+    const hasUnknownStatus = statusData.providers.some(
+      (p: ProviderStatus) => p.status === 'unknown'
+    );
+
+    if (hasUnknownStatus) {
+      // Retry quickly to get real data
+      const fastRetry = setTimeout(() => fetchStatus(), 3000);
+      return () => clearTimeout(fastRetry);
+    }
+  }, [statusData]);
+
   // Loading state
   if (loading && !statusData) {
     return (

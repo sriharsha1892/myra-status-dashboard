@@ -2,7 +2,7 @@ import { Provider, ProviderStatus, ServiceStatus, Component, Incident } from './
 import { filterRelevantIncidents } from './model-filter';
 
 export class StatusFetcher {
-  private static async fetchWithTimeout(url: string, timeout = 10000): Promise<any> {
+  private static async fetchWithTimeout(url: string, timeout = 5000): Promise<any> {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
 

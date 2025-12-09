@@ -34,17 +34,29 @@ export class StatusCache {
     const now = new Date();
     const age = now.getTime() - this.lastUpdate.getTime();
 
-    // Stale-while-revalidate: return cached data immediately if available
-    // and refresh in background if stale
+    // Non-blocking: never wait for initial fetch on cold start
     if (this.cache.length === 0) {
-      // No cache at all - must wait for initial fetch
-      await this.refresh();
+      // Cold start: trigger background refresh, return optimistic defaults immediately
+      this.refresh().catch(err => console.error('Background refresh failed:', err));
+      return this.getOptimisticDefaults();
     } else if (age > this.CACHE_TTL) {
       // Cache is stale - trigger background refresh but return stale data immediately
       this.refresh().catch(err => console.error('Background refresh failed:', err));
     }
 
     return this.cache;
+  }
+
+  // Return placeholder data for instant page load on cold start
+  private getOptimisticDefaults(): ProviderStatus[] {
+    return PROVIDERS.map(provider => ({
+      provider,
+      status: 'unknown' as ServiceStatus,
+      indicator: 'checking',
+      lastUpdated: new Date().toISOString(),
+      components: [],
+      incidents: [],
+    }));
   }
 
   public async refresh(): Promise<void> {

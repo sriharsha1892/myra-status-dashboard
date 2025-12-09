@@ -44,10 +44,10 @@ const STATUS_CONFIG = {
     cardClass: 'bg-blue-500/[0.08] border-blue-500/30 hover:bg-blue-500/[0.12] hover:border-blue-500/40',
   },
   unknown: {
-    text: 'Unknown',
-    badgeClass: 'bg-gray-500 text-white',
-    stripClass: 'bg-gray-500',
-    cardClass: 'bg-white/[0.03] border-white/10 hover:bg-white/[0.05] hover:border-white/15',
+    text: 'Checking...',
+    badgeClass: 'bg-slate-500/80 text-white animate-pulse',
+    stripClass: 'bg-slate-400 animate-pulse',
+    cardClass: 'bg-white/[0.02] border-white/8 hover:bg-white/[0.04] hover:border-white/12',
   },
 } as const;
 
@@ -63,6 +63,8 @@ const getUserFriendlyMessage = (status: string, enables?: string) => {
       return `This service is currently unavailable. Our service provider is working to restore it.`;
     case 'under_maintenance':
       return `This service is undergoing scheduled maintenance.`;
+    case 'unknown':
+      return `Checking service status...`;
     default:
       return '';
   }
