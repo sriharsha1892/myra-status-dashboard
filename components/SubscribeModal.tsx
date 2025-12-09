@@ -326,6 +326,8 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
       <div
         className={cn(
           'relative w-full max-w-md',
+          'max-h-[calc(100vh-2rem)]',
+          'flex flex-col',
           'bg-white/[0.03] backdrop-blur-2xl',
           'border border-white/10 rounded-2xl',
           'shadow-2xl shadow-black/20',
@@ -333,7 +335,7 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
               <svg
@@ -372,8 +374,8 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        {/* Form - scrollable */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Subscription Type Selector */}
           <div>
             <label className="block text-sm font-medium text-white/70 mb-2">
@@ -593,7 +595,7 @@ export default function SubscribeModal({ isOpen, onClose, providers = [] }: Subs
         </form>
 
         {/* Footer Note */}
-        <div className="px-5 pb-5">
+        <div className="flex-shrink-0 px-5 pb-5 pt-3 border-t border-white/10">
           <p className="text-xs text-white/40 text-center">
             You can unsubscribe at any time. We respect your inbox.
           </p>
