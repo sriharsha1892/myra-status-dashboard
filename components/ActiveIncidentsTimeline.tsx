@@ -154,6 +154,81 @@ function DurationBadge({ duration }: { duration: number }) {
   );
 }
 
+// "I'm Affected" button component
+function AffectedButton({ incidentId, providerId }: { incidentId: string; providerId: string }) {
+  const [affectedCount, setAffectedCount] = React.useState<number | null>(null);
+  const [hasVoted, setHasVoted] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  // Check localStorage and fetch count on mount
+  React.useEffect(() => {
+    // Check if user already voted
+    const votedIncidents = JSON.parse(localStorage.getItem('affectedVotes') || '[]');
+    if (votedIncidents.includes(incidentId)) {
+      setHasVoted(true);
+    }
+
+    // Fetch current count
+    fetch(`/api/status/affected?incidentId=${incidentId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAffectedCount(data.affectedCount);
+        }
+      })
+      .catch(err => console.error('Failed to fetch affected count:', err));
+  }, [incidentId]);
+
+  const handleClick = async () => {
+    if (hasVoted || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/status/affected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incidentId, providerId }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setAffectedCount(data.affectedCount);
+        setHasVoted(true);
+
+        // Save to localStorage
+        const votedIncidents = JSON.parse(localStorage.getItem('affectedVotes') || '[]');
+        votedIncidents.push(incidentId);
+        localStorage.setItem('affectedVotes', JSON.stringify(votedIncidents));
+      }
+    } catch (err) {
+      console.error('Failed to record affected status:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={hasVoted || isLoading}
+      className={cn(
+        'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200',
+        hasVoted
+          ? 'bg-white/10 text-white/60 cursor-default'
+          : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/40'
+      )}
+    >
+      <span>{hasVoted ? '✓' : '🚨'}</span>
+      <span>{hasVoted ? "You're affected" : "I'm affected"}</span>
+      {affectedCount !== null && affectedCount > 0 && (
+        <span className="px-1.5 py-0.5 rounded bg-white/10 text-white/70 text-[10px] font-bold">
+          {affectedCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
 // Individual incident card
 function IncidentCard({
   incident,
@@ -228,26 +303,31 @@ function IncidentCard({
           </div>
         )}
 
-        {/* Metadata */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
-          <div>
-            <span className="font-semibold">Started:</span>{' '}
-            {formatShortGMT(incident.created_at)}
-          </div>
-          {incident.updated_at !== incident.created_at && (
+        {/* Metadata and Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
             <div>
-              <span className="font-semibold">Updated:</span>{' '}
-              {formatShortGMT(incident.updated_at)}
+              <span className="font-semibold">Started:</span>{' '}
+              {formatShortGMT(incident.created_at)}
             </div>
-          )}
-          <div>
-            <span className="font-semibold">Duration:</span>{' '}
-            {getTimeSinceGMT(incident.created_at)}
+            {incident.updated_at !== incident.created_at && (
+              <div>
+                <span className="font-semibold">Updated:</span>{' '}
+                {formatShortGMT(incident.updated_at)}
+              </div>
+            )}
+            <div>
+              <span className="font-semibold">Duration:</span>{' '}
+              {getTimeSinceGMT(incident.created_at)}
+            </div>
+            <div>
+              <span className="font-semibold">Impact:</span>{' '}
+              <span className="capitalize">{incident.impact}</span>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold">Impact:</span>{' '}
-            <span className="capitalize">{incident.impact}</span>
-          </div>
+
+          {/* I'm Affected Button */}
+          <AffectedButton incidentId={incident.id} providerId={incident.providerId} />
         </div>
       </div>
     </div>
