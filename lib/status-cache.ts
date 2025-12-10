@@ -12,6 +12,12 @@ interface HistoricalStatusCheck {
 // Critical priority services (Orchestrator and Web Scout)
 const CRITICAL_PRIORITY_SERVICES = ['anthropic', 'exa'];
 
+// Get base URL for server-side API calls
+function getBaseUrl(): string {
+  // Use explicit env var if set, otherwise default to localhost
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+}
+
 // Status message templates
 const STATUS_MESSAGES: Record<ServiceStatus, { title: string; message: string }> = {
   degraded_performance: {
@@ -75,7 +81,7 @@ export class StatusCache {
 
         console.log(`[AutoAnnouncement] Creating alert for ${providerName} (${newStatus})`);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+        const response = await fetch(`${getBaseUrl()}/api/announcements`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -105,7 +111,7 @@ export class StatusCache {
         if (announcementId) {
           console.log(`[AutoAnnouncement] Archiving announcement ${announcementId} for ${providerName}`);
 
-          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+          const response = await fetch(`${getBaseUrl()}/api/announcements`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -133,7 +139,7 @@ export class StatusCache {
 
           console.log(`[AutoAnnouncement] Updating announcement ${announcementId} for ${providerName} (${previousStatus} -> ${newStatus})`);
 
-          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/announcements`, {
+          await fetch(`${getBaseUrl()}/api/announcements`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
