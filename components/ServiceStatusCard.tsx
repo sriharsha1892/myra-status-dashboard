@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
-import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName, shouldShowSensitiveInfo } from '@/lib/view-utils';
 import { cn } from '@/lib/utils';
 
@@ -128,7 +127,8 @@ export default function ServiceStatusCard({ providerStatus, onNotificationSubscr
   const { provider, status, incidents, lastUpdated } = providerStatus;
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [lastCheckedText, setLastCheckedText] = React.useState('');
-  const { isAdminView } = useViewMode();
+  // Note: Admin view is now handled via /status/admin route instead of context toggle
+  const isAdminView = false;
 
   // Update "last checked" text every second
   React.useEffect(() => {

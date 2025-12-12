@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { WORKFLOW_STAGES, getStageStatus } from '@/lib/workflow-config';
-import { useViewMode } from '@/contexts/ViewModeContext';
 import { cn } from '@/lib/utils';
 
 interface WorkflowStatusProps {
@@ -178,7 +177,8 @@ function PipelineStage({
 }
 
 export default function WorkflowStatus({ providers }: WorkflowStatusProps) {
-  const { isAdminView } = useViewMode();
+  // Note: Admin view is now handled via /status/admin route instead of context toggle
+  const isAdminView = false;
   const [expandedStage, setExpandedStage] = useState<string | null>(null);
 
   // Calculate stage statuses

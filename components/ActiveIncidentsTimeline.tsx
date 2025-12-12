@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
-import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 import { formatShortGMT, getTimeSinceGMT } from '@/lib/time-utils';
 import { cn } from '@/lib/utils';
@@ -255,7 +254,8 @@ function IncidentCard({
 }
 
 export default function ActiveIncidentsTimeline({ providers }: ActiveIncidentsTimelineProps) {
-  const { isAdminView } = useViewMode();
+  // Note: Admin view is now handled via /status/admin route instead of context toggle
+  const isAdminView = false;
 
   // Cognitive severity assessment
   const assessSeverity = (
