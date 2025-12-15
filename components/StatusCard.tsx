@@ -2,6 +2,7 @@
 
 import { ProviderStatus } from '@/lib/types';
 import StatusIndicator from './StatusIndicator';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface StatusCardProps {
@@ -10,8 +11,7 @@ interface StatusCardProps {
 
 export default function StatusCard({ providerStatus }: StatusCardProps) {
   const { provider, status, incidents, components } = providerStatus;
-  // Note: Admin view is now handled via /status/admin route instead of context toggle
-  const isAdminView = false;
+  const { isAdminView } = useViewMode();
 
   const hasActiveIncidents = incidents.length > 0 &&
     incidents.some(i => i.status !== 'resolved' && i.status !== 'postmortem');

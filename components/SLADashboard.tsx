@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ProviderStatus } from '@/lib/types';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface SLADashboardProps {
@@ -29,8 +30,7 @@ interface ProviderSLA {
 }
 
 export default function SLADashboard({ providers }: SLADashboardProps) {
-  // Note: Admin view is now handled via /status/admin route instead of context toggle
-  const isAdminView = false;
+  const { isAdminView } = useViewMode();
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | '3months' | '6months'>('current');
   const [isExpanded, setIsExpanded] = useState(false);
 

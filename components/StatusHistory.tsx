@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface StatusHistoryProps {
@@ -10,8 +11,7 @@ interface StatusHistoryProps {
 
 export default function StatusHistory({ providers }: StatusHistoryProps) {
   const [hoveredCell, setHoveredCell] = React.useState<string | null>(null);
-  // Note: Admin view is now handled via /status/admin route instead of context toggle
-  const isAdminView = false;
+  const { isAdminView } = useViewMode();
 
   // Sanitize incident names to remove provider-specific references
   const sanitizeIncidentName = (name: string) => {

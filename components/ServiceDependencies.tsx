@@ -3,6 +3,7 @@
 import React from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { PROVIDERS } from '@/lib/providers';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 
 interface ServiceDependenciesProps {
@@ -10,8 +11,7 @@ interface ServiceDependenciesProps {
 }
 
 export default function ServiceDependencies({ providers }: ServiceDependenciesProps) {
-  // Note: Admin view is now handled via /status/admin route instead of context toggle
-  const isAdminView = false;
+  const { isAdminView } = useViewMode();
 
   // Find services with issues
   const servicesWithIssues = providers.filter(

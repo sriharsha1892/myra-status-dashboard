@@ -306,108 +306,6 @@ export class StatusFetcher {
     }
   }
 
-  /**
-   * Fetch Google Workspace OAuth status
-   * Uses synthetic health check (OAuth discovery endpoint) as primary method
-   */
-  private static async fetchGoogleWorkspaceStatus(provider: Provider): Promise<ProviderStatus> {
-    try {
-      // Primary: Check Google OAuth discovery endpoint
-      const discoveryUrl = 'https://accounts.google.com/.well-known/openid-configuration';
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(discoveryUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'myRA-AI-Status-Dashboard/1.0',
-        },
-      });
-      clearTimeout(id);
-
-      const isOperational = response.ok;
-
-      return {
-        provider,
-        status: isOperational ? 'operational' : 'major_outage',
-        indicator: isOperational ? 'none' : 'critical',
-        lastUpdated: new Date().toISOString(),
-        components: [{
-          id: 'google-oauth',
-          name: 'Google OAuth',
-          status: isOperational ? 'operational' : 'major_outage',
-        }],
-        incidents: [],
-      };
-    } catch (error) {
-      console.error('Error fetching Google Workspace status:', error);
-      // On timeout or network error, report as potentially degraded
-      return {
-        provider,
-        status: 'degraded_performance',
-        indicator: 'minor',
-        lastUpdated: new Date().toISOString(),
-        components: [{
-          id: 'google-oauth',
-          name: 'Google OAuth',
-          status: 'degraded_performance',
-        }],
-        incidents: [],
-      };
-    }
-  }
-
-  /**
-   * Fetch Microsoft Entra ID status
-   * Uses synthetic health check (OpenID configuration endpoint) as primary method
-   */
-  private static async fetchMicrosoftEntraIDStatus(provider: Provider): Promise<ProviderStatus> {
-    try {
-      // Primary: Check Microsoft login discovery endpoint
-      const discoveryUrl = 'https://login.microsoftonline.com/common/.well-known/openid-configuration';
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(discoveryUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'myRA-AI-Status-Dashboard/1.0',
-        },
-      });
-      clearTimeout(id);
-
-      const isOperational = response.ok;
-
-      return {
-        provider,
-        status: isOperational ? 'operational' : 'major_outage',
-        indicator: isOperational ? 'none' : 'critical',
-        lastUpdated: new Date().toISOString(),
-        components: [{
-          id: 'microsoft-entraid',
-          name: 'Microsoft Entra ID',
-          status: isOperational ? 'operational' : 'major_outage',
-        }],
-        incidents: [],
-      };
-    } catch (error) {
-      console.error('Error fetching Microsoft Entra ID status:', error);
-      // On timeout or network error, report as potentially degraded
-      return {
-        provider,
-        status: 'degraded_performance',
-        indicator: 'minor',
-        lastUpdated: new Date().toISOString(),
-        components: [{
-          id: 'microsoft-entraid',
-          name: 'Microsoft Entra ID',
-          status: 'degraded_performance',
-        }],
-        incidents: [],
-      };
-    }
-  }
-
   public static async fetchProviderStatus(provider: Provider): Promise<ProviderStatus> {
     if (provider.id === 'google') {
       return this.fetchGoogleStatus(provider);
@@ -417,12 +315,6 @@ export class StatusFetcher {
     }
     if (provider.id === 'exa') {
       return this.fetchExaStatus(provider);
-    }
-    if (provider.id === 'google-workspace') {
-      return this.fetchGoogleWorkspaceStatus(provider);
-    }
-    if (provider.id === 'microsoft-entraid') {
-      return this.fetchMicrosoftEntraIDStatus(provider);
     }
     return this.fetchStatusPageIO(provider);
   }

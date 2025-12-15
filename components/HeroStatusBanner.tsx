@@ -1,6 +1,7 @@
 'use client';
 
 import { ProviderStatus } from '@/lib/types';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { getProviderDisplayName } from '@/lib/view-utils';
 import { getTimeSinceGMT } from '@/lib/time-utils';
 import { cn } from '@/lib/utils';
@@ -66,8 +67,7 @@ function StatusIndicator({ status }: { status: 'operational' | 'degraded' | 'cri
 }
 
 export default function HeroStatusBanner({ providers, lastUpdated }: HeroStatusBannerProps) {
-  // Note: Admin view is now handled via /status/admin route instead of context toggle
-  const isAdminView = false;
+  const { isAdminView } = useViewMode();
   const primaryProviders = providers.filter((p) => p.provider.priority === 'primary');
   const issuesCount = primaryProviders.filter((p) => p.status !== 'operational').length;
   const allOperational = issuesCount === 0;
