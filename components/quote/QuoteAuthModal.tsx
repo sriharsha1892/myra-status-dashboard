@@ -49,7 +49,9 @@ export function QuoteAuthModal({ onSuccess }: QuoteAuthModalProps) {
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-white">myRA AI</h1>
+              <h1 className="text-xl font-semibold text-white">
+                myRA AI<sup className="text-xs ml-0.5 text-violet-200">®</sup>
+              </h1>
               <p className="text-sm text-violet-200">Quote Generator</p>
             </div>
           </div>
