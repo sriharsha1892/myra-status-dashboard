@@ -29,6 +29,7 @@ export interface QuoteFormData {
   preparedByEmail: string;    // Account Manager email (optional)
   showConfidential: boolean;  // Show CONFIDENTIAL watermark
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
+  additionalHourRate: string; // Optional per-analyst-hour rate for additional hours
 }
 
 export interface QuoteHistoryEntry {

@@ -396,9 +396,9 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     row.term || row.users || row.consultingHours || row.offerPrice
   );
 
-  // Table with value-based structure (no List Price, add Per User/Year)
+  // Table with List Price and Exclusive Offer columns
   const tableX = MARGIN_LEFT;
-  const colWidths = [70, 55, 95, 95, 100]; // Term, Users, Consulting, Per User/Yr, Investment
+  const colWidths = [60, 45, 80, 75, 70, 85]; // Term, Users, Consulting, Per User/Yr, List Price, Exclusive Offer
   const rowHeight = 24;
 
   // Header row
@@ -410,13 +410,13 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     color: PDF_COLORS.violet,
   });
 
-  const headers = ['Term', 'Users', 'Consulting Hours', 'Per User/Year', 'Investment'];
-  let colX = tableX + 8;
+  const headers = ['Term', 'Users', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer'];
+  let colX = tableX + 6;
   for (let i = 0; i < headers.length; i++) {
     page1.drawText(headers[i], {
       x: colX,
       y: y - 10,
-      size: 8,
+      size: 7.5,
       font: fontBold,
       color: PDF_COLORS.white,
     });
@@ -425,8 +425,13 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
   y -= rowHeight;
 
-  // Calculate total
-  let totalInvestment = 0;
+  // Calculate totals and determine if we should show total row
+  let totalListPrice = 0;
+  let totalOfferPrice = 0;
+
+  // Smart total logic: only show total if all rows have the same term (additive items)
+  const uniqueTerms = new Set(validRows.map(r => r.term.toLowerCase().trim()));
+  const showTotalRow = uniqueTerms.size === 1 && validRows.length > 1;
 
   // Data rows
   for (let rowIdx = 0; rowIdx < validRows.length; rowIdx++) {
@@ -442,30 +447,33 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: isEven ? PDF_COLORS.slate50 : PDF_COLORS.white,
     });
 
-    // Calculate per-user-year
+    // Calculate per-user-year (based on offer price)
     const perUserYear = calculatePerUserYear(row.offerPrice, row.users, row.term);
+
+    // Parse prices for totals
+    const listPrice = parseFloat(row.listPrice.replace(/[^0-9.]/g, ''));
     const offerPrice = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
-    if (!isNaN(offerPrice)) {
-      totalInvestment += offerPrice;
-    }
+    if (!isNaN(listPrice)) totalListPrice += listPrice;
+    if (!isNaN(offerPrice)) totalOfferPrice += offerPrice;
 
     // Row data
-    colX = tableX + 8;
+    colX = tableX + 6;
     const rowData = [
       row.term,
       row.users,
       row.consultingHours,
       perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
+      formatCurrency(row.listPrice, data.currency),
       formatCurrency(row.offerPrice, data.currency),
     ];
 
     for (let i = 0; i < rowData.length; i++) {
-      const isInvestment = i === 4;
+      const isExclusiveOffer = i === 5;
       page1.drawText(rowData[i] || '', {
         x: colX,
         y: y - 10,
-        size: 8,
-        font: isInvestment ? fontBold : font,
+        size: 7.5,
+        font: isExclusiveOffer ? fontBold : font,
         color: PDF_COLORS.slate700,
       });
       colX += colWidths[i];
@@ -474,8 +482,8 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     y -= rowHeight;
   }
 
-  // Total row
-  if (validRows.length > 0) {
+  // Total row - only show if all rows have the same term (additive scenario)
+  if (showTotalRow) {
     page1.drawRectangle({
       x: tableX,
       y: y - rowHeight + 6,
@@ -484,20 +492,30 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: PDF_COLORS.slate200,
     });
 
-    page1.drawText('Total Investment', {
-      x: tableX + 8,
+    page1.drawText('Total', {
+      x: tableX + 6,
       y: y - 10,
       size: 8,
       font: fontBold,
       color: PDF_COLORS.slate900,
     });
 
-    const totalFormatted = formatCurrency(String(totalInvestment), data.currency);
-    const totalWidth = fontBold.widthOfTextAtSize(totalFormatted, 9);
-    page1.drawText(totalFormatted, {
-      x: tableX + CONTENT_WIDTH - totalWidth - 10,
+    // Position for List Price total (column 4)
+    const listPriceX = tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3];
+    page1.drawText(formatCurrency(String(totalListPrice), data.currency), {
+      x: listPriceX,
       y: y - 10,
-      size: 9,
+      size: 8,
+      font: fontBold,
+      color: PDF_COLORS.slate900,
+    });
+
+    // Position for Exclusive Offer total (column 5)
+    const offerPriceX = listPriceX + colWidths[4];
+    page1.drawText(formatCurrency(String(totalOfferPrice), data.currency), {
+      x: offerPriceX,
+      y: y - 10,
+      size: 8,
       font: fontBold,
       color: PDF_COLORS.slate900,
     });
@@ -597,6 +615,20 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     font: fontItalic,
     color: PDF_COLORS.slate500,
   });
+
+  // Additional hour rate note (if provided)
+  if (data.additionalHourRate && data.additionalHourRate.trim()) {
+    const currencySymbols: Record<Currency, string> = { USD: '$', EUR: 'EUR ', GBP: 'GBP ', INR: 'INR ' };
+    const hourRateNote = STATIC_CONTENT.additionalHoursNote(data.additionalHourRate, currencySymbols[data.currency]);
+    y -= 14;
+    page2.drawText(hourRateNote, {
+      x: MARGIN_LEFT,
+      y,
+      size: 8,
+      font: fontItalic,
+      color: PDF_COLORS.slate500,
+    });
+  }
 
   // Expert Review & Consulting section
   y -= 28;

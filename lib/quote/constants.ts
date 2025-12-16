@@ -44,7 +44,7 @@ export const STATIC_CONTENT = {
   accessAndSetup: `myRA is a self-service, browser-based platform. No IT involvement is required unless enterprise network policies require domain whitelisting. A configuration guide is provided if needed. All feature updates are pushed directly to the platform with no manual action required.`,
 
   securityBullets: [
-    'Zero data retention on LLM providers. Prompts and outputs are not stored or used for training.',
+    'Highly secure platform with zero data retention on LLM providers. Prompts and outputs are not stored or used for training.',
     'Encryption in transit (TLS 1.2+), role-based access control managed by organization admins',
     'Aligned with GDPR and global privacy frameworks',
     'Full Security & Compliance Overview available on request',
@@ -57,6 +57,9 @@ export const STATIC_CONTENT = {
   },
 
   paymentNote: `Payment modes and terms can be discussed with your Account Manager.`,
+
+  additionalHoursNote: (rate: string, currencySymbol: string) =>
+    `Additional consulting hours available at ${currencySymbol}${rate}/hour beyond the included allocation.`,
 
   expertReview: `Expert Review is integrated into the platform workflow. Send claims, files, or full conversations for review by domain specialists. Turnaround is 24-48 hours; async communication with assigned experts is available in-platform. Consulting hours apply flexibly across strategy, product, procurement, or corporate development for benchmarking, methodology, scenario analysis, or primary research support. Hour consumption is communicated before work commences.`,
 
@@ -144,6 +147,25 @@ export const URGENCY_OPTIONS: { value: Urgency; label: string }[] = [
   { value: 'flexible', label: 'Flexible' },
 ];
 
+// Term options for investment table dropdown
+export const TERM_OPTIONS: { value: string; label: string }[] = [
+  { value: '1-Year', label: '1-Year' },
+  { value: '2-Year', label: '2-Year' },
+  { value: '3-Year', label: '3-Year' },
+  { value: '6-Month', label: '6-Month' },
+  { value: '3-Month', label: '3-Month' },
+  { value: 'custom', label: 'Custom...' },
+];
+
+// Currency exchange rates (approximate, for estimation only)
+// Base: USD = 1
+export const CURRENCY_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  INR: 83.5,
+};
+
 // Account Managers list with email mapping
 export const ACCOUNT_MANAGERS: { name: string; email: string }[] = [
   { name: 'Satish Boini', email: 'satish.boini@mordorintelligence.com' },
@@ -183,6 +205,7 @@ export const DEFAULT_QUOTE_FORM: Omit<import('./types').QuoteFormData, 'quoteDat
   preparedByEmail: '',
   showConfidential: true,
   dealContext: DEFAULT_DEAL_CONTEXT,
+  additionalHourRate: '',
 };
 
 // Common company suffixes to exclude from client code generation

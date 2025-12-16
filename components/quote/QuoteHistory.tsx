@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, History, Trash2, ArrowUpRight, Calendar, Building2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, History, Trash2, ArrowUpRight, Calendar, Building2, Copy } from 'lucide-react';
 import type { QuoteFormData, QuoteHistoryEntry, Currency } from '@/lib/quote/types';
 import { getHistory, deleteFromHistory } from '@/lib/quote/storage';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
@@ -9,6 +9,7 @@ import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
 interface QuoteHistoryProps {
   email: string;
   onLoadQuote: (formData: QuoteFormData) => void;
+  onDuplicateQuote?: (formData: QuoteFormData) => void;
   refreshTrigger?: number;
 }
 
@@ -28,7 +29,7 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export function QuoteHistory({ email, onLoadQuote, refreshTrigger }: QuoteHistoryProps) {
+export function QuoteHistory({ email, onLoadQuote, onDuplicateQuote, refreshTrigger }: QuoteHistoryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [history, setHistory] = useState<QuoteHistoryEntry[]>(() => getHistory(email));
 
@@ -48,6 +49,14 @@ export function QuoteHistory({ email, onLoadQuote, refreshTrigger }: QuoteHistor
   const handleLoad = (entry: QuoteHistoryEntry) => {
     onLoadQuote(entry.formData);
     setIsExpanded(false);
+  };
+
+  const handleDuplicate = (entry: QuoteHistoryEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDuplicateQuote) {
+      onDuplicateQuote(entry.formData);
+      setIsExpanded(false);
+    }
   };
 
   if (!email || history.length === 0) {
@@ -103,6 +112,15 @@ export function QuoteHistory({ email, onLoadQuote, refreshTrigger }: QuoteHistor
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {onDuplicateQuote && (
+                    <button
+                      onClick={(e) => handleDuplicate(entry, e)}
+                      className="p-1.5 text-neutral-400 hover:text-violet-600 hover:bg-violet-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      title="Duplicate quote (reset dates)"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => handleDelete(entry.id, e)}
                     className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"

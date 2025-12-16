@@ -14,10 +14,11 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
-import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS } from '@/lib/quote/constants';
+import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES } from '@/lib/quote/constants';
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
@@ -116,6 +117,36 @@ function parseFormattedNumber(value: string): string {
   return value.replace(/[^0-9.]/g, '');
 }
 
+// Calculate discount percentage between list price and offer price
+function calculateDiscountPercent(listPrice: string, offerPrice: string): { percent: number | null; isNegative: boolean } {
+  const list = parseFloat(parseFormattedNumber(listPrice));
+  const offer = parseFloat(parseFormattedNumber(offerPrice));
+
+  if (isNaN(list) || isNaN(offer) || list === 0) {
+    return { percent: null, isNegative: false };
+  }
+
+  const percent = ((list - offer) / list) * 100;
+  return { percent: Math.abs(percent), isNegative: percent < 0 };
+}
+
+// Convert currency value
+function convertCurrencyValue(value: string, fromCurrency: Currency, toCurrency: Currency): string {
+  const num = parseFloat(parseFormattedNumber(value));
+  if (isNaN(num) || num === 0) return value;
+
+  const fromRate = CURRENCY_RATES[fromCurrency] || 1;
+  const toRate = CURRENCY_RATES[toCurrency] || 1;
+  const inUSD = num / fromRate;
+  const converted = Math.round(inUSD * toRate);
+  return String(converted);
+}
+
+// Check if term is a standard option
+function isStandardTerm(term: string): boolean {
+  return TERM_OPTIONS.some(opt => opt.value === term && opt.value !== 'custom');
+}
+
 export default function QuotePage() {
   const [formData, setFormData] = useState<QuoteFormData>(() => {
     const quoteDate = getTodayISO();
@@ -137,6 +168,12 @@ export default function QuotePage() {
   const [dealContextOpen, setDealContextOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [customTermRows, setCustomTermRows] = useState<Set<number>>(new Set());
+  const [currencyConversionPrompt, setCurrencyConversionPrompt] = useState<{
+    show: boolean;
+    fromCurrency: Currency;
+    toCurrency: Currency;
+  } | null>(null);
 
   // Debounce timer ref
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -270,6 +307,83 @@ export default function QuotePage() {
       ...prev,
       dealContext: { ...prev.dealContext, [field]: value },
     }));
+  }, []);
+
+  // Handle currency change with conversion prompt
+  const handleCurrencyChange = useCallback((newCurrency: Currency) => {
+    const hasValues = formData.rows.some(row =>
+      parseFormattedNumber(row.listPrice) || parseFormattedNumber(row.offerPrice)
+    ) || parseFormattedNumber(formData.additionalHourRate);
+
+    if (hasValues && formData.currency !== newCurrency) {
+      setCurrencyConversionPrompt({
+        show: true,
+        fromCurrency: formData.currency,
+        toCurrency: newCurrency,
+      });
+    } else {
+      updateField('currency', newCurrency);
+    }
+  }, [formData.rows, formData.additionalHourRate, formData.currency, updateField]);
+
+  // Apply currency conversion
+  const applyCurrencyConversion = useCallback((convert: boolean) => {
+    if (!currencyConversionPrompt) return;
+
+    const { fromCurrency, toCurrency } = currencyConversionPrompt;
+
+    if (convert) {
+      setFormData((prev) => ({
+        ...prev,
+        currency: toCurrency,
+        rows: prev.rows.map(row => ({
+          ...row,
+          listPrice: row.listPrice ? convertCurrencyValue(row.listPrice, fromCurrency, toCurrency) : '',
+          offerPrice: row.offerPrice ? convertCurrencyValue(row.offerPrice, fromCurrency, toCurrency) : '',
+        })),
+        additionalHourRate: prev.additionalHourRate
+          ? convertCurrencyValue(prev.additionalHourRate, fromCurrency, toCurrency)
+          : '',
+      }));
+      toast.success(`Values converted from ${fromCurrency} to ${toCurrency}`);
+    } else {
+      updateField('currency', toCurrency);
+    }
+
+    setCurrencyConversionPrompt(null);
+  }, [currencyConversionPrompt, updateField]);
+
+  // Handle term selection change
+  const handleTermChange = useCallback((index: number, value: string) => {
+    if (value === 'custom') {
+      setCustomTermRows(prev => new Set(prev).add(index));
+      updateRow(index, 'term', '');
+    } else {
+      setCustomTermRows(prev => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+      updateRow(index, 'term', value);
+    }
+  }, [updateRow]);
+
+  // Duplicate quote handler (for QuoteHistory component)
+  const handleDuplicateQuote = useCallback((data: QuoteFormData) => {
+    const quoteDate = getTodayISO();
+    const preparedByEmail = data.preparedByEmail ||
+      (data.preparedBy ? ACCOUNT_MANAGERS.find(am => am.name === data.preparedBy)?.email || '' : '');
+
+    setFormData({
+      ...data,
+      preparedByEmail,
+      quoteDate,
+      validUntil: getDefaultValidUntil(quoteDate),
+    });
+    setErrors({});
+    setTouched({});
+    setCustomTermRows(new Set());
+    toast.success('Quote duplicated - dates reset to today');
   }, []);
 
   // Save quote to database
@@ -546,7 +660,7 @@ export default function QuotePage() {
                       <label className="block text-sm text-neutral-600 mb-1">Currency</label>
                       <select
                         value={formData.currency}
-                        onChange={(e) => updateField('currency', e.target.value as Currency)}
+                        onChange={(e) => handleCurrencyChange(e.target.value as Currency)}
                         className={getInputClass('currency', false)}
                       >
                         {Object.entries(CURRENCY_SYMBOLS).map(([code, symbol]) => (
@@ -639,94 +753,333 @@ export default function QuotePage() {
                     <TemplatePresets onApplyPreset={handleApplyPreset} />
                   </div>
 
-                  {/* Table */}
-                  <div className="overflow-x-auto">
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-violet-600 text-white">
                           <th className="px-3 py-2 text-left font-medium rounded-tl-lg">Term</th>
                           <th className="px-3 py-2 text-left font-medium">Users</th>
                           <th className="px-3 py-2 text-left font-medium">Consulting Hours</th>
-                          <th className="px-3 py-2 text-left font-medium">Investment</th>
+                          <th className="px-3 py-2 text-left font-medium">List Price</th>
+                          <th className="px-3 py-2 text-left font-medium">Exclusive Offer</th>
+                          <th className="px-3 py-2 text-center font-medium">Discount</th>
                           <th className="px-3 py-2 text-center font-medium rounded-tr-lg w-10"></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {formData.rows.map((row, index) => (
-                          <tr
-                            key={index}
-                            className={index % 2 === 0 ? 'bg-neutral-50' : 'bg-white'}
-                          >
-                            <td className="px-2 py-2">
-                              <input
-                                type="text"
-                                value={row.term}
-                                onChange={(e) => updateRow(index, 'term', e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
-                                placeholder="1-Year"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
+                        {formData.rows.map((row, index) => {
+                          const discount = calculateDiscountPercent(row.listPrice, row.offerPrice);
+                          const showCustomInput = customTermRows.has(index) || (!isStandardTerm(row.term) && row.term !== '');
+
+                          return (
+                            <tr
+                              key={index}
+                              className={index % 2 === 0 ? 'bg-neutral-50' : 'bg-white'}
+                            >
+                              <td className="px-2 py-2">
+                                {showCustomInput ? (
+                                  <input
+                                    type="text"
+                                    value={row.term}
+                                    onChange={(e) => updateRow(index, 'term', e.target.value)}
+                                    onBlur={() => {
+                                      if (!row.term) {
+                                        setCustomTermRows(prev => {
+                                          const next = new Set(prev);
+                                          next.delete(index);
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                    className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                    placeholder="Custom term..."
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <select
+                                    value={isStandardTerm(row.term) ? row.term : 'custom'}
+                                    onChange={(e) => handleTermChange(index, e.target.value)}
+                                    className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                  >
+                                    <option value="">Select...</option>
+                                    {TERM_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </td>
+                              <td className="px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.users}
+                                  onChange={(e) => updateRow(index, 'users', e.target.value)}
+                                  className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                  placeholder="10"
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.consultingHours}
+                                  onChange={(e) => updateRow(index, 'consultingHours', e.target.value)}
+                                  className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                  placeholder="500/yr"
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.listPrice}
+                                  onChange={(e) => updateRow(index, 'listPrice', parseFormattedNumber(e.target.value))}
+                                  onBlur={() => {
+                                    if (row.listPrice) {
+                                      const formatted = formatNumberDisplay(row.listPrice, formData.currency);
+                                      updateRow(index, 'listPrice', formatted);
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    if (row.listPrice) {
+                                      updateRow(index, 'listPrice', parseFormattedNumber(row.listPrice));
+                                    }
+                                  }}
+                                  className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                  placeholder="75,000"
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.offerPrice}
+                                  onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
+                                  onBlur={() => {
+                                    handleBlur(`row_${index}_offerPrice`);
+                                    if (row.offerPrice) {
+                                      const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
+                                      updateRow(index, 'offerPrice', formatted);
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    if (row.offerPrice) {
+                                      updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
+                                    }
+                                  }}
+                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-violet-500 font-medium ${
+                                    errors.rows?.[index]?.offerPrice
+                                      ? 'border-red-300 bg-red-50'
+                                      : 'border-neutral-200'
+                                  }`}
+                                  placeholder="60,000"
+                                />
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {discount.percent !== null ? (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    discount.isNegative
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-green-100 text-green-700'
+                                  }`}>
+                                    {discount.percent.toFixed(1)}% {discount.isNegative ? 'up' : 'off'}
+                                  </span>
+                                ) : (
+                                  <span className="text-neutral-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {formData.rows.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRow(index)}
+                                    className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    title="Remove row"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card Layout */}
+                  <div className="md:hidden space-y-4">
+                    {formData.rows.map((row, index) => {
+                      const discount = calculateDiscountPercent(row.listPrice, row.offerPrice);
+                      const showCustomInput = customTermRows.has(index) || (!isStandardTerm(row.term) && row.term !== '');
+
+                      return (
+                        <div key={index} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                          {/* Header row with term and delete */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex-1 mr-2">
+                              {showCustomInput ? (
+                                <input
+                                  type="text"
+                                  value={row.term}
+                                  onChange={(e) => updateRow(index, 'term', e.target.value)}
+                                  onBlur={() => {
+                                    if (!row.term) {
+                                      setCustomTermRows(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(index);
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
+                                  placeholder="Custom term..."
+                                />
+                              ) : (
+                                <select
+                                  value={isStandardTerm(row.term) ? row.term : 'custom'}
+                                  onChange={(e) => handleTermChange(index, e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
+                                >
+                                  <option value="">Select term...</option>
+                                  {TERM_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                            {formData.rows.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeRow(index)}
+                                className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Remove row"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Users & Consulting Hours */}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="block text-xs text-neutral-500 mb-1">Users</label>
                               <input
                                 type="text"
                                 value={row.users}
                                 onChange={(e) => updateRow(index, 'users', e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
                                 placeholder="10"
                               />
-                            </td>
-                            <td className="px-2 py-2">
+                            </div>
+                            <div>
+                              <label className="block text-xs text-neutral-500 mb-1">Consulting Hours</label>
                               <input
                                 type="text"
                                 value={row.consultingHours}
                                 onChange={(e) => updateRow(index, 'consultingHours', e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
                                 placeholder="500/yr"
                               />
-                            </td>
-                            <td className="px-2 py-2">
+                            </div>
+                          </div>
+
+                          {/* Prices */}
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="block text-xs text-neutral-500 mb-1">List Price</label>
+                              <input
+                                type="text"
+                                value={row.listPrice}
+                                onChange={(e) => updateRow(index, 'listPrice', parseFormattedNumber(e.target.value))}
+                                onBlur={() => {
+                                  if (row.listPrice) {
+                                    const formatted = formatNumberDisplay(row.listPrice, formData.currency);
+                                    updateRow(index, 'listPrice', formatted);
+                                  }
+                                }}
+                                onFocus={() => {
+                                  if (row.listPrice) {
+                                    updateRow(index, 'listPrice', parseFormattedNumber(row.listPrice));
+                                  }
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
+                                placeholder="75,000"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-neutral-500 mb-1">Exclusive Offer</label>
                               <input
                                 type="text"
                                 value={row.offerPrice}
                                 onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
                                 onBlur={() => {
                                   handleBlur(`row_${index}_offerPrice`);
-                                  // Auto-format on blur
                                   if (row.offerPrice) {
                                     const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
                                     updateRow(index, 'offerPrice', formatted);
                                   }
                                 }}
                                 onFocus={() => {
-                                  // Remove formatting on focus for easier editing
                                   if (row.offerPrice) {
                                     updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
                                   }
                                 }}
-                                className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-violet-500 font-medium ${
+                                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-violet-500 font-medium bg-white ${
                                   errors.rows?.[index]?.offerPrice
                                     ? 'border-red-300 bg-red-50'
                                     : 'border-neutral-200'
                                 }`}
                                 placeholder="60,000"
                               />
-                            </td>
-                            <td className="px-2 py-2 text-center">
-                              {formData.rows.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeRow(index)}
-                                  className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                  title="Remove row"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+                          </div>
+
+                          {/* Discount Badge */}
+                          {discount.percent !== null && (
+                            <div className="flex justify-end">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                discount.isNegative
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-green-100 text-green-700'
+                              }`}>
+                                {discount.percent.toFixed(1)}% {discount.isNegative ? 'up' : 'off'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Additional Hour Rate */}
+                  <div className="mt-4 flex items-center gap-4">
+                    <label className="text-sm text-neutral-600 whitespace-nowrap">
+                      Additional Hour Rate (optional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-neutral-500">{CURRENCY_SYMBOLS[formData.currency]}</span>
+                      <input
+                        type="text"
+                        value={formData.additionalHourRate}
+                        onChange={(e) => updateField('additionalHourRate', parseFormattedNumber(e.target.value))}
+                        onBlur={() => {
+                          if (formData.additionalHourRate) {
+                            const formatted = formatNumberDisplay(formData.additionalHourRate, formData.currency);
+                            updateField('additionalHourRate', formatted);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (formData.additionalHourRate) {
+                            updateField('additionalHourRate', parseFormattedNumber(formData.additionalHourRate));
+                          }
+                        }}
+                        className="w-28 px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                        placeholder="150"
+                      />
+                      <span className="text-sm text-neutral-500">/hour</span>
+                    </div>
                   </div>
                 </div>
 
@@ -879,6 +1232,7 @@ export default function QuotePage() {
             <QuoteHistory
               email={formData.contactEmail}
               onLoadQuote={handleLoadQuote}
+              onDuplicateQuote={handleDuplicateQuote}
               refreshTrigger={historyRefresh}
             />
 
@@ -919,6 +1273,43 @@ export default function QuotePage() {
         filename={pdfFilename}
         onDownload={handleDownloadFromPreview}
       />
+
+      {/* Currency Conversion Prompt */}
+      {currencyConversionPrompt?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center">
+                <ArrowRightLeft className="w-5 h-5 text-violet-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900">Convert Currency?</h3>
+                <p className="text-sm text-neutral-500">
+                  {currencyConversionPrompt.fromCurrency} → {currencyConversionPrompt.toCurrency}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-neutral-600 mb-6">
+              Would you like to convert existing price values from {currencyConversionPrompt.fromCurrency} to {currencyConversionPrompt.toCurrency}?
+              This uses approximate exchange rates for estimation.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => applyCurrencyConversion(false)}
+                className="flex-1 px-4 py-2 text-sm border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
+              >
+                Keep Original
+              </button>
+              <button
+                onClick={() => applyCurrencyConversion(true)}
+                className="flex-1 px-4 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                Convert Values
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

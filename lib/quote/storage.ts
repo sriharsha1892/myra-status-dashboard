@@ -64,6 +64,8 @@ export function loadDraft(): QuoteFormData | null {
         showConfidential: parsed.showConfidential ?? true,
         // Add dealContext for old drafts
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },
+        // Add additionalHourRate for old drafts
+        additionalHourRate: parsed.additionalHourRate ?? '',
       };
     }
   } catch (error) {
