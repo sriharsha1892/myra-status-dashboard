@@ -187,31 +187,31 @@ function drawBullet(
 
 // Draw footer with Page X of Y
 function drawFooter(page: PDFPage, pageNum: number, totalPages: number, font: PDFFont, fontItalic: PDFFont): void {
-  const footerY = 40;
+  const footerY = 36;
 
   // Divider line
   page.drawLine({
-    start: { x: MARGIN_LEFT, y: footerY + 20 },
-    end: { x: PAGE_WIDTH - MARGIN_RIGHT, y: footerY + 20 },
+    start: { x: MARGIN_LEFT, y: footerY + 24 },
+    end: { x: PAGE_WIDTH - MARGIN_RIGHT, y: footerY + 24 },
     thickness: 0.5,
     color: PDF_COLORS.slate200,
   });
 
-  // Footer line 1
+  // Footer line 1 - Certifications
   page.drawText(STATIC_CONTENT.footerLine1, {
     x: MARGIN_LEFT,
-    y: footerY + 6,
-    size: 7,
-    font: fontItalic,
+    y: footerY + 10,
+    size: 6,
+    font: font,
     color: PDF_COLORS.slate500,
   });
 
-  // Footer line 2
+  // Footer line 2 - Trademark notice (at the very end)
   page.drawText(STATIC_CONTENT.footerLine2, {
     x: MARGIN_LEFT,
-    y: footerY - 6,
-    size: 6,
-    font: font,
+    y: footerY - 2,
+    size: 5,
+    font: fontItalic,
     color: PDF_COLORS.slate400,
   });
 
@@ -220,7 +220,7 @@ function drawFooter(page: PDFPage, pageNum: number, totalPages: number, font: PD
   const pageTextWidth = font.widthOfTextAtSize(pageText, 7);
   page.drawText(pageText, {
     x: PAGE_WIDTH - MARGIN_RIGHT - pageTextWidth,
-    y: footerY + 6,
+    y: footerY + 10,
     size: 7,
     font: font,
     color: PDF_COLORS.slate500,
@@ -231,7 +231,7 @@ function drawFooter(page: PDFPage, pageNum: number, totalPages: number, font: PD
   const websiteWidth = font.widthOfTextAtSize(website, 7);
   page.drawText(website, {
     x: PAGE_WIDTH - MARGIN_RIGHT - websiteWidth,
-    y: footerY - 6,
+    y: footerY - 2,
     size: 7,
     font: font,
     color: PDF_COLORS.violet,

@@ -64,8 +64,8 @@ export const STATIC_CONTENT = {
 
   importantNotice: `Important Notice: This quotation is for planning purposes and does not constitute a binding agreement. Final terms are subject to the executed Master Services Agreement. Pricing valid for the period stated; extensions require written confirmation. Expert Review turnaround times are service targets. For details, contact your Account Manager or visit product.ask-myra.ai.`,
 
-  footerLine1: 'A joint initiative by Mordor Intelligence and Prodgain',
-  footerLine2: 'ISO 9001:2015 Certified · ESOMAR Corporate Member · MRSI Certified · Great Place to Work Certified',
+  footerLine1: 'ISO 9001:2015 Certified · ESOMAR Corporate Member · MRSI Certified · Great Place to Work Certified',
+  footerLine2: 'myRA AI® is a registered trademark.',
 };
 
 // Template presets
