@@ -60,9 +60,9 @@ export const STATIC_CONTENT = {
 
   expertReview: `Expert Review is integrated into the platform workflow. Send claims, files, or full conversations for review by domain specialists. Turnaround is 24-48 hours; async communication with assigned experts is available in-platform. Consulting hours apply flexibly across strategy, product, procurement, or corporate development for benchmarking, methodology, scenario analysis, or primary research support. Hour consumption is communicated before work commences.`,
 
-  nextSteps: `Upon confirmation, we provision your environment and schedule onboarding. A Master Services Agreement will be shared for execution. Contact your Account Manager to proceed.`,
+  nextSteps: (amName: string) => `Upon confirmation, we provision your environment and schedule onboarding. A Master Services Agreement will be shared for execution. Contact ${amName ? `${amName} (Designated Account Manager)` : 'your Account Manager'} to proceed.`,
 
-  importantNotice: `Important Notice: This quotation is for planning purposes and does not constitute a binding agreement. Final terms are subject to the executed Master Services Agreement. Pricing valid for the period stated; extensions require written confirmation. Expert Review turnaround times are service targets. For details, contact your Account Manager or visit product.ask-myra.ai.`,
+  importantNotice: (amName: string) => `Important Notice: This quotation is for planning purposes and does not constitute a binding agreement. Final terms are subject to the executed Master Services Agreement. Pricing valid for the period stated; extensions require written confirmation. Expert Review turnaround times are service targets. For details, contact ${amName ? `${amName} (Designated Account Manager)` : 'your Account Manager'}.`,
 
   footerLine1: 'ISO 9001:2015 Certified · ESOMAR Corporate Member · MRSI Certified · Great Place to Work Certified',
   footerLine2: 'myRA AI® is a registered trademark.',
