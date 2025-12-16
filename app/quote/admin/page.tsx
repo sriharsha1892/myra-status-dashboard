@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { isQuoteAdminAuthenticated, setQuoteAdminAuthenticated } from '@/lib/quote/auth';
 import { QuoteAdminAuthModal } from '@/components/quote/QuoteAdminAuthModal';
+import { ACCOUNT_MANAGERS } from '@/lib/quote/constants';
 
 interface Quote {
   id: string;
@@ -259,13 +260,18 @@ export default function QuoteAdminPage() {
           <div className="grid md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm text-neutral-600 mb-1">Account Manager</label>
-              <input
-                type="text"
+              <select
                 value={preparedBy}
                 onChange={(e) => setPreparedBy(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
-                placeholder="Search AM..."
-              />
+              >
+                <option value="">All AMs</option>
+                {ACCOUNT_MANAGERS.map((am) => (
+                  <option key={am} value={am}>
+                    {am}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm text-neutral-600 mb-1">Company</label>

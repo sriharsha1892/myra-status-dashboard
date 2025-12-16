@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (preparedBy) {
-      query = query.ilike('prepared_by', `%${preparedBy}%`);
+      query = query.eq('prepared_by', preparedBy);
     }
     if (companyName) {
       query = query.ilike('company_name', `%${companyName}%`);

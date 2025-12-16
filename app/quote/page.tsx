@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
-import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS } from '@/lib/quote/constants';
+import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS } from '@/lib/quote/constants';
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
@@ -578,13 +578,18 @@ export default function QuotePage() {
                     {/* Prepared By */}
                     <div>
                       <label className="block text-sm text-neutral-600 mb-1">Prepared By</label>
-                      <input
-                        type="text"
+                      <select
                         value={formData.preparedBy}
                         onChange={(e) => updateField('preparedBy', e.target.value)}
                         className={getInputClass('preparedBy', false)}
-                        placeholder="Account Manager name"
-                      />
+                      >
+                        <option value="">Select Account Manager...</option>
+                        {ACCOUNT_MANAGERS.map((am) => (
+                          <option key={am} value={am}>
+                            {am}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* AM Email */}

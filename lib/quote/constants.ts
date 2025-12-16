@@ -144,6 +144,17 @@ export const URGENCY_OPTIONS: { value: Urgency; label: string }[] = [
   { value: 'flexible', label: 'Flexible' },
 ];
 
+// Account Managers list
+export const ACCOUNT_MANAGERS = [
+  'Satish Boini',
+  'Satyananth P',
+  'Sudeshana Jain',
+  'Kirandeep Kaur',
+  'Kartheek Puttaparthini',
+  'Krati Agarwal',
+  'Nikita Manmode',
+];
+
 // Default deal context
 export const DEFAULT_DEAL_CONTEXT = {
   discountReason: '' as const,
