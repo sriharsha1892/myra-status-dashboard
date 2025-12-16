@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import {
   FileText,
   Search,
@@ -9,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
-  Calendar,
   DollarSign,
   TrendingUp,
   RefreshCw,
@@ -176,26 +174,20 @@ export default function QuoteAdminPage() {
       <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link
-              href="/quote"
-              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-              title="Back to Quote Generator"
-            >
-              <ChevronLeft className="w-5 h-5 text-neutral-500" />
-            </Link>
             <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center shadow-sm">
               <FileText className="w-4 h-4 text-white" />
             </div>
             <div>
               <h1 className="font-semibold text-neutral-900">
-                Quote Admin
+                myRA AI<sup className="text-[10px] ml-0.5 text-neutral-500">®</sup>
               </h1>
-              <p className="text-xs text-neutral-500">View all generated quotes</p>
+              <p className="text-xs text-neutral-500">Quote Admin</p>
             </div>
           </div>
           <button
             onClick={fetchQuotes}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-violet-600 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -252,12 +244,14 @@ export default function QuoteAdminPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-4 h-4 text-neutral-500" />
-            <h2 className="font-medium text-neutral-700">Filters</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-3">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filters
+            </h2>
           </div>
-          <div className="grid md:grid-cols-5 gap-4">
+          <div className="p-4 grid md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm text-neutral-600 mb-1">Account Manager</label>
               <select
@@ -321,12 +315,14 @@ export default function QuoteAdminPage() {
 
         {/* AM Stats */}
         {stats && Object.keys(stats.byAM).length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-neutral-500" />
-              <h2 className="font-medium text-neutral-700">Performance by Account Manager</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-3">
+              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Performance by Account Manager
+              </h2>
             </div>
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="p-4 grid md:grid-cols-4 gap-4">
               {Object.entries(stats.byAM)
                 .sort((a, b) => b[1].count - a[1].count)
                 .map(([am, data]) => (
@@ -367,14 +363,14 @@ export default function QuoteAdminPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-neutral-50 border-b border-neutral-200">
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Reference</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Company</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Contact</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Date</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Value</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">AM</th>
-                      <th className="px-4 py-3 text-left font-medium text-neutral-700">Version</th>
+                    <tr className="bg-violet-600 text-white">
+                      <th className="px-4 py-3 text-left font-medium">Reference</th>
+                      <th className="px-4 py-3 text-left font-medium">Company</th>
+                      <th className="px-4 py-3 text-left font-medium">Contact</th>
+                      <th className="px-4 py-3 text-left font-medium">Date</th>
+                      <th className="px-4 py-3 text-left font-medium">Value</th>
+                      <th className="px-4 py-3 text-left font-medium">AM</th>
+                      <th className="px-4 py-3 text-left font-medium">Version</th>
                     </tr>
                   </thead>
                   <tbody>
