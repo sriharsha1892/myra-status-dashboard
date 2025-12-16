@@ -1,5 +1,11 @@
 import type { QuoteFormData, QuoteHistoryEntry } from './types';
-import { DEFAULT_DEAL_CONTEXT } from './constants';
+import { DEFAULT_DEAL_CONTEXT, ACCOUNT_MANAGERS } from './constants';
+
+// Helper to lookup AM email by name
+function getAMEmail(name: string): string {
+  const am = ACCOUNT_MANAGERS.find(a => a.name === name);
+  return am?.email || '';
+}
 
 const DRAFT_KEY = 'myra_quote_draft';
 const HISTORY_PREFIX = 'myra_quote_history_';
@@ -53,7 +59,8 @@ export function loadDraft(): QuoteFormData | null {
         // Migrate from old quoteValidity to validUntil
         validUntil: parsed.validUntil ?? getDefaultValidUntil(quoteDate),
         preparedBy: parsed.preparedBy ?? '',
-        preparedByEmail: parsed.preparedByEmail ?? '',
+        // Auto-populate email from AM list if missing (backward compatibility)
+        preparedByEmail: parsed.preparedByEmail || getAMEmail(parsed.preparedBy ?? ''),
         showConfidential: parsed.showConfidential ?? true,
         // Add dealContext for old drafts
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },

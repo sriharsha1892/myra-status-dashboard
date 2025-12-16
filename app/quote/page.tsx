@@ -235,7 +235,11 @@ export default function QuotePage() {
 
   // Load quote from history
   const handleLoadQuote = useCallback((data: QuoteFormData) => {
-    setFormData(data);
+    // Auto-populate email if missing (for old history entries)
+    const preparedByEmail = data.preparedByEmail ||
+      (data.preparedBy ? ACCOUNT_MANAGERS.find(am => am.name === data.preparedBy)?.email || '' : '');
+
+    setFormData({ ...data, preparedByEmail });
     setErrors({});
     setTouched({});
     toast.success('Quote loaded from history');
