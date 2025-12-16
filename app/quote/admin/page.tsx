@@ -14,6 +14,8 @@ import {
   TrendingUp,
   RefreshCw,
 } from 'lucide-react';
+import { isQuoteAdminAuthenticated, setQuoteAdminAuthenticated } from '@/lib/quote/auth';
+import { QuoteAdminAuthModal } from '@/components/quote/QuoteAdminAuthModal';
 
 interface Quote {
   id: string;
@@ -81,6 +83,8 @@ export default function QuoteAdminPage() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Filters
   const [preparedBy, setPreparedBy] = useState('');
@@ -89,6 +93,18 @@ export default function QuoteAdminPage() {
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 20;
+
+  // Check auth on mount
+  useEffect(() => {
+    setIsAuthenticated(isQuoteAdminAuthenticated());
+    setAuthChecked(true);
+  }, []);
+
+  // Handle successful authentication
+  const handleAuthSuccess = useCallback(() => {
+    setQuoteAdminAuthenticated();
+    setIsAuthenticated(true);
+  }, []);
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
@@ -138,6 +154,20 @@ export default function QuoteAdminPage() {
   };
 
   const totalPages = pagination ? Math.ceil(pagination.total / pageSize) : 0;
+
+  // Show loading state while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show auth modal if not authenticated
+  if (!isAuthenticated) {
+    return <QuoteAdminAuthModal onSuccess={handleAuthSuccess} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-violet-50/30 to-neutral-50">
