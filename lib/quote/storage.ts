@@ -62,6 +62,8 @@ export function loadDraft(): QuoteFormData | null {
         // Auto-populate email from AM list if missing (backward compatibility)
         preparedByEmail: parsed.preparedByEmail || getAMEmail(parsed.preparedBy ?? ''),
         showConfidential: parsed.showConfidential ?? true,
+        // Add showUsersColumn for old drafts (default to true)
+        showUsersColumn: parsed.showUsersColumn ?? true,
         // Add dealContext for old drafts
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },
         // Add additionalHourRate for old drafts

@@ -204,6 +204,7 @@ export const DEFAULT_QUOTE_FORM: Omit<import('./types').QuoteFormData, 'quoteDat
   preparedBy: '',
   preparedByEmail: '',
   showConfidential: true,
+  showUsersColumn: true,
   dealContext: DEFAULT_DEAL_CONTEXT,
   additionalHourRate: '',
 };

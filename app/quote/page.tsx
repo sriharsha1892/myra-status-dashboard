@@ -737,7 +737,18 @@ export default function QuotePage() {
                 {/* Investment Table */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-neutral-700">Investment</h3>
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-medium text-neutral-700">Investment</h3>
+                      <label className="flex items-center gap-2 text-sm text-neutral-500 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.showUsersColumn}
+                          onChange={(e) => updateField('showUsersColumn', e.target.checked)}
+                          className="w-4 h-4 rounded border-neutral-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        Show Users
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={addRow}
@@ -759,7 +770,9 @@ export default function QuotePage() {
                       <thead>
                         <tr className="bg-violet-600 text-white">
                           <th className="px-3 py-2 text-left font-medium rounded-tl-lg">Term</th>
-                          <th className="px-3 py-2 text-left font-medium">Users</th>
+                          {formData.showUsersColumn && (
+                            <th className="px-3 py-2 text-left font-medium">Users</th>
+                          )}
                           <th className="px-3 py-2 text-left font-medium">Consulting Hours</th>
                           <th className="px-3 py-2 text-left font-medium">List Price</th>
                           <th className="px-3 py-2 text-left font-medium">Exclusive Offer</th>
@@ -811,15 +824,17 @@ export default function QuotePage() {
                                   </select>
                                 )}
                               </td>
-                              <td className="px-2 py-2">
-                                <input
-                                  type="text"
-                                  value={row.users}
-                                  onChange={(e) => updateRow(index, 'users', e.target.value)}
-                                  className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
-                                  placeholder="10"
-                                />
-                              </td>
+                              {formData.showUsersColumn && (
+                                <td className="px-2 py-2">
+                                  <input
+                                    type="text"
+                                    value={row.users}
+                                    onChange={(e) => updateRow(index, 'users', e.target.value)}
+                                    className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
+                                    placeholder="10"
+                                  />
+                                </td>
+                              )}
                               <td className="px-2 py-2">
                                 <input
                                   type="text"
@@ -962,17 +977,19 @@ export default function QuotePage() {
                           </div>
 
                           {/* Users & Consulting Hours */}
-                          <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                              <label className="block text-xs text-neutral-500 mb-1">Users</label>
-                              <input
-                                type="text"
-                                value={row.users}
-                                onChange={(e) => updateRow(index, 'users', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
-                                placeholder="10"
-                              />
-                            </div>
+                          <div className={`grid gap-3 mb-3 ${formData.showUsersColumn ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                            {formData.showUsersColumn && (
+                              <div>
+                                <label className="block text-xs text-neutral-500 mb-1">Users</label>
+                                <input
+                                  type="text"
+                                  value={row.users}
+                                  onChange={(e) => updateRow(index, 'users', e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
+                                  placeholder="10"
+                                />
+                              </div>
+                            )}
                             <div>
                               <label className="block text-xs text-neutral-500 mb-1">Consulting Hours</label>
                               <input

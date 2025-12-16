@@ -28,6 +28,7 @@ export interface QuoteFormData {
   preparedBy: string;         // Account Manager name (optional)
   preparedByEmail: string;    // Account Manager email (optional)
   showConfidential: boolean;  // Show CONFIDENTIAL watermark
+  showUsersColumn: boolean;   // Show Users column in investment table
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
   additionalHourRate: string; // Optional per-analyst-hour rate for additional hours
 }

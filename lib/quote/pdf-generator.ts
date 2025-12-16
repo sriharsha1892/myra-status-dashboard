@@ -396,9 +396,15 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     row.term || row.users || row.consultingHours || row.offerPrice
   );
 
+  // Check if Users column should be shown (default to true for backward compatibility)
+  const showUsers = data.showUsersColumn !== false;
+
   // Table with List Price and Exclusive Offer columns
   const tableX = MARGIN_LEFT;
-  const colWidths = [60, 45, 80, 75, 70, 85]; // Term, Users, Consulting, Per User/Yr, List Price, Exclusive Offer
+  // Adjust column widths based on whether Users column is shown
+  const colWidths = showUsers
+    ? [60, 45, 80, 75, 70, 85] // Term, Users, Consulting, Per User/Yr, List Price, Exclusive Offer
+    : [70, 95, 85, 80, 95];    // Term, Consulting, Per User/Yr, List Price, Exclusive Offer (wider columns)
   const rowHeight = 24;
 
   // Header row
@@ -410,7 +416,9 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     color: PDF_COLORS.violet,
   });
 
-  const headers = ['Term', 'Users', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer'];
+  const headers = showUsers
+    ? ['Term', 'Users', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer']
+    : ['Term', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer'];
   let colX = tableX + 6;
   for (let i = 0; i < headers.length; i++) {
     page1.drawText(headers[i], {
@@ -456,19 +464,28 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     if (!isNaN(listPrice)) totalListPrice += listPrice;
     if (!isNaN(offerPrice)) totalOfferPrice += offerPrice;
 
-    // Row data
+    // Row data - conditionally include Users column
     colX = tableX + 6;
-    const rowData = [
-      row.term,
-      row.users,
-      row.consultingHours,
-      perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
-      formatCurrency(row.listPrice, data.currency),
-      formatCurrency(row.offerPrice, data.currency),
-    ];
+    const rowData = showUsers
+      ? [
+          row.term,
+          row.users,
+          row.consultingHours,
+          perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
+          formatCurrency(row.listPrice, data.currency),
+          formatCurrency(row.offerPrice, data.currency),
+        ]
+      : [
+          row.term,
+          row.consultingHours,
+          perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
+          formatCurrency(row.listPrice, data.currency),
+          formatCurrency(row.offerPrice, data.currency),
+        ];
 
+    const exclusiveOfferIndex = showUsers ? 5 : 4;
     for (let i = 0; i < rowData.length; i++) {
-      const isExclusiveOffer = i === 5;
+      const isExclusiveOffer = i === exclusiveOfferIndex;
       page1.drawText(rowData[i] || '', {
         x: colX,
         y: y - 10,
@@ -500,8 +517,10 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: PDF_COLORS.slate900,
     });
 
-    // Position for List Price total (column 4)
-    const listPriceX = tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3];
+    // Position for List Price total - account for conditional Users column
+    const listPriceX = showUsers
+      ? tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] // With Users: Term + Users + Consulting + PerUser
+      : tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2];               // Without Users: Term + Consulting + PerUser
     page1.drawText(formatCurrency(String(totalListPrice), data.currency), {
       x: listPriceX,
       y: y - 10,
@@ -510,8 +529,9 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: PDF_COLORS.slate900,
     });
 
-    // Position for Exclusive Offer total (column 5)
-    const offerPriceX = listPriceX + colWidths[4];
+    // Position for Exclusive Offer total
+    const listPriceColIndex = showUsers ? 4 : 3;
+    const offerPriceX = listPriceX + colWidths[listPriceColIndex];
     page1.drawText(formatCurrency(String(totalOfferPrice), data.currency), {
       x: offerPriceX,
       y: y - 10,
