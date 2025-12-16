@@ -259,20 +259,6 @@ function drawConfidentialWatermark(page: PDFPage, font: PDFFont): void {
   });
 }
 
-// Calculate per-user-year value
-function calculatePerUserYear(offerPrice: string, users: string, term: string): number {
-  const price = parseFloat(offerPrice.replace(/[^0-9.]/g, ''));
-  const userCount = parseInt(users.replace(/[^0-9]/g, ''), 10);
-
-  if (isNaN(price) || isNaN(userCount) || userCount === 0) return 0;
-
-  // Extract years from term (e.g., "1-Year" → 1, "2-Year" → 2)
-  const yearMatch = term.match(/(\d+)/);
-  const years = yearMatch ? parseInt(yearMatch[1], 10) : 1;
-
-  return Math.round(price / userCount / years);
-}
-
 // Main PDF generation function
 export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
@@ -399,12 +385,12 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   // Check if Users column should be shown (default to true for backward compatibility)
   const showUsers = data.showUsersColumn !== false;
 
-  // Table with List Price and Exclusive Offer columns
+  // Table with List Price and Exclusive Offer columns (Per User/Year removed)
   const tableX = MARGIN_LEFT;
   // Adjust column widths based on whether Users column is shown
   const colWidths = showUsers
-    ? [60, 45, 80, 75, 70, 85] // Term, Users, Consulting, Per User/Yr, List Price, Exclusive Offer
-    : [70, 95, 85, 80, 95];    // Term, Consulting, Per User/Yr, List Price, Exclusive Offer (wider columns)
+    ? [70, 55, 120, 95, 95] // Term, Users, Consulting Hours, List Price, Exclusive Offer
+    : [85, 150, 110, 110];  // Term, Consulting Hours, List Price, Exclusive Offer
   const rowHeight = 24;
 
   // Header row
@@ -417,8 +403,8 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   });
 
   const headers = showUsers
-    ? ['Term', 'Users', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer']
-    : ['Term', 'Consulting Hours', 'Per User/Year', 'List Price', 'Exclusive Offer'];
+    ? ['Term', 'Users', 'Consulting Hours', 'List Price', 'Exclusive Offer']
+    : ['Term', 'Consulting Hours', 'List Price', 'Exclusive Offer'];
   let colX = tableX + 6;
   for (let i = 0; i < headers.length; i++) {
     page1.drawText(headers[i], {
@@ -455,35 +441,30 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: isEven ? PDF_COLORS.slate50 : PDF_COLORS.white,
     });
 
-    // Calculate per-user-year (based on offer price)
-    const perUserYear = calculatePerUserYear(row.offerPrice, row.users, row.term);
-
     // Parse prices for totals
     const listPrice = parseFloat(row.listPrice.replace(/[^0-9.]/g, ''));
     const offerPrice = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
     if (!isNaN(listPrice)) totalListPrice += listPrice;
     if (!isNaN(offerPrice)) totalOfferPrice += offerPrice;
 
-    // Row data - conditionally include Users column
+    // Row data - conditionally include Users column (Per User/Year removed)
     colX = tableX + 6;
     const rowData = showUsers
       ? [
           row.term,
           row.users,
           row.consultingHours,
-          perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
           formatCurrency(row.listPrice, data.currency),
           formatCurrency(row.offerPrice, data.currency),
         ]
       : [
           row.term,
           row.consultingHours,
-          perUserYear > 0 ? formatCurrency(String(perUserYear), data.currency) : '-',
           formatCurrency(row.listPrice, data.currency),
           formatCurrency(row.offerPrice, data.currency),
         ];
 
-    const exclusiveOfferIndex = showUsers ? 5 : 4;
+    const exclusiveOfferIndex = showUsers ? 4 : 3;
     for (let i = 0; i < rowData.length; i++) {
       const isExclusiveOffer = i === exclusiveOfferIndex;
       page1.drawText(rowData[i] || '', {
@@ -519,8 +500,8 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
     // Position for List Price total - account for conditional Users column
     const listPriceX = showUsers
-      ? tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] // With Users: Term + Users + Consulting + PerUser
-      : tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2];               // Without Users: Term + Consulting + PerUser
+      ? tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] // With Users: Term + Users + Consulting
+      : tableX + 6 + colWidths[0] + colWidths[1];               // Without Users: Term + Consulting
     page1.drawText(formatCurrency(String(totalListPrice), data.currency), {
       x: listPriceX,
       y: y - 10,
@@ -530,7 +511,7 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     });
 
     // Position for Exclusive Offer total
-    const listPriceColIndex = showUsers ? 4 : 3;
+    const listPriceColIndex = showUsers ? 3 : 2;
     const offerPriceX = listPriceX + colWidths[listPriceColIndex];
     page1.drawText(formatCurrency(String(totalOfferPrice), data.currency), {
       x: offerPriceX,
