@@ -570,27 +570,31 @@ export default function QuotePage() {
                       <label className="block text-sm text-neutral-600 mb-1">Prepared By</label>
                       <select
                         value={formData.preparedBy}
-                        onChange={(e) => updateField('preparedBy', e.target.value)}
+                        onChange={(e) => {
+                          const selectedAM = ACCOUNT_MANAGERS.find(am => am.name === e.target.value);
+                          updateField('preparedBy', e.target.value);
+                          updateField('preparedByEmail', selectedAM?.email || '');
+                        }}
                         className={getInputClass('preparedBy', false)}
                       >
                         <option value="">Select Account Manager...</option>
                         {ACCOUNT_MANAGERS.map((am) => (
-                          <option key={am} value={am}>
-                            {am}
+                          <option key={am.name} value={am.name}>
+                            {am.name}
                           </option>
                         ))}
                       </select>
                     </div>
 
-                    {/* AM Email */}
+                    {/* AM Email (auto-populated, read-only) */}
                     <div>
                       <label className="block text-sm text-neutral-600 mb-1">AM Email</label>
                       <input
                         type="email"
                         value={formData.preparedByEmail}
-                        onChange={(e) => updateField('preparedByEmail', e.target.value)}
-                        className={getInputClass('preparedByEmail', false)}
-                        placeholder="am@mordorintelligence.com"
+                        readOnly
+                        className={`${getInputClass('preparedByEmail', false)} bg-neutral-50 cursor-not-allowed`}
+                        placeholder="Select AM to populate"
                       />
                     </div>
 

@@ -267,8 +267,8 @@ export default function QuoteAdminPage() {
               >
                 <option value="">All AMs</option>
                 {ACCOUNT_MANAGERS.map((am) => (
-                  <option key={am} value={am}>
-                    {am}
+                  <option key={am.name} value={am.name}>
+                    {am.name}
                   </option>
                 ))}
               </select>

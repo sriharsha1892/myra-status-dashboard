@@ -144,15 +144,15 @@ export const URGENCY_OPTIONS: { value: Urgency; label: string }[] = [
   { value: 'flexible', label: 'Flexible' },
 ];
 
-// Account Managers list
-export const ACCOUNT_MANAGERS = [
-  'Satish Boini',
-  'Satyananth P',
-  'Sudeshana Jain',
-  'Kirandeep Kaur',
-  'Kartheek Puttaparthini',
-  'Krati Agarwal',
-  'Nikita Manmode',
+// Account Managers list with email mapping
+export const ACCOUNT_MANAGERS: { name: string; email: string }[] = [
+  { name: 'Satish Boini', email: 'satish.boini@mordorintelligence.com' },
+  { name: 'Satyananth P', email: 'satyananth@mordorintelligence.com' },
+  { name: 'Sudeshana Jain', email: 'sudeshana@mordorintelligence.com' },
+  { name: 'Kirandeep Kaur', email: 'kirandeep.kaur@mordorintelligence.com' },
+  { name: 'Kartheek Puttaparthini', email: 'kartheek@mordorintelligence.com' },
+  { name: 'Krati Agarwal', email: 'krati@mordorintelligence.com' },
+  { name: 'Nikita Manmode', email: 'nikita@mordorintelligence.com' },
 ];
 
 // Default deal context
