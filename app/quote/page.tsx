@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -15,7 +14,6 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
-  Settings,
 } from 'lucide-react';
 import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
@@ -417,7 +415,7 @@ export default function QuotePage() {
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-violet-50/30 to-neutral-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center shadow-sm">
               <FileText className="w-4 h-4 text-white" />
@@ -429,14 +427,6 @@ export default function QuotePage() {
               <p className="text-xs text-neutral-500">Quote Generator</p>
             </div>
           </div>
-          <Link
-            href="/quote/admin"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
-            title="View all quotes"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Admin</span>
-          </Link>
         </div>
       </header>
 
