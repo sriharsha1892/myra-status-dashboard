@@ -28,6 +28,8 @@ export function QuoteAuthModal({ onSuccess }: QuoteAuthModalProps) {
 
       if (data.success) {
         onSuccess();
+      } else if (data.error === 'Server configuration error') {
+        setError('Server not configured. Contact admin to set QUOTE_ACCESS_PASSWORD.');
       } else {
         setError('Incorrect password. Please try again.');
         setPassword('');

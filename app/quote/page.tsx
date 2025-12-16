@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -14,6 +15,7 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Settings,
 } from 'lucide-react';
 import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
@@ -83,6 +85,22 @@ function getDefaultValidUntil(fromDate?: string): string {
   const date = fromDate ? new Date(fromDate) : new Date();
   date.setDate(date.getDate() + 30);
   return date.toISOString().split('T')[0];
+}
+
+// Generate quote reference: MQ-YYYYMMDD-XXXX
+function generateQuoteReference(): string {
+  const date = new Date();
+  const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `MQ-${dateStr}-${random}`;
+}
+
+// Calculate total value from rows
+function calculateTotalValue(rows: QuoteRow[]): number {
+  return rows.reduce((sum, row) => {
+    const value = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
+    return sum + (isNaN(value) ? 0 : value);
+  }, 0);
 }
 
 // Format number with commas (INR uses Indian numbering)
@@ -252,6 +270,53 @@ export default function QuotePage() {
     }));
   }, []);
 
+  // Save quote to database
+  const saveQuoteToDb = useCallback(async () => {
+    try {
+      const quoteReference = generateQuoteReference();
+      const totalValue = calculateTotalValue(formData.rows);
+
+      const payload = {
+        quoteReference,
+        companyName: formData.preparedFor,
+        contactName: formData.contactName,
+        contactEmail: formData.contactEmail,
+        contactTitle: formData.contactTitle || undefined,
+        quoteDate: formData.quoteDate,
+        validUntil: formData.validUntil,
+        currency: formData.currency,
+        totalValue,
+        lineItems: formData.rows.map(row => ({
+          term: row.term,
+          users: row.users,
+          consultingHours: row.consultingHours,
+          investment: row.offerPrice,
+        })),
+        preparedBy: formData.preparedBy || 'Unknown AM',
+        dealContext: {
+          discountReason: formData.dealContext.discountReason || undefined,
+          specialTerms: formData.dealContext.specialTerms || undefined,
+          decisionDate: formData.dealContext.decisionDate || undefined,
+          urgency: formData.dealContext.urgency || undefined,
+        },
+      };
+
+      const response = await fetch('/api/quote/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to save quote to database:', result.error);
+      }
+    } catch (err) {
+      // Don't block the user if DB save fails - just log it
+      console.error('Error saving quote to database:', err);
+    }
+  }, [formData]);
+
   // Generate PDF
   const handleGenerate = useCallback(async (preview: boolean = false) => {
     const validationErrors = validateForm(formData);
@@ -283,6 +348,10 @@ export default function QuotePage() {
         downloadPdf(bytes, filename);
         saveToHistory(formData.contactEmail, formData);
         setHistoryRefresh((prev) => prev + 1);
+
+        // Save to database (async, non-blocking)
+        saveQuoteToDb();
+
         toast.success('Quote generated successfully');
       }
     } catch (error) {
@@ -291,7 +360,7 @@ export default function QuotePage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [formData]);
+  }, [formData, saveQuoteToDb]);
 
   // Download PDF
   const downloadPdf = useCallback((bytes: Uint8Array, filename: string) => {
@@ -312,10 +381,14 @@ export default function QuotePage() {
       downloadPdf(pdfBytes, pdfFilename);
       saveToHistory(formData.contactEmail, formData);
       setHistoryRefresh((prev) => prev + 1);
+
+      // Save to database (async, non-blocking)
+      saveQuoteToDb();
+
       setPreviewOpen(false);
       toast.success('Quote downloaded');
     }
-  }, [pdfBytes, pdfFilename, formData, downloadPdf]);
+  }, [pdfBytes, pdfFilename, formData, downloadPdf, saveQuoteToDb]);
 
   // Input class helper
   const getInputClass = (field: string, hasError: boolean) => {
@@ -356,6 +429,14 @@ export default function QuotePage() {
               <p className="text-xs text-neutral-500">Quote Generator</p>
             </div>
           </div>
+          <Link
+            href="/quote/admin"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+            title="View all quotes"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Admin</span>
+          </Link>
         </div>
       </header>
 
