@@ -26,6 +26,9 @@ import type {
   ResponseStatus,
   DealPipelineStage,
   DealOutcome,
+  MeetingType,
+  StakeholderInfluence,
+  FollowupPriority,
 } from './types';
 
 // Field definition for schema
@@ -140,6 +143,64 @@ export const ACTION_SCHEMAS: Record<CommandAction, ActionSchema> = {
     createsTimeline: false,
   },
 
+  // ============ NEW CRM ACTIONS ============
+
+  LOG_MEETING: {
+    action: 'LOG_MEETING',
+    description: 'Log a meeting with notes and summary',
+    required: [],
+    optional: ['meeting_type', 'meeting_duration', 'meeting_summary', 'meeting_attendees', 'date'],
+    fields: {
+      meeting_type: {
+        type: 'enum',
+        enumValues: ['demo', 'follow_up_call', 'check_in', 'technical_review', 'executive_briefing', 'other'] as const,
+        description: 'Type of meeting',
+      },
+      meeting_duration: { type: 'number', min: 1, max: 480, description: 'Duration in minutes' },
+      meeting_summary: { type: 'string', maxLength: 5000, description: 'Meeting summary/notes' },
+      meeting_attendees: { type: 'array', description: 'List of attendees' },
+      date: { type: 'date', description: 'When the meeting occurred' },
+    },
+    requiresOrg: true,
+    requiresUser: false,
+    targetTable: 'meeting_notes',
+    createsTimeline: true,
+  },
+
+  ADD_DEAL_NOTE: {
+    action: 'ADD_DEAL_NOTE',
+    description: 'Add a deal-specific note for tracking deal progress',
+    required: ['deal_note'],
+    optional: [],
+    fields: {
+      deal_note: { type: 'string', minLength: 1, maxLength: 2000, description: 'Deal note content' },
+    },
+    requiresOrg: true,
+    requiresUser: false,
+    targetTable: 'org_activity_notes',
+    createsTimeline: true,
+  },
+
+  CREATE_FOLLOWUP: {
+    action: 'CREATE_FOLLOWUP',
+    description: 'Create a follow-up task/reminder',
+    required: ['followup_title'],
+    optional: ['followup_due_date', 'followup_priority'],
+    fields: {
+      followup_title: { type: 'string', minLength: 1, maxLength: 500, description: 'Follow-up task description' },
+      followup_due_date: { type: 'date', description: 'Due date for the follow-up' },
+      followup_priority: {
+        type: 'enum',
+        enumValues: ['low', 'medium', 'high', 'urgent'] as const,
+        description: 'Priority level',
+      },
+    },
+    requiresOrg: true,
+    requiresUser: false,
+    targetTable: 'follow_ups',
+    createsTimeline: true,
+  },
+
   // ============ CREATE ACTIONS ============
 
   CREATE_ORG: {
@@ -170,13 +231,18 @@ export const ACTION_SCHEMAS: Record<CommandAction, ActionSchema> = {
     action: 'CREATE_USER',
     description: 'Add a new contact/user',
     required: ['email'],
-    optional: ['user_name', 'role', 'phone', 'designation'],
+    optional: ['user_name', 'role', 'phone', 'designation', 'influence'],
     fields: {
       email: { type: 'email', description: 'User email address' },
       user_name: { type: 'string', minLength: 2, maxLength: 100, description: 'Full name' },
       role: { type: 'string', maxLength: 100, description: 'Job title or role' },
       phone: { type: 'string', pattern: /^[\d\s\-\+\(\)]+$/, description: 'Phone number' },
       designation: { type: 'string', maxLength: 100, description: 'Designation/title' },
+      influence: {
+        type: 'enum',
+        enumValues: ['champion', 'decision_maker', 'blocker', 'evaluator', 'influencer', 'unknown'] as const,
+        description: 'Stakeholder influence level',
+      },
     },
     requiresOrg: true,   // User belongs to an org
     requiresUser: false,

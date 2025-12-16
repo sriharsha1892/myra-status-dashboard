@@ -367,3 +367,109 @@ export function showLoadingToast(message: string) {
     }
   );
 }
+
+// Dismiss loading toast
+export function dismissToast(toastId: string) {
+  toast.dismiss(toastId);
+}
+
+// Copy to clipboard toast
+export function showCopiedToast(what = 'Copied') {
+  const quotes = [
+    "Ctrl+C, Ctrl+World",
+    "Information replicated",
+    "Clipboard leverage achieved",
+    "Paste anywhere, anytime",
+    "Knowledge portable",
+  ];
+  showNavalToast(
+    `${what} to clipboard`,
+    getRandomQuote(quotes)
+  );
+}
+
+// Network status toasts
+export function showOfflineToast() {
+  toast.error(
+    <div className="flex flex-col gap-1">
+      <div className="font-semibold text-sm text-white">You're offline</div>
+      <div className="text-xs text-red-50 italic">"Even Mars has connectivity issues"</div>
+    </div>,
+    {
+      duration: 5000,
+      style: {
+        background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.98) 0%, rgba(75, 85, 99, 0.98) 100%)',
+        color: '#fff',
+        border: '1px solid rgba(156, 163, 175, 0.3)',
+      },
+    }
+  );
+}
+
+export function showOnlineToast() {
+  showNavalToast(
+    'Back online',
+    'Connection restored. Leverage resumed.'
+  );
+}
+
+// Activity logged toast
+export function showActivityLoggedToast(options?: ToastOptions) {
+  const quotes = [
+    "Timeline updated. History is leverage.",
+    "Activity captured. Data compounds.",
+    "Document everything. Trust the process.",
+    "Memory externalized. Brain freed.",
+    "Iteration logged. Progress tracked.",
+  ];
+  showNavalToast(
+    options?.customMessage || 'Activity logged',
+    options?.customQuote || getRandomQuote(quotes)
+  );
+}
+
+// Assignment toasts
+export function showAssignmentToast(assignee: string, options?: ToastOptions) {
+  const quotes = [
+    "Delegation is leverage",
+    "Right person, right task",
+    "Accountability assigned",
+    "Ownership transferred",
+    "Trust but verify",
+  ];
+  showNavalToast(
+    options?.customMessage || `Assigned to ${assignee}`,
+    options?.customQuote || getRandomQuote(quotes)
+  );
+}
+
+// Sync toast
+export function showSyncToast(options?: ToastOptions) {
+  const quotes = [
+    "State synchronized",
+    "Data harmony achieved",
+    "Single source of truth: maintained",
+    "Consensus protocol complete",
+    "Distributed systems: aligned",
+  ];
+  showNavalToast(
+    options?.customMessage || 'Synced successfully',
+    options?.customQuote || getRandomQuote(quotes)
+  );
+}
+
+// Promise toast (wraps an async operation)
+export function toastPromise<T>(
+  promise: Promise<T>,
+  messages: {
+    loading: string;
+    success: string;
+    error: string;
+  }
+) {
+  return toast.promise(promise, {
+    loading: messages.loading,
+    success: messages.success,
+    error: messages.error,
+  });
+}

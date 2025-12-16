@@ -10,6 +10,10 @@ export type CommandAction =
   | 'UPDATE_DEAL'            // Deal value/status change
   | 'UPDATE_STAGE'           // Organization lifecycle change
   | 'ADD_NOTE'               // Activity note
+  // New CRM actions
+  | 'LOG_MEETING'            // Log a meeting with notes
+  | 'ADD_DEAL_NOTE'          // Add note specifically for deal tracking
+  | 'CREATE_FOLLOWUP'        // Create a follow-up task
   // CREATE actions
   | 'CREATE_ORG'             // Create new trial organization
   | 'CREATE_USER'            // Create new contact/user
@@ -77,6 +81,27 @@ export type ActivityType =
   | 'presentation'
   | 'poc'
   | 'negotiation';
+
+// Meeting types for LOG_MEETING action
+export type MeetingType =
+  | 'demo'
+  | 'follow_up_call'
+  | 'check_in'
+  | 'technical_review'
+  | 'executive_briefing'
+  | 'other';
+
+// Stakeholder influence levels
+export type StakeholderInfluence =
+  | 'champion'
+  | 'decision_maker'
+  | 'blocker'
+  | 'evaluator'
+  | 'influencer'
+  | 'unknown';
+
+// Follow-up priority
+export type FollowupPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 // Deal statuses
 export type DealStatus =
@@ -269,6 +294,21 @@ export interface ParsedCommand {
     role?: string;
     phone?: string;
     designation?: string;
+    influence?: StakeholderInfluence;  // Stakeholder influence level
+
+    // LOG_MEETING fields
+    meeting_type?: MeetingType;
+    meeting_duration?: number;       // Duration in minutes
+    meeting_summary?: string;        // Meeting notes/summary
+    meeting_attendees?: string[];    // List of attendees
+
+    // ADD_DEAL_NOTE fields
+    deal_note?: string;              // Deal-specific note text
+
+    // CREATE_FOLLOWUP fields
+    followup_title?: string;         // Follow-up task title
+    followup_due_date?: string;      // Due date (ISO or relative)
+    followup_priority?: FollowupPriority;
 
     // CREATE_TICKET fields
     ticket_title?: string;

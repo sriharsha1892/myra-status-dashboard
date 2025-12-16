@@ -1,6 +1,10 @@
 #!/usr/bin/env tsx
 
 /**
+ * @deprecated This CLI script is deprecated. Use the web UI instead:
+ *   - Navigate to /bulk-import for the unified import dashboard
+ *   - Use "Excel Organizations" tool for .xlsx/.xls files
+ *
  * Excel Trial Organizations Import Tool
  *
  * Imports trial organizations and users from Excel file (Final List.xlsx)
@@ -16,6 +20,9 @@
  *   npm run excel-import -- /path/to/Final\ List.xlsx --dry-run
  *   npm run excel-import -- /path/to/Final\ List.xlsx --confirm
  */
+
+console.warn('\n⚠️  DEPRECATED: This CLI script is deprecated.');
+console.warn('   Use the web UI at /bulk-import instead.\n');
 
 import * as XLSX from 'xlsx';
 import { createClient } from '@supabase/supabase-js';

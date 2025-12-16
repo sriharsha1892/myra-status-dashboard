@@ -1,0 +1,7 @@
+org_name,contact_email,website_url,domain_category,description,contact_name,contact_designation,sales_poc_name
+Acme Corp,john.doe@acme.com,https://acme.com,TMT,Leading technology solutions provider,John Doe,CTO,Sarah Manager
+TechStart Inc,jane@techstart.io,techstart.io,NEO,Innovative startup in fintech space,Jane Smith,CEO,
+FoodCo Ltd,bob@foodco.com,foodco.com,AF&B,Organic food distribution company,Bob Johnson,Operations Manager,Sarah Manager
+BuildRight,maria@buildright.com,https://buildright.com,E&C,Commercial construction services,Maria Garcia,Project Lead,
+HealthFirst,david@healthfirst.com,healthfirst.com,HC,Healthcare technology platform,David Chen,Product Manager,
+DesignStudio,emma@designstudio.com,designstudio.com,AAD,Creative design agency,Emma Wilson,Creative Director,

@@ -38,6 +38,7 @@ export const TABLES = {
   IMPORT_BATCHES: 'import_batches',
   DEMO_EVENTS: 'demo_events',
   MEETING_NOTES: 'meeting_notes',
+  FOLLOWUPS: 'follow_ups',
 } as const;
 
 // Type for table names
@@ -67,6 +68,7 @@ export const ID_COLUMNS: Record<TableName, string> = {
   [TABLES.IMPORT_BATCHES]: 'import_id',
   [TABLES.DEMO_EVENTS]: 'demo_id',
   [TABLES.MEETING_NOTES]: 'meeting_id',
+  [TABLES.FOLLOWUPS]: 'followup_id',
 };
 
 // ============ COLUMN SELECTIONS ============
@@ -138,6 +140,7 @@ export function getTableDisplayName(table: TableName): string {
     [TABLES.IMPORT_BATCHES]: 'Import Batch',
     [TABLES.DEMO_EVENTS]: 'Demo Event',
     [TABLES.MEETING_NOTES]: 'Meeting Note',
+    [TABLES.FOLLOWUPS]: 'Follow-up',
   };
   return displayNames[table] || table;
 }

@@ -1,10 +1,17 @@
 #!/usr/bin/env tsx
 /**
+ * @deprecated This CLI script is deprecated. Use the web UI instead:
+ *   - Navigate to /bulk-import for the unified import dashboard
+ *   - Use CSV Organizations or Smart Import tools
+ *
  * Batch Import Tool - Non-Interactive Version
  *
  * Imports organizations and users from CSV without prompts
  * Usage: tsx scripts/batch-import.ts <file.csv> [account-manager-email]
  */
+
+console.warn('\n⚠️  DEPRECATED: This CLI script is deprecated.');
+console.warn('   Use the web UI at /bulk-import instead.\n');
 
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';

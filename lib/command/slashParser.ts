@@ -16,6 +16,9 @@ import type {
   DomainCategory,
   RoadmapItemStatus,
   RoadmapItemPriority,
+  MeetingType,
+  StakeholderInfluence,
+  FollowupPriority,
 } from './types';
 
 // Slash command definitions
@@ -175,15 +178,117 @@ const DOMAIN_MAP: Record<string, DomainCategory> = {
   'telecom': 'TMT',
 };
 
+// Meeting type mapping
+const MEETING_TYPE_MAP: Record<string, MeetingType> = {
+  'demo': 'demo',
+  'follow_up': 'follow_up_call',
+  'followup': 'follow_up_call',
+  'follow-up': 'follow_up_call',
+  'call': 'follow_up_call',
+  'check_in': 'check_in',
+  'checkin': 'check_in',
+  'check-in': 'check_in',
+  'technical': 'technical_review',
+  'tech_review': 'technical_review',
+  'executive': 'executive_briefing',
+  'exec': 'executive_briefing',
+  'briefing': 'executive_briefing',
+  'other': 'other',
+};
+
+// Stakeholder influence mapping
+const INFLUENCE_MAP: Record<string, StakeholderInfluence> = {
+  'champion': 'champion',
+  'decision_maker': 'decision_maker',
+  'decision-maker': 'decision_maker',
+  'dm': 'decision_maker',
+  'decider': 'decision_maker',
+  'blocker': 'blocker',
+  'evaluator': 'evaluator',
+  'eval': 'evaluator',
+  'influencer': 'influencer',
+  'influence': 'influencer',
+};
+
+// Follow-up priority mapping
+const FOLLOWUP_PRIORITY_MAP: Record<string, FollowupPriority> = {
+  'low': 'low',
+  'medium': 'medium',
+  'med': 'medium',
+  'high': 'high',
+  'urgent': 'urgent',
+  'asap': 'urgent',
+  'critical': 'urgent',
+};
+
+// Helper: Extract duration in minutes
+function extractDuration(text: string): { duration: number | null; remaining: string } {
+  const durationMatch = text.match(/(\d+)\s*(?:min(?:utes?)?|m(?:in)?|hr?|hours?)/i);
+  if (durationMatch) {
+    let duration = parseInt(durationMatch[1]);
+    if (/hr?|hours?/i.test(durationMatch[0])) {
+      duration *= 60; // Convert hours to minutes
+    }
+    return { duration, remaining: text.replace(durationMatch[0], '').trim() };
+  }
+  return { duration: null, remaining: text };
+}
+
+// Helper: Extract relative date
+function extractRelativeDate(text: string): { date: string | null; remaining: string } {
+  const datePatterns: Record<string, string> = {
+    'today': new Date().toISOString().split('T')[0],
+    'tomorrow': new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    'next_week': new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    'next week': new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    'friday': getNextWeekday(5),
+    'monday': getNextWeekday(1),
+    'tuesday': getNextWeekday(2),
+    'wednesday': getNextWeekday(3),
+    'thursday': getNextWeekday(4),
+  };
+
+  const lowerText = text.toLowerCase();
+  for (const [pattern, date] of Object.entries(datePatterns)) {
+    if (lowerText.includes(pattern)) {
+      return { date, remaining: text.replace(new RegExp(pattern, 'i'), '').trim() };
+    }
+  }
+
+  // Try ISO date pattern
+  const isoMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) {
+    return { date: isoMatch[1], remaining: text.replace(isoMatch[0], '').trim() };
+  }
+
+  return { date: null, remaining: text };
+}
+
+// Helper: Get next weekday
+function getNextWeekday(targetDay: number): string {
+  const today = new Date();
+  const currentDay = today.getDay();
+  let daysUntil = targetDay - currentDay;
+  if (daysUntil <= 0) daysUntil += 7;
+  const nextDate = new Date(today.getTime() + daysUntil * 86400000);
+  return nextDate.toISOString().split('T')[0];
+}
+
 // Helper: Extract org name from "at [org]" or "@[org]" patterns
 function extractOrg(text: string): { org: string | null; remaining: string } {
+  // Try @"Org Name With Spaces" pattern (quoted after @)
+  const quotedMentionMatch = text.match(/@["']([^"']+)["']/);
+  if (quotedMentionMatch) {
+    return { org: quotedMentionMatch[1], remaining: text.replace(quotedMentionMatch[0], ' ').trim() };
+  }
+
   // Try "at OrgName" pattern
   const atMatch = text.match(/\bat\s+([A-Z][A-Za-z0-9\s&.-]+?)(?:\s+(?:ran|did|logged|used|for|on|with|-|$)|\s*$)/i);
   if (atMatch) {
     return { org: atMatch[1].trim(), remaining: text.replace(atMatch[0], ' ').trim() };
   }
 
-  // Try "@OrgName" pattern
+  // Try "@OrgName" pattern (single word)
   const mentionMatch = text.match(/@([A-Za-z0-9_-]+)/);
   if (mentionMatch) {
     return { org: mentionMatch[1], remaining: text.replace(mentionMatch[0], ' ').trim() };
@@ -915,6 +1020,297 @@ const SLASH_COMMANDS: SlashCommandDef[] = [
         deal_value: dealValue || undefined,
         deal_status: 'won' as const,
         details: 'Converted to customer',
+      };
+    },
+  },
+  // Meeting logging commands (LOG_MEETING action)
+  {
+    action: 'LOG_MEETING',
+    aliases: ['/meeting', '/mtg'],
+    usage: '/meeting @[org] [type] [duration] - [summary]',
+    example: '/meeting @Acme demo 60min - discussed pricing and roadmap',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract meeting type
+      let meetingType: MeetingType = 'other';
+      let afterType = afterOrg;
+      for (const [key, value] of Object.entries(MEETING_TYPE_MAP)) {
+        if (afterOrg.toLowerCase().includes(key)) {
+          meetingType = value;
+          afterType = afterOrg.replace(new RegExp(`\\b${key}\\b`, 'i'), '').trim();
+          break;
+        }
+      }
+
+      // Extract duration
+      const { duration, remaining: afterDuration } = extractDuration(afterType);
+
+      // Extract summary after hyphen
+      const hyphenIndex = afterDuration.indexOf('-');
+      let summary: string | undefined;
+      let orgName = org;
+
+      if (hyphenIndex > 0) {
+        summary = afterDuration.slice(hyphenIndex + 1).trim();
+        if (!orgName) {
+          orgName = afterDuration.slice(0, hyphenIndex).trim();
+        }
+      } else {
+        orgName = orgName || afterDuration.trim();
+      }
+
+      return {
+        org_name: orgName || undefined,
+        meeting_type: meetingType,
+        meeting_duration: duration || undefined,
+        meeting_summary: summary || undefined,
+      };
+    },
+  },
+  // Deal note commands (ADD_DEAL_NOTE action)
+  {
+    action: 'ADD_DEAL_NOTE',
+    aliases: ['/deal-note', '/dn', '/dnote'],
+    usage: '/deal-note @[org] [note text]',
+    example: '/deal-note @Acme Budget approved by CFO',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // The remaining text is the deal note
+      const dealNote = afterOrg.trim();
+
+      return {
+        org_name: org || undefined,
+        deal_note: dealNote || undefined,
+      };
+    },
+  },
+  // Champion quick-add (CREATE_USER with influence=champion)
+  {
+    action: 'CREATE_USER',
+    aliases: ['/champion'],
+    usage: '/champion @[org] [email] "Name" [title]',
+    example: '/champion @Acme bob@acme.com "Bob Wilson" CEO',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract email
+      const emailMatch = afterOrg.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+      const email = emailMatch ? emailMatch[1] : undefined;
+      const afterEmail = emailMatch ? afterOrg.replace(emailMatch[0], '').trim() : afterOrg;
+
+      // Extract quoted name
+      const quotedMatch = afterEmail.match(/["']([^"']+)["']/);
+      let userName: string | undefined;
+      let afterName = afterEmail;
+
+      if (quotedMatch) {
+        userName = quotedMatch[1];
+        afterName = afterEmail.replace(quotedMatch[0], '').trim();
+      }
+
+      // Remaining is probably the title/role
+      const role = afterName.trim() || undefined;
+
+      return {
+        org_name: org || undefined,
+        user_name: userName,
+        email,
+        role,
+        influence: 'champion' as StakeholderInfluence,
+      };
+    },
+  },
+  // Blocker quick-add (CREATE_USER with influence=blocker)
+  {
+    action: 'CREATE_USER',
+    aliases: ['/blocker'],
+    usage: '/blocker @[org] [email] "Name" [title]',
+    example: '/blocker @Acme sam@acme.com "Sam Brown" Procurement',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract email
+      const emailMatch = afterOrg.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+      const email = emailMatch ? emailMatch[1] : undefined;
+      const afterEmail = emailMatch ? afterOrg.replace(emailMatch[0], '').trim() : afterOrg;
+
+      // Extract quoted name
+      const quotedMatch = afterEmail.match(/["']([^"']+)["']/);
+      let userName: string | undefined;
+      let afterName = afterEmail;
+
+      if (quotedMatch) {
+        userName = quotedMatch[1];
+        afterName = afterEmail.replace(quotedMatch[0], '').trim();
+      }
+
+      const role = afterName.trim() || undefined;
+
+      return {
+        org_name: org || undefined,
+        user_name: userName,
+        email,
+        role,
+        influence: 'blocker' as StakeholderInfluence,
+      };
+    },
+  },
+  // Stakeholder with influence role (CREATE_USER with configurable influence)
+  {
+    action: 'CREATE_USER',
+    aliases: ['/stakeholder', '/sh'],
+    usage: '/stakeholder @[org] [email] "Name" [title] [influence]',
+    example: '/stakeholder @Acme jane@acme.com "Jane Doe" CTO decision_maker',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract email
+      const emailMatch = afterOrg.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+      const email = emailMatch ? emailMatch[1] : undefined;
+      const afterEmail = emailMatch ? afterOrg.replace(emailMatch[0], '').trim() : afterOrg;
+
+      // Extract quoted name
+      const quotedMatch = afterEmail.match(/["']([^"']+)["']/);
+      let userName: string | undefined;
+      let afterName = afterEmail;
+
+      if (quotedMatch) {
+        userName = quotedMatch[1];
+        afterName = afterEmail.replace(quotedMatch[0], '').trim();
+      }
+
+      // Extract influence type
+      let influence: StakeholderInfluence = 'unknown';
+      let afterInfluence = afterName;
+      for (const [key, value] of Object.entries(INFLUENCE_MAP)) {
+        if (afterName.toLowerCase().includes(key)) {
+          influence = value;
+          afterInfluence = afterName.replace(new RegExp(`\\b${key}\\b`, 'i'), '').trim();
+          break;
+        }
+      }
+
+      const role = afterInfluence.trim() || undefined;
+
+      return {
+        org_name: org || undefined,
+        user_name: userName,
+        email,
+        role,
+        influence,
+      };
+    },
+  },
+  // Email activity shortcut (LOG_ACTIVITY with type=email)
+  {
+    action: 'LOG_ACTIVITY',
+    aliases: ['/email'],
+    usage: '/email @[org] - [subject/summary]',
+    example: '/email @Acme - sent pricing proposal',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      const hyphenIndex = afterOrg.indexOf('-');
+      let details: string | undefined;
+      let orgName = org;
+
+      if (hyphenIndex > 0) {
+        details = afterOrg.slice(hyphenIndex + 1).trim();
+        if (!orgName) {
+          orgName = afterOrg.slice(0, hyphenIndex).trim();
+        }
+      } else {
+        orgName = orgName || afterOrg.trim();
+      }
+
+      return {
+        org_name: orgName || undefined,
+        activity_type: 'email' as ActivityType,
+        details: details || 'Email sent',
+      };
+    },
+  },
+  // Demo activity shortcut (LOG_ACTIVITY with type=demo)
+  {
+    action: 'LOG_ACTIVITY',
+    aliases: ['/demo'],
+    usage: '/demo @[org] [duration] - [notes]',
+    example: '/demo @Acme 45min - showed new analytics features',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract duration
+      const { duration, remaining: afterDuration } = extractDuration(afterOrg);
+
+      const hyphenIndex = afterDuration.indexOf('-');
+      let details: string | undefined;
+      let orgName = org;
+
+      if (hyphenIndex > 0) {
+        details = afterDuration.slice(hyphenIndex + 1).trim();
+        if (!orgName) {
+          orgName = afterDuration.slice(0, hyphenIndex).trim();
+        }
+      } else {
+        orgName = orgName || afterDuration.trim();
+      }
+
+      // Include duration in details if provided
+      if (duration && details) {
+        details = `${duration}min demo - ${details}`;
+      } else if (duration) {
+        details = `${duration} minute demo`;
+      }
+
+      return {
+        org_name: orgName || undefined,
+        activity_type: 'demo' as ActivityType,
+        details: details || 'Demo conducted',
+      };
+    },
+  },
+  // Follow-up task creation (CREATE_FOLLOWUP action)
+  {
+    action: 'CREATE_FOLLOWUP',
+    aliases: ['/remind', '/reminder'],
+    usage: '/remind @[org] "task" [date] [priority]',
+    example: '/remind @Acme "Send proposal" tomorrow high',
+    parseArgs: (args) => {
+      const { org, remaining: afterOrg } = extractOrg(args);
+
+      // Extract quoted task title
+      const quotedMatch = afterOrg.match(/["']([^"']+)["']/);
+      let followupTitle: string | undefined;
+      let afterTitle = afterOrg;
+
+      if (quotedMatch) {
+        followupTitle = quotedMatch[1];
+        afterTitle = afterOrg.replace(quotedMatch[0], '').trim();
+      } else {
+        // If no quotes, take text before date keywords
+        followupTitle = afterOrg.split(/\b(today|tomorrow|next_week|monday|tuesday|wednesday|thursday|friday|\d{4}-\d{2}-\d{2})\b/i)[0].trim();
+        afterTitle = afterOrg.replace(followupTitle, '').trim();
+      }
+
+      // Extract date
+      const { date, remaining: afterDate } = extractRelativeDate(afterTitle);
+
+      // Extract priority
+      let priority: FollowupPriority = 'medium';
+      for (const [key, value] of Object.entries(FOLLOWUP_PRIORITY_MAP)) {
+        if (afterDate.toLowerCase().includes(key)) {
+          priority = value;
+          break;
+        }
+      }
+
+      return {
+        org_name: org || undefined,
+        followup_title: followupTitle || afterOrg.trim() || undefined,
+        followup_due_date: date || undefined,
+        followup_priority: priority,
       };
     },
   },

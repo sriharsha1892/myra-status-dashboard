@@ -1,5 +1,9 @@
 #!/usr/bin/env tsx
 /**
+ * @deprecated This CLI script is deprecated. Use the web UI instead:
+ *   - Navigate to /bulk-import for the unified import dashboard
+ *   - Use the "Smart Import" tool for auto-detection features
+ *
  * Smart Import Tool for Trial Organizations & Users
  *
  * Features:
@@ -15,6 +19,9 @@
  *   npm run smart-import <file.json>
  *   npm run smart-import --interactive
  */
+
+console.warn('\n⚠️  DEPRECATED: This CLI script is deprecated.');
+console.warn('   Use the web UI at /bulk-import instead.\n');
 
 import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';

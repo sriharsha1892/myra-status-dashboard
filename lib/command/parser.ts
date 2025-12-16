@@ -89,18 +89,33 @@ Users input brief notes about customer interactions, and you extract structured 
 AVAILABLE ACTIONS:
 
 === EXISTING ACTIONS ===
-1. LOG_ACTIVITY - Record user activity (queries run, logins, feature usage, demos, calls)
-   Trigger phrases: "ran a query", "logged in", "used", "demo", "called", "meeting"
+1. LOG_ACTIVITY - Record user activity (queries run, logins, feature usage)
+   Trigger phrases: "ran a query", "logged in", "used", "3 queries"
 
-2. UPDATE_DEAL - Update deal status and/or value (won/lost/negotiating + dollar amount)
+2. LOG_MEETING - Log a meeting with notes and summary (for demos, calls, meetings)
+   Trigger phrases: "meeting with", "demo with", "call with", "had a meeting", "45 min call", "demo went great"
+   Extract: meeting_type (demo/follow_up_call/check_in/technical_review/executive_briefing/other), meeting_duration (in minutes), meeting_summary
+   IMPORTANT: Use this for meetings, demos, and calls - NOT LOG_ACTIVITY
+
+3. ADD_DEAL_NOTE - Add a deal-specific note for tracking deal progress
+   Trigger phrases: "deal note", "deal update", "deal:", "budget approved", "contract signed", "waiting on legal"
+   Extract: deal_note (the note content)
+   Use this for tracking deal-specific updates and progress notes
+
+4. CREATE_FOLLOWUP - Create a follow-up task/reminder
+   Trigger phrases: "follow up with", "remind me to", "task:", "follow-up", "reminder", "schedule followup"
+   Extract: followup_title (task description), followup_due_date, followup_priority (low/medium/high/urgent)
+   Use this for creating future tasks and reminders
+
+5. UPDATE_DEAL - Update deal status and/or value (won/lost/negotiating + dollar amount)
    Trigger phrases: "won", "lost", "deal won", "deal lost", "closed deal", "contract value", "$", "pricing"
    Extract: deal_status (won/lost/negotiating/pending/on_hold), deal_value (in dollars)
    IMPORTANT: "won with contract value of $X" means deal_status="won" AND deal_value=X
 
-3. UPDATE_STAGE - Change organization lifecycle stage
+6. UPDATE_STAGE - Change organization lifecycle stage
    Trigger phrases: "trial ended", "trial expired", "became customer", "customer", "lost", "extended", "started trial"
 
-4. ADD_NOTE - Add general activity note
+7. ADD_NOTE - Add general activity note (not deal-specific)
    Trigger phrases: "note:", "discussed", "mentioned", "feedback", "issue"
 
 === CREATE ACTIONS ===
@@ -302,7 +317,7 @@ LIFECYCLE STAGES:
 
 OUTPUT FORMAT (JSON only, no markdown):
 {
-  "action": "LOG_ACTIVITY" | "UPDATE_DEAL" | "UPDATE_STAGE" | "ADD_NOTE" | "CREATE_ORG" | "CREATE_USER" | "CREATE_TICKET" | "CREATE_FEATURE_REQUEST" | "CREATE_ROADMAP_ITEM" | "CREATE_TIMELINE_EVENT" | "UPDATE_ORG" | "UPDATE_USER" | "ASSIGN_ACCOUNT_MANAGER" | "DELETE_ORG" | "DELETE_USER" | "DELETE_TICKET" | "DELETE_FEATURE_REQUEST" | "DELETE_ROADMAP_ITEM" | "DELETE_NOTE" | "DELETE_FOLLOWUP" | "CREATE_PROSPECT_ORG" | "ADD_PROSPECT_CONTACT" | "LOG_OUTREACH" | "LOG_RESPONSE" | "LOG_SCREENING" | "UPDATE_PROSPECT_STAGE" | "DISQUALIFY_PROSPECT" | "CONVERT_TO_TRIAL" | "UPDATE_DEAL_STAGE" | "CLOSE_DEAL_WON" | "CLOSE_DEAL_LOST" | "DEFER_DEAL",
+  "action": "LOG_ACTIVITY" | "LOG_MEETING" | "ADD_DEAL_NOTE" | "CREATE_FOLLOWUP" | "UPDATE_DEAL" | "UPDATE_STAGE" | "ADD_NOTE" | "CREATE_ORG" | "CREATE_USER" | "CREATE_TICKET" | "CREATE_FEATURE_REQUEST" | "CREATE_ROADMAP_ITEM" | "CREATE_TIMELINE_EVENT" | "UPDATE_ORG" | "UPDATE_USER" | "ASSIGN_ACCOUNT_MANAGER" | "DELETE_ORG" | "DELETE_USER" | "DELETE_TICKET" | "DELETE_FEATURE_REQUEST" | "DELETE_ROADMAP_ITEM" | "DELETE_NOTE" | "DELETE_FOLLOWUP" | "CREATE_PROSPECT_ORG" | "ADD_PROSPECT_CONTACT" | "LOG_OUTREACH" | "LOG_RESPONSE" | "LOG_SCREENING" | "UPDATE_PROSPECT_STAGE" | "DISQUALIFY_PROSPECT" | "CONVERT_TO_TRIAL" | "UPDATE_DEAL_STAGE" | "CLOSE_DEAL_WON" | "CLOSE_DEAL_LOST" | "DEFER_DEAL",
   "confidence": 0.0-1.0,
   "org_name": "extracted organization name or null",
   "user_name": "extracted person name or null",
@@ -317,6 +332,19 @@ OUTPUT FORMAT (JSON only, no markdown):
     "note_text": "text" or null,
     "date": "ISO date string or relative like 'yesterday'" or null,
     "details": "any additional context" or null,
+
+    // LOG_MEETING fields
+    "meeting_type": "demo|follow_up_call|check_in|technical_review|executive_briefing|other" or null,
+    "meeting_duration": number (in minutes) or null,
+    "meeting_summary": "meeting notes and summary" or null,
+
+    // ADD_DEAL_NOTE fields
+    "deal_note": "deal-specific note content" or null,
+
+    // CREATE_FOLLOWUP fields
+    "followup_title": "task/reminder description" or null,
+    "followup_due_date": "ISO date or relative date" or null,
+    "followup_priority": "low|medium|high|urgent" or null,
 
     // CREATE_ORG fields
     "website": "company website URL" or null,
@@ -666,6 +694,102 @@ Example 11: "Remove TechCorp from the list, they're not interested"
   "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": false, "ambiguousElements": [], "suggestions": []}
 }
 
+Example 12: "Demo with Acme went great, discussed pricing and roadmap"
+{
+  "action": "LOG_MEETING",
+  "confidence": 0.94,
+  "org_name": "Acme",
+  "user_name": null,
+  "fields": {
+    "meeting_type": "demo",
+    "meeting_summary": "discussed pricing and roadmap"
+  },
+  "reasoning": "Demo meeting with positive outcome - LOG_MEETING for meeting/demo activities",
+  "extracted_spans": [
+    {"text": "Demo", "type": "action", "start": 0, "end": 4},
+    {"text": "Acme", "type": "org", "start": 10, "end": 14}
+  ],
+  "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": false, "ambiguousElements": [], "suggestions": []}
+}
+
+Example 13: "45 min call with TechCorp about implementation timeline"
+{
+  "action": "LOG_MEETING",
+  "confidence": 0.93,
+  "org_name": "TechCorp",
+  "user_name": null,
+  "fields": {
+    "meeting_type": "follow_up_call",
+    "meeting_duration": 45,
+    "meeting_summary": "discussed implementation timeline"
+  },
+  "reasoning": "Phone call with duration - use LOG_MEETING for calls",
+  "extracted_spans": [
+    {"text": "45 min", "type": "value", "start": 0, "end": 6},
+    {"text": "call", "type": "action", "start": 7, "end": 11},
+    {"text": "TechCorp", "type": "org", "start": 17, "end": 25}
+  ],
+  "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": false, "ambiguousElements": [], "suggestions": []}
+}
+
+Example 14: "Deal note for Acme: Budget approved by CFO"
+{
+  "action": "ADD_DEAL_NOTE",
+  "confidence": 0.95,
+  "org_name": "Acme",
+  "user_name": null,
+  "fields": {
+    "deal_note": "Budget approved by CFO"
+  },
+  "reasoning": "Explicit deal note for tracking deal progress",
+  "extracted_spans": [
+    {"text": "Deal note", "type": "action", "start": 0, "end": 9},
+    {"text": "Acme", "type": "org", "start": 14, "end": 18}
+  ],
+  "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": false, "ambiguousElements": [], "suggestions": []}
+}
+
+Example 15: "Follow up with CloudSoft tomorrow about the proposal"
+{
+  "action": "CREATE_FOLLOWUP",
+  "confidence": 0.92,
+  "org_name": "CloudSoft",
+  "user_name": null,
+  "fields": {
+    "followup_title": "Follow up about the proposal",
+    "followup_due_date": "tomorrow",
+    "followup_priority": "medium"
+  },
+  "reasoning": "Creating a follow-up task with due date",
+  "extracted_spans": [
+    {"text": "Follow up", "type": "action", "start": 0, "end": 9},
+    {"text": "CloudSoft", "type": "org", "start": 15, "end": 24},
+    {"text": "tomorrow", "type": "date", "start": 25, "end": 33}
+  ],
+  "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": true, "ambiguousElements": [], "suggestions": []}
+}
+
+Example 16: "Remind me to send contract to DataFlow next week - urgent"
+{
+  "action": "CREATE_FOLLOWUP",
+  "confidence": 0.93,
+  "org_name": "DataFlow",
+  "user_name": null,
+  "fields": {
+    "followup_title": "Send contract",
+    "followup_due_date": "next week",
+    "followup_priority": "urgent"
+  },
+  "reasoning": "Reminder/task creation with priority flag",
+  "extracted_spans": [
+    {"text": "Remind me", "type": "action", "start": 0, "end": 9},
+    {"text": "DataFlow", "type": "org", "start": 30, "end": 38},
+    {"text": "next week", "type": "date", "start": 39, "end": 48},
+    {"text": "urgent", "type": "priority", "start": 51, "end": 57}
+  ],
+  "diagnostics": {"hasOrgIndicator": true, "hasActionVerb": true, "hasUserIndicator": false, "hasDateIndicator": true, "ambiguousElements": [], "suggestions": []}
+}
+
 Be strict about JSON format - no markdown code blocks, just raw JSON.`;
 
 // Build the full prompt with context
@@ -971,6 +1095,9 @@ export async function parseCommands(
 const VALID_ACTIONS: CommandAction[] = [
   // Existing
   'LOG_ACTIVITY',
+  'LOG_MEETING',
+  'ADD_DEAL_NOTE',
+  'CREATE_FOLLOWUP',
   'UPDATE_DEAL',
   'UPDATE_STAGE',
   'ADD_NOTE',
@@ -999,6 +1126,20 @@ const VALID_ACTIONS: CommandAction[] = [
   // Bulk actions (future)
   'BULK_UPDATE_STAGE',
   'BULK_ASSIGN_AM',
+  // Prospect lifecycle actions
+  'CREATE_PROSPECT_ORG',
+  'ADD_PROSPECT_CONTACT',
+  'LOG_OUTREACH',
+  'LOG_RESPONSE',
+  'LOG_SCREENING',
+  'UPDATE_PROSPECT_STAGE',
+  'DISQUALIFY_PROSPECT',
+  'CONVERT_TO_TRIAL',
+  // Deal outcome actions
+  'UPDATE_DEAL_STAGE',
+  'CLOSE_DEAL_WON',
+  'CLOSE_DEAL_LOST',
+  'DEFER_DEAL',
 ];
 
 function isValidAction(action: string): action is CommandAction {

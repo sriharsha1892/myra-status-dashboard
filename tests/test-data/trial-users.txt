@@ -1,0 +1,6 @@
+john.doe@acme.com
+Jane Smith <jane.smith@acme.com>
+CEO: Bob Johnson (bob.johnson@acme.com)
+Engineering Lead - Mike Developer <mike.dev@acme.com>
+sarah.analyst@acme.com (Data Analyst)
+Product Manager: Alice Wong alice.wong@acme.com

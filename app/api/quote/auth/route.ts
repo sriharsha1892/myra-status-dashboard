@@ -24,15 +24,6 @@ export async function POST(request: Request) {
     // Trim both to handle any whitespace issues
     const isCorrect = password.trim() === correctPassword.trim();
 
-    // Debug logging (remove after troubleshooting)
-    console.log('Auth attempt:', {
-      inputLength: password.length,
-      envLength: correctPassword.length,
-      inputTrimmedLength: password.trim().length,
-      envTrimmedLength: correctPassword.trim().length,
-      match: isCorrect,
-    });
-
     return NextResponse.json({ success: isCorrect });
   } catch (error) {
     console.error('Quote auth error:', error);

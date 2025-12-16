@@ -45,7 +45,15 @@ import OverviewTab from '@/components/OverviewTab';
 import PeopleEngagementTab from '@/components/PeopleEngagementTab';
 import UnifiedTimelineTab from '@/components/UnifiedTimelineTab';
 import ProspectInfoSection from '@/components/trial/ProspectInfoSection';
+import ProspectSidebar from '@/components/prospect/ProspectSidebar';
+import MeetingsTab from '@/components/prospect/MeetingsTab';
+import StakeholderMap from '@/components/stakeholder/StakeholderMap';
 import { prepareTrialOrgForUpdate, validateTrialOrgForm, validateTrialOrgDates } from '@/lib/trial-org-helpers';
+
+// Lazy load meeting modal
+const AddMeetingNoteModal = dynamic(() => import('@/components/AddMeetingNoteModal'), {
+  loading: () => null,
+});
 
 // Lazy load modals for code splitting - only loaded when triggered
 const DeleteOrganizationModal = dynamic(() => import('@/components/DeleteOrganizationModal'), {
@@ -67,7 +75,7 @@ const SetUserPasswordModal = dynamic(() => import('@/components/SetUserPasswordM
   loading: () => null,
 });
 
-type TabType = 'overview' | 'peopleEngagement' | 'timeline' | 'support';
+type TabType = 'overview' | 'peopleEngagement' | 'stakeholders' | 'meetings' | 'timeline' | 'support';
 
 const LIFECYCLE_STAGES = [
   { value: 'prospect', label: 'Prospect', color: 'text-gray-600 bg-gray-100' },
@@ -117,6 +125,7 @@ export default function TrialOrgPage() {
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showLogQueryModal, setShowLogQueryModal] = useState(false);
+  const [showAddMeetingModal, setShowAddMeetingModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [passwordUser, setPasswordUser] = useState<any>(null);
   const [isUpdatingOrg, setIsUpdatingOrg] = useState(false);
@@ -572,66 +581,108 @@ export default function TrialOrgPage() {
           </div>
         </div>
 
-        {/* Tab Navigation - 4 Consolidated Tabs */}
-        <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2 flex-wrap">
-          {([
-            { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
-            { id: 'peopleEngagement', label: 'People & Engagement', icon: Users, description: 'Stakeholders, users & activity' },
-            { id: 'timeline', label: 'Activity & Insights', icon: Activity, description: 'Timeline events, notes, and activity tracking' },
-            { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
-          ] as const).map(({ id, label, icon: Icon, description }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`
-                flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
-                ${activeTab === id
-                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-accent-500/30 scale-105'
-                  : 'text-gray-600 hover:bg-white/80'
-                }
-              `}
-              title={description}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{label}</span>
-              <span className="sm:hidden">{label.split(' ')[0]}</span>
-            </button>
-          ))}
-        </div>
+        {/* 2-Column CRM Layout */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - 300px fixed */}
+          <div className="w-[300px] flex-shrink-0 hidden lg:block">
+            <div className="sticky top-4">
+              <ProspectSidebar
+                orgId={orgId}
+                engagementScore={organization.engagement_score}
+                healthStatus={organization.health_status}
+                onAddContact={() => setShowAddUserModal(true)}
+                onEditDeal={() => {/* TODO: Add deal modal */}}
+                onAddTask={() => {/* TODO: Add follow-up modal */}}
+                onLogCall={() => setShowAddActivityModal(true)}
+                onSendEmail={() => {/* TODO: Email modal */}}
+                onScheduleMeeting={() => setShowAddMeetingModal(true)}
+                onAddNote={() => setShowAddActivityModal(true)}
+                onLogActivity={() => setShowAddActivityModal(true)}
+                onAIAssist={() => {/* TODO: AI assist */}}
+              />
+            </div>
+          </div>
 
-        {/* Tab Content */}
-        <div className="transition-all duration-300">
-          {activeTab === 'overview' && (
-            <OverviewTab
-              organization={organization}
-              orgId={orgId}
-            />
-          )}
+          {/* Main Content - Flexible width */}
+          <div className="flex-1 min-w-0">
+            {/* Tab Navigation - 4 Consolidated Tabs */}
+            <div className="mb-6 p-2 rounded-2xl backdrop-blur-xl bg-white/60 border border-white/40 inline-flex gap-2 flex-wrap">
+              {([
+                { id: 'overview', label: 'Overview', icon: Building2, description: 'Trial details & health' },
+                { id: 'peopleEngagement', label: 'People & Engagement', icon: Users, description: 'Stakeholders, users & activity' },
+                { id: 'stakeholders', label: 'Stakeholders', icon: Target, description: 'Stakeholder influence map' },
+                { id: 'meetings', label: 'Meetings', icon: Calendar, description: 'Meeting notes and summaries' },
+                { id: 'timeline', label: 'Activity & Insights', icon: Activity, description: 'Timeline events, notes, and activity tracking' },
+                { id: 'support', label: 'Support & Success', icon: Headphones, description: 'Customer support queries' },
+              ] as const).map(({ id, label, icon: Icon, description }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`
+                    flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-300
+                    ${activeTab === id
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-accent-500/30 scale-105'
+                      : 'text-gray-600 hover:bg-white/80'
+                    }
+                  `}
+                  title={description}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                  <span className="sm:hidden">{label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
 
-          {activeTab === 'peopleEngagement' && (
-            <PeopleEngagementTab
-              orgId={orgId}
-              users={users}
-              onAddUser={() => setShowAddUserModal(true)}
-              onEditUser={setEditingUser}
-              onDeleteUser={handleDeleteUser}
-              onSetPassword={setPasswordUser}
-            />
-          )}
+            {/* Tab Content */}
+            <div className="transition-all duration-300">
+              {activeTab === 'overview' && (
+                <OverviewTab
+                  organization={organization}
+                  orgId={orgId}
+                />
+              )}
 
-          {activeTab === 'timeline' && (
-            <UnifiedTimelineTab
-              orgId={orgId}
-              activities={activities}
-              users={users}
-              organization={organization}
-              onAddActivity={() => setShowAddActivityModal(true)}
-            />
-          )}
+              {activeTab === 'peopleEngagement' && (
+                <PeopleEngagementTab
+                  orgId={orgId}
+                  users={users}
+                  onAddUser={() => setShowAddUserModal(true)}
+                  onEditUser={setEditingUser}
+                  onDeleteUser={handleDeleteUser}
+                  onSetPassword={setPasswordUser}
+                />
+              )}
 
-          {activeTab === 'support' && (
-            <SupportQueriesTab orgId={orgId} />
-          )}
+              {activeTab === 'stakeholders' && (
+                <StakeholderMap
+                  orgId={orgId}
+                  onAddContact={() => setShowAddUserModal(true)}
+                />
+              )}
+
+              {activeTab === 'meetings' && (
+                <MeetingsTab
+                  orgId={orgId}
+                  onAddMeeting={() => setShowAddMeetingModal(true)}
+                />
+              )}
+
+              {activeTab === 'timeline' && (
+                <UnifiedTimelineTab
+                  orgId={orgId}
+                  activities={activities}
+                  users={users}
+                  organization={organization}
+                  onAddActivity={() => setShowAddActivityModal(true)}
+                />
+              )}
+
+              {activeTab === 'support' && (
+                <SupportQueriesTab orgId={orgId} />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -780,6 +831,13 @@ export default function TrialOrgPage() {
         orgId={orgId}
         isOpen={showAddUserModal}
         onClose={() => setShowAddUserModal(false)}
+        onSuccess={fetchData}
+      />
+
+      {/* Add Meeting Modal */}
+      <AddMeetingNoteModal
+        isOpen={showAddMeetingModal}
+        onClose={() => setShowAddMeetingModal(false)}
         onSuccess={fetchData}
       />
 

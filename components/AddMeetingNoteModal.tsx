@@ -12,6 +12,7 @@ import { formatErrorForToast, getErrorMessage } from '@/lib/errorHandler';
 import { showErrorWithReport } from '@/components/ErrorToastWithReport';
 import { useLoadingState } from '@/lib/hooks';
 import { createMeetingNoteSchema } from '@/lib/validation/schemas/engagement';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 interface ActionItem {
   description: string;
@@ -111,6 +112,7 @@ const AddMeetingNoteModal = memo(function AddMeetingNoteModal({
 
   // Use loading state hook
   const { isLoading, execute } = useLoadingState();
+  const [isExtracting, setIsExtracting] = useState(false);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<MeetingFormData>({
     resolver: zodResolver(createMeetingNoteSchema),
@@ -190,6 +192,82 @@ const AddMeetingNoteModal = memo(function AddMeetingNoteModal({
 
     setActionItems([...actionItems, ...newActionItems]);
     toast.success(`Added ${suggestions.length} suggested action items`);
+  };
+
+  const extractWithAI = async () => {
+    if (!meetingSummary.trim()) {
+      toast.error('Please enter a meeting summary first');
+      return;
+    }
+
+    setIsExtracting(true);
+    try {
+      const response = await fetch('/api/meetings/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meeting_summary: meetingSummary,
+          attendees: watch('attendees')?.split('\n').filter(Boolean) || [],
+          meeting_type: watch('meeting_type'),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Extraction failed');
+      }
+
+      const { data, meta } = result;
+
+      // Apply extracted data to form fields
+      let fieldsUpdated = 0;
+
+      if (data.pain_points && !painPoints.trim()) {
+        setPainPoints(data.pain_points);
+        fieldsUpdated++;
+      }
+
+      if (data.objections && !objections.trim()) {
+        setObjections(data.objections);
+        fieldsUpdated++;
+      }
+
+      if (data.positive_signals && !positiveSignals.trim()) {
+        setPositiveSignals(data.positive_signals);
+        fieldsUpdated++;
+      }
+
+      if (data.action_items && data.action_items.length > 0) {
+        // Add extracted action items to existing ones
+        const newItems = data.action_items.map((item: { description: string; assigned_to: string; due_date: string }) => ({
+          description: item.description,
+          assigned_to: item.assigned_to || watch('conducted_by') || '',
+          due_date: item.due_date || '',
+          status: 'pending' as const,
+        }));
+        setActionItems([...actionItems, ...newItems]);
+        fieldsUpdated += newItems.length;
+      }
+
+      if (fieldsUpdated > 0) {
+        toast.success(
+          `AI extracted ${fieldsUpdated} insight${fieldsUpdated !== 1 ? 's' : ''} from your summary`,
+          { icon: '✨' }
+        );
+      } else {
+        toast.success('AI analysis complete - no new insights to add');
+      }
+
+      if (meta?.warning) {
+        toast(meta.warning, { icon: '⚠️' });
+      }
+    } catch (error: unknown) {
+      console.error('AI extraction error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to extract insights');
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const resetAllFields = () => {
@@ -421,6 +499,30 @@ const AddMeetingNoteModal = memo(function AddMeetingNoteModal({
               minHeight="100px"
               showToolbar={true}
             />
+            {/* AI Extraction Button */}
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={extractWithAI}
+                disabled={isExtracting || !meetingSummary.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-purple-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              >
+                {isExtracting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Extracting...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Extract Insights with AI
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              AI will analyze your summary and auto-fill pain points, objections, positive signals, and action items
+            </p>
           </div>
 
           {/* Pain Points - Rich Text with @mentions */}

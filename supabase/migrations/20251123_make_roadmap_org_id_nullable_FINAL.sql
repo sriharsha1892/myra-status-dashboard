@@ -104,7 +104,6 @@ SELECT
   END) as max_priority_level,
   ARRAY_AGG(DISTINCT link_type) FILTER (WHERE link_type IS NOT NULL) as link_types
 FROM roadmap_org_links
-WHERE deleted_at IS NULL OR deleted_at IS NULL  -- Handle case where deleted_at doesn't exist
 GROUP BY roadmap_item_id;
 
 -- Step 6: Add helpful comments

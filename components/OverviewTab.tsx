@@ -1,7 +1,7 @@
 'use client';
 
-import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Video, CalendarClock, MessageSquare, Sparkles, Search } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { Building2, Calendar, User, Globe, RotateCcw, DollarSign, TrendingUp, Video, CalendarClock, MessageSquare, Sparkles, Search, Activity, AlertTriangle, CheckCircle2, XCircle, Loader2, RefreshCcw, Lightbulb } from 'lucide-react';
+import { format, differenceInDays, formatDistanceToNow } from 'date-fns';
 import TrialExtensionsTab from './TrialExtensionsTab';
 import UpdateDealStatusModal from './UpdateDealStatusModal';
 import MyraUsageWidget from './myra/MyraUsageWidget';
@@ -9,6 +9,7 @@ import { HealthStatusPrompt, DealMomentumPrompt } from './enrichment';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 interface OverviewTabProps {
   organization: any;
@@ -28,6 +29,7 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
   const [dealData, setDealData] = useState<any>(null);
   const [showDealModal, setShowDealModal] = useState(false);
   const [queryCount, setQueryCount] = useState<number>(0);
+  const [isRefreshingHealth, setIsRefreshingHealth] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -70,6 +72,31 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
     }
   };
 
+  const refreshHealthScore = async () => {
+    setIsRefreshingHealth(true);
+    try {
+      const response = await fetch('/api/trials/bulk-operations/health-scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ org_ids: [orgId], mode: 'selected' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Health score updated');
+        // Trigger a re-fetch of the organization data by reloading
+        window.location.reload();
+      } else {
+        toast.error(data.error || 'Failed to refresh health score');
+      }
+    } catch (error) {
+      console.error('Error refreshing health score:', error);
+      toast.error('Failed to refresh health score');
+    } finally {
+      setIsRefreshingHealth(false);
+    }
+  };
+
   if (!organization) {
     return <div className="text-gray-500">Loading...</div>;
   }
@@ -84,6 +111,28 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
     if (daysRemaining <= 3) return 'text-orange-600 bg-orange-100';
     if (daysRemaining <= 7) return 'text-yellow-600 bg-yellow-100';
     return 'text-green-600 bg-green-100';
+  };
+
+  const getHealthStatusConfig = (status: string) => {
+    switch (status) {
+      case 'healthy':
+        return { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100', border: 'border-emerald-200', gradient: 'from-emerald-50 to-green-50' };
+      case 'warning':
+        return { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-200', gradient: 'from-amber-50 to-yellow-50' };
+      case 'at-risk':
+        return { icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-100', border: 'border-orange-200', gradient: 'from-orange-50 to-red-50' };
+      case 'critical':
+        return { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200', gradient: 'from-red-50 to-rose-50' };
+      default:
+        return { icon: Activity, color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', gradient: 'from-gray-50 to-slate-50' };
+    }
+  };
+
+  const getEngagementScoreColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-600';
+    if (score >= 60) return 'text-amber-600';
+    if (score >= 40) return 'text-orange-600';
+    return 'text-red-600';
   };
 
   return (
@@ -155,28 +204,199 @@ export default function OverviewTab({ organization, orgId }: OverviewTabProps) {
         </div>
       </div>
 
+      {/* AI Health Score Dashboard */}
+      {organization.health_status || organization.engagement_score !== undefined ? (
+        <div className={`bg-gradient-to-br ${getHealthStatusConfig(organization.health_status).gradient} rounded-xl p-6 border ${getHealthStatusConfig(organization.health_status).border}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">AI Health Score</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {organization.last_health_check && (
+                <span className="text-xs text-gray-500">
+                  Updated {formatDistanceToNow(new Date(organization.last_health_check), { addSuffix: true })}
+                </span>
+              )}
+              <button
+                onClick={refreshHealthScore}
+                disabled={isRefreshingHealth}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isRefreshingHealth ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RefreshCcw className="w-3.5 h-3.5" />
+                )}
+                {isRefreshingHealth ? 'Analyzing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Health Status */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const StatusIcon = getHealthStatusConfig(organization.health_status).icon;
+                  return (
+                    <div className={`w-10 h-10 rounded-lg ${getHealthStatusConfig(organization.health_status).bg} ${getHealthStatusConfig(organization.health_status).color} flex items-center justify-center`}>
+                      <StatusIcon className="w-5 h-5" />
+                    </div>
+                  );
+                })()}
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Health Status</p>
+                  <p className={`text-lg font-bold capitalize ${getHealthStatusConfig(organization.health_status).color}`}>
+                    {organization.health_status?.replace('-', ' ') || 'Not analyzed'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Engagement Score */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Engagement Score</p>
+                  <p className={`text-2xl font-bold ${getEngagementScoreColor(organization.engagement_score || 0)}`}>
+                    {organization.engagement_score ?? '--'}
+                    <span className="text-sm font-normal text-gray-500">/100</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Issues Count */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg ${organization.health_issues?.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} flex items-center justify-center`}>
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Active Issues</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {organization.health_issues?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendations Count */}
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 font-medium">Recommendations</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {organization.health_recommendations?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Issues & Recommendations Details */}
+          {(organization.health_issues?.length > 0 || organization.health_recommendations?.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Issues */}
+              {organization.health_issues?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-red-200">
+                  <h4 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    Issues to Address
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {organization.health_issues.slice(0, 4).map((issue: string, i: number) => (
+                      <li key={i} className="text-sm text-red-700 flex items-start gap-2">
+                        <span className="text-red-400 mt-0.5">•</span>
+                        {issue}
+                      </li>
+                    ))}
+                    {organization.health_issues.length > 4 && (
+                      <li className="text-xs text-red-500 italic">
+                        +{organization.health_issues.length - 4} more issues
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {organization.health_recommendations?.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                    <Lightbulb className="w-4 h-4" />
+                    Recommendations
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {organization.health_recommendations.slice(0, 4).map((rec: string, i: number) => (
+                      <li key={i} className="text-sm text-blue-700 flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        {rec}
+                      </li>
+                    ))}
+                    {organization.health_recommendations.length > 4 && (
+                      <li className="text-xs text-blue-500 italic">
+                        +{organization.health_recommendations.length - 4} more recommendations
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* No Health Data - Show prompt to run analysis */
+        <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-gray-700" />
+              <h3 className="text-lg font-semibold text-gray-900">AI Health Score</h3>
+            </div>
+          </div>
+          <div className="text-center py-6">
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+              <Activity className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-gray-600 mb-3">No health analysis available yet</p>
+            <button
+              onClick={refreshHealthScore}
+              disabled={isRefreshingHealth}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isRefreshingHealth ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Run AI Analysis
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Inline Enrichment Prompts - Show when data is missing */}
-      {(!organization.health_status || !organization.deal_momentum) && (
+      {!organization.deal_momentum && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {!organization.health_status && (
-            <HealthStatusPrompt
-              orgId={orgId}
-              currentValue={organization.health_status}
-              onUpdate={() => {
-                // Force re-render by updating local state
-                // Parent component should refetch
-              }}
-            />
-          )}
-          {!organization.deal_momentum && (
-            <DealMomentumPrompt
-              orgId={orgId}
-              currentValue={organization.deal_momentum}
-              onUpdate={() => {
-                // Parent component should refetch
-              }}
-            />
-          )}
+          <DealMomentumPrompt
+            orgId={orgId}
+            currentValue={organization.deal_momentum}
+            onUpdate={() => {
+              // Parent component should refetch
+            }}
+          />
         </div>
       )}
 

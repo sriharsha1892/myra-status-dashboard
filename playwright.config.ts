@@ -5,12 +5,13 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 60000, // 60 seconds per test (AI imports take longer)
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -18,28 +19,17 @@ export default defineConfig({
   },
 
   projects: [
-    // Setup project for authentication
-    {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-    },
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Use stored auth state for all tests
-        storageState: 'playwright/.auth/user.json',
       },
-      dependencies: ['setup'],
     },
     {
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        // Use stored auth state for all tests
-        storageState: 'playwright/.auth/user.json',
       },
-      dependencies: ['setup'],
     },
   ],
 
