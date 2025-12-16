@@ -26,6 +26,7 @@ export interface QuoteFormData {
   rows: QuoteRow[];
   validUntil: string;         // ISO date, defaults to quoteDate + 30 days
   preparedBy: string;         // Account Manager name (optional)
+  preparedByEmail: string;    // Account Manager email (optional)
   showConfidential: boolean;  // Show CONFIDENTIAL watermark
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
 }

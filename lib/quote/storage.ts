@@ -53,6 +53,7 @@ export function loadDraft(): QuoteFormData | null {
         // Migrate from old quoteValidity to validUntil
         validUntil: parsed.validUntil ?? getDefaultValidUntil(quoteDate),
         preparedBy: parsed.preparedBy ?? '',
+        preparedByEmail: parsed.preparedByEmail ?? '',
         showConfidential: parsed.showConfidential ?? true,
         // Add dealContext for old drafts
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },

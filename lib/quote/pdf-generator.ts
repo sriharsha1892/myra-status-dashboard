@@ -606,7 +606,7 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   // Next Steps section
   y -= 20;
   y = drawSectionHeader(page2, 'Next Steps', y, fontBold);
-  y = drawWrappedText(page2, STATIC_CONTENT.nextSteps(data.preparedBy), MARGIN_LEFT, y, CONTENT_WIDTH, font, 9, PDF_COLORS.slate600);
+  y = drawWrappedText(page2, STATIC_CONTENT.nextSteps(data.preparedBy, data.preparedByEmail), MARGIN_LEFT, y, CONTENT_WIDTH, font, 9, PDF_COLORS.slate600);
 
   // Important Notice box
   y -= 24;
@@ -623,7 +623,7 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
   drawWrappedText(
     page2,
-    STATIC_CONTENT.importantNotice(data.preparedBy),
+    STATIC_CONTENT.importantNotice(data.preparedBy, data.preparedByEmail),
     MARGIN_LEFT + 10,
     y,
     CONTENT_WIDTH - 20,

@@ -587,6 +587,18 @@ export default function QuotePage() {
                       />
                     </div>
 
+                    {/* AM Email */}
+                    <div>
+                      <label className="block text-sm text-neutral-600 mb-1">AM Email</label>
+                      <input
+                        type="email"
+                        value={formData.preparedByEmail}
+                        onChange={(e) => updateField('preparedByEmail', e.target.value)}
+                        className={getInputClass('preparedByEmail', false)}
+                        placeholder="am@mordorintelligence.com"
+                      />
+                    </div>
+
                     {/* Confidential Watermark */}
                     <div className="md:col-span-2 flex items-center gap-3 pt-2">
                       <label className="relative inline-flex items-center cursor-pointer">

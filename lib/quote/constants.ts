@@ -60,9 +60,19 @@ export const STATIC_CONTENT = {
 
   expertReview: `Expert Review is integrated into the platform workflow. Send claims, files, or full conversations for review by domain specialists. Turnaround is 24-48 hours; async communication with assigned experts is available in-platform. Consulting hours apply flexibly across strategy, product, procurement, or corporate development for benchmarking, methodology, scenario analysis, or primary research support. Hour consumption is communicated before work commences.`,
 
-  nextSteps: (amName: string) => `Upon confirmation, we provision your environment and schedule onboarding. A Master Services Agreement will be shared for execution. Contact ${amName ? `${amName} (Designated Account Manager)` : 'your Account Manager'} to proceed.`,
+  nextSteps: (amName: string, amEmail: string) => {
+    const contact = amName
+      ? `${amName} (Designated Account Manager)${amEmail ? ` at ${amEmail}` : ''}`
+      : 'your Account Manager';
+    return `Upon confirmation, we provision your environment and schedule onboarding. A Master Services Agreement will be shared for execution. Contact ${contact} to proceed.`;
+  },
 
-  importantNotice: (amName: string) => `Important Notice: This quotation is for planning purposes and does not constitute a binding agreement. Final terms are subject to the executed Master Services Agreement. Pricing valid for the period stated; extensions require written confirmation. Expert Review turnaround times are service targets. For details, contact ${amName ? `${amName} (Designated Account Manager)` : 'your Account Manager'}.`,
+  importantNotice: (amName: string, amEmail: string) => {
+    const contact = amName
+      ? `${amName} (Designated Account Manager)${amEmail ? ` at ${amEmail}` : ''}`
+      : 'your Account Manager';
+    return `Important Notice: This quotation is for planning purposes and does not constitute a binding agreement. Final terms are subject to the executed Master Services Agreement. Pricing valid for the period stated; extensions require written confirmation. Expert Review turnaround times are service targets. For details, contact ${contact}.`;
+  },
 
   footerLine1: 'ISO 9001:2015 Certified · ESOMAR Corporate Member · MRSI Certified · Great Place to Work Certified',
   footerLine2: 'myRA AI® is a registered trademark.',
@@ -159,6 +169,7 @@ export const DEFAULT_QUOTE_FORM: Omit<import('./types').QuoteFormData, 'quoteDat
     },
   ],
   preparedBy: '',
+  preparedByEmail: '',
   showConfidential: true,
   dealContext: DEFAULT_DEAL_CONTEXT,
 };
