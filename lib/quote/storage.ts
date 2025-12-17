@@ -1,5 +1,5 @@
 import type { QuoteFormData, QuoteHistoryEntry } from './types';
-import { DEFAULT_DEAL_CONTEXT, ACCOUNT_MANAGERS } from './constants';
+import { DEFAULT_DEAL_CONTEXT, ACCOUNT_MANAGERS, DEFAULT_PAYMENT_TERMS } from './constants';
 
 // Helper to lookup AM email by name
 function getAMEmail(name: string): string {
@@ -68,6 +68,8 @@ export function loadDraft(): QuoteFormData | null {
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },
         // Add additionalHourRate for old drafts
         additionalHourRate: parsed.additionalHourRate ?? '',
+        // Add paymentTerms for old drafts
+        paymentTerms: parsed.paymentTerms ?? { ...DEFAULT_PAYMENT_TERMS },
       };
     }
   } catch (error) {
