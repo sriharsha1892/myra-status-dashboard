@@ -6,6 +6,17 @@ export interface QuoteRow {
   offerPrice: string;     // numeric, e.g., "120000"
 }
 
+// Payment terms types
+export type PaymentFrequency = 'annual' | 'semi-annual' | 'quarterly' | 'monthly';
+export type PaymentBasis = 'immediate' | 'invoice' | 'msa';
+export type NetTerms = 'net-30' | 'net-60' | 'net-90';
+
+export interface PaymentTerms {
+  frequency: PaymentFrequency;
+  basis: PaymentBasis;
+  netTerms?: NetTerms;  // Only applicable when basis is 'invoice' or 'msa'
+}
+
 export type DiscountReason = 'volume' | 'strategic' | 'competitor_match' | 'renewal' | 'pilot' | 'other';
 export type Urgency = 'standard' | 'urgent' | 'flexible';
 
@@ -31,6 +42,7 @@ export interface QuoteFormData {
   showUsersColumn: boolean;   // Show Users column in investment table
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
   additionalHourRate: string; // Optional per-analyst-hour rate for additional hours
+  paymentTerms: PaymentTerms; // Payment frequency and terms
 }
 
 export interface QuoteHistoryEntry {

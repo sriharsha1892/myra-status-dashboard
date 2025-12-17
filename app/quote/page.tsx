@@ -15,10 +15,11 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRightLeft,
+  FileCheck,
 } from 'lucide-react';
-import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency } from '@/lib/quote/types';
+import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
-import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES } from '@/lib/quote/constants';
+import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES, PAYMENT_FREQUENCY_OPTIONS, PAYMENT_BASIS_OPTIONS, NET_TERMS_OPTIONS, DEFAULT_PAYMENT_TERMS } from '@/lib/quote/constants';
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
@@ -156,6 +157,7 @@ export default function QuotePage() {
       validUntil: getDefaultValidUntil(quoteDate),
       rows: [...DEFAULT_QUOTE_FORM.rows],
       dealContext: { ...DEFAULT_DEAL_CONTEXT },
+      paymentTerms: { ...DEFAULT_PAYMENT_TERMS },
     };
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -166,6 +168,7 @@ export default function QuotePage() {
   const [pdfFilename, setPdfFilename] = useState('');
   const [historyRefresh, setHistoryRefresh] = useState(0);
   const [dealContextOpen, setDealContextOpen] = useState(false);
+  const [paymentTermsOpen, setPaymentTermsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [customTermRows, setCustomTermRows] = useState<Set<number>>(new Set());
@@ -291,10 +294,12 @@ export default function QuotePage() {
       validUntil: getDefaultValidUntil(quoteDate),
       rows: [...DEFAULT_QUOTE_FORM.rows],
       dealContext: { ...DEFAULT_DEAL_CONTEXT },
+      paymentTerms: { ...DEFAULT_PAYMENT_TERMS },
     });
     setErrors({});
     setTouched({});
     setDealContextOpen(false);
+    setPaymentTermsOpen(false);
     toast.success('Form cleared');
   }, []);
 
@@ -307,6 +312,25 @@ export default function QuotePage() {
       ...prev,
       dealContext: { ...prev.dealContext, [field]: value },
     }));
+  }, []);
+
+  // Update payment terms field
+  const updatePaymentTerms = useCallback(<K extends keyof PaymentTerms>(
+    field: K,
+    value: PaymentTerms[K]
+  ) => {
+    setFormData((prev) => {
+      const newTerms = { ...prev.paymentTerms, [field]: value };
+      // Clear netTerms if basis is changed to immediate
+      if (field === 'basis' && value === 'immediate') {
+        delete newTerms.netTerms;
+      }
+      // Set default netTerms if basis is changed to invoice or msa
+      if (field === 'basis' && (value === 'invoice' || value === 'msa') && !prev.paymentTerms.netTerms) {
+        newTerms.netTerms = 'net-60';
+      }
+      return { ...prev, paymentTerms: newTerms };
+    });
   }, []);
 
   // Handle currency change with conversion prompt
@@ -1192,6 +1216,101 @@ export default function QuotePage() {
                   )}
                 </div>
 
+                {/* Payment Terms (Collapsible) */}
+                <div className="border border-neutral-200 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentTermsOpen(!paymentTermsOpen)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-neutral-50 hover:bg-neutral-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-neutral-700">Payment Terms</h3>
+                      <span className="px-1.5 py-0.5 text-xs bg-violet-100 text-violet-700 rounded">
+                        {PAYMENT_FREQUENCY_OPTIONS.find(o => o.value === formData.paymentTerms.frequency)?.label || 'Annual'}
+                        {formData.paymentTerms.basis !== 'immediate' && formData.paymentTerms.netTerms && (
+                          <>, {NET_TERMS_OPTIONS.find(o => o.value === formData.paymentTerms.netTerms)?.label}</>
+                        )}
+                      </span>
+                    </div>
+                    {paymentTermsOpen ? (
+                      <ChevronUp className="w-4 h-4 text-neutral-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-neutral-500" />
+                    )}
+                  </button>
+                  {paymentTermsOpen && (
+                    <div className="p-4 space-y-4 bg-white border-t border-neutral-200">
+                      <p className="text-xs text-neutral-500">
+                        Payment schedule shown in the PDF under Commercial Terms.
+                      </p>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {/* Payment Frequency */}
+                        <div>
+                          <label className="block text-sm text-neutral-600 mb-1">Payment Frequency</label>
+                          <select
+                            value={formData.paymentTerms.frequency}
+                            onChange={(e) => updatePaymentTerms('frequency', e.target.value as PaymentFrequency)}
+                            className={getInputClass('paymentFrequency', false)}
+                          >
+                            {PAYMENT_FREQUENCY_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Payment Basis */}
+                        <div>
+                          <label className="block text-sm text-neutral-600 mb-1">Payment Due</label>
+                          <select
+                            value={formData.paymentTerms.basis}
+                            onChange={(e) => updatePaymentTerms('basis', e.target.value as PaymentBasis)}
+                            className={getInputClass('paymentBasis', false)}
+                          >
+                            {PAYMENT_BASIS_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Net Terms (conditional) */}
+                        {formData.paymentTerms.basis !== 'immediate' && (
+                          <div>
+                            <label className="block text-sm text-neutral-600 mb-1">Net Terms</label>
+                            <select
+                              value={formData.paymentTerms.netTerms || 'net-60'}
+                              onChange={(e) => updatePaymentTerms('netTerms', e.target.value as NetTerms)}
+                              className={getInputClass('netTerms', false)}
+                            >
+                              {NET_TERMS_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Preview of billing text */}
+                      <div className="mt-3 p-3 bg-neutral-50 rounded-lg">
+                        <p className="text-xs text-neutral-500 mb-1">Preview in PDF:</p>
+                        <p className="text-sm text-neutral-700 font-medium">
+                          Billing: {PAYMENT_FREQUENCY_OPTIONS.find(o => o.value === formData.paymentTerms.frequency)?.label}
+                          {formData.paymentTerms.basis === 'immediate' ? (
+                            ', invoiced upfront'
+                          ) : (
+                            <>, {NET_TERMS_OPTIONS.find(o => o.value === formData.paymentTerms.netTerms)?.label || 'Net 60'} {formData.paymentTerms.basis === 'invoice' ? 'from invoice date' : 'from MSA execution'}</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
                   <button
@@ -1252,6 +1371,24 @@ export default function QuotePage() {
               onDuplicateQuote={handleDuplicateQuote}
               refreshTrigger={historyRefresh}
             />
+
+            {/* MSA Generator Link */}
+            <a
+              href="/quote/msa"
+              className="block bg-gradient-to-r from-violet-50 to-violet-100 rounded-xl border border-violet-200 p-4 hover:from-violet-100 hover:to-violet-150 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-violet-600 flex items-center justify-center group-hover:bg-violet-700 transition-colors">
+                  <FileCheck className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-violet-800">Create MSA</h3>
+                  <p className="text-sm text-violet-600">
+                    Generate Master Services Agreement
+                  </p>
+                </div>
+              </div>
+            </a>
 
             {/* Tips Card */}
             <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">

@@ -1,5 +1,5 @@
 import { rgb } from 'pdf-lib';
-import type { QuoteRow, DiscountReason, Urgency } from './types';
+import type { QuoteRow, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from './types';
 
 // Brand colors (RGB 0-1 for pdf-lib)
 export const PDF_COLORS = {
@@ -147,6 +147,45 @@ export const URGENCY_OPTIONS: { value: Urgency; label: string }[] = [
   { value: 'flexible', label: 'Flexible' },
 ];
 
+// Payment frequency options
+export const PAYMENT_FREQUENCY_OPTIONS: { value: PaymentFrequency; label: string }[] = [
+  { value: 'annual', label: 'Annual' },
+  { value: 'semi-annual', label: 'Half-Yearly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+// Payment basis options (when payment is due)
+export const PAYMENT_BASIS_OPTIONS: { value: PaymentBasis; label: string; description: string }[] = [
+  { value: 'immediate', label: 'Immediate', description: 'Payment due upfront before access' },
+  { value: 'invoice', label: 'Upon Invoice', description: 'Payment due X days after invoice date' },
+  { value: 'msa', label: 'Upon MSA', description: 'Payment due X days after MSA execution' },
+];
+
+// Net terms options (for invoice/msa-based payments)
+export const NET_TERMS_OPTIONS: { value: NetTerms; label: string }[] = [
+  { value: 'net-30', label: 'Net 30' },
+  { value: 'net-60', label: 'Net 60' },
+  { value: 'net-90', label: 'Net 90' },
+];
+
+// Default payment terms
+export const DEFAULT_PAYMENT_TERMS: PaymentTerms = {
+  frequency: 'annual',
+  basis: 'immediate',
+};
+
+// Helper to generate billing text from payment terms
+export function getBillingText(terms: PaymentTerms): string {
+  const freqLabel = PAYMENT_FREQUENCY_OPTIONS.find(o => o.value === terms.frequency)?.label || 'Annual';
+  if (terms.basis === 'immediate') {
+    return `${freqLabel}, invoiced upfront`;
+  }
+  const netLabel = NET_TERMS_OPTIONS.find(o => o.value === terms.netTerms)?.label || 'Net 30';
+  const basisLabel = terms.basis === 'invoice' ? 'from invoice date' : 'from MSA execution';
+  return `${freqLabel}, ${netLabel} ${basisLabel}`;
+}
+
 // Term options for investment table dropdown
 export const TERM_OPTIONS: { value: string; label: string }[] = [
   { value: '1-Year', label: '1-Year' },
@@ -207,6 +246,7 @@ export const DEFAULT_QUOTE_FORM: Omit<import('./types').QuoteFormData, 'quoteDat
   showUsersColumn: true,
   dealContext: DEFAULT_DEAL_CONTEXT,
   additionalHourRate: '',
+  paymentTerms: DEFAULT_PAYMENT_TERMS,
 };
 
 // Common company suffixes to exclude from client code generation

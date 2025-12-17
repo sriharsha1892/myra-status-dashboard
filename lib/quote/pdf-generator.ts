@@ -9,6 +9,8 @@ import {
   CONTENT_WIDTH,
   STATIC_CONTENT,
   COMPANY_SUFFIXES,
+  getBillingText,
+  DEFAULT_PAYMENT_TERMS,
 } from './constants';
 
 // Currency formatting
@@ -582,8 +584,11 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   y -= 16;
   y = drawSectionHeader(page2, 'Commercial Terms', y, fontBold);
 
+  // Use dynamic billing text from payment terms, or fall back to default
+  const billingText = getBillingText(data.paymentTerms || DEFAULT_PAYMENT_TERMS);
+
   const terms = [
-    { label: 'Billing', value: STATIC_CONTENT.commercialTerms.billing },
+    { label: 'Billing', value: billingText },
     { label: 'Licensing', value: STATIC_CONTENT.commercialTerms.licensing },
     { label: 'Provisioning', value: STATIC_CONTENT.commercialTerms.provisioning },
     { label: 'Valid Until', value: formatDate(data.validUntil) },
