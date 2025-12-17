@@ -62,13 +62,13 @@ export default function GlobalRoadmapPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/support/login');
+      router.push('/');
     } else if (!authLoading && user && role?.toLowerCase() === 'account manager') {
       // Account Managers cannot access roadmap
-      router.push('/support/dashboard');
+      router.push('/');
     } else if (!authLoading && user && role?.toLowerCase() === 'admin' && !is_super_admin) {
       // Regular admins cannot access roadmap - only super admins
-      router.push('/support/dashboard');
+      router.push('/');
     }
   }, [user, authLoading, role, is_super_admin, router]);
 

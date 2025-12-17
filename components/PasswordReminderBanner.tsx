@@ -26,7 +26,8 @@ export default function PasswordReminderBanner({ userEmail }: PasswordReminderBa
   };
 
   const handleChangePassword = () => {
-    router.push('/support/profile');
+    // Profile page no longer exists - this banner can be dismissed
+    handleDismiss();
   };
 
   if (isDismissed) {

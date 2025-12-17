@@ -114,7 +114,7 @@ export function useAuth(): UseAuthReturn {
   const signOut = async () => {
     const supabase = getSupabase();
     await supabase.auth.signOut();
-    router.push('/support/login');
+    router.push('/');
   };
 
   return {
