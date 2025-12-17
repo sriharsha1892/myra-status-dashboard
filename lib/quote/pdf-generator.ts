@@ -405,8 +405,8 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   });
 
   const headers = showUsers
-    ? ['Term', 'Users', 'Consulting Hours', 'List Price', 'Exclusive Offer']
-    : ['Term', 'Consulting Hours', 'List Price', 'Exclusive Offer'];
+    ? ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year']
+    : ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
   let colX = tableX + 6;
   for (let i = 0; i < headers.length; i++) {
     page1.drawText(headers[i], {

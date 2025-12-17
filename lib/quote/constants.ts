@@ -96,7 +96,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       {
         term: '1-Year',
         users: '10',
-        consultingHours: '500/yr',
+        consultingHours: '500/year',
         listPrice: '75000',
         offerPrice: '60000',
       },
@@ -109,7 +109,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       {
         term: '2-Year',
         users: '25',
-        consultingHours: '1,000/yr',
+        consultingHours: '1,000/year',
         listPrice: '250000',
         offerPrice: '200000',
       },
@@ -122,7 +122,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       {
         term: '3-Year',
         users: '50',
-        consultingHours: '2,000/yr',
+        consultingHours: '2,000/year',
         listPrice: '600000',
         offerPrice: '480000',
       },

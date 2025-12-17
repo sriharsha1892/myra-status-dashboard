@@ -799,7 +799,7 @@ export default function QuotePage() {
                           )}
                           <th className="px-3 py-2 text-left font-medium">Consulting Hours</th>
                           <th className="px-3 py-2 text-left font-medium">List Price</th>
-                          <th className="px-3 py-2 text-left font-medium">Exclusive Offer</th>
+                          <th className="px-3 py-2 text-left font-medium">Promotional Price/Year</th>
                           <th className="px-3 py-2 text-center font-medium">Discount</th>
                           <th className="px-3 py-2 text-center font-medium rounded-tr-lg w-10"></th>
                         </tr>
@@ -865,7 +865,7 @@ export default function QuotePage() {
                                   value={row.consultingHours}
                                   onChange={(e) => updateRow(index, 'consultingHours', e.target.value)}
                                   className="w-full px-2 py-1.5 text-sm border border-neutral-200 rounded focus:outline-none focus:border-violet-500"
-                                  placeholder="500/yr"
+                                  placeholder="500/year"
                                 />
                               </td>
                               <td className="px-2 py-2">
@@ -1021,7 +1021,7 @@ export default function QuotePage() {
                                 value={row.consultingHours}
                                 onChange={(e) => updateRow(index, 'consultingHours', e.target.value)}
                                 className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500 bg-white"
-                                placeholder="500/yr"
+                                placeholder="500/year"
                               />
                             </div>
                           </div>
@@ -1050,7 +1050,7 @@ export default function QuotePage() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs text-neutral-500 mb-1">Exclusive Offer</label>
+                              <label className="block text-xs text-neutral-500 mb-1">Promotional Price/Year</label>
                               <input
                                 type="text"
                                 value={row.offerPrice}
