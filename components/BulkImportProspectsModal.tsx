@@ -188,13 +188,7 @@ export default function BulkImportProspectsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 flex justify-between items-center">
-          <a
-            href="/support/admin/imports"
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            Go to Advanced Import
-          </a>
+        <div className="p-6 border-t border-gray-200 flex justify-end items-center">
           <div className="flex gap-3">
             <button
               onClick={onClose}
