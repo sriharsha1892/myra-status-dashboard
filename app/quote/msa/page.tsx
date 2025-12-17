@@ -372,7 +372,7 @@ export default function MSAPage() {
               href="/quote"
               className="text-sm text-violet-600 hover:text-violet-700 font-medium"
             >
-              Back to Quote Generator
+              ← Back to Sales Documents
             </a>
           </div>
         </div>
@@ -1022,7 +1022,7 @@ export default function MSAPage() {
 
             {/* Quick Link to Quote */}
             <a
-              href="/quote"
+              href="/quote/cost"
               className="block bg-gradient-to-r from-violet-50 to-violet-100 rounded-xl border border-violet-200 p-6 hover:from-violet-100 hover:to-violet-150 transition-colors"
             >
               <h3 className="font-semibold text-violet-800 mb-1">Need a Quote First?</h3>
