@@ -301,14 +301,14 @@ export const MSA_SECTIONS = {
     intro: 'For purposes of this Agreement, the following capitalized terms shall have the meanings set forth below:',
     terms: [
       { term: '"Affiliate"', definition: 'means any entity that directly or indirectly controls, is controlled by, or is under common control with a Party.' },
-      { term: '"AI Outputs"', definition: 'means insights, analytics, reports, forecasts, or any other content generated through the use of the myRA AI™ Platform.' },
+      { term: '"AI Outputs"', definition: 'means insights, analytics, reports, forecasts, or any other content generated through the use of the myRA AI® Platform.' },
       { term: '"Authorized Users"', definition: 'means employees, agents, or contractors of Customer authorized to access and use the Services pursuant to this Agreement.' },
       { term: '"Confidential Information"', definition: 'shall have the meaning set forth in Section 10 of this Agreement.' },
-      { term: '"Customer Data"', definition: 'means all electronic data, content, or information submitted, uploaded, or transmitted by Customer or its Authorized Users through the myRA AI™ Platform.' },
+      { term: '"Customer Data"', definition: 'means all electronic data, content, or information submitted, uploaded, or transmitted by Customer or its Authorized Users through the myRA AI® Platform.' },
       { term: '"Documentation"', definition: 'means the manuals, user guides, and technical specifications provided by Mordor relating to the Services.' },
       { term: '"Intellectual Property Rights"', definition: 'means all rights in patents, copyrights, trade secrets, trademarks, moral rights, designs, know-how, and other proprietary rights.' },
       { term: '"Order Form"', definition: 'means the executed order or subscription form specifying details such as Services, Subscription Term, Fees, and Effective Date.' },
-      { term: '"Platform" or "myRA AI™"', definition: 'means Mordor\'s proprietary AI-driven SaaS platform that delivers research analytics, forecasting, and data-driven insights.' },
+      { term: '"Platform" or "myRA AI®"', definition: 'means Mordor\'s proprietary AI-driven SaaS platform that delivers research analytics, forecasting, and data-driven insights.' },
       { term: '"Services"', definition: 'means the provision of access to the Platform, including hosting, maintenance, support, and AI-driven analytics.' },
       { term: '"Subscription Term"', definition: 'means the duration for which Customer is entitled to use the Services, as specified in the applicable Order Form.' },
       { term: '"Third-Party Data"', definition: 'means any data, content, or information that is (a) sourced, licensed, or procured by Mordor from third-party providers and integrated within the Platform through MCP tools, APIs, or other mechanisms under express authorization; and (b) data or content referenced, derived, or utilized by Mordor\'s AI systems from publicly available sources on the internet to generate outputs, insights, or analyses, provided that such use does not involve any unauthorized extraction, reproduction, or redistribution of third-party proprietary content.' },
@@ -318,12 +318,12 @@ export const MSA_SECTIONS = {
   // Section 1: Grant of License
   grantOfLicense: {
     title: '1. Grant of License',
-    content: `1.1 License Type: Subject to the terms of this Agreement, Mordor Intelligence Pvt. Ltd. ("Licensor") hereby grants to the Client ("Licensee") a full use, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the myRA AI™ Software-as-a-Service platform ("Platform") solely for Licensee's internal business purposes during the Term of this Agreement.
+    content: `1.1 License Type: Subject to the terms of this Agreement, Mordor Intelligence Pvt. Ltd. ("Licensor") hereby grants to the Client ("Licensee") a full use, non-exclusive, non-transferable, non-sublicensable, revocable license to access and use the myRA AI® Software-as-a-Service platform ("Platform") solely for Licensee's internal business purposes during the Term of this Agreement.
 
 1.2 Authorized Users: Access shall be limited to the number of authorized users ("Authorized Users") specified in the Order Form (Attached as Annexure B). Each Authorized User shall be an employee, consultant, or contractor of the Licensee who has been assigned unique login credentials. Licensee shall ensure that all Authorized Users comply with this Agreement, and any breach by an Authorized User shall be deemed a breach by Licensee.
 
 1.3 Access Rights: The License entitles the Licensee to use:
-The myRA AI™ interface and dashboards;
+The myRA AI® interface and dashboards;
 Reports, analytics, summaries, and AI-generated outputs produced by the Platform;
 Associated databases, documentation, and APIs (if applicable);
 Updates and new features released by Licensor during the Term.
@@ -338,7 +338,7 @@ Updates and new features released by Licensor during the Term.
     title: '2. Permitted Use',
     content: `2.1 Licensee may:
 Access, view, and download data, analytics, and reports for internal research and business planning.
-Generate outputs using the AI features of myRA AI™, including summaries, insights, visualizations, or recommendations ("AI Outputs").
+Generate outputs using the AI features of myRA AI®, including summaries, insights, visualizations, or recommendations ("AI Outputs").
 Use AI Outputs for internal decision-making, strategy, presentations, and reports circulated within Licensee's organization.
 Users may use the Platform and AI Outputs for internal business purposes, including analysis, benchmarking, and training of internal systems.
 
@@ -650,7 +650,7 @@ Mordor warrants that:
 
 a. the Customer's or its Authorized Users' access to or use of the Services, Platform, or documentation in a manner not expressly authorized under this Agreement;
 b. any violation of applicable law, rule, or regulation by the Customer or its Authorized Users, including but not limited to data protection, intellectual property, or export control laws;
-c. any disputes between the Customer and its own clients, end users, employees, contractors, or data subjects relating to the Customer's use of the Services or outputs generated by the myRA AI™ platform;
+c. any disputes between the Customer and its own clients, end users, employees, contractors, or data subjects relating to the Customer's use of the Services or outputs generated by the myRA AI® platform;
 d. any security incident, breach, or loss of Customer Data resulting from the Customer's systems, configurations, integrations, or acts or omissions that is the sole adjudicated fault of Customer.
 
 Indemnification Procedure: a. Mordor shall promptly notify the Customer of any claim for which it seeks indemnification (a "Claim"), provided that failure to give prompt notice shall not relieve the Customer of its obligations under this Clause, except to the extent the Customer is materially prejudiced thereby.
@@ -680,7 +680,7 @@ Mordor shall defend, indemnify, and hold harmless Customer and its officers, dir
   // Section 19: Disclaimers Related To AI Outputs
   aiDisclaimers: {
     title: '19. Disclaimers Related To AI Outputs',
-    content: `19.1 No Professional Advice: AI Outputs generated by myRA AI™ are for informational purposes only and shall not constitute investment, legal, medical, or professional advice. Customer remains solely responsible for decisions made using such Outputs.
+    content: `19.1 No Professional Advice: AI Outputs generated by myRA AI® are for informational purposes only and shall not constitute investment, legal, medical, or professional advice. Customer remains solely responsible for decisions made using such Outputs.
 
 19.2 Bias, Accuracy, and Reliability: AI models may rely on external data sources that could contain errors or biases. Mordor disclaims any liability for inaccuracies or incompleteness in AI Outputs.
 
@@ -956,5 +956,5 @@ export const DEFAULT_MSA_FORM: Omit<MSAFormData, 'effectiveDate'> = {
 // Footer content
 export const MSA_FOOTER = {
   certifications: 'ISO 9001:2015 Certified | ESOMAR Corporate Member | MRSI Certified | Great Place to Work Certified',
-  trademark: 'myRA AI™ is a registered trademark of Mordor Intelligence Pvt. Ltd.',
+  trademark: 'myRA AI® is a registered trademark of Mordor Intelligence Pvt. Ltd.',
 };

@@ -4,6 +4,7 @@ export interface QuoteRow {
   consultingHours: string; // e.g., "1,000/yr"
   listPrice: string;      // numeric, e.g., "150000" (kept for backward compat)
   offerPrice: string;     // numeric, e.g., "120000"
+  additionalHourRate?: string; // Per-row rate for additional consulting hours (optional)
 }
 
 // Payment terms types

@@ -42,6 +42,28 @@ export function loadMSADraft(): MSAFormData | null {
       const effectiveDate = parsed.effectiveDate ?? new Date().toISOString().split('T')[0];
 
       // Ensure backward compatibility with drafts missing new fields
+      // Convert legacy selectedRowIndex to selectedRowIndices
+      let selectedRowIndices: number[] = [];
+      if (parsed.selectedRowIndices && Array.isArray(parsed.selectedRowIndices)) {
+        selectedRowIndices = parsed.selectedRowIndices;
+      } else if (typeof parsed.selectedRowIndex === 'number' && parsed.selectedRowIndex >= 0) {
+        // Legacy format: convert single index to array
+        selectedRowIndices = [parsed.selectedRowIndex];
+      }
+
+      // Ensure orderFormRows have additionalHourRate
+      const orderFormRows = (parsed.orderFormRows ?? DEFAULT_MSA_FORM.orderFormRows).map((row: unknown) => {
+        const r = row as Record<string, unknown>;
+        return {
+          term: r.term ?? '',
+          users: r.users ?? '',
+          consultingHours: r.consultingHours ?? '',
+          listPrice: r.listPrice ?? '',
+          offerPrice: r.offerPrice ?? '',
+          additionalHourRate: r.additionalHourRate ?? '',
+        };
+      });
+
       return {
         clientLegalName: parsed.clientLegalName ?? '',
         clientAddress: parsed.clientAddress ?? '',
@@ -53,11 +75,11 @@ export function loadMSADraft(): MSAFormData | null {
         effectiveDate,
         jurisdiction: parsed.jurisdiction ?? '',
         currency: parsed.currency ?? 'USD',
-        orderFormRows: parsed.orderFormRows ?? DEFAULT_MSA_FORM.orderFormRows,
-        selectedRowIndex: parsed.selectedRowIndex ?? -1,
+        orderFormRows,
+        selectedRowIndices,
         showUsersColumn: parsed.showUsersColumn ?? true,
         consultingHoursIncluded: parsed.consultingHoursIncluded ?? '',
-        additionalHourRate: parsed.additionalHourRate ?? '',
+        // Note: additionalHourRate is now per-row
         includeConsultingServices: parsed.includeConsultingServices ?? true,
         specialTerms: parsed.specialTerms ?? '',
         preparedBy: parsed.preparedBy ?? '',
@@ -107,8 +129,13 @@ export function saveToMSAHistory(email: string, data: MSAFormData): void {
     const history = getMSAHistory(email);
 
     // Calculate total value from order form rows
-    const rowsToSum = data.selectedRowIndex >= 0
-      ? [data.orderFormRows[data.selectedRowIndex]]
+    // Use selectedRowIndices (new) or fall back to all rows
+    const selectedIndices = data.selectedRowIndices && data.selectedRowIndices.length > 0
+      ? data.selectedRowIndices
+      : [];
+
+    const rowsToSum = selectedIndices.length > 0
+      ? selectedIndices.map(i => data.orderFormRows[i]).filter(Boolean)
       : data.orderFormRows;
 
     const totalValue = rowsToSum.reduce((sum, row) => {

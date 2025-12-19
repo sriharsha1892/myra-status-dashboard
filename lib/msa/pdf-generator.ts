@@ -738,10 +738,10 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
     font: fonts.bold,
     color: PDF_COLORS.slate900,
   });
-  pm.currentPage.drawText('TM', {
+  pm.currentPage.drawText('®', {
     x: MARGIN_LEFT + fonts.bold.widthOfTextAtSize('myRA AI', 22),
     y: pm.currentY + 10,
-    size: 7,
+    size: 9,
     font: fonts.regular,
     color: PDF_COLORS.slate900,
   });

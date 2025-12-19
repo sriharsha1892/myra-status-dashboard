@@ -2,459 +2,536 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  FileText,
+  Plus,
   Search,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  DollarSign,
+  Sparkles,
   TrendingUp,
+  Upload,
+  Clock,
+  Target,
+  DollarSign,
+  LayoutGrid,
+  List,
+  Building2,
+  Users,
+  ChevronRight,
   RefreshCw,
 } from 'lucide-react';
 import { isQuoteAdminAuthenticated, setQuoteAdminAuthenticated } from '@/lib/quote/auth';
 import { QuoteAdminAuthModal } from '@/components/quote/QuoteAdminAuthModal';
-import { ACCOUNT_MANAGERS } from '@/lib/quote/constants';
+import ImportModal from '@/components/quote/ImportModal';
+import OrganizationCard from '@/components/quote/OrganizationCard';
+import OrganizationEditModal from '@/components/quote/OrganizationEditModal';
+import PipelineTrends from '@/components/quote/PipelineTrends';
+import type { Organization, OrganizationInput } from '@/lib/quote/organization-types';
+import type { OrgStatus } from '@/lib/quote/pipeline-types';
+import { ORG_STATUS_LABELS, ORG_STATUS_COLORS } from '@/lib/quote/pipeline-types';
+import type { SalesPipelineEntry } from '@/lib/quote/pipeline-types';
 
-interface Quote {
-  id: string;
-  quote_reference: string;
-  version: number;
-  company_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_title: string | null;
-  quote_date: string;
-  valid_until: string;
-  currency: string;
-  total_value: string;
-  line_items: Array<{
-    term: string;
-    users: string;
-    consultingHours: string;
-    investment: string;
-  }>;
-  prepared_by: string;
-  deal_context: Record<string, string>;
-  created_at: string;
+const ORG_STATUSES: { id: OrgStatus; label: string; color: string }[] = [
+  { id: 'prospect', label: 'Prospect', color: '#6B7280' },
+  { id: 'demo_done', label: 'Demo Done', color: '#3B82F6' },
+  { id: 'trial_access', label: 'Trial Access', color: '#F59E0B' },
+  { id: 'negotiation', label: 'Negotiation', color: '#8B5CF6' },
+  { id: 'onboarded', label: 'Onboarded', color: '#10B981' },
+  { id: 'rejected', label: 'Rejected', color: '#EF4444' },
+];
+
+function formatValue(value: number): string {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+  return `$${value}`;
 }
 
-interface QuoteStats {
-  totalQuotes: number;
-  byAM: Record<string, { count: number; totalValue: number }>;
-  byCurrency: Record<string, number>;
-}
-
-interface Pagination {
-  total: number;
-  limit: number;
-  offset: number;
-  hasMore: boolean;
-}
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  INR: '₹',
-};
-
-function formatCurrency(value: number, currency: string): string {
-  const symbol = CURRENCY_SYMBOLS[currency] || currency;
-  if (currency === 'INR') {
-    return `${symbol}${value.toLocaleString('en-IN')}`;
-  }
-  return `${symbol}${value.toLocaleString('en-US')}`;
-}
-
-function formatDate(dateStr: string): string {
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+interface OrgStats {
+  total: number;
+  byStatus: Record<string, number>;
+  byTrialStatus: Record<string, number>;
+  totalDealValue: number;
 }
 
 export default function QuoteAdminPage() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [stats, setStats] = useState<QuoteStats | null>(null);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [stats, setStats] = useState<OrgStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingOrg, setEditingOrg] = useState<Partial<Organization> | null>(null);
+  const [showTrends, setShowTrends] = useState(false);
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [hiddenStatuses, setHiddenStatuses] = useState<Set<OrgStatus>>(new Set(['rejected']));
+  const [parentOrgs, setParentOrgs] = useState<Organization[]>([]);
 
-  // Filters
-  const [preparedBy, setPreparedBy] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 20;
-
-  // Check auth on mount
   useEffect(() => {
     setIsAuthenticated(isQuoteAdminAuthenticated());
     setAuthChecked(true);
   }, []);
 
-  // Handle successful authentication
   const handleAuthSuccess = useCallback(() => {
     setQuoteAdminAuthenticated();
     setIsAuthenticated(true);
   }, []);
 
-  const fetchQuotes = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setError('');
-
     try {
       const params = new URLSearchParams();
-      if (preparedBy) params.set('preparedBy', preparedBy);
-      if (companyName) params.set('companyName', companyName);
-      if (startDate) params.set('startDate', startDate);
-      if (endDate) params.set('endDate', endDate);
-      params.set('limit', pageSize.toString());
-      params.set('offset', (currentPage * pageSize).toString());
+      if (search) params.set('search', search);
+      params.set('includeContacts', 'true');
+      params.set('includeSubsidiaries', 'true');
+      params.set('parentOnly', 'true');
 
-      const response = await fetch(`/api/quote/admin?${params.toString()}`);
+      const response = await fetch(`/api/quote/organizations?${params.toString()}`);
       const data = await response.json();
 
-      if (data.success) {
-        setQuotes(data.quotes);
+      if (!data.error) {
+        setOrganizations(data.data || []);
         setStats(data.stats);
-        setPagination(data.pagination);
-      } else {
-        setError(data.error || 'Failed to fetch quotes');
+        // Also fetch all parent orgs for the edit modal
+        const parentRes = await fetch('/api/quote/organizations?parentOnly=true');
+        const parentData = await parentRes.json();
+        if (!parentData.error) {
+          setParentOrgs(parentData.data || []);
+        }
       }
     } catch (err) {
-      setError('Failed to load quotes. Please try again.');
+      console.error('Failed to fetch:', err);
     } finally {
       setLoading(false);
     }
-  }, [preparedBy, companyName, startDate, endDate, currentPage]);
+  }, [search]);
 
   useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
+    if (isAuthenticated) fetchData();
+  }, [isAuthenticated, fetchData]);
 
-  const handleSearch = () => {
-    setCurrentPage(0);
-    fetchQuotes();
+  const handleStatusChange = async (orgId: string, newStatus: OrgStatus) => {
+    // Optimistic update
+    setOrganizations(prev => prev.map(org =>
+      org.id === orgId ? { ...org, status: newStatus, status_updated_at: new Date().toISOString() } : org
+    ));
+
+    try {
+      await fetch('/api/quote/organizations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orgId,
+          updates: { status: newStatus },
+        }),
+      });
+      fetchData(); // Refresh to get updated stats
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      fetchData(); // Revert on error
+    }
   };
 
-  const handleClearFilters = () => {
-    setPreparedBy('');
-    setCompanyName('');
-    setStartDate('');
-    setEndDate('');
-    setCurrentPage(0);
+  const handleSaveOrg = async (formData: OrganizationInput) => {
+    const isCreate = !editingOrg?.id;
+    const response = await fetch('/api/quote/organizations', {
+      method: isCreate ? 'POST' : 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        isCreate
+          ? formData
+          : { id: editingOrg!.id, updates: formData }
+      ),
+    });
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(data.error || 'Failed to save');
+    setShowEditModal(false);
+    setEditingOrg(null);
+    fetchData();
   };
 
-  const totalPages = pagination ? Math.ceil(pagination.total / pageSize) : 0;
+  const handleImport = async (importEntries: Partial<SalesPipelineEntry>[]) => {
+    const response = await fetch('/api/quote/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries: importEntries, created_by: 'admin' }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Import failed');
+    fetchData();
+  };
 
-  // Show loading state while checking auth
+  const toggleStatusVisibility = (statusId: OrgStatus) => {
+    setHiddenStatuses(prev => {
+      const next = new Set(prev);
+      if (next.has(statusId)) next.delete(statusId);
+      else next.add(statusId);
+      return next;
+    });
+  };
+
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-neutral-200 border-t-neutral-800 animate-spin" />
       </div>
     );
   }
 
-  // Show auth modal if not authenticated
   if (!isAuthenticated) {
     return <QuoteAdminAuthModal onSuccess={handleAuthSuccess} />;
   }
 
+  const totalValue = stats?.totalDealValue || 0;
+  const onboardedValue = organizations
+    .filter(o => o.status === 'onboarded')
+    .reduce((sum, o) => sum + (o.deal_value || 0), 0);
+  const activeTrials = organizations.filter(o => o.trial_status === 'active').length;
+  const visibleStatuses = ORG_STATUSES.filter(s => !hiddenStatuses.has(s.id));
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-violet-50/30 to-neutral-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-700 rounded-lg flex items-center justify-center shadow-sm">
-              <FileText className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h1 className="font-semibold text-neutral-900">
-                myRA AI<sup className="text-[10px] ml-0.5 text-neutral-500">®</sup>
-              </h1>
-              <p className="text-xs text-neutral-500">Quote Admin</p>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-neutral-200/50">
+        <div className="px-6 h-16 flex items-center justify-between max-w-[2000px] mx-auto">
+          {/* Left */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base font-semibold text-neutral-900">Organizations</h1>
+                <p className="text-xs text-neutral-500">{stats?.total || 0} orgs · {formatValue(totalValue)}</p>
+              </div>
             </div>
           </div>
-          <button
-            onClick={fetchQuotes}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-violet-600 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+
+          {/* Center - Search */}
+          <div className="flex-1 max-w-xl mx-8">
+            <div className="relative">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchData()}
+                placeholder="Search organizations..."
+                className="w-full h-10 pl-11 pr-4 bg-neutral-100/80 border-0 rounded-full text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Right */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchData()}
+              className="h-9 px-3 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setShowTrends(true)}
+              className="h-9 px-3 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all flex items-center gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Trends</span>
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="h-9 px-3 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-all flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span className="hidden sm:inline">Import</span>
+            </button>
+            <button
+              onClick={() => { setEditingOrg({}); setShowEditModal(true); }}
+              className="h-9 px-4 text-sm font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-neutral-900/20"
+            >
+              <Plus className="w-4 h-4" />
+              New Org
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-violet-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-neutral-900">{stats.totalQuotes}</p>
-                  <p className="text-sm text-neutral-500">Total Quotes</p>
-                </div>
+      {/* Stats Bar */}
+      <div className="bg-white border-b border-neutral-200/50">
+        <div className="px-6 py-4 max-w-[2000px] mx-auto">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <Target className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-neutral-900">{formatValue(onboardedValue)}</p>
+                <p className="text-xs text-neutral-500">Onboarded value</p>
+              </div>
+            </div>
+            <div className="w-px h-10 bg-neutral-200" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-neutral-900">{formatValue(totalValue - onboardedValue)}</p>
+                <p className="text-xs text-neutral-500">In pipeline</p>
+              </div>
+            </div>
+            <div className="w-px h-10 bg-neutral-200" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-neutral-900">{activeTrials}</p>
+                <p className="text-xs text-neutral-500">Active trials</p>
+              </div>
+            </div>
+            <div className="w-px h-10 bg-neutral-200" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-neutral-900">{stats?.total || 0}</p>
+                <p className="text-xs text-neutral-500">Total organizations</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-neutral-900">
-                    {Object.keys(stats.byAM).length}
-                  </p>
-                  <p className="text-sm text-neutral-500">Account Managers</p>
-                </div>
-              </div>
-            </div>
-
-            {Object.entries(stats.byCurrency).slice(0, 2).map(([currency, total]) => (
-              <div key={currency} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-neutral-900">
-                      {formatCurrency(total, currency)}
-                    </p>
-                    <p className="text-sm text-neutral-500">Total ({currency})</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-3">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filters
-            </h2>
-          </div>
-          <div className="p-4 grid md:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm text-neutral-600 mb-1">Account Manager</label>
-              <select
-                value={preparedBy}
-                onChange={(e) => setPreparedBy(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
-              >
-                <option value="">All AMs</option>
-                {ACCOUNT_MANAGERS.map((am) => (
-                  <option key={am.name} value={am.name}>
-                    {am.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-neutral-600 mb-1">Company</label>
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
-                placeholder="Search company..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-neutral-600 mb-1">From Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-neutral-600 mb-1">To Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-violet-500"
-              />
-            </div>
-            <div className="flex items-end gap-2">
+            {/* View Toggle */}
+            <div className="ml-auto flex items-center gap-1 p-1 bg-neutral-100 rounded-xl">
               <button
-                onClick={handleSearch}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
+                onClick={() => setViewMode('board')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'board' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
               >
-                <Search className="w-4 h-4" />
-                Search
+                <LayoutGrid className="w-4 h-4" />
               </button>
               <button
-                onClick={handleClearFilters}
-                className="px-3 py-2 text-sm text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
               >
-                Clear
+                <List className="w-4 h-4" />
               </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* AM Stats */}
-        {stats && Object.keys(stats.byAM).length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-3">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Performance by Account Manager
-              </h2>
-            </div>
-            <div className="p-4 grid md:grid-cols-4 gap-4">
-              {Object.entries(stats.byAM)
-                .sort((a, b) => b[1].count - a[1].count)
-                .map(([am, data]) => (
-                  <div
-                    key={am}
-                    className="p-3 bg-neutral-50 rounded-lg border border-neutral-100"
-                  >
-                    <p className="font-medium text-neutral-800 truncate">{am || 'Unknown'}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm text-neutral-600">{data.count} quotes</span>
-                      <span className="text-xs text-neutral-500">
-                        ${data.totalValue.toLocaleString()}
+      {/* Modals */}
+      <ImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onImport={handleImport} />
+      <PipelineTrends isOpen={showTrends} onClose={() => setShowTrends(false)} />
+      <OrganizationEditModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditingOrg(null); }}
+        org={editingOrg}
+        parentOrgs={parentOrgs}
+        onSave={handleSaveOrg}
+      />
+
+      {/* Main Content */}
+      <main className="px-6 py-6 max-w-[2000px] mx-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <div className="w-8 h-8 rounded-full border-2 border-neutral-200 border-t-neutral-800 animate-spin" />
+          </div>
+        ) : viewMode === 'board' ? (
+          /* Kanban Board */
+          <div className="flex gap-4 overflow-x-auto pb-6 -mx-6 px-6">
+            {visibleStatuses.map(status => {
+              const statusOrgs = organizations.filter(o => o.status === status.id);
+              const statusValue = statusOrgs.reduce((sum, o) => sum + (o.deal_value || 0), 0);
+
+              return (
+                <div key={status.id} className="flex-shrink-0 w-[320px]">
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      />
+                      <h2 className="font-semibold text-neutral-900">{status.label}</h2>
+                      <span className="text-sm text-neutral-400">
+                        {statusOrgs.length}
                       </span>
                     </div>
+                    {statusValue > 0 && (
+                      <span className="text-sm font-medium text-neutral-500">
+                        {formatValue(statusValue)}
+                      </span>
+                    )}
                   </div>
-                ))}
-            </div>
-          </div>
-        )}
 
-        {/* Quotes Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-600">{error}</p>
-            </div>
-          ) : quotes.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-              <p className="text-neutral-500">No quotes found</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-violet-600 text-white">
-                      <th className="px-4 py-3 text-left font-medium">Reference</th>
-                      <th className="px-4 py-3 text-left font-medium">Company</th>
-                      <th className="px-4 py-3 text-left font-medium">Contact</th>
-                      <th className="px-4 py-3 text-left font-medium">Date</th>
-                      <th className="px-4 py-3 text-left font-medium">Value</th>
-                      <th className="px-4 py-3 text-left font-medium">AM</th>
-                      <th className="px-4 py-3 text-left font-medium">Version</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quotes.map((quote, index) => (
-                      <tr
-                        key={quote.id}
-                        className={`border-b border-neutral-100 hover:bg-neutral-50 ${
-                          index % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'
-                        }`}
-                      >
-                        <td className="px-4 py-3">
-                          <span className="font-mono text-xs text-violet-600">
-                            {quote.quote_reference}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-neutral-800">{quote.company_name}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="text-neutral-700">{quote.contact_name}</p>
-                          <p className="text-xs text-neutral-500">{quote.contact_email}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="text-neutral-700">{formatDate(quote.quote_date)}</p>
-                          <p className="text-xs text-neutral-500">
-                            Valid until {formatDate(quote.valid_until)}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-neutral-800">
-                            {formatCurrency(parseFloat(quote.total_value), quote.currency)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-neutral-700">{quote.prepared_by}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {quote.version > 1 ? (
-                            <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded">
-                              v{quote.version}
-                            </span>
-                          ) : (
-                            <span className="text-neutral-400">v1</span>
-                          )}
-                        </td>
-                      </tr>
+                  {/* Cards */}
+                  <div className="space-y-3">
+                    {statusOrgs.map(org => (
+                      <OrganizationCard
+                        key={org.id}
+                        org={org}
+                        isExpanded={expandedId === org.id}
+                        onToggle={() => setExpandedId(expandedId === org.id ? null : org.id)}
+                        onStatusChange={(newStatus) => handleStatusChange(org.id, newStatus)}
+                        onEdit={() => { setEditingOrg(org); setShowEditModal(true); }}
+                      />
                     ))}
-                  </tbody>
-                </table>
-              </div>
 
-              {/* Pagination */}
-              {pagination && pagination.total > pageSize && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-50">
-                  <p className="text-sm text-neutral-600">
-                    Showing {pagination.offset + 1}-
-                    {Math.min(pagination.offset + pageSize, pagination.total)} of{' '}
-                    {pagination.total} quotes
-                  </p>
-                  <div className="flex items-center gap-2">
+                    {statusOrgs.length === 0 && (
+                      <div className="h-32 rounded-2xl border-2 border-dashed border-neutral-200 flex items-center justify-center">
+                        <p className="text-sm text-neutral-400">No organizations</p>
+                      </div>
+                    )}
+
+                    {/* Add Org Button */}
                     <button
-                      onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-                      disabled={currentPage === 0}
-                      className="p-2 rounded-lg border border-neutral-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      onClick={() => {
+                        setEditingOrg({ status: status.id });
+                        setShowEditModal(true);
+                      }}
+                      className="w-full h-12 rounded-xl border-2 border-dashed border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 flex items-center justify-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 transition-all"
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-sm text-neutral-600">
-                      Page {currentPage + 1} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                      disabled={!pagination.hasMore}
-                      className="p-2 rounded-lg border border-neutral-200 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
+                      <Plus className="w-4 h-4" />
+                      Add organization
                     </button>
                   </div>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              );
+            })}
+
+            {/* Hidden Statuses Toggle */}
+            {hiddenStatuses.size > 0 && (
+              <div className="flex-shrink-0 w-[200px] flex items-start pt-10">
+                <button
+                  onClick={() => setHiddenStatuses(new Set())}
+                  className="text-sm text-neutral-500 hover:text-neutral-700 flex items-center gap-2"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  Show {hiddenStatuses.size} hidden
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* List View */
+          <div className="bg-white rounded-2xl border border-neutral-200/60 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-100">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Organization</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Trial</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Value</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Contacts</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Owner</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Updated</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {organizations.map(org => {
+                  const status = ORG_STATUSES.find(s => s.id === org.status);
+                  return (
+                    <tr
+                      key={org.id}
+                      className="hover:bg-neutral-50/50 cursor-pointer transition-colors"
+                      onClick={() => { setEditingOrg(org); setShowEditModal(true); }}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-neutral-900">{org.display_name || org.name}</div>
+                        {org.industry && <div className="text-sm text-neutral-500">{org.industry}</div>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium"
+                          style={{ backgroundColor: `${status?.color}15`, color: status?.color }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: status?.color }}
+                          />
+                          {status?.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {org.trial_status && org.trial_status !== 'not_requested' ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            org.trial_status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                            org.trial_status === 'revoked' ? 'bg-purple-100 text-purple-700' :
+                            org.trial_status === 'expired' ? 'bg-red-100 text-red-700' :
+                            org.trial_status === 'inactive' ? 'bg-orange-100 text-orange-700' :
+                            'bg-neutral-100 text-neutral-600'
+                          }`}>
+                            {org.trial_status.charAt(0).toUpperCase() + org.trial_status.slice(1)}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-semibold text-neutral-900">
+                          {org.deal_value ? formatValue(org.deal_value) : '—'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-neutral-600">
+                        {org.contact_count || 0}
+                      </td>
+                      <td className="px-6 py-4 text-neutral-600">
+                        {org.employee_name || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-neutral-500">
+                        {timeAgo(org.status_updated_at || org.created_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
+
+      {/* Status Filter Bar (Bottom) */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div className="flex items-center gap-1 p-1.5 bg-white/90 backdrop-blur-xl rounded-2xl border border-neutral-200/50 shadow-xl shadow-neutral-900/10">
+          {ORG_STATUSES.map(status => {
+            const count = stats?.byStatus[status.id] || 0;
+            const isHidden = hiddenStatuses.has(status.id);
+            return (
+              <button
+                key={status.id}
+                onClick={() => toggleStatusVisibility(status.id)}
+                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                  isHidden
+                    ? 'text-neutral-400 hover:text-neutral-600'
+                    : 'text-neutral-700 bg-neutral-100'
+                }`}
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${isHidden ? 'opacity-40' : ''}`}
+                  style={{ backgroundColor: status.color }}
+                />
+                <span className="hidden sm:inline">{status.label}</span>
+                <span className={`text-xs ${isHidden ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

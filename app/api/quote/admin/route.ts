@@ -96,3 +96,60 @@ export async function GET(request: Request) {
     );
   }
 }
+
+// DELETE - Delete quote(s)
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, ids } = body;
+
+    const supabase = createServiceClient();
+
+    // Single delete
+    if (id) {
+      const { error } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting quote:', error);
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, deleted: 1 });
+    }
+
+    // Bulk delete
+    if (ids && Array.isArray(ids) && ids.length > 0) {
+      const { error } = await supabase
+        .from('quotes')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        console.error('Error deleting quotes:', error);
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, deleted: ids.length });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'id or ids required' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Quote delete error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Invalid request' },
+      { status: 400 }
+    );
+  }
+}
