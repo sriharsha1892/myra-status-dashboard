@@ -13,6 +13,7 @@ import {
   MORDOR_SIGNATORY,
   MSA_SECTIONS,
   MSA_FOOTER,
+  getBillingText,
 } from './constants';
 import { COMPANY_SUFFIXES } from '../quote/constants';
 
@@ -331,8 +332,13 @@ function addFootersToAllPages(
 // Draw Order Form table
 function drawOrderFormTable(pm: PageManager, data: MSAFormData): void {
   const showUsers = data.showUsersColumn !== false;
-  const rows = data.selectedRowIndex >= 0
-    ? [data.orderFormRows[data.selectedRowIndex]]
+  // Support both selectedRowIndices (new) and selectedRowIndex (legacy)
+  const selectedIndices = data.selectedRowIndices && data.selectedRowIndices.length > 0
+    ? data.selectedRowIndices
+    : [];
+
+  const rows = selectedIndices.length > 0
+    ? selectedIndices.map(i => data.orderFormRows[i]).filter(Boolean)
     : data.orderFormRows;
 
   const validRows = rows.filter(row =>
@@ -724,7 +730,7 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
   const pm = createPageManager(pdfDoc, fonts);
 
   // ==================== HEADER ====================
-  // myRA AI logo
+  // myRA AI logo with trademark
   pm.currentPage.drawText('myRA AI', {
     x: MARGIN_LEFT,
     y: pm.currentY,
@@ -732,10 +738,10 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
     font: fonts.bold,
     color: PDF_COLORS.slate900,
   });
-  pm.currentPage.drawText('®', {
+  pm.currentPage.drawText('TM', {
     x: MARGIN_LEFT + fonts.bold.widthOfTextAtSize('myRA AI', 22),
-    y: pm.currentY + 8,
-    size: 9,
+    y: pm.currentY + 10,
+    size: 7,
     font: fonts.regular,
     color: PDF_COLORS.slate900,
   });
@@ -810,14 +816,45 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
 
   // ==================== SECTION 3.3-3.5: CONSULTING SERVICES (OPTIONAL) ====================
   if (data.includeConsultingServices) {
+    // 3.3 Consulting Services and Hours
     drawSectionHeader(pm, MSA_SECTIONS.consultingServices.title);
     drawWrappedTextPM(pm, MSA_SECTIONS.consultingServices.content, 9.5, PDF_COLORS.slate600);
+    pm.currentY -= 12;
+
+    // 3.4 Indemnity for Analyst Hours
+    drawSectionHeader(pm, MSA_SECTIONS.analystHoursIndemnity.title);
+    drawWrappedTextPM(pm, MSA_SECTIONS.analystHoursIndemnity.content, 9.5, PDF_COLORS.slate600);
+    pm.currentY -= 12;
+
+    // 3.5 Termination of Consulting Hours
+    drawSectionHeader(pm, MSA_SECTIONS.consultingTermination.title);
+    drawWrappedTextPM(pm, MSA_SECTIONS.consultingTermination.content, 9.5, PDF_COLORS.slate600);
     pm.currentY -= 18;
   }
 
-  // ==================== SECTION 3.6-3.10: AI OUTPUTS AND IP ====================
+  // ==================== SECTION 3.6: AI OUTPUTS ====================
   drawSectionHeader(pm, MSA_SECTIONS.aiOutputsAndIP.title);
   drawWrappedTextPM(pm, MSA_SECTIONS.aiOutputsAndIP.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // ==================== SECTION 3.7: INTELLECTUAL PROPERTY RESERVATION ====================
+  drawSectionHeader(pm, MSA_SECTIONS.intellectualPropertyReservation.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.intellectualPropertyReservation.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // ==================== SECTION 3.8: FEEDBACK AND ENHANCEMENTS ====================
+  drawSectionHeader(pm, MSA_SECTIONS.feedbackAndEnhancements.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.feedbackAndEnhancements.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // ==================== SECTION 3.9: RETRAINING AND LEARNING RIGHTS ====================
+  drawSectionHeader(pm, MSA_SECTIONS.retrainingRights.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.retrainingRights.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // ==================== SECTION 3.10: THIRD-PARTY DATA AND CONTENT ====================
+  drawSectionHeader(pm, MSA_SECTIONS.thirdPartyDataContent.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.thirdPartyDataContent.content, 9.5, PDF_COLORS.slate600);
   pm.currentY -= 18;
 
   // ==================== SECTION 4: SUBLICENSING ====================
@@ -853,11 +890,44 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
   // Order form table
   drawOrderFormTable(pm, data);
 
-  // Additional hour rate note
-  if (data.additionalHourRate && data.additionalHourRate.trim()) {
-    const currencySymbols: Record<Currency, string> = { USD: '$', EUR: 'EUR ', GBP: 'GBP ', INR: 'INR ' };
-    const hourNote = `Additional consulting hours beyond the included allocation may be purchased at ${currencySymbols[data.currency]}${data.additionalHourRate}/hour.`;
+  // Additional hour rate note - collect per-row rates
+  const currencySymbols: Record<Currency, string> = { USD: '$', EUR: 'EUR ', GBP: 'GBP ', INR: 'INR ' };
+  const selectedIndices = data.selectedRowIndices && data.selectedRowIndices.length > 0
+    ? data.selectedRowIndices
+    : [];
+  const rowsForRates = selectedIndices.length > 0
+    ? selectedIndices.map(i => ({ row: data.orderFormRows[i], index: i })).filter(r => r.row)
+    : data.orderFormRows.map((row, i) => ({ row, index: i }));
+
+  // Collect unique rates from rows
+  const ratesWithRows = rowsForRates
+    .filter(r => r.row.additionalHourRate && r.row.additionalHourRate.trim())
+    .map(r => ({
+      term: r.row.term,
+      rate: r.row.additionalHourRate!,
+    }));
+
+  if (ratesWithRows.length > 0) {
+    // Check if all rates are the same
+    const uniqueRates = [...new Set(ratesWithRows.map(r => r.rate))];
+    let hourNote: string;
+
+    if (uniqueRates.length === 1) {
+      // All rows have the same rate
+      hourNote = `Additional consulting hours beyond the included allocation may be purchased at ${currencySymbols[data.currency]}${uniqueRates[0]}/hour.`;
+    } else {
+      // Different rates per row
+      const ratesList = ratesWithRows.map(r => `${r.term}: ${currencySymbols[data.currency]}${r.rate}/hour`).join(', ');
+      hourNote = `Additional consulting hours beyond the included allocation may be purchased at the following rates: ${ratesList}.`;
+    }
     drawWrappedTextPM(pm, hourNote, 8, PDF_COLORS.slate500, fonts.italic);
+    pm.currentY -= 8;
+  }
+
+  // Payment terms from form data (aligned with quote system)
+  if (data.paymentTerms) {
+    const billingText = data.customPaymentText?.trim() || getBillingText(data.paymentTerms);
+    drawWrappedTextPM(pm, `Billing: ${billingText}`, 9, PDF_COLORS.slate700, fonts.bold);
     pm.currentY -= 8;
   }
 
@@ -910,28 +980,43 @@ export async function generateMSAPDF(data: MSAFormData): Promise<Uint8Array> {
   drawWrappedTextPM(pm, MSA_SECTIONS.indemnification.content, 9.5, PDF_COLORS.slate600);
   pm.currentY -= 18;
 
-  // ==================== SECTION 19: LIMITATION OF LIABILITY ====================
+  // ==================== SECTION 19: DISCLAIMERS RELATED TO AI OUTPUTS ====================
+  drawSectionHeader(pm, MSA_SECTIONS.aiDisclaimers.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.aiDisclaimers.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 18;
+
+  // ==================== SECTION 20: LIMITATION OF LIABILITY ====================
   drawSectionHeader(pm, MSA_SECTIONS.limitationOfLiability.title);
   drawWrappedTextPM(pm, MSA_SECTIONS.limitationOfLiability.content, 9.5, PDF_COLORS.slate600);
   pm.currentY -= 18;
 
-  // ==================== SECTION 20: INSURANCE REQUIREMENTS ====================
-  drawSectionHeader(pm, MSA_SECTIONS.insurance.title);
-  drawWrappedTextPM(pm, MSA_SECTIONS.insurance.content, 9.5, PDF_COLORS.slate600);
+  // ==================== SECTION 21: REMEDIES AND EQUITABLE RELIEF ====================
+  drawSectionHeader(pm, MSA_SECTIONS.remediesAndCompliance.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.remediesAndCompliance.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // ==================== SECTION 21: COMPLIANCE AND ETHICAL CONDUCT ====================
+  drawSectionHeader(pm, MSA_SECTIONS.complianceAndEthicalConduct.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.complianceAndEthicalConduct.content, 9.5, PDF_COLORS.slate600);
   pm.currentY -= 18;
 
-  // ==================== SECTION 21: GOVERNING LAW ====================
+  // ==================== SECTION 22: SUBCONTRACTING AND ASSIGNMENT ====================
+  drawSectionHeader(pm, MSA_SECTIONS.subcontractingAndAssignment.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.subcontractingAndAssignment.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 18;
+
+  // ==================== SECTION 23: DISPUTE RESOLUTION ====================
+  drawSectionHeader(pm, MSA_SECTIONS.disputeResolution.title);
+  drawWrappedTextPM(pm, MSA_SECTIONS.disputeResolution.content, 9.5, PDF_COLORS.slate600);
+  pm.currentY -= 12;
+
+  // Section 23.4: Governing Law (dynamic based on jurisdiction)
   drawSectionHeader(pm, MSA_SECTIONS.governingLaw.title);
   const governingLawContent = MSA_SECTIONS.governingLaw.content(data.jurisdiction);
   drawWrappedTextPM(pm, governingLawContent, 9, PDF_COLORS.slate600);
-  pm.currentY -= 18;
+  pm.currentY -= 12;
 
-  // ==================== SECTION 22: DISPUTE RESOLUTION ====================
-  drawSectionHeader(pm, MSA_SECTIONS.disputeResolution.title);
-  drawWrappedTextPM(pm, MSA_SECTIONS.disputeResolution.content, 9.5, PDF_COLORS.slate600);
-  pm.currentY -= 18;
-
-  // ==================== SECTION 23: JURISDICTION ====================
+  // Section 23.5: Jurisdiction (dynamic based on jurisdiction)
   drawSectionHeader(pm, MSA_SECTIONS.jurisdiction.title);
   const jurisdictionContent = MSA_SECTIONS.jurisdiction.content(data.jurisdiction);
   drawWrappedTextPM(pm, jurisdictionContent, 9, PDF_COLORS.slate600);

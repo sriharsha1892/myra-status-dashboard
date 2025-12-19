@@ -1,6 +1,9 @@
-// Reuse Currency type from quote
+// Reuse types from quote for consistency
 export type { Currency } from '../quote/types';
 export { CURRENCY_SYMBOLS } from '../quote/types';
+
+// Import payment types from quote system for pricing flexibility alignment
+export type { PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from '../quote/types';
 
 // Order form row (from quote data)
 export interface OrderFormRow {
@@ -9,6 +12,7 @@ export interface OrderFormRow {
   consultingHours: string; // e.g., "1,000/yr"
   listPrice: string;      // numeric string
   offerPrice: string;     // numeric string
+  additionalHourRate?: string; // Per-row rate for additional hours (optional, can vary per row)
 }
 
 // Main MSA form data interface
@@ -17,9 +21,10 @@ export interface MSAFormData {
   clientLegalName: string;        // Full legal entity name (required)
   clientAddress: string;          // Registered address (required)
   clientCountry: string;          // Country for jurisdiction auto-suggest (required)
-  clientContactName: string;      // Signatory name (required)
+  clientContactName: string;      // Signatory/Primary contact name (required)
   clientContactTitle: string;     // Signatory title (optional)
   clientContactEmail: string;     // Contact email (required)
+  clientContactPhone?: string;    // Contact phone (optional)
 
   // Agreement Details
   agreementVersion: number;       // Per-client version: 1, 2, 3...
@@ -28,11 +33,19 @@ export interface MSAFormData {
 
   // Order Form (from Quote)
   currency: 'USD' | 'EUR' | 'GBP' | 'INR';
-  orderFormRows: OrderFormRow[];  // From quote
-  selectedRowIndex: number;       // Winning row index (-1 = include all rows)
+  orderFormRows: OrderFormRow[];  // From quote (flexible row-based pricing)
+  selectedRowIndices: number[];   // Winning row indices (empty = include all rows)
   showUsersColumn: boolean;       // Whether to show Users column in order form
   consultingHoursIncluded: string; // Summary of included hours
-  additionalHourRate: string;     // Optional per-hour rate for additional hours
+  // Note: additionalHourRate is now per-row in OrderFormRow
+
+  // Payment Terms (aligned with quote system for full flexibility)
+  paymentTerms: {                 // Required: matches quote PaymentTerms
+    frequency: 'annual' | 'semi-annual' | 'quarterly' | 'monthly';
+    basis: 'immediate' | 'invoice' | 'msa';
+    netTerms?: 'net-30' | 'net-60' | 'net-90';
+  };
+  customPaymentText?: string;     // Optional override for payment terms display text
 
   // Optional Sections
   includeConsultingServices: boolean;  // Include Section 5
