@@ -40,6 +40,7 @@ import {
 import { ACCOUNT_MANAGERS } from '@/lib/quote/constants';
 import type { PaymentFrequency, PaymentBasis, NetTerms } from '@/lib/quote/types';
 import { generateMSAPDF, generateMSAFilename } from '@/lib/msa/pdf-generator';
+import { generateMSAWord, generateMSAWordFilename } from '@/lib/msa/docx-generator';
 import { saveMSADraft, loadMSADraft, saveToMSAHistory } from '@/lib/msa/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
 import { MSAPreviewModal } from '@/components/msa/MSAPreviewModal';
@@ -458,6 +459,35 @@ export default function MSAPage() {
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       toast.error('Failed to generate PDF');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [formData]);
+
+  // Download Word
+  const handleDownloadWord = useCallback(async () => {
+    setIsGenerating(true);
+    try {
+      const bytes = await generateMSAWord(formData);
+      const filename = generateMSAWordFilename(formData);
+
+      const blob = new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      saveToMSAHistory(formData.clientContactEmail, formData);
+      setHistoryRefresh(prev => prev + 1);
+
+      toast.success('MSA Word document downloaded');
+    } catch (error) {
+      console.error('Failed to generate Word:', error);
+      toast.error('Failed to generate Word document');
     } finally {
       setIsGenerating(false);
     }
@@ -1132,23 +1162,36 @@ export default function MSAPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-3 pt-4">
+                  <div className="flex flex-col gap-3 pt-4">
                     <button
                       onClick={handlePreview}
                       disabled={isGenerating}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 border-2 border-violet-600 text-violet-600 hover:bg-violet-50 rounded-lg font-medium transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-violet-600 text-violet-600 hover:bg-violet-50 rounded-lg font-medium transition-colors disabled:opacity-50"
                     >
                       <Eye className="w-5 h-5" />
                       Preview PDF
                     </button>
-                    <button
-                      onClick={handleDownload}
-                      disabled={isGenerating}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-violet-600 text-white hover:bg-violet-700 rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                      <Download className="w-5 h-5" />
-                      {isGenerating ? 'Generating...' : 'Download MSA'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleDownload}
+                        disabled={isGenerating}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-violet-600 text-white hover:bg-violet-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                      >
+                        <Download className="w-5 h-5" />
+                        {isGenerating ? 'Generating...' : 'Download PDF'}
+                      </button>
+                      <button
+                        onClick={handleDownloadWord}
+                        disabled={isGenerating}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50"
+                      >
+                        <FileText className="w-5 h-5" />
+                        {isGenerating ? 'Generating...' : 'Download Word'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-neutral-500 text-center">
+                      Word format allows editing before final signature
+                    </p>
                   </div>
                 </div>
               )}

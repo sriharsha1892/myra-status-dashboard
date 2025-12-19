@@ -21,6 +21,7 @@ import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReaso
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
 import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES, PAYMENT_FREQUENCY_OPTIONS, PAYMENT_BASIS_OPTIONS, NET_TERMS_OPTIONS, DEFAULT_PAYMENT_TERMS } from '@/lib/quote/constants';
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
+import { generateQuoteWord, generateQuoteWordFilename } from '@/lib/quote/docx-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
 import { QuotePreviewModal } from '@/components/quote/QuotePreviewModal';
@@ -529,6 +530,55 @@ export default function QuotePage() {
       toast.success('Quote downloaded');
     }
   }, [pdfBytes, pdfFilename, formData, downloadPdf, saveQuoteToDb]);
+
+  // Handle Word download
+  const handleGenerateWord = useCallback(async () => {
+    // Validate
+    const validationErrors = validateForm(formData);
+    const rowErrors = formData.rows.map(validateRow);
+    const hasRowErrors = rowErrors.some((errors) => Object.keys(errors).length > 0);
+
+    setErrors(validationErrors);
+    setRowErrors(rowErrors);
+    setTouched(prev => ({
+      ...prev,
+      preparedFor: true,
+      contactName: true,
+      contactEmail: true,
+    }));
+
+    if (hasErrors(validationErrors) || hasRowErrors) {
+      toast.error('Please fix the validation errors');
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const bytes = await generateQuoteWord(formData);
+      const filename = generateQuoteWordFilename(formData);
+
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      saveToHistory(formData.contactEmail, formData);
+      setHistoryRefresh((prev) => prev + 1);
+
+      toast.success('Word document generated successfully');
+    } catch (error) {
+      console.error('Word generation failed:', error);
+      toast.error('Failed to generate Word document. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [formData]);
 
   // Input class helper
   const getInputClass = (field: string, hasError: boolean) => {
@@ -1350,7 +1400,20 @@ export default function QuotePage() {
                       ) : (
                         <Download className="w-4 h-4" />
                       )}
-                      Generate PDF
+                      PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateWord}
+                      disabled={isGenerating}
+                      className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <FileText className="w-4 h-4" />
+                      )}
+                      Word
                     </button>
                   </div>
                 </div>
