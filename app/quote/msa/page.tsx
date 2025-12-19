@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -21,6 +21,9 @@ import {
   ChevronLeft,
   Check,
   Settings,
+  Search,
+  ChevronDown,
+  X,
 } from 'lucide-react';
 import type { MSAFormData, OrderFormRow, MSAValidationErrors, Currency } from '@/lib/msa/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
@@ -106,6 +109,147 @@ function formatCurrency(value: string, currency: Currency): string {
 // Parse formatted number back to raw value
 function parseFormattedNumber(value: string): string {
   return value.replace(/[^0-9.]/g, '');
+}
+
+// Country Autocomplete Component
+interface CountryAutocompleteProps {
+  value: string;
+  onChange: (country: string) => void;
+  onBlur: () => void;
+  hasError: boolean;
+  errorMessage?: string;
+}
+
+function CountryAutocomplete({ value, onChange, onBlur, hasError, errorMessage }: CountryAutocompleteProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!searchQuery.trim()) return COUNTRIES;
+    const query = searchQuery.toLowerCase();
+    return COUNTRIES.filter(country =>
+      country.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        onBlur();
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onBlur]);
+
+  // Handle country selection
+  const handleSelect = (country: string) => {
+    onChange(country);
+    setSearchQuery('');
+    setIsOpen(false);
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setIsOpen(true);
+  };
+
+  // Handle input focus
+  const handleFocus = () => {
+    setIsOpen(true);
+    setSearchQuery('');
+  };
+
+  // Handle clear
+  const handleClear = () => {
+    onChange('');
+    setSearchQuery('');
+    inputRef.current?.focus();
+  };
+
+  const baseInputClass = 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors';
+  const inputClass = hasError
+    ? `${baseInputClass} border-red-300 bg-red-50`
+    : `${baseInputClass} border-neutral-300`;
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <Globe className="w-3 h-3 inline mr-1" />
+        Country <span className="text-red-500">*</span>
+      </label>
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+          <Search className="w-4 h-4" />
+        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={isOpen ? searchQuery : value}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          placeholder={value || "Search country..."}
+          className={`${inputClass} pl-9 pr-16`}
+        />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {value && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="p-1 text-neutral-400 hover:text-neutral-600 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-auto"
+        >
+          {filteredCountries.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-neutral-500">No countries found</div>
+          ) : (
+            filteredCountries.map((country) => (
+              <button
+                key={country}
+                type="button"
+                onClick={() => handleSelect(country)}
+                className={`w-full px-4 py-2.5 text-left text-sm hover:bg-violet-50 transition-colors flex items-center justify-between ${
+                  country === value ? 'bg-violet-50 text-violet-700 font-medium' : 'text-neutral-700'
+                }`}
+              >
+                {country}
+                {country === value && <Check className="w-4 h-4 text-violet-600" />}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {hasError && errorMessage && (
+        <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          {errorMessage}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function MSAPage() {
@@ -204,7 +348,7 @@ export default function MSAPage() {
       ...prev,
       orderFormRows: [
         ...prev.orderFormRows,
-        { term: '1-Year', users: '', consultingHours: '', listPrice: '', offerPrice: '' },
+        { term: '1-Year', users: '', consultingHours: '', listPrice: '', offerPrice: '', additionalHourRate: '' },
       ],
     }));
   }, []);
@@ -213,17 +357,26 @@ export default function MSAPage() {
   const removeOrderFormRow = useCallback((index: number) => {
     setFormData(prev => {
       const newRows = prev.orderFormRows.filter((_, i) => i !== index);
-      let newSelectedIndex = prev.selectedRowIndex;
-      if (prev.selectedRowIndex === index) {
-        newSelectedIndex = -1;
-      } else if (prev.selectedRowIndex > index) {
-        newSelectedIndex = prev.selectedRowIndex - 1;
-      }
+      // Update selectedRowIndices: remove the index and adjust higher indices
+      const newSelectedIndices = prev.selectedRowIndices
+        .filter(i => i !== index)
+        .map(i => i > index ? i - 1 : i);
       return {
         ...prev,
-        orderFormRows: newRows.length > 0 ? newRows : [{ term: '1-Year', users: '', consultingHours: '', listPrice: '', offerPrice: '' }],
-        selectedRowIndex: newSelectedIndex,
+        orderFormRows: newRows.length > 0 ? newRows : [{ term: '1-Year', users: '', consultingHours: '', listPrice: '', offerPrice: '', additionalHourRate: '' }],
+        selectedRowIndices: newSelectedIndices,
       };
+    });
+  }, []);
+
+  // Toggle winning row selection
+  const toggleWinningRow = useCallback((index: number) => {
+    setFormData(prev => {
+      const isSelected = prev.selectedRowIndices.includes(index);
+      const newSelectedIndices = isSelected
+        ? prev.selectedRowIndices.filter(i => i !== index)
+        : [...prev.selectedRowIndices, index].sort((a, b) => a - b);
+      return { ...prev, selectedRowIndices: newSelectedIndices };
     });
   }, []);
 
@@ -469,29 +622,13 @@ export default function MSAPage() {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      <Globe className="w-3 h-3 inline mr-1" />
-                      Country <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.clientCountry}
-                      onChange={(e) => updateField('clientCountry', e.target.value)}
-                      onBlur={() => handleBlur('clientCountry')}
-                      className={getInputClass('clientCountry', !!(touched.clientCountry && errors.clientCountry))}
-                    >
-                      <option value="">Select country...</option>
-                      {COUNTRIES.map((country) => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-                    {touched.clientCountry && errors.clientCountry && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.clientCountry}
-                      </p>
-                    )}
-                  </div>
+                  <CountryAutocomplete
+                    value={formData.clientCountry}
+                    onChange={(country) => updateField('clientCountry', country)}
+                    onBlur={() => handleBlur('clientCountry')}
+                    hasError={!!(touched.clientCountry && errors.clientCountry)}
+                    errorMessage={errors.clientCountry}
+                  />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -694,7 +831,8 @@ export default function MSAPage() {
                           <th className="pb-3 px-2">Consulting Hours</th>
                           <th className="pb-3 px-2">List Price</th>
                           <th className="pb-3 px-2">Investment</th>
-                          {formData.orderFormRows.length > 1 && <th className="pb-3 px-2">Select</th>}
+                          <th className="pb-3 px-2">Addl Rate</th>
+                          {formData.orderFormRows.length > 1 && <th className="pb-3 px-2 text-center">Win</th>}
                           <th className="pb-3 pl-2 w-10"></th>
                         </tr>
                       </thead>
@@ -774,15 +912,31 @@ export default function MSAPage() {
                                 />
                               </div>
                             </td>
+                            <td className="py-3 px-2">
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                                  {currencySymbol}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={row.additionalHourRate || ''}
+                                  onChange={(e) => updateOrderFormRow(index, 'additionalHourRate', e.target.value)}
+                                  className="w-full pl-8 pr-8 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                  placeholder="250"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 text-xs">
+                                  /hr
+                                </span>
+                              </div>
+                            </td>
                             {formData.orderFormRows.length > 1 && (
                               <td className="py-3 px-2 text-center">
                                 <input
-                                  type="radio"
-                                  name="selectedRow"
-                                  checked={formData.selectedRowIndex === index}
-                                  onChange={() => updateField('selectedRowIndex', index)}
-                                  className="w-4 h-4 text-violet-600 focus:ring-violet-500"
-                                  title="Select as winning row"
+                                  type="checkbox"
+                                  checked={formData.selectedRowIndices.includes(index)}
+                                  onChange={() => toggleWinningRow(index)}
+                                  className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500"
+                                  title="Mark as winning row"
                                 />
                               </td>
                             )}
@@ -811,32 +965,25 @@ export default function MSAPage() {
                     Add Row
                   </button>
 
-                  {formData.orderFormRows.length > 1 && formData.selectedRowIndex === -1 && (
+                  {formData.orderFormRows.length > 1 && formData.selectedRowIndices.length === 0 && (
                     <p className="text-sm text-amber-600 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
-                      Select a winning row or all rows will be included.
+                      Select winning row(s) or all rows will be included in the MSA.
+                    </p>
+                  )}
+
+                  {formData.orderFormRows.length > 1 && formData.selectedRowIndices.length > 0 && (
+                    <p className="text-sm text-green-600 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      {formData.selectedRowIndices.length} row{formData.selectedRowIndices.length > 1 ? 's' : ''} selected as winning option{formData.selectedRowIndices.length > 1 ? 's' : ''}.
                     </p>
                   )}
 
                   <div className="pt-4 border-t border-neutral-200">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      Additional Hour Rate (optional)
-                    </label>
-                    <div className="relative w-48">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                        {currencySymbol}
-                      </span>
-                      <input
-                        type="text"
-                        value={formData.additionalHourRate}
-                        onChange={(e) => updateField('additionalHourRate', e.target.value)}
-                        className="w-full pl-8 pr-14 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
-                        placeholder="250"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                        /hour
-                      </span>
-                    </div>
+                    <p className="text-sm text-neutral-500">
+                      <span className="font-medium">Per-row rates:</span> Each row can have its own additional consulting hour rate.
+                      Leave blank for rows where additional hours are not applicable.
+                    </p>
                   </div>
                 </div>
               )}
@@ -981,16 +1128,28 @@ export default function MSAPage() {
                 <div>
                   <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">Investment</p>
                   <div className="bg-neutral-50 rounded-lg p-3 space-y-2">
-                    {formData.orderFormRows.map((row, index) => (
-                      row.offerPrice && (
-                        <div key={index} className="flex justify-between items-center">
-                          <span className="text-neutral-600">{row.term}</span>
-                          <span className="font-semibold text-violet-600">
-                            {formatCurrency(row.offerPrice, formData.currency)}
-                          </span>
+                    {formData.orderFormRows.map((row, index) => {
+                      const isWinning = formData.selectedRowIndices.includes(index);
+                      const showRow = formData.selectedRowIndices.length === 0 || isWinning;
+                      return row.offerPrice && showRow && (
+                        <div key={index} className={`flex justify-between items-center ${isWinning && formData.selectedRowIndices.length > 0 ? 'bg-green-50 -mx-2 px-2 py-1 rounded' : ''}`}>
+                          <div className="flex items-center gap-2">
+                            {isWinning && formData.selectedRowIndices.length > 0 && (
+                              <Check className="w-3 h-3 text-green-600" />
+                            )}
+                            <span className="text-neutral-600">{row.term}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-semibold text-violet-600">
+                              {formatCurrency(row.offerPrice, formData.currency)}
+                            </span>
+                            {row.additionalHourRate && (
+                              <p className="text-xs text-neutral-500">+{currencySymbol}{row.additionalHourRate}/hr</p>
+                            )}
+                          </div>
                         </div>
-                      )
-                    ))}
+                      );
+                    })}
                     {!formData.orderFormRows.some(r => r.offerPrice) && (
                       <p className="text-neutral-400 italic">Enter pricing...</p>
                     )}
