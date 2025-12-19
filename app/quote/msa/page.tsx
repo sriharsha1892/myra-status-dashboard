@@ -27,8 +27,18 @@ import {
 } from 'lucide-react';
 import type { MSAFormData, OrderFormRow, MSAValidationErrors, Currency } from '@/lib/msa/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
-import { DEFAULT_MSA_FORM, COUNTRIES, JURISDICTION_BY_COUNTRY, MORDOR_SIGNATORY } from '@/lib/msa/constants';
+import {
+  DEFAULT_MSA_FORM,
+  COUNTRIES,
+  JURISDICTION_BY_COUNTRY,
+  MORDOR_SIGNATORY,
+  PAYMENT_FREQUENCY_OPTIONS,
+  PAYMENT_BASIS_OPTIONS,
+  NET_TERMS_OPTIONS,
+  getBillingText,
+} from '@/lib/msa/constants';
 import { ACCOUNT_MANAGERS } from '@/lib/quote/constants';
+import type { PaymentFrequency, PaymentBasis, NetTerms } from '@/lib/quote/types';
 import { generateMSAPDF, generateMSAFilename } from '@/lib/msa/pdf-generator';
 import { saveMSADraft, loadMSADraft, saveToMSAHistory } from '@/lib/msa/storage';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
@@ -984,6 +994,104 @@ export default function MSAPage() {
                       <span className="font-medium">Per-row rates:</span> Each row can have its own additional consulting hour rate.
                       Leave blank for rows where additional hours are not applicable.
                     </p>
+                  </div>
+
+                  {/* Payment Terms Section */}
+                  <div className="pt-4 border-t border-neutral-200">
+                    <h3 className="text-sm font-semibold text-neutral-800 mb-3 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-violet-600" />
+                      Payment Terms
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Payment Frequency */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-600 mb-1">
+                          Billing Frequency
+                        </label>
+                        <select
+                          value={formData.paymentTerms?.frequency || 'annual'}
+                          onChange={(e) => updateField('paymentTerms', {
+                            ...formData.paymentTerms,
+                            frequency: e.target.value as PaymentFrequency,
+                          })}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                        >
+                          {PAYMENT_FREQUENCY_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Payment Basis */}
+                      <div>
+                        <label className="block text-xs font-medium text-neutral-600 mb-1">
+                          Payment Basis
+                        </label>
+                        <select
+                          value={formData.paymentTerms?.basis || 'immediate'}
+                          onChange={(e) => {
+                            const newBasis = e.target.value as PaymentBasis;
+                            updateField('paymentTerms', {
+                              ...formData.paymentTerms,
+                              basis: newBasis,
+                              // Add default net terms if switching to invoice/msa
+                              netTerms: newBasis !== 'immediate' ? (formData.paymentTerms?.netTerms || 'net-30') : undefined,
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                        >
+                          {PAYMENT_BASIS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Net Terms (only shown for invoice/msa basis) */}
+                      {formData.paymentTerms?.basis && formData.paymentTerms.basis !== 'immediate' && (
+                        <div>
+                          <label className="block text-xs font-medium text-neutral-600 mb-1">
+                            Net Terms
+                          </label>
+                          <select
+                            value={formData.paymentTerms?.netTerms || 'net-30'}
+                            onChange={(e) => updateField('paymentTerms', {
+                              ...formData.paymentTerms,
+                              netTerms: e.target.value as NetTerms,
+                            })}
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                          >
+                            {NET_TERMS_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preview billing text */}
+                    <div className="mt-3 p-3 bg-violet-50 rounded-lg">
+                      <p className="text-xs text-neutral-500 mb-1">Billing in PDF:</p>
+                      <p className="text-sm font-medium text-violet-700">
+                        {formData.paymentTerms ? getBillingText(formData.paymentTerms) : 'Annual, invoiced upfront'}
+                      </p>
+                    </div>
+
+                    {/* Custom override option */}
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium text-neutral-600 mb-1">
+                        Custom Payment Text (optional override)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.customPaymentText || ''}
+                        onChange={(e) => updateField('customPaymentText', e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                        placeholder="e.g., Quarterly invoicing, Net 60 from invoice date, EOM + 5 days"
+                      />
+                      <p className="mt-1 text-xs text-neutral-400">
+                        Leave blank to use the auto-generated text above. If filled, this overrides the billing text in the PDF.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
