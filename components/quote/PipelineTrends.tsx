@@ -17,6 +17,7 @@ import { STAGE_LABELS, STAGE_HEX_COLORS, PipelineStage } from '@/lib/quote/pipel
 interface PipelineTrendsProps {
   isOpen: boolean;
   onClose: () => void;
+  inline?: boolean;
 }
 
 interface SnapshotData {
@@ -47,7 +48,7 @@ const STAGE_ORDER: PipelineStage[] = [
   'lost',
 ];
 
-export default function PipelineTrends({ isOpen, onClose }: PipelineTrendsProps) {
+export default function PipelineTrends({ isOpen, onClose, inline = false }: PipelineTrendsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartData, setChartData] = useState<SnapshotData[]>([]);
@@ -155,56 +156,14 @@ export default function PipelineTrends({ isOpen, onClose }: PipelineTrendsProps)
     return `$${value.toFixed(0)}`;
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !inline) return null;
 
   // Select which stages to show in the chart (exclude lost for cleaner visualization)
   const chartStages: PipelineStage[] = ['intro', 'demo', 'trial', 'proposal', 'won'];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Pipeline Trends</h2>
-            <p className="text-violet-100 text-sm">Track pipeline changes over time</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={days}
-              onChange={(e) => setDays(parseInt(e.target.value))}
-              className="px-3 py-1.5 text-sm bg-white/10 text-white border border-white/20 rounded-lg focus:outline-none"
-            >
-              <option value={7} className="text-neutral-800">Last 7 days</option>
-              <option value={30} className="text-neutral-800">Last 30 days</option>
-              <option value={90} className="text-neutral-800">Last 90 days</option>
-            </select>
-            <button
-              onClick={captureSnapshot}
-              disabled={isCapturing}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${isCapturing ? 'animate-spin' : ''}`} />
-              Snapshot Now
-            </button>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+  // Inline content (for embedding in pages)
+  const content = (
+    <>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
@@ -368,6 +327,85 @@ export default function PipelineTrends({ isOpen, onClose }: PipelineTrendsProps)
               </div>
             </>
           )}
+    </>
+  );
+
+  // Inline mode - render content directly
+  if (inline) {
+    return (
+      <div className="space-y-4">
+        {/* Inline header with controls */}
+        <div className="flex items-center justify-between">
+          <select
+            value={days}
+            onChange={(e) => setDays(parseInt(e.target.value))}
+            className="px-3 py-1.5 text-sm bg-neutral-100 text-neutral-700 border border-neutral-200 rounded-lg focus:outline-none"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+          <button
+            onClick={captureSnapshot}
+            disabled={isCapturing}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isCapturing ? 'animate-spin' : ''}`} />
+            Snapshot Now
+          </button>
+        </div>
+        {content}
+      </div>
+    );
+  }
+
+  // Modal mode
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Pipeline Trends</h2>
+            <p className="text-violet-100 text-sm">Track pipeline changes over time</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={days}
+              onChange={(e) => setDays(parseInt(e.target.value))}
+              className="px-3 py-1.5 text-sm bg-white/10 text-white border border-white/20 rounded-lg focus:outline-none"
+            >
+              <option value={7} className="text-neutral-800">Last 7 days</option>
+              <option value={30} className="text-neutral-800">Last 30 days</option>
+              <option value={90} className="text-neutral-800">Last 90 days</option>
+            </select>
+            <button
+              onClick={captureSnapshot}
+              disabled={isCapturing}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isCapturing ? 'animate-spin' : ''}`} />
+              Snapshot Now
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {content}
         </div>
       </div>
     </div>
