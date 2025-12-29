@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  Settings,
   Search,
   ChevronDown,
   X,
@@ -40,8 +39,15 @@ import {
 import { ACCOUNT_MANAGERS } from '@/lib/quote/constants';
 import type { PaymentFrequency, PaymentBasis, NetTerms } from '@/lib/quote/types';
 import { generateMSAPDF, generateMSAFilename } from '@/lib/msa/pdf-generator';
-import { generateMSAWord, generateMSAWordFilename } from '@/lib/msa/docx-generator';
+// Legacy Word generator kept for reference but not used (using locked-template instead)
+// import { generateMSAWord, generateMSAWordFilename } from '@/lib/msa/docx-generator';
 import { saveMSADraft, loadMSADraft, saveToMSAHistory } from '@/lib/msa/storage';
+import {
+  generateLockedMSA,
+  generateLockedMSAFilename,
+  MSAValidationError,
+  type PlaceholderValues,
+} from '@/lib/msa/locked-template';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
 import { MSAPreviewModal } from '@/components/msa/MSAPreviewModal';
 import { MSAHistory } from '@/components/msa/MSAHistory';
@@ -291,6 +297,45 @@ export default function MSAPage() {
     setAuthChecked(true);
   }, []);
 
+  // Convert MSAFormData to PlaceholderValues for locked template mode
+  const toPlaceholderValues = useCallback((data: MSAFormData): PlaceholderValues => {
+    // Get the selected row (first one, or first selected)
+    const selectedIdx = data.selectedRowIndices && data.selectedRowIndices.length > 0
+      ? data.selectedRowIndices[0]
+      : 0;
+    const selectedRow = data.orderFormRows[selectedIdx] || data.orderFormRows[0];
+
+    // Format currency for display
+    const currencySymbol = CURRENCY_SYMBOLS[data.currency] || '$';
+    const formatPrice = (val: string) => {
+      const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+      if (isNaN(num)) return val;
+      return currencySymbol + num.toLocaleString('en-US');
+    };
+
+    return {
+      // Required fields
+      CLIENT_COUNTRY: data.clientCountry,
+      SOF_CLIENT_NAME: data.clientLegalName,
+      SOF_PRIMARY_CONTACT: data.clientContactName,
+      SOF_EMAIL: data.clientContactEmail,
+      SOF_TERM: selectedRow?.term || '',
+      SOF_USERS: selectedRow?.users || '',
+      SOF_CONSULTING_HOURS: selectedRow?.consultingHours || '',
+      SOF_LIST_PRICE: formatPrice(selectedRow?.listPrice || '0'),
+      SOF_INVESTMENT: formatPrice(selectedRow?.offerPrice || '0'),
+      SOF_PAYMENT_TERMS: data.customPaymentText?.trim() || getBillingText(data.paymentTerms),
+
+      // Optional fields
+      CLIENT_LEGAL_NAME: data.clientLegalName,
+      CLIENT_ADDRESS: data.clientAddress,
+      SOF_REGISTERED_ADDRESS: data.clientAddress,
+      SOF_PHONE: data.clientContactPhone,
+      CUSTOMER_SIGN_NAME: data.clientContactName,
+      CUSTOMER_SIGN_TITLE: data.clientContactTitle,
+    };
+  }, []);
+
   // Handle successful authentication
   const handleAuthSuccess = useCallback(() => {
     setQuoteAuthenticated();
@@ -435,7 +480,7 @@ export default function MSAPage() {
     }
   }, [formData]);
 
-  // Download PDF
+  // Download PDF (Official format)
   const handleDownload = useCallback(async () => {
     setIsGenerating(true);
     try {
@@ -455,21 +500,31 @@ export default function MSAPage() {
       saveToMSAHistory(formData.clientContactEmail, formData);
       setHistoryRefresh(prev => prev + 1);
 
-      toast.success('MSA downloaded successfully');
+      // Enhanced success message
+      toast.success(
+        <div>
+          <strong>Official PDF Downloaded</strong>
+          <p className="text-sm opacity-90 mt-0.5">
+            Ready for signing - {formData.clientLegalName || 'client'}
+          </p>
+        </div>,
+        { duration: 4000 }
+      );
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      toast.error('Failed to generate PDF');
+      toast.error('Failed to generate PDF. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   }, [formData]);
 
-  // Download Word
+  // Download Word (always uses locked template)
   const handleDownloadWord = useCallback(async () => {
     setIsGenerating(true);
     try {
-      const bytes = await generateMSAWord(formData);
-      const filename = generateMSAWordFilename(formData);
+      const values = toPlaceholderValues(formData);
+      const bytes = await generateLockedMSA(values);
+      const filename = generateLockedMSAFilename(values);
 
       const blob = new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       const url = URL.createObjectURL(blob);
@@ -484,14 +539,28 @@ export default function MSAPage() {
       saveToMSAHistory(formData.clientContactEmail, formData);
       setHistoryRefresh(prev => prev + 1);
 
-      toast.success('MSA Word document downloaded');
+      // Enhanced success message
+      toast.success(
+        <div>
+          <strong>Word Draft Downloaded</strong>
+          <p className="text-sm opacity-90 mt-0.5">
+            Editable document for {formData.clientLegalName || 'client'}
+          </p>
+        </div>,
+        { duration: 4000 }
+      );
     } catch (error) {
       console.error('Failed to generate Word:', error);
-      toast.error('Failed to generate Word document');
+      if (error instanceof MSAValidationError) {
+        // Error message is already user-friendly from validation.ts
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to generate Word document. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
     }
-  }, [formData]);
+  }, [formData, toPlaceholderValues]);
 
   // Download from preview modal
   const handlePreviewDownload = useCallback(() => {
@@ -1161,37 +1230,73 @@ export default function MSAPage() {
                     </p>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-3 pt-4">
-                    <button
-                      onClick={handlePreview}
-                      disabled={isGenerating}
-                      className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-violet-600 text-violet-600 hover:bg-violet-50 rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                      <Eye className="w-5 h-5" />
-                      Preview PDF
-                    </button>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleDownload}
-                        disabled={isGenerating}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-violet-600 text-white hover:bg-violet-700 rounded-lg font-medium transition-colors disabled:opacity-50"
-                      >
-                        <Download className="w-5 h-5" />
-                        {isGenerating ? 'Generating...' : 'Download PDF'}
-                      </button>
-                      <button
-                        onClick={handleDownloadWord}
-                        disabled={isGenerating}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition-colors disabled:opacity-50"
-                      >
-                        <FileText className="w-5 h-5" />
-                        {isGenerating ? 'Generating...' : 'Download Word'}
-                      </button>
+                  {/* Download Section */}
+                  <div className="space-y-4 pt-2">
+                    {/* PDF - Primary (Official Format) */}
+                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-lg">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-violet-900 flex items-center gap-2">
+                            <FileCheck className="w-4 h-4" />
+                            Official PDF
+                          </h4>
+                          <p className="text-sm text-violet-700 mt-1">
+                            Ready for signing. This is the official legal document.
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button
+                            onClick={handlePreview}
+                            disabled={isGenerating}
+                            className="flex items-center gap-1.5 px-3 py-2 border border-violet-300 text-violet-700 hover:bg-violet-100 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                          </button>
+                          <button
+                            onClick={handleDownload}
+                            disabled={isGenerating}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white hover:bg-violet-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                          >
+                            <Download className="w-4 h-4" />
+                            {isGenerating ? 'Generating...' : 'Download'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-xs text-neutral-500 text-center">
-                      Word format allows editing before final signature
-                    </p>
+
+                    {/* Word - Secondary (Editable Draft) */}
+                    <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-neutral-700 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Editable Word Draft
+                          </h4>
+                          <p className="text-sm text-neutral-500 mt-1">
+                            For editing before final PDF. Uses official legal template.
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleDownloadWord}
+                          disabled={isGenerating}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex-shrink-0"
+                        >
+                          <Download className="w-4 h-4" />
+                          {isGenerating ? 'Generating...' : 'Download'}
+                        </button>
+                      </div>
+
+                      {/* Field limitation warning */}
+                      <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+                        <p className="text-xs text-amber-800 flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <span>
+                            <strong>Note:</strong> Client address and signature fields may need manual entry in the Word document.
+                          </span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
