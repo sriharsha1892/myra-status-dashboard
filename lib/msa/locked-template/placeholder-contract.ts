@@ -13,7 +13,9 @@
 // REQUIRED - Generation MUST fail if any of these are missing a value
 export const REQUIRED_PLACEHOLDERS = [
   // Main Agreement - Parties Section
-  'CLIENT_COUNTRY',         // e.g., "Croatia"
+  'CLIENT_LEGAL_NAME',      // e.g., "Acme Corp Inc." - company name in opening paragraph
+  'CLIENT_COUNTRY',         // e.g., "United States"
+  'CLIENT_REGISTERED_ADDRESS', // e.g., "123 Main St, Suite 100, New York, NY 10001"
 
   // Annexure B - Subscription Order Form
   'SOF_CLIENT_NAME',        // Client name in order form (also used in signature block)
@@ -30,14 +32,7 @@ export const REQUIRED_PLACEHOLDERS = [
 ] as const;
 
 // OPTIONAL - May be left blank (will be replaced with empty string)
-// Note: Some of these are optional because they may need manual template editing
-// to add the placeholder tokens (Word splits text across XML runs)
 export const OPTIONAL_PLACEHOLDERS = [
-  // These may not be in the template yet (require manual Word editing)
-  'CLIENT_LEGAL_NAME',      // e.g., "Horwath HTL." - in parties section
-  'CLIENT_ADDRESS',         // Full registered address - in parties section
-  'SOF_REGISTERED_ADDRESS', // Registered address in order form
-
   'SOF_PHONE',              // Contact phone (optional field)
 
   // Signature Blocks - Dates are typically filled at signing

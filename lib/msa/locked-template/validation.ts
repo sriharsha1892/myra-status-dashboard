@@ -31,7 +31,10 @@ export class MSAValidationError extends Error {
  * User-friendly error messages for each placeholder field
  */
 export const PLACEHOLDER_ERROR_MESSAGES: Record<string, string> = {
+  // Required fields
+  CLIENT_LEGAL_NAME: 'Please enter the Client Legal Name',
   CLIENT_COUNTRY: 'Please select a Country',
+  CLIENT_REGISTERED_ADDRESS: 'Please enter the Client Registered Address',
   SOF_CLIENT_NAME: 'Please enter the Client Name',
   SOF_PRIMARY_CONTACT: 'Please enter the Primary Contact name',
   SOF_EMAIL: 'Please enter a valid Email address',
@@ -41,10 +44,7 @@ export const PLACEHOLDER_ERROR_MESSAGES: Record<string, string> = {
   SOF_LIST_PRICE: 'Please enter the List Price',
   SOF_INVESTMENT: 'Please enter the Investment amount',
   SOF_PAYMENT_TERMS: 'Please specify the Payment Terms',
-  // Optional fields (for completeness)
-  CLIENT_LEGAL_NAME: 'Please enter the Client Legal Name',
-  CLIENT_ADDRESS: 'Please enter the Client Address',
-  SOF_REGISTERED_ADDRESS: 'Please enter the Registered Address',
+  // Optional fields
   SOF_PHONE: 'Please enter the Phone number',
 };
 

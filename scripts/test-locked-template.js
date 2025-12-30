@@ -14,7 +14,9 @@ const TEMPLATE_PATH = path.join(__dirname, '..', 'public', 'templates', 'myRA_MS
 // Test data matching the placeholder contract
 const TEST_VALUES = {
   // Required fields
+  CLIENT_LEGAL_NAME: 'Test Corp Inc.',
   CLIENT_COUNTRY: 'United States',
+  CLIENT_REGISTERED_ADDRESS: '123 Test Street, Suite 500, New York, NY 10001',
   SOF_CLIENT_NAME: 'Test Corp Inc.',
   SOF_PRIMARY_CONTACT: 'John Smith',
   SOF_EMAIL: 'john@testcorp.com',
@@ -26,9 +28,6 @@ const TEST_VALUES = {
   SOF_PAYMENT_TERMS: 'Quarterly, invoiced upfront',
 
   // Optional fields
-  CLIENT_LEGAL_NAME: 'Test Corp Inc.',
-  CLIENT_ADDRESS: '123 Test Street, New York, NY 10001',
-  SOF_REGISTERED_ADDRESS: '123 Test Street, New York, NY 10001',
   SOF_PHONE: '+1 (555) 123-4567',
   CUSTOMER_SIGN_NAME: 'John Smith',
   CUSTOMER_SIGN_TITLE: 'CEO',
@@ -36,7 +35,9 @@ const TEST_VALUES = {
 
 // All placeholders from placeholder-contract.ts
 const REQUIRED_PLACEHOLDERS = [
+  'CLIENT_LEGAL_NAME',
   'CLIENT_COUNTRY',
+  'CLIENT_REGISTERED_ADDRESS',
   'SOF_CLIENT_NAME',
   'SOF_PRIMARY_CONTACT',
   'SOF_EMAIL',
