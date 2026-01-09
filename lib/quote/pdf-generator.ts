@@ -13,6 +13,42 @@ import {
   DEFAULT_PAYMENT_TERMS,
 } from './constants';
 
+// Sanitize text for PDF standard fonts (WinAnsi encoding)
+// Replaces special Unicode characters with ASCII equivalents
+function sanitizeForPdf(text: string): string {
+  if (!text) return '';
+
+  // Common character replacements for WinAnsi compatibility (using Unicode escapes)
+  const replacements: Record<string, string> = {
+    // Turkish characters
+    '\u015F': 's', '\u015E': 'S', '\u011F': 'g', '\u011E': 'G', '\u0131': 'i', '\u0130': 'I',
+    // Polish characters
+    '\u0105': 'a', '\u0107': 'c', '\u0119': 'e', '\u0142': 'l', '\u0144': 'n', '\u00F3': 'o', '\u015B': 's', '\u017A': 'z', '\u017C': 'z',
+    '\u0104': 'A', '\u0106': 'C', '\u0118': 'E', '\u0141': 'L', '\u0143': 'N', '\u00D3': 'O', '\u015A': 'S', '\u0179': 'Z', '\u017B': 'Z',
+    // Czech/Slovak characters
+    '\u0159': 'r', '\u0158': 'R', '\u016F': 'u', '\u016E': 'U', '\u011B': 'e', '\u011A': 'E', '\u0161': 's', '\u0160': 'S', '\u010D': 'c', '\u010C': 'C', '\u017E': 'z', '\u017D': 'Z', '\u010F': 'd', '\u010E': 'D', '\u0165': 't', '\u0164': 'T', '\u0148': 'n', '\u0147': 'N',
+    // Romanian characters
+    '\u0103': 'a', '\u0102': 'A', '\u021B': 't', '\u021A': 'T', '\u00E2': 'a', '\u00C2': 'A', '\u00EE': 'i', '\u00CE': 'I',
+    // Vietnamese common (simplified)
+    '\u0111': 'd', '\u0110': 'D',
+    // Smart quotes and special punctuation
+    '\u2018': "'", '\u2019': "'", '\u201C': '"', '\u201D': '"', '\u2013': '-', '\u2014': '-', '\u2026': '...',
+    // Other common Unicode
+    '\u2022': '*', '\u00D7': 'x', '\u00F7': '/', '\u2248': '~', '\u2260': '!=', '\u2264': '<=', '\u2265': '>=',
+  };
+
+  let result = text;
+  for (const [char, replacement] of Object.entries(replacements)) {
+    result = result.split(char).join(replacement);
+  }
+
+  // Remove any remaining non-WinAnsi characters (codes > 255 that aren't replaced)
+  // Keep standard ASCII and extended Latin-1 (which WinAnsi supports)
+  result = result.replace(/[^\x00-\xFF]/g, '');
+
+  return result;
+}
+
 // Currency formatting
 // Note: Using "INR " instead of "₹" because standard PDF fonts don't support the rupee symbol
 export function formatCurrency(value: string, currency: Currency): string {
@@ -345,11 +381,11 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   const valueX = MARGIN_LEFT + 80;
 
   const clientDetails = [
-    { label: 'Prepared For', value: data.preparedFor },
-    { label: 'Contact', value: data.contactTitle ? `${data.contactName}, ${data.contactTitle}` : data.contactName },
-    { label: 'Email', value: data.contactEmail },
+    { label: 'Prepared For', value: sanitizeForPdf(data.preparedFor) },
+    { label: 'Contact', value: sanitizeForPdf(data.contactTitle ? `${data.contactName}, ${data.contactTitle}` : data.contactName) },
+    { label: 'Email', value: sanitizeForPdf(data.contactEmail) },
     { label: 'Date', value: formatDate(data.quoteDate) },
-    ...(data.preparedBy ? [{ label: 'Prepared By', value: data.preparedBy }] : []),
+    ...(data.preparedBy ? [{ label: 'Prepared By', value: sanitizeForPdf(data.preparedBy) }] : []),
   ];
 
   for (const detail of clientDetails) {
@@ -421,14 +457,6 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
   y -= rowHeight;
 
-  // Calculate totals and determine if we should show total row
-  let totalListPrice = 0;
-  let totalOfferPrice = 0;
-
-  // Smart total logic: only show total if all rows have the same term (additive items)
-  const uniqueTerms = new Set(validRows.map(r => r.term.toLowerCase().trim()));
-  const showTotalRow = uniqueTerms.size === 1 && validRows.length > 1;
-
   // Data rows
   for (let rowIdx = 0; rowIdx < validRows.length; rowIdx++) {
     const row = validRows[rowIdx];
@@ -443,25 +471,19 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: isEven ? PDF_COLORS.slate50 : PDF_COLORS.white,
     });
 
-    // Parse prices for totals
-    const listPrice = parseFloat(row.listPrice.replace(/[^0-9.]/g, ''));
-    const offerPrice = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
-    if (!isNaN(listPrice)) totalListPrice += listPrice;
-    if (!isNaN(offerPrice)) totalOfferPrice += offerPrice;
-
     // Row data - conditionally include Users column (Per User/Year removed)
     colX = tableX + 6;
     const rowData = showUsers
       ? [
-          row.term,
-          row.users,
-          row.consultingHours,
+          sanitizeForPdf(row.term),
+          sanitizeForPdf(row.users),
+          sanitizeForPdf(row.consultingHours),
           formatCurrency(row.listPrice, data.currency),
           formatCurrency(row.offerPrice, data.currency),
         ]
       : [
-          row.term,
-          row.consultingHours,
+          sanitizeForPdf(row.term),
+          sanitizeForPdf(row.consultingHours),
           formatCurrency(row.listPrice, data.currency),
           formatCurrency(row.offerPrice, data.currency),
         ];
@@ -478,50 +500,6 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       });
       colX += colWidths[i];
     }
-
-    y -= rowHeight;
-  }
-
-  // Total row - only show if all rows have the same term (additive scenario)
-  if (showTotalRow) {
-    page1.drawRectangle({
-      x: tableX,
-      y: y - rowHeight + 6,
-      width: CONTENT_WIDTH,
-      height: rowHeight,
-      color: PDF_COLORS.slate200,
-    });
-
-    page1.drawText('Total', {
-      x: tableX + 6,
-      y: y - 10,
-      size: 8,
-      font: fontBold,
-      color: PDF_COLORS.slate900,
-    });
-
-    // Position for List Price total - account for conditional Users column
-    const listPriceX = showUsers
-      ? tableX + 6 + colWidths[0] + colWidths[1] + colWidths[2] // With Users: Term + Users + Consulting
-      : tableX + 6 + colWidths[0] + colWidths[1];               // Without Users: Term + Consulting
-    page1.drawText(formatCurrency(String(totalListPrice), data.currency), {
-      x: listPriceX,
-      y: y - 10,
-      size: 8,
-      font: fontBold,
-      color: PDF_COLORS.slate900,
-    });
-
-    // Position for Exclusive Offer total
-    const listPriceColIndex = showUsers ? 3 : 2;
-    const offerPriceX = listPriceX + colWidths[listPriceColIndex];
-    page1.drawText(formatCurrency(String(totalOfferPrice), data.currency), {
-      x: offerPriceX,
-      y: y - 10,
-      size: 8,
-      font: fontBold,
-      color: PDF_COLORS.slate900,
-    });
 
     y -= rowHeight;
   }
@@ -644,7 +622,9 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   // Next Steps section
   y -= 20;
   y = drawSectionHeader(page2, 'Next Steps', y, fontBold);
-  y = drawWrappedText(page2, STATIC_CONTENT.nextSteps(data.preparedBy, data.preparedByEmail), MARGIN_LEFT, y, CONTENT_WIDTH, font, 9, PDF_COLORS.slate600);
+  const sanitizedPreparedBy = sanitizeForPdf(data.preparedBy);
+  const sanitizedPreparedByEmail = sanitizeForPdf(data.preparedByEmail);
+  y = drawWrappedText(page2, STATIC_CONTENT.nextSteps(sanitizedPreparedBy, sanitizedPreparedByEmail), MARGIN_LEFT, y, CONTENT_WIDTH, font, 9, PDF_COLORS.slate600);
 
   // Important Notice box
   y -= 24;
@@ -661,7 +641,7 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
   drawWrappedText(
     page2,
-    STATIC_CONTENT.importantNotice(data.preparedBy, data.preparedByEmail),
+    STATIC_CONTENT.importantNotice(sanitizedPreparedBy, sanitizedPreparedByEmail),
     MARGIN_LEFT + 10,
     y,
     CONTENT_WIDTH - 20,

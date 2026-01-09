@@ -178,9 +178,12 @@ export default function QuotePage() {
     fromCurrency: Currency;
     toCurrency: Currency;
   } | null>(null);
+  const [showSaveIndicator, setShowSaveIndicator] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Debounce timer ref
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check auth on mount
   useEffect(() => {
@@ -210,6 +213,19 @@ export default function QuotePage() {
 
     saveTimeoutRef.current = setTimeout(() => {
       saveDraft(formData);
+
+      // Show save indicator
+      setShowSaveIndicator(true);
+
+      // Clear any existing indicator timeout
+      if (saveIndicatorTimeoutRef.current) {
+        clearTimeout(saveIndicatorTimeoutRef.current);
+      }
+
+      // Hide indicator after 2 seconds
+      saveIndicatorTimeoutRef.current = setTimeout(() => {
+        setShowSaveIndicator(false);
+      }, 2000);
     }, 500);
 
     return () => {
@@ -286,8 +302,13 @@ export default function QuotePage() {
     toast.success('Quote loaded from history');
   }, []);
 
-  // Clear form
-  const handleClearForm = useCallback(() => {
+  // Clear form - shows confirmation first
+  const handleClearFormClick = useCallback(() => {
+    setShowClearConfirm(true);
+  }, []);
+
+  // Actually clear the form after confirmation
+  const handleClearFormConfirm = useCallback(() => {
     const quoteDate = getTodayISO();
     setFormData({
       ...DEFAULT_QUOTE_FORM,
@@ -301,6 +322,7 @@ export default function QuotePage() {
     setTouched({});
     setDealContextOpen(false);
     setPaymentTermsOpen(false);
+    setShowClearConfirm(false);
     toast.success('Form cleared');
   }, []);
 
@@ -470,6 +492,15 @@ export default function QuotePage() {
 
     if (hasErrors(validationErrors)) {
       toast.error('Please fix the validation errors');
+      // Scroll to first error field
+      const firstErrorField = Object.keys(validationErrors)[0];
+      if (firstErrorField) {
+        const element = document.querySelector(`[name="${firstErrorField}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          (element as HTMLElement).focus?.();
+        }
+      }
       return;
     }
 
@@ -535,11 +566,7 @@ export default function QuotePage() {
   const handleGenerateWord = useCallback(async () => {
     // Validate
     const validationErrors = validateForm(formData);
-    const rowErrors = formData.rows.map(validateRow);
-    const hasRowErrors = rowErrors.some((errors) => Object.keys(errors).length > 0);
-
     setErrors(validationErrors);
-    setRowErrors(rowErrors);
     setTouched(prev => ({
       ...prev,
       preparedFor: true,
@@ -547,8 +574,17 @@ export default function QuotePage() {
       contactEmail: true,
     }));
 
-    if (hasErrors(validationErrors) || hasRowErrors) {
+    if (hasErrors(validationErrors)) {
       toast.error('Please fix the validation errors');
+      // Scroll to first error field
+      const firstErrorField = Object.keys(validationErrors)[0];
+      if (firstErrorField) {
+        const element = document.querySelector(`[name="${firstErrorField}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          (element as HTMLElement).focus?.();
+        }
+      }
       return;
     }
 
@@ -638,10 +674,23 @@ export default function QuotePage() {
             <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
               {/* Card Header */}
               <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-4">
-                <h2 className="text-lg font-semibold text-white">Corporate Quotation</h2>
-                <p className="text-sm text-violet-200">
-                  Generate a professional quote for myRA AI® platform
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Corporate Quotation</h2>
+                    <p className="text-sm text-violet-200">
+                      Generate a professional quote for myRA AI® platform
+                    </p>
+                  </div>
+                  {/* Save Indicator */}
+                  <div
+                    className={`flex items-center gap-1.5 text-xs text-white/90 bg-white/10 px-2.5 py-1 rounded-full transition-opacity duration-300 ${
+                      showSaveIndicator ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Draft saved</span>
+                  </div>
+                </div>
               </div>
 
               <div className="p-6 space-y-6">
@@ -656,6 +705,7 @@ export default function QuotePage() {
                       </label>
                       <input
                         type="text"
+                        name="preparedFor"
                         value={formData.preparedFor}
                         onChange={(e) => updateField('preparedFor', e.target.value)}
                         onBlur={() => handleBlur('preparedFor')}
@@ -677,6 +727,7 @@ export default function QuotePage() {
                       </label>
                       <input
                         type="text"
+                        name="contactName"
                         value={formData.contactName}
                         onChange={(e) => updateField('contactName', e.target.value)}
                         onBlur={() => handleBlur('contactName')}
@@ -712,6 +763,7 @@ export default function QuotePage() {
                       </label>
                       <input
                         type="email"
+                        name="contactEmail"
                         value={formData.contactEmail}
                         onChange={(e) => updateField('contactEmail', e.target.value)}
                         onBlur={() => handleBlur('contactEmail')}
@@ -1373,7 +1425,7 @@ export default function QuotePage() {
                 <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
                   <button
                     type="button"
-                    onClick={handleClearForm}
+                    onClick={handleClearFormClick}
                     className="flex items-center gap-2 px-3 py-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -1530,6 +1582,40 @@ export default function QuotePage() {
                 className="flex-1 px-4 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
               >
                 Convert Values
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Form Confirmation Dialog */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900">Clear Form?</h3>
+                <p className="text-sm text-neutral-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-neutral-600 mb-6">
+              Are you sure you want to clear all form data? This will reset all fields to their default values.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2 text-sm border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearFormConfirm}
+                className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Clear Form
               </button>
             </div>
           </div>
