@@ -315,7 +315,9 @@ export default function MSAPage() {
 
     return {
       // Required fields
+      CLIENT_LEGAL_NAME: data.clientLegalName,
       CLIENT_COUNTRY: data.clientCountry,
+      CLIENT_REGISTERED_ADDRESS: data.clientAddress,
       SOF_CLIENT_NAME: data.clientLegalName,
       SOF_PRIMARY_CONTACT: data.clientContactName,
       SOF_EMAIL: data.clientContactEmail,
@@ -327,9 +329,6 @@ export default function MSAPage() {
       SOF_PAYMENT_TERMS: data.customPaymentText?.trim() || getBillingText(data.paymentTerms),
 
       // Optional fields
-      CLIENT_LEGAL_NAME: data.clientLegalName,
-      CLIENT_ADDRESS: data.clientAddress,
-      SOF_REGISTERED_ADDRESS: data.clientAddress,
       SOF_PHONE: data.clientContactPhone,
       CUSTOMER_SIGN_NAME: data.clientContactName,
       CUSTOMER_SIGN_TITLE: data.clientContactTitle,
