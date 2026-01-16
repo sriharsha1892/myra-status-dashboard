@@ -47,8 +47,10 @@ class ToastManager {
       this.config = { ...this.config, ...config };
     }
 
-    // Restore persistent toasts on initialization
-    this.restorePersistentToasts();
+    // Restore persistent toasts on initialization (only in browser)
+    if (typeof window !== 'undefined') {
+      this.restorePersistentToasts();
+    }
   }
 
   /**
