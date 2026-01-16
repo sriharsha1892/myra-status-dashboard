@@ -882,6 +882,15 @@ export default function QuotePage() {
                         />
                         Show Users
                       </label>
+                      <label className="flex items-center gap-2 text-sm text-neutral-500 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.showPromotionalPrice}
+                          onChange={(e) => updateField('showPromotionalPrice', e.target.checked)}
+                          className="w-4 h-4 rounded border-neutral-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        Show Promotional Price
+                      </label>
                     </div>
                     <button
                       type="button"
@@ -909,8 +918,12 @@ export default function QuotePage() {
                           )}
                           <th className="px-3 py-2 text-left font-medium">Consulting Hours</th>
                           <th className="px-3 py-2 text-left font-medium">List Price</th>
-                          <th className="px-3 py-2 text-left font-medium">Promotional Price/Year</th>
-                          <th className="px-3 py-2 text-center font-medium">Discount</th>
+                          {formData.showPromotionalPrice && (
+                            <th className="px-3 py-2 text-left font-medium">Promotional Price/Year</th>
+                          )}
+                          {formData.showPromotionalPrice && (
+                            <th className="px-3 py-2 text-center font-medium">Discount</th>
+                          )}
                           <th className="px-3 py-2 text-center font-medium rounded-tr-lg w-10"></th>
                         </tr>
                       </thead>
@@ -998,44 +1011,48 @@ export default function QuotePage() {
                                   placeholder="75,000"
                                 />
                               </td>
-                              <td className="px-2 py-2">
-                                <input
-                                  type="text"
-                                  value={row.offerPrice}
-                                  onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
-                                  onBlur={() => {
-                                    handleBlur(`row_${index}_offerPrice`);
-                                    if (row.offerPrice) {
-                                      const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
-                                      updateRow(index, 'offerPrice', formatted);
-                                    }
-                                  }}
-                                  onFocus={() => {
-                                    if (row.offerPrice) {
-                                      updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
-                                    }
-                                  }}
-                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-violet-500 font-medium ${
-                                    errors.rows?.[index]?.offerPrice
-                                      ? 'border-red-300 bg-red-50'
-                                      : 'border-neutral-200'
-                                  }`}
-                                  placeholder="60,000"
-                                />
-                              </td>
-                              <td className="px-2 py-2 text-center">
-                                {discount.percent !== null ? (
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                    discount.isNegative
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-green-100 text-green-700'
-                                  }`}>
-                                    {discount.percent.toFixed(1)}% {discount.isNegative ? 'up' : 'off'}
-                                  </span>
-                                ) : (
-                                  <span className="text-neutral-400">-</span>
-                                )}
-                              </td>
+                              {formData.showPromotionalPrice && (
+                                <td className="px-2 py-2">
+                                  <input
+                                    type="text"
+                                    value={row.offerPrice}
+                                    onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
+                                    onBlur={() => {
+                                      handleBlur(`row_${index}_offerPrice`);
+                                      if (row.offerPrice) {
+                                        const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
+                                        updateRow(index, 'offerPrice', formatted);
+                                      }
+                                    }}
+                                    onFocus={() => {
+                                      if (row.offerPrice) {
+                                        updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
+                                      }
+                                    }}
+                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-violet-500 font-medium ${
+                                      errors.rows?.[index]?.offerPrice
+                                        ? 'border-red-300 bg-red-50'
+                                        : 'border-neutral-200'
+                                    }`}
+                                    placeholder="60,000"
+                                  />
+                                </td>
+                              )}
+                              {formData.showPromotionalPrice && (
+                                <td className="px-2 py-2 text-center">
+                                  {discount.percent !== null ? (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      discount.isNegative
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-green-100 text-green-700'
+                                    }`}>
+                                      {discount.percent.toFixed(1)}% {discount.isNegative ? 'up' : 'off'}
+                                    </span>
+                                  ) : (
+                                    <span className="text-neutral-400">-</span>
+                                  )}
+                                </td>
+                              )}
                               <td className="px-2 py-2 text-center">
                                 {formData.rows.length > 1 && (
                                   <button
@@ -1137,7 +1154,7 @@ export default function QuotePage() {
                           </div>
 
                           {/* Prices */}
-                          <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className={`grid gap-3 mb-3 ${formData.showPromotionalPrice ? 'grid-cols-2' : 'grid-cols-1'}`}>
                             <div>
                               <label className="block text-xs text-neutral-500 mb-1">List Price</label>
                               <input
@@ -1159,36 +1176,38 @@ export default function QuotePage() {
                                 placeholder="75,000"
                               />
                             </div>
-                            <div>
-                              <label className="block text-xs text-neutral-500 mb-1">Promotional Price/Year</label>
-                              <input
-                                type="text"
-                                value={row.offerPrice}
-                                onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
-                                onBlur={() => {
-                                  handleBlur(`row_${index}_offerPrice`);
-                                  if (row.offerPrice) {
-                                    const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
-                                    updateRow(index, 'offerPrice', formatted);
-                                  }
-                                }}
-                                onFocus={() => {
-                                  if (row.offerPrice) {
-                                    updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
-                                  }
-                                }}
-                                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-violet-500 font-medium bg-white ${
-                                  errors.rows?.[index]?.offerPrice
-                                    ? 'border-red-300 bg-red-50'
-                                    : 'border-neutral-200'
-                                }`}
-                                placeholder="60,000"
-                              />
-                            </div>
+                            {formData.showPromotionalPrice && (
+                              <div>
+                                <label className="block text-xs text-neutral-500 mb-1">Promotional Price/Year</label>
+                                <input
+                                  type="text"
+                                  value={row.offerPrice}
+                                  onChange={(e) => updateRow(index, 'offerPrice', parseFormattedNumber(e.target.value))}
+                                  onBlur={() => {
+                                    handleBlur(`row_${index}_offerPrice`);
+                                    if (row.offerPrice) {
+                                      const formatted = formatNumberDisplay(row.offerPrice, formData.currency);
+                                      updateRow(index, 'offerPrice', formatted);
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    if (row.offerPrice) {
+                                      updateRow(index, 'offerPrice', parseFormattedNumber(row.offerPrice));
+                                    }
+                                  }}
+                                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:border-violet-500 font-medium bg-white ${
+                                    errors.rows?.[index]?.offerPrice
+                                      ? 'border-red-300 bg-red-50'
+                                      : 'border-neutral-200'
+                                  }`}
+                                  placeholder="60,000"
+                                />
+                              </div>
+                            )}
                           </div>
 
                           {/* Discount Badge */}
-                          {discount.percent !== null && (
+                          {formData.showPromotionalPrice && discount.percent !== null && (
                             <div className="flex justify-end">
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                                 discount.isNegative

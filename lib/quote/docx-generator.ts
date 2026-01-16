@@ -156,14 +156,23 @@ function createBodyParagraph(text: string): Paragraph {
 // Create investment table
 function createInvestmentTable(data: QuoteFormData): Table {
   const showUsers = data.showUsersColumn !== false;
+  const showPromotionalPrice = data.showPromotionalPrice !== false;
 
   const validRows = data.rows.filter(row =>
     row.term || row.users || row.consultingHours || row.offerPrice
   );
 
-  const headers = showUsers
-    ? ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year']
-    : ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  // Build headers based on which columns are shown
+  let headers: string[];
+  if (showUsers && showPromotionalPrice) {
+    headers = ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  } else if (showUsers && !showPromotionalPrice) {
+    headers = ['Term', 'Users', 'Consulting Hours', 'List Price'];
+  } else if (!showUsers && showPromotionalPrice) {
+    headers = ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  } else {
+    headers = ['Term', 'Consulting Hours', 'List Price'];
+  }
 
   const headerRow = new TableRow({
     children: headers.map(header =>
@@ -184,23 +193,37 @@ function createInvestmentTable(data: QuoteFormData): Table {
   const uniqueTerms = new Set(validRows.map(r => r.term.toLowerCase().trim()));
   const showTotalRow = uniqueTerms.size === 1 && validRows.length > 1;
 
+  // Determine promotional price column index for bold styling
+  const promotionalPriceIndex = showPromotionalPrice
+    ? (showUsers ? 4 : 3)
+    : -1;
+
   const dataRows = validRows.map((row, idx) => {
     const listPrice = parseFloat(row.listPrice.replace(/[^0-9.]/g, ''));
     const offerPrice = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
     if (!isNaN(listPrice)) totalListPrice += listPrice;
     if (!isNaN(offerPrice)) totalOfferPrice += offerPrice;
 
+    // Build row data based on which columns are shown
+    let rowCells: string[];
+    if (showUsers && showPromotionalPrice) {
+      rowCells = [row.term, row.users, row.consultingHours, formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)];
+    } else if (showUsers && !showPromotionalPrice) {
+      rowCells = [row.term, row.users, row.consultingHours, formatCurrency(row.listPrice, data.currency)];
+    } else if (!showUsers && showPromotionalPrice) {
+      rowCells = [row.term, row.consultingHours, formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)];
+    } else {
+      rowCells = [row.term, row.consultingHours, formatCurrency(row.listPrice, data.currency)];
+    }
+
     return new TableRow({
-      children: (showUsers
-        ? [row.term, row.users, row.consultingHours, formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)]
-        : [row.term, row.consultingHours, formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)]
-      ).map((cell, cellIdx) =>
+      children: rowCells.map((cell, cellIdx) =>
         new TableCell({
           children: [new Paragraph({
             children: [new TextRun({
               text: cell || '',
               size: 16,
-              bold: cellIdx === (showUsers ? 4 : 3),
+              bold: cellIdx === promotionalPriceIndex,
               color: '334155',
             })],
           })],
@@ -212,9 +235,17 @@ function createInvestmentTable(data: QuoteFormData): Table {
 
   // Total row if applicable
   if (showTotalRow) {
-    const totalCells = showUsers
-      ? ['Total', '', '', formatCurrency(String(totalListPrice), data.currency), formatCurrency(String(totalOfferPrice), data.currency)]
-      : ['Total', '', formatCurrency(String(totalListPrice), data.currency), formatCurrency(String(totalOfferPrice), data.currency)];
+    // Build total row cells based on which columns are shown
+    let totalCells: string[];
+    if (showUsers && showPromotionalPrice) {
+      totalCells = ['Total', '', '', formatCurrency(String(totalListPrice), data.currency), formatCurrency(String(totalOfferPrice), data.currency)];
+    } else if (showUsers && !showPromotionalPrice) {
+      totalCells = ['Total', '', '', formatCurrency(String(totalListPrice), data.currency)];
+    } else if (!showUsers && showPromotionalPrice) {
+      totalCells = ['Total', '', formatCurrency(String(totalListPrice), data.currency), formatCurrency(String(totalOfferPrice), data.currency)];
+    } else {
+      totalCells = ['Total', '', formatCurrency(String(totalListPrice), data.currency)];
+    }
 
     dataRows.push(new TableRow({
       children: totalCells.map((cell, idx) =>

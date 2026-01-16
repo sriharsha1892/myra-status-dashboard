@@ -41,6 +41,7 @@ export interface QuoteFormData {
   preparedByEmail: string;    // Account Manager email (optional)
   showConfidential: boolean;  // Show CONFIDENTIAL watermark
   showUsersColumn: boolean;   // Show Users column in investment table
+  showPromotionalPrice: boolean; // Show Promotional Price/Year and Discount columns
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
   additionalHourRate: string; // Optional per-analyst-hour rate for additional hours
   paymentTerms: PaymentTerms; // Payment frequency and terms

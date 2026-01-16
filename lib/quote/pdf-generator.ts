@@ -422,13 +422,22 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
   // Check if Users column should be shown (default to true for backward compatibility)
   const showUsers = data.showUsersColumn !== false;
+  // Check if Promotional Price column should be shown (default to true for backward compatibility)
+  const showPromotionalPrice = data.showPromotionalPrice !== false;
 
-  // Table with List Price and Exclusive Offer columns (Per User/Year removed)
+  // Table with List Price and optional Promotional Price columns
   const tableX = MARGIN_LEFT;
-  // Adjust column widths based on whether Users column is shown
-  const colWidths = showUsers
-    ? [70, 55, 120, 95, 95] // Term, Users, Consulting Hours, List Price, Exclusive Offer
-    : [85, 150, 110, 110];  // Term, Consulting Hours, List Price, Exclusive Offer
+  // Adjust column widths based on which columns are shown
+  let colWidths: number[];
+  if (showUsers && showPromotionalPrice) {
+    colWidths = [70, 55, 120, 95, 95]; // Term, Users, Consulting Hours, List Price, Promotional Price
+  } else if (showUsers && !showPromotionalPrice) {
+    colWidths = [85, 70, 150, 130]; // Term, Users, Consulting Hours, List Price
+  } else if (!showUsers && showPromotionalPrice) {
+    colWidths = [85, 150, 110, 110]; // Term, Consulting Hours, List Price, Promotional Price
+  } else {
+    colWidths = [100, 200, 145]; // Term, Consulting Hours, List Price
+  }
   const rowHeight = 24;
 
   // Header row
@@ -440,9 +449,17 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
     color: PDF_COLORS.violet,
   });
 
-  const headers = showUsers
-    ? ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year']
-    : ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  // Build headers based on which columns are shown
+  let headers: string[];
+  if (showUsers && showPromotionalPrice) {
+    headers = ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  } else if (showUsers && !showPromotionalPrice) {
+    headers = ['Term', 'Users', 'Consulting Hours', 'List Price'];
+  } else if (!showUsers && showPromotionalPrice) {
+    headers = ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+  } else {
+    headers = ['Term', 'Consulting Hours', 'List Price'];
+  }
   let colX = tableX + 6;
   for (let i = 0; i < headers.length; i++) {
     page1.drawText(headers[i], {
@@ -471,31 +488,51 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
       color: isEven ? PDF_COLORS.slate50 : PDF_COLORS.white,
     });
 
-    // Row data - conditionally include Users column (Per User/Year removed)
+    // Row data - conditionally include Users and Promotional Price columns
     colX = tableX + 6;
-    const rowData = showUsers
-      ? [
-          sanitizeForPdf(row.term),
-          sanitizeForPdf(row.users),
-          sanitizeForPdf(row.consultingHours),
-          formatCurrency(row.listPrice, data.currency),
-          formatCurrency(row.offerPrice, data.currency),
-        ]
-      : [
-          sanitizeForPdf(row.term),
-          sanitizeForPdf(row.consultingHours),
-          formatCurrency(row.listPrice, data.currency),
-          formatCurrency(row.offerPrice, data.currency),
-        ];
+    let rowData: string[];
+    if (showUsers && showPromotionalPrice) {
+      rowData = [
+        sanitizeForPdf(row.term),
+        sanitizeForPdf(row.users),
+        sanitizeForPdf(row.consultingHours),
+        formatCurrency(row.listPrice, data.currency),
+        formatCurrency(row.offerPrice, data.currency),
+      ];
+    } else if (showUsers && !showPromotionalPrice) {
+      rowData = [
+        sanitizeForPdf(row.term),
+        sanitizeForPdf(row.users),
+        sanitizeForPdf(row.consultingHours),
+        formatCurrency(row.listPrice, data.currency),
+      ];
+    } else if (!showUsers && showPromotionalPrice) {
+      rowData = [
+        sanitizeForPdf(row.term),
+        sanitizeForPdf(row.consultingHours),
+        formatCurrency(row.listPrice, data.currency),
+        formatCurrency(row.offerPrice, data.currency),
+      ];
+    } else {
+      rowData = [
+        sanitizeForPdf(row.term),
+        sanitizeForPdf(row.consultingHours),
+        formatCurrency(row.listPrice, data.currency),
+      ];
+    }
 
-    const exclusiveOfferIndex = showUsers ? 4 : 3;
+    // Determine which column index is the promotional price (for bold styling)
+    // Only relevant when showPromotionalPrice is true
+    const promotionalPriceIndex = showPromotionalPrice
+      ? (showUsers ? 4 : 3)
+      : -1; // -1 means no promotional price column
     for (let i = 0; i < rowData.length; i++) {
-      const isExclusiveOffer = i === exclusiveOfferIndex;
+      const isPromotionalPrice = i === promotionalPriceIndex;
       page1.drawText(rowData[i] || '', {
         x: colX,
         y: y - 10,
         size: 7.5,
-        font: isExclusiveOffer ? fontBold : font,
+        font: isPromotionalPrice ? fontBold : font,
         color: PDF_COLORS.slate700,
       });
       colX += colWidths[i];
