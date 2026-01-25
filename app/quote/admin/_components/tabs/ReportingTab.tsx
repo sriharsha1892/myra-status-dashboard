@@ -1,8 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Target, DollarSign, Clock, Users, TrendingUp, BarChart3, Calendar, Star, CheckCircle, XCircle } from 'lucide-react';
 import PipelineTrends from '@/components/quote/PipelineTrends';
+import QuoteMsaTracking from '@/components/quote/QuoteMsaTracking';
+import ExcelImportSection from '@/components/quote/ExcelImportSection';
+import UsageInputParser from '@/components/quote/UsageInputParser';
+import UsageMetricsSection from '@/components/quote/UsageMetricsSection';
+import UsageReviewModal from '@/components/quote/UsageReviewModal';
+import SyncResultModal from '@/components/quote/SyncResultModal';
 import EmptyState from '@/components/shared/EmptyState';
 import type { Organization } from '@/lib/quote/organization-types';
 import { formatValue, formatDate, formatTime, type OrgStats } from '@/lib/quote/utils';
@@ -72,7 +79,115 @@ function DemoCard({ demo }: { demo: DemoEvent }) {
   );
 }
 
+// Usage entry from bookmarklet
+interface UsageEntry {
+  title: string;
+  user: string;
+  date: string;
+  cost: string;
+}
+
 export default function ReportingTab({ organizations, stats, loading }: ReportingTabProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // URL param handling state
+  const [showUsageReviewModal, setShowUsageReviewModal] = useState(false);
+  const [usageEntries, setUsageEntries] = useState<UsageEntry[]>([]);
+  const [showSyncResult, setShowSyncResult] = useState(false);
+  const [syncResult, setSyncResult] = useState<{
+    title: string;
+    summary: { created: number; updated: number; skipped: number; errors: number };
+    details?: Array<{ type: 'created' | 'updated' | 'skipped' | 'error'; identifier: string; error?: string }>;
+  } | null>(null);
+  const [isCommittingUsage, setIsCommittingUsage] = useState(false);
+
+  // Handle URL params from Office Script or Bookmarklet
+  useEffect(() => {
+    const syncType = searchParams.get('sync');
+    const dataParam = searchParams.get('data');
+
+    if (syncType && dataParam) {
+      try {
+        // Decode base64 data
+        const decodedData = JSON.parse(decodeURIComponent(atob(dataParam)));
+
+        if (syncType === 'myra' && Array.isArray(decodedData)) {
+          // myRA usage data from bookmarklet
+          setUsageEntries(decodedData as UsageEntry[]);
+          setShowUsageReviewModal(true);
+
+          // Clear URL params without page reload
+          const url = new URL(window.location.href);
+          url.searchParams.delete('sync');
+          url.searchParams.delete('data');
+          window.history.replaceState({}, '', url.toString());
+        }
+        // Excel sync is handled by ExcelImportSection component
+      } catch (error) {
+        console.error('Failed to parse sync data from URL:', error);
+      }
+    }
+  }, [searchParams]);
+
+  // Handle usage data commit
+  const handleUsageCommit = useCallback(async (
+    entries: UsageEntry[],
+    userMappings: Array<{
+      userName: string;
+      orgId: string | null;
+      orgName: string | null;
+      isInternal: boolean;
+      remembered: boolean;
+    }>
+  ) => {
+    setIsCommittingUsage(true);
+
+    try {
+      const response = await fetch('/api/reporting/parse-usage', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entries: entries.map(e => ({
+            ...e,
+            orgId: userMappings.find(m => m.userName === e.user)?.orgId,
+            isInternal: userMappings.find(m => m.userName === e.user)?.isInternal || false,
+          })),
+          mappings: userMappings.filter(m => m.remembered).map(m => ({
+            user_name: m.userName,
+            org_id: m.orgId,
+          })),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setShowUsageReviewModal(false);
+        setSyncResult({
+          title: 'myRA Usage Import',
+          summary: {
+            created: result.created || entries.length,
+            updated: 0,
+            skipped: result.skipped || 0,
+            errors: result.errors?.length || 0,
+          },
+          details: entries.map(e => ({
+            type: 'created' as const,
+            identifier: `${e.user}: ${e.title || 'Untitled'}`,
+          })),
+        });
+        setShowSyncResult(true);
+      } else {
+        console.error('Usage import failed:', result);
+      }
+    } catch (error) {
+      console.error('Usage commit error:', error);
+    } finally {
+      setIsCommittingUsage(false);
+    }
+  }, []);
+
   const totalValue = stats?.totalDealValue || 0;
   const onboardedValue = organizations
     .filter(o => o.status === 'onboarded')
@@ -181,6 +296,18 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         </div>
       </div>
 
+      {/* Quote/MSA Tracking Section */}
+      <QuoteMsaTracking />
+
+      {/* Data Import Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ExcelImportSection />
+        <UsageInputParser />
+      </div>
+
+      {/* myRA Usage Metrics (only shows if data exists) */}
+      <UsageMetricsSection />
+
       {/* Demos Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Demos */}
@@ -285,6 +412,41 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         </h3>
         <PipelineTrends isOpen={true} onClose={() => {}} inline={true} />
       </div>
+
+      {/* Usage Review Modal (from bookmarklet) */}
+      <UsageReviewModal
+        isOpen={showUsageReviewModal}
+        onClose={() => {
+          setShowUsageReviewModal(false);
+          setUsageEntries([]);
+        }}
+        usageEntries={usageEntries}
+        organizations={organizations.map(o => ({
+          id: o.id || '',
+          org_name: o.org_name,
+        }))}
+        existingMappings={[]} // TODO: Fetch from DB
+        onCommit={handleUsageCommit}
+        isCommitting={isCommittingUsage}
+      />
+
+      {/* Sync Result Modal */}
+      {syncResult && (
+        <SyncResultModal
+          isOpen={showSyncResult}
+          onClose={() => {
+            setShowSyncResult(false);
+            setSyncResult(null);
+          }}
+          onSyncAnother={() => {
+            setShowSyncResult(false);
+            setSyncResult(null);
+          }}
+          title={syncResult.title}
+          summary={syncResult.summary}
+          details={syncResult.details}
+        />
+      )}
     </div>
   );
 }
