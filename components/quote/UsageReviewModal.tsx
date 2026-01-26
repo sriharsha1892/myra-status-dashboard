@@ -85,7 +85,7 @@ export default function UsageReviewModal({
     uniqueUsers.forEach((userName) => {
       // Check for existing mapping
       const existing = existingMappings.find(
-        (m) => m.user_name.toLowerCase() === userName.toLowerCase()
+        (m) => m.user_name && m.user_name.toLowerCase() === userName.toLowerCase()
       );
 
       if (existing) {
@@ -100,11 +100,12 @@ export default function UsageReviewModal({
           remembered: true,
         });
       } else {
-        // Fuzzy match attempt
+        // Fuzzy match attempt - ensure org_name exists before calling toLowerCase
         const fuzzyMatch = organizations.find(
           (org) =>
-            org.org_name.toLowerCase().includes(userName.toLowerCase().split(' ')[0]) ||
-            userName.toLowerCase().includes(org.org_name.toLowerCase().split(' ')[0])
+            org.org_name &&
+            (org.org_name.toLowerCase().includes(userName.toLowerCase().split(' ')[0]) ||
+              userName.toLowerCase().includes(org.org_name.toLowerCase().split(' ')[0]))
         );
 
         map.set(userName, {
