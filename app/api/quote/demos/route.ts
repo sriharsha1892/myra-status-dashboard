@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
         *,
         trial_organizations (
           org_id,
-          org_name,
-          org_logo_url
+          org_name
         )
       `)
       .order('demo_date', { ascending: false });

@@ -10,16 +10,17 @@ const supabase = createClient(
 // This endpoint can be triggered by a cron job or manually
 export async function POST(request: NextRequest) {
   try {
-    // Optional: Check for a secret header for cron job authentication
-    const cronSecret = request.headers.get('x-cron-secret');
-    const expectedSecret = process.env.CRON_SECRET;
-
-    // If CRON_SECRET is configured, validate it
-    if (expectedSecret && cronSecret !== expectedSecret) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Only require cron secret for Vercel cron calls, not browser-initiated requests
+    const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+    if (isVercelCron) {
+      const cronSecret = request.headers.get('x-cron-secret');
+      const expectedSecret = process.env.CRON_SECRET;
+      if (expectedSecret && cronSecret !== expectedSecret) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
     }
 
     const today = new Date().toISOString().split('T')[0];
