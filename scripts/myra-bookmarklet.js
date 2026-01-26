@@ -20,7 +20,7 @@
  *
  * Minified code for bookmark URL (copy everything below):
  * ---
- * javascript:(function(){if(!window.location.href.includes('ask-myra.ai')){alert('Please navigate to myRA admin first:\nhttps://www.ask-myra.ai/research/org-conversation');return;}var d=new Date(),w=new Date(d.getTime()-7*24*60*60*1000);var fromDate=prompt('From date (YYYY-MM-DD):',w.toISOString().split('T')[0]);if(!fromDate)return;var toDate=prompt('To date (YYYY-MM-DD):',d.toISOString().split('T')[0]);if(!toDate)return;var fromD=new Date(fromDate),toD=new Date(toDate);toD.setHours(23,59,59,999);var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];function findDateStart(t){for(var i=0;i<months.length;i++){var idx=t.indexOf(months[i]);if(idx>=0)return idx;}return -1;}function parseMyraDate(s){var m=s.match(/(\w+)\s+(\d+)/);if(!m)return null;var month=months.indexOf(m[1]),day=parseInt(m[2]),year=new Date().getFullYear();var t=s.match(/(\d+):(\d+)\s*(AM|PM)/i);var hour=0,min=0;if(t){hour=parseInt(t[1]);min=parseInt(t[2]);if(t[3].toUpperCase()==='PM'&&hour!==12)hour+=12;if(t[3].toUpperCase()==='AM'&&hour===12)hour=0;}return new Date(year,month,day,hour,min);}var entries=[],seen={};var allButtons=document.querySelectorAll('button');allButtons.forEach(function(btn){var btnText=btn.textContent?.trim()||'';if(btnText.length<3||btnText==='myRA AI'||btnText.includes('All ')||btnText==='API')return;var container=btn.parentElement?.parentElement;if(!container)return;var children=Array.from(container.children||[]);if(children.length<2)return;var secondDiv=children[1];var secondText=secondDiv?.textContent||'';if(!secondText.includes('$'))return;var dollarIdx=secondText.lastIndexOf('$');var cost=dollarIdx>=0?secondText.substring(dollarIdx):null;if(!cost)return;var dateStart=findDateStart(secondText);if(dateStart<0)return;var user=secondText.substring(0,dateStart).trim()||'Unknown';var dateAndCost=secondText.substring(dateStart);var dateMatch=dateAndCost.match(/^((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^$]+(?:AM|PM))/i);var date=dateMatch?dateMatch[1]:null;if(!date)return;var entryDate=parseMyraDate(date);if(!entryDate||entryDate<fromD||entryDate>toD)return;var key=btnText+date+cost;if(seen[key])return;seen[key]=true;entries.push({title:btnText,user:user,date:date,cost:cost});});if(entries.length===0){alert('No entries found in date range: '+fromDate+' to '+toDate+'\n\nFound '+allButtons.length+' buttons on page.\n\nTry:\n1. Scroll to load more entries\n2. Adjust date range\n3. Make sure you are on All Chats page');return;}if(confirm('Found '+entries.length+' entries from '+fromDate+' to '+toDate+'.\n\nClick OK to open the portal and review.')){var data=btoa(unescape(encodeURIComponent(JSON.stringify(entries))));window.open('https://myra-status-dashboard.vercel.app/quote/admin?tab=reporting&sync=myra&data='+data,'_blank');}})();
+ * javascript:(function(){if(!window.location.href.includes('ask-myra.ai')){alert('Please navigate to myRA admin first:\nhttps://www.ask-myra.ai/research/org-conversation');return;}var d=new Date(),w=new Date(d.getTime()-7*24*60*60*1000);var fromDate=prompt('From date (YYYY-MM-DD):',w.toISOString().split('T')[0]);if(!fromDate)return;var toDate=prompt('To date (YYYY-MM-DD):',d.toISOString().split('T')[0]);if(!toDate)return;var fromD=new Date(fromDate),toD=new Date(toDate);toD.setHours(23,59,59,999);var targetYear=fromD.getFullYear();var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];function findDateStart(t){for(var i=0;i<months.length;i++){var idx=t.indexOf(months[i]);if(idx>=0)return idx;}return -1;}function parseMyraDate(s){var m=s.match(/([A-Za-z]+) ([0-9]+)/);if(!m)return null;var month=months.indexOf(m[1]),day=parseInt(m[2]),year=targetYear;var t=s.match(/([0-9]+):([0-9]+) *(AM|PM)/i);var hour=0,min=0;if(t){hour=parseInt(t[1]);min=parseInt(t[2]);if(t[3].toUpperCase()==='PM'&&hour!==12)hour+=12;if(t[3].toUpperCase()==='AM'&&hour===12)hour=0;}return new Date(year,month,day,hour,min);}var entries=[],seen={};var allButtons=document.querySelectorAll('button');allButtons.forEach(function(btn){var btnText=btn.textContent?.trim()||'';if(btnText.length<3||btnText==='myRA AI'||btnText.includes('All ')||btnText==='API')return;var container=btn.parentElement?.parentElement;if(!container)return;var children=Array.from(container.children||[]);if(children.length<2)return;var secondDiv=children[1];var secondText=secondDiv?.textContent||'';if(!secondText.includes('$'))return;var dollarIdx=secondText.lastIndexOf('$');var cost=dollarIdx>=0?secondText.substring(dollarIdx):null;if(!cost)return;var dateStart=findDateStart(secondText);if(dateStart<0)return;var user=secondText.substring(0,dateStart).trim()||'Unknown';var dateAndCost=secondText.substring(dateStart);var dateMatch=dateAndCost.match(/^((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^$]+(?:AM|PM))/i);var date=dateMatch?dateMatch[1]:null;if(!date)return;var entryDate=parseMyraDate(date);if(!entryDate||entryDate<fromD||entryDate>toD)return;var key=btnText+date+cost;if(seen[key])return;seen[key]=true;entries.push({title:btnText,user:user,date:date,cost:cost});});if(entries.length===0){alert('No entries found in date range: '+fromDate+' to '+toDate+'\n\nFound '+allButtons.length+' buttons on page.\n\nTry:\n1. Scroll to load more entries\n2. Adjust date range\n3. Make sure you are on All Chats page');return;}if(confirm('Found '+entries.length+' entries from '+fromDate+' to '+toDate+'.\n\nClick OK to open the portal and review.')){var data=btoa(unescape(encodeURIComponent(JSON.stringify(entries))));window.open('https://myra-status-dashboard.vercel.app/quote/admin?tab=reporting&sync=myra&data='+data,'_blank');}})();
  * ---
  */
 
@@ -51,6 +51,9 @@
   const toD = new Date(toDate);
   toD.setHours(23, 59, 59, 999); // Include full end date
 
+  // Use the year from the user's input date range (myRA doesn't show year in UI)
+  const targetYear = fromD.getFullYear();
+
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   // Find where a month name starts in text
@@ -63,16 +66,17 @@
   }
 
   // Parse myRA date format like "Jan 24, Sat, 01:00 AM"
+  // Note: Using literal spaces and [A-Za-z]/[0-9] instead of \s/\w/\d for browser compatibility
   function parseMyraDate(dateStr) {
-    const match = dateStr.match(/(\w+)\s+(\d+)/);
+    const match = dateStr.match(/([A-Za-z]+) ([0-9]+)/);
     if (!match) return null;
 
     const month = months.indexOf(match[1]);
     const day = parseInt(match[2]);
-    const year = new Date().getFullYear();
+    const year = targetYear; // Use year from user's date range input
 
     // Parse time
-    const timeMatch = dateStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    const timeMatch = dateStr.match(/([0-9]+):([0-9]+) *(AM|PM)/i);
     let hour = 0,
       minute = 0;
     if (timeMatch) {
