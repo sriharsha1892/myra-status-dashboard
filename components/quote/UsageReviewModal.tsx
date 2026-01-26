@@ -14,7 +14,15 @@ import {
   Search,
   DollarSign,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import {
+  useGroqUserMatching,
+  getConfidenceBadgeColor,
+  formatConfidence,
+  type MatchResult,
+} from '@/hooks/useGroqUserMatching';
 
 // Types for usage data
 interface UsageEntry {
@@ -78,6 +86,24 @@ export default function UsageReviewModal({
     return Array.from(users).sort();
   }, [usageEntries]);
 
+  // Fetch Groq AI suggestions
+  const {
+    data: groqMatches,
+    isLoading: isLoadingGroq,
+    isFetched: isGroqFetched,
+  } = useGroqUserMatching(uniqueUsers, organizations, isOpen && uniqueUsers.length > 0);
+
+  // Build a map of Groq suggestions for quick lookup
+  const groqSuggestions = useMemo(() => {
+    const map = new Map<string, MatchResult>();
+    if (groqMatches?.matches) {
+      for (const match of groqMatches.matches) {
+        map.set(match.user_name.toLowerCase(), match);
+      }
+    }
+    return map;
+  }, [groqMatches]);
+
   // Initialize user mappings from existing mappings
   const [userMappings, setUserMappings] = useState<Map<string, UserMapping>>(() => {
     const map = new Map<string, UserMapping>();
@@ -100,18 +126,11 @@ export default function UsageReviewModal({
           remembered: true,
         });
       } else {
-        // Fuzzy match attempt - ensure org_name exists before calling toLowerCase
-        const fuzzyMatch = organizations.find(
-          (org) =>
-            org.org_name &&
-            (org.org_name.toLowerCase().includes(userName.toLowerCase().split(' ')[0]) ||
-              userName.toLowerCase().includes(org.org_name.toLowerCase().split(' ')[0]))
-        );
-
+        // Start with no mapping - Groq will suggest
         map.set(userName, {
           userName,
-          orgId: fuzzyMatch?.id || null,
-          orgName: fuzzyMatch?.org_name || null,
+          orgId: null,
+          orgName: null,
           isInternal: false,
           remembered: false,
         });
@@ -120,6 +139,29 @@ export default function UsageReviewModal({
 
     return map;
   });
+
+  // Apply Groq suggestions as pre-populated values (user still confirms)
+  useEffect(() => {
+    if (isGroqFetched && groqMatches?.matches && groqMatches.matches.length > 0) {
+      setUserMappings((prev) => {
+        const updated = new Map(prev);
+        for (const match of groqMatches.matches) {
+          const current = updated.get(match.user_name);
+          // Only apply suggestion if user hasn't already selected something
+          if (current && !current.orgId && match.matched_org_id) {
+            updated.set(match.user_name, {
+              ...current,
+              orgId: match.matched_org_id,
+              orgName: match.matched_org_name,
+              isInternal: false,
+              remembered: false, // User must explicitly enable remember
+            });
+          }
+        }
+        return updated;
+      });
+    }
+  }, [isGroqFetched, groqMatches]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(
@@ -192,7 +234,14 @@ export default function UsageReviewModal({
   // Handle commit
   const handleCommit = async () => {
     const mappingsArray = Array.from(userMappings.values());
-    await onCommit(usageEntries, mappingsArray);
+    try {
+      await onCommit(usageEntries, mappingsArray);
+    } catch (error) {
+      console.error('Failed to commit usage data:', error);
+      toast.error(
+        `Failed to import usage data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   };
 
   if (!isOpen) return null;
@@ -238,6 +287,12 @@ export default function UsageReviewModal({
               </span>
             </div>
             <div className="flex items-center gap-2 ml-auto">
+              {isLoadingGroq && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 rounded text-sm">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  AI matching...
+                </span>
+              )}
               {stats.unmapped > 0 ? (
                 <span className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-sm">
                   <AlertTriangle className="w-3 h-3" />
@@ -341,6 +396,33 @@ export default function UsageReviewModal({
                     {/* Expanded Content */}
                     {isExpanded && (
                       <div className="px-4 pb-4 pt-2 border-t border-neutral-200/50">
+                        {/* Groq AI Suggestion Badge */}
+                        {(() => {
+                          const suggestion = groqSuggestions.get(userName.toLowerCase());
+                          if (suggestion && suggestion.matched_org_id) {
+                            const badgeColors = getConfidenceBadgeColor(suggestion.confidence);
+                            return (
+                              <div className={`mb-3 p-2 rounded-lg border ${badgeColors.border} ${badgeColors.bg}`}>
+                                <div className="flex items-center gap-2">
+                                  <Sparkles className={`w-3.5 h-3.5 ${badgeColors.text}`} />
+                                  <span className={`text-xs font-medium ${badgeColors.text}`}>
+                                    AI Suggestion: {suggestion.matched_org_name}
+                                  </span>
+                                  <span className={`ml-auto text-xs font-bold ${badgeColors.text}`}>
+                                    {formatConfidence(suggestion.confidence)}
+                                  </span>
+                                </div>
+                                {suggestion.reason && (
+                                  <p className="text-xs text-neutral-500 mt-1 pl-5">
+                                    {suggestion.reason}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
                         {/* Org Selection */}
                         <div className="mb-3">
                           <label className="block text-xs font-medium text-neutral-500 mb-2">
