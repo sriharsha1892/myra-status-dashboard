@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, RefreshCw, Building2, Filter, X, Check, ShieldX } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, RefreshCw, Building2, Filter, X, Check, LogOut, Loader2 } from 'lucide-react';
 import {
   usePipelineOrgs,
   useUpdatePipelineOrg,
@@ -12,6 +12,8 @@ import {
   type PipelineFilters,
 } from '@/hooks/usePipelineManager';
 import { enhancedToast } from '@/lib/toast/manager';
+import { getLeadershipEmail, clearLeadershipAuth } from '@/lib/leadership/auth';
+import { LeadershipAuthModal } from '@/components/leadership/LeadershipAuthModal';
 
 // Get row styling based on momentum
 const getMomentumRowClass = (momentum: string | null) => {
@@ -428,6 +430,9 @@ function BulkActionBar({
 }
 
 export default function PipelineManagerPage() {
+  const [leadershipEmail, setLeadershipEmail] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   const [filters, setFilters] = useState<PipelineFilters>({
     search: '',
     stage: '',
@@ -439,12 +444,21 @@ export default function PipelineManagerPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { data, isLoading, refetch, isFetching, error } = usePipelineOrgs(filters);
-  const updateMutation = useUpdatePipelineOrg();
-  const bulkUpdateMutation = useBulkUpdatePipelineOrgs();
+  // Check for existing auth on mount
+  useEffect(() => {
+    const email = getLeadershipEmail();
+    setLeadershipEmail(email);
+    setIsCheckingAuth(false);
+  }, []);
 
-  // Check for access denied error
-  const isAccessDenied = error?.message?.includes('Access denied') || error?.message?.includes('Leadership access');
+  const { data, isLoading, refetch, isFetching } = usePipelineOrgs(filters, leadershipEmail);
+  const updateMutation = useUpdatePipelineOrg(leadershipEmail);
+  const bulkUpdateMutation = useBulkUpdatePipelineOrgs(leadershipEmail);
+
+  const handleLogout = () => {
+    clearLeadershipAuth();
+    setLeadershipEmail(null);
+  };
 
   const organizations = data?.organizations || [];
   const pagination = data?.pagination || { page: 1, limit: 50, total: 0, totalPages: 1 };
@@ -663,28 +677,18 @@ export default function PipelineManagerPage() {
 
   const isAnyLoading = updateMutation.isPending || bulkUpdateMutation.isPending;
 
-  // Show access denied UI if user doesn't have leadership access
-  if (isAccessDenied) {
+  // Show loading state while checking auth
+  if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center px-6">
-          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <ShieldX className="w-8 h-8 text-red-600" />
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Access Denied</h1>
-          <p className="text-neutral-600 max-w-md">
-            You don&apos;t have permission to access the Pipeline Manager.
-            This page is restricted to leadership team members.
-          </p>
-          <a
-            href="/quote/admin"
-            className="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-neutral-900 text-white rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors"
-          >
-            Back to Admin
-          </a>
-        </div>
+        <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
       </div>
     );
+  }
+
+  // Show auth modal if not authenticated
+  if (!leadershipEmail) {
+    return <LeadershipAuthModal onSuccess={(email) => setLeadershipEmail(email)} />;
   }
 
   return (
@@ -696,16 +700,27 @@ export default function PipelineManagerPage() {
             <h1 className="text-2xl font-semibold text-neutral-900">Pipeline Manager</h1>
             <p className="text-sm text-neutral-500 mt-1">
               {pagination.total} organizations
+              <span className="mx-2">|</span>
+              <span className="text-neutral-400">{leadershipEmail}</span>
             </p>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}

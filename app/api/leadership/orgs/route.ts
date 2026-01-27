@@ -31,21 +31,13 @@ const STAGE_LABELS: Record<string, string> = {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Check leadership email header auth
+    const leadershipEmail = request.headers.get('x-leadership-email');
+    if (!leadershipEmail || !isLeadershipEmail(leadershipEmail)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check leadership access
-    if (!isLeadershipEmail(user.email)) {
-      return NextResponse.json({ error: 'Access denied. Leadership access required.' }, { status: 403 });
-    }
+    const supabase = await createClient();
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);

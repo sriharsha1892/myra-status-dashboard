@@ -26,22 +26,14 @@ interface RouteContext {
  */
 export async function GET(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
-    const { id } = await context.params;
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Check leadership email header auth
+    const leadershipEmail = request.headers.get('x-leadership-email');
+    if (!leadershipEmail || !isLeadershipEmail(leadershipEmail)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check leadership access
-    if (!isLeadershipEmail(user.email)) {
-      return NextResponse.json({ error: 'Access denied. Leadership access required.' }, { status: 403 });
-    }
+    const { id } = await context.params;
+    const supabase = await createClient();
 
     const { data: org, error } = await supabase
       .from('trial_organizations')
@@ -72,22 +64,14 @@ export async function GET(request: NextRequest, context: RouteContext): Promise<
  */
 export async function PATCH(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
-    const { id } = await context.params;
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Check leadership email header auth
+    const leadershipEmail = request.headers.get('x-leadership-email');
+    if (!leadershipEmail || !isLeadershipEmail(leadershipEmail)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check leadership access
-    if (!isLeadershipEmail(user.email)) {
-      return NextResponse.json({ error: 'Access denied. Leadership access required.' }, { status: 403 });
-    }
+    const { id } = await context.params;
+    const supabase = await createClient();
 
     const body = await request.json();
 
