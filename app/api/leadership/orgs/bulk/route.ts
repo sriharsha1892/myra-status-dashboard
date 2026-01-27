@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isLeadershipEmail } from '@/lib/leadership/auth';
 
 // Valid lifecycle stages
 const VALID_STAGES = [
@@ -39,6 +40,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check leadership access
+    if (!isLeadershipEmail(user.email)) {
+      return NextResponse.json({ error: 'Access denied. Leadership access required.' }, { status: 403 });
     }
 
     const body: BulkUpdateRequest = await request.json();

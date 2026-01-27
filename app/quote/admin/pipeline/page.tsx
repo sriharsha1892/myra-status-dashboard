@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, RefreshCw, Building2, Filter, X, Check } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, RefreshCw, Building2, Filter, X, Check, ShieldX } from 'lucide-react';
 import {
   usePipelineOrgs,
   useUpdatePipelineOrg,
@@ -439,9 +439,12 @@ export default function PipelineManagerPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { data, isLoading, refetch, isFetching } = usePipelineOrgs(filters);
+  const { data, isLoading, refetch, isFetching, error } = usePipelineOrgs(filters);
   const updateMutation = useUpdatePipelineOrg();
   const bulkUpdateMutation = useBulkUpdatePipelineOrgs();
+
+  // Check for access denied error
+  const isAccessDenied = error?.message?.includes('Access denied') || error?.message?.includes('Leadership access');
 
   const organizations = data?.organizations || [];
   const pagination = data?.pagination || { page: 1, limit: 50, total: 0, totalPages: 1 };
@@ -659,6 +662,30 @@ export default function PipelineManagerPage() {
   };
 
   const isAnyLoading = updateMutation.isPending || bulkUpdateMutation.isPending;
+
+  // Show access denied UI if user doesn't have leadership access
+  if (isAccessDenied) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center px-6">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <ShieldX className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Access Denied</h1>
+          <p className="text-neutral-600 max-w-md">
+            You don&apos;t have permission to access the Pipeline Manager.
+            This page is restricted to leadership team members.
+          </p>
+          <a
+            href="/quote/admin"
+            className="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-neutral-900 text-white rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors"
+          >
+            Back to Admin
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
