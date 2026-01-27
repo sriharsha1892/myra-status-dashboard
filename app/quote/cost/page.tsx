@@ -433,8 +433,8 @@ export default function QuotePage() {
     toast.success('Quote duplicated - dates reset to today');
   }, []);
 
-  // Save quote to database
-  const saveQuoteToDb = useCallback(async () => {
+  // Save quote to database - returns isNew flag to indicate if it's a new quote or existing
+  const saveQuoteToDb = useCallback(async (): Promise<{ success: boolean; isNew: boolean; downloadCount?: number }> => {
     try {
       const quoteReference = generateQuoteReference();
       const totalValue = calculateTotalValue(formData.rows);
@@ -473,10 +473,18 @@ export default function QuotePage() {
       const result = await response.json();
       if (!result.success) {
         console.error('Failed to save quote to database:', result.error);
+        return { success: false, isNew: false };
       }
+
+      return {
+        success: true,
+        isNew: result.isNew,
+        downloadCount: result.quote?.downloadCount,
+      };
     } catch (err) {
       // Don't block the user if DB save fails - just log it
       console.error('Error saving quote to database:', err);
+      return { success: false, isNew: false };
     }
   }, [formData]);
 
@@ -514,17 +522,25 @@ export default function QuotePage() {
       setPdfFilename(filename);
 
       if (preview) {
+        // Preview only - NO database save
         setPreviewOpen(true);
       } else {
-        // Direct download
+        // Direct download - save to database
         downloadPdf(bytes, filename);
         saveToHistory(formData.contactEmail, formData);
         setHistoryRefresh((prev) => prev + 1);
 
-        // Save to database (async, non-blocking)
-        saveQuoteToDb();
-
-        toast.success('Quote generated successfully');
+        // Save to database and show appropriate toast based on isNew flag
+        const { success, isNew, downloadCount } = await saveQuoteToDb();
+        if (success) {
+          if (isNew) {
+            toast.success('Quote created and downloaded');
+          } else {
+            toast.success(`Quote downloaded (${downloadCount || 1}x)`);
+          }
+        } else {
+          toast.success('Quote generated successfully');
+        }
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -548,17 +564,25 @@ export default function QuotePage() {
   }, []);
 
   // Handle download from preview modal
-  const handleDownloadFromPreview = useCallback(() => {
+  const handleDownloadFromPreview = useCallback(async () => {
     if (pdfBytes && pdfFilename) {
       downloadPdf(pdfBytes, pdfFilename);
       saveToHistory(formData.contactEmail, formData);
       setHistoryRefresh((prev) => prev + 1);
 
-      // Save to database (async, non-blocking)
-      saveQuoteToDb();
-
+      // Save to database and show appropriate toast based on isNew flag
+      const { success, isNew, downloadCount } = await saveQuoteToDb();
       setPreviewOpen(false);
-      toast.success('Quote downloaded');
+
+      if (success) {
+        if (isNew) {
+          toast.success('Quote created and downloaded');
+        } else {
+          toast.success(`Quote downloaded (${downloadCount || 1}x)`);
+        }
+      } else {
+        toast.success('Quote downloaded');
+      }
     }
   }, [pdfBytes, pdfFilename, formData, downloadPdf, saveQuoteToDb]);
 

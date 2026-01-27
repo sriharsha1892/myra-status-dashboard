@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Target,
   DollarSign,
   Clock,
-  Users,
-  TrendingUp,
   BarChart3,
   Calendar,
   Star,
@@ -17,6 +15,15 @@ import {
   ChevronUp,
   FileSpreadsheet,
   ChevronRight,
+  Download,
+  FileText,
+  ScrollText,
+  TrendingUp,
+  Users,
+  Layers,
+  Network,
+  CalendarDays,
+  AlertTriangle,
 } from 'lucide-react';
 import PipelineTrends from '@/components/quote/PipelineTrends';
 import QuoteMsaTracking from '@/components/quote/QuoteMsaTracking';
@@ -26,10 +33,18 @@ import UsageMetricsSection from '@/components/quote/UsageMetricsSection';
 import UsageReviewModal from '@/components/quote/UsageReviewModal';
 import SyncResultModal from '@/components/quote/SyncResultModal';
 import EmptyState from '@/components/shared/EmptyState';
+import CommandBar from '@/components/reporting/CommandBar';
+import AIInsightsPanel from '@/components/reporting/AIInsightsPanel';
+import HeatmapCalendar from '@/components/reporting/HeatmapCalendar';
+import DealCards from '@/components/reporting/DealCards';
+import DuplicatesManager from '@/components/reporting/DuplicatesManager';
+import NetworkView from '@/components/reporting/NetworkView';
 import type { Organization } from '@/lib/quote/organization-types';
 import { formatValue, formatDate, formatTime, type OrgStats } from '@/lib/quote/utils';
 import { ORG_STATUS_LABELS, ORG_STATUS_COLORS } from '@/lib/quote/pipeline-types';
 import { useDemoEvents, type DemoEvent } from '@/hooks/useDemoEvents';
+import { useQuoteMsaStats } from '@/hooks/useQuoteMsaStats';
+import { useRealtimePresence, PresenceIndicator } from '@/hooks/useRealtimePresence';
 
 // localStorage key for section states
 const SECTION_STORAGE_KEY = 'reporting-tab-sections';
@@ -73,7 +88,7 @@ interface ReportingTabProps {
   loading: boolean;
 }
 
-// Collapsible Section Component (with optional external state control)
+// Collapsible Section Component
 function CollapsibleSection({
   title,
   icon: Icon,
@@ -82,6 +97,7 @@ function CollapsibleSection({
   defaultOpen = true,
   children,
   headerRight,
+  badge,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -90,8 +106,8 @@ function CollapsibleSection({
   defaultOpen?: boolean;
   children: React.ReactNode;
   headerRight?: React.ReactNode;
+  badge?: { count: number; type?: 'warning' | 'info' | 'success' };
 }) {
-  // Use internal state if no external control provided
   const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const onToggle = externalOnToggle || (() => setInternalIsOpen(!internalIsOpen));
@@ -105,6 +121,15 @@ function CollapsibleSection({
         <div className="flex items-center gap-3">
           <Icon className="w-5 h-5 text-neutral-500" />
           <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
+          {badge && badge.count > 0 && (
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+              badge.type === 'warning' ? 'bg-amber-100 text-amber-700' :
+              badge.type === 'success' ? 'bg-emerald-100 text-emerald-700' :
+              'bg-violet-100 text-violet-700'
+            }`}>
+              {badge.count}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {headerRight}
@@ -188,6 +213,9 @@ interface UsageEntry {
 // Status priority order for display
 const STATUS_PRIORITY = ['intro', 'demo', 'trial', 'proposal', 'won', 'lost'];
 
+// Visualization tabs
+type VizTab = 'heatmap' | 'network' | 'deals' | 'duplicates';
+
 export default function ReportingTab({ organizations, stats, loading }: ReportingTabProps) {
   const searchParams = useSearchParams();
 
@@ -205,6 +233,13 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
   // Collapsible section states (persisted to localStorage)
   const [demosOpen, toggleDemos] = useCollapsibleState('demos', true);
   const [importOpen, toggleImport] = useCollapsibleState('import', false);
+  const [insightsCollapsed, setInsightsCollapsed] = useState(false);
+
+  // Visualization tab state
+  const [vizTab, setVizTab] = useState<VizTab>('heatmap');
+
+  // Query results state
+  const [queryResults, setQueryResults] = useState<Array<Record<string, unknown>> | null>(null);
 
   // Status breakdown: show all toggle
   const [showAllStatuses, setShowAllStatuses] = useState(false);
@@ -213,6 +248,29 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
   const [upcomingLimit, setUpcomingLimit] = useState(5);
   const [recentLimit, setRecentLimit] = useState(5);
 
+  // Fetch quote/MSA stats for deduplication info
+  const { data: quoteMsaStats } = useQuoteMsaStats();
+
+  // Generate a simple user ID for presence tracking (in production, use actual auth)
+  const presenceUser = useMemo(() => {
+    if (typeof window === 'undefined') return { id: 'anonymous', name: 'Anonymous' };
+    let visitorId = localStorage.getItem('reporting-visitor-id');
+    if (!visitorId) {
+      visitorId = `visitor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('reporting-visitor-id', visitorId);
+    }
+    // Try to get a name from localStorage or use a generic one
+    const visitorName = localStorage.getItem('reporting-visitor-name') || `User ${visitorId.slice(-4)}`;
+    return { id: visitorId, name: visitorName };
+  }, []);
+
+  // Real-time presence tracking
+  const { presentUsers, isConnected } = useRealtimePresence({
+    channelName: 'reporting-tab-presence',
+    user: presenceUser,
+    currentTab: vizTab,
+  });
+
   // Handle URL params from Office Script or Bookmarklet
   useEffect(() => {
     const syncType = searchParams.get('sync');
@@ -220,21 +278,17 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
 
     if (syncType && dataParam) {
       try {
-        // Decode base64 data
         const decodedData = JSON.parse(decodeURIComponent(atob(dataParam)));
 
         if (syncType === 'myra' && Array.isArray(decodedData)) {
-          // myRA usage data from bookmarklet
           setUsageEntries(decodedData as UsageEntry[]);
           setShowUsageReviewModal(true);
 
-          // Clear URL params without page reload
           const url = new URL(window.location.href);
           url.searchParams.delete('sync');
           url.searchParams.delete('data');
           window.history.replaceState({}, '', url.toString());
         }
-        // Excel sync is handled by ExcelImportSection component
       } catch (error) {
         console.error('Failed to parse sync data from URL:', error);
       }
@@ -299,6 +353,94 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
     }
   }, []);
 
+  // Handle AI insight actions
+  const handleInsightAction = useCallback((action: { type: string; data?: Record<string, unknown> }) => {
+    console.log('Insight action:', action);
+    // Handle different action types
+    if (action.type === 'view' && action.data?.filter === 'stalled') {
+      setVizTab('deals');
+    }
+  }, []);
+
+  // Handle deal card actions
+  const handleDealAction = useCallback((action: { type: string; dealId: string; data?: Record<string, unknown> }) => {
+    console.log('Deal action:', action);
+    // TODO: Implement actual follow-up email or status update
+  }, []);
+
+  // Prepare heatmap data
+  const heatmapData = useMemo(() => {
+    const data: Array<{
+      id: string;
+      type: 'quote' | 'msa' | 'deal';
+      companyName: string;
+      totalValue: number;
+      createdAt: string;
+    }> = [];
+
+    // Add quotes
+    quoteMsaStats?.quotes.recent.forEach((q) => {
+      data.push({
+        id: q.id,
+        type: 'quote',
+        companyName: q.companyName,
+        totalValue: q.totalValue,
+        createdAt: q.createdAt,
+      });
+    });
+
+    // Add MSAs
+    quoteMsaStats?.msas.recent.forEach((m) => {
+      data.push({
+        id: m.id,
+        type: 'msa',
+        companyName: m.companyName,
+        totalValue: m.totalValue,
+        createdAt: m.createdAt,
+      });
+    });
+
+    // Add organization activities
+    organizations.forEach((o) => {
+      if (o.updated_at) {
+        data.push({
+          id: o.id || '',
+          type: 'deal',
+          companyName: o.org_name,
+          totalValue: o.deal_value || 0,
+          createdAt: o.updated_at,
+        });
+      }
+    });
+
+    return data;
+  }, [quoteMsaStats, organizations]);
+
+  // Prepare deal cards data
+  const dealCardsData = useMemo(() => {
+    const now = new Date();
+    return organizations
+      .filter((o) => ['demo', 'trial', 'proposal'].includes(o.status))
+      .map((o) => {
+        const lastUpdate = o.updated_at ? new Date(o.updated_at) : now;
+        const daysSinceActivity = Math.floor(
+          (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return {
+          id: o.id || '',
+          companyName: o.org_name,
+          contactEmail: o.primary_contact_email || '',
+          value: o.deal_value || 0,
+          status: o.status,
+          lastActivity: o.updated_at || now.toISOString(),
+          daysSinceActivity,
+          salesPoc: o.sales_poc || 'Unassigned',
+          type: 'deal' as const,
+        };
+      })
+      .sort((a, b) => b.daysSinceActivity - a.daysSinceActivity);
+  }, [organizations]);
+
   const totalValue = stats?.totalDealValue || 0;
   const onboardedValue = organizations
     .filter(o => o.status === 'onboarded')
@@ -309,12 +451,11 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
   // Fetch demos
   const { data: allDemos = [], isLoading: demosLoading } = useDemoEvents();
 
-  // Split demos into upcoming and recent (full arrays for pagination)
+  // Split demos into upcoming and recent
   const today = new Date().toISOString().split('T')[0];
   const upcomingDemos = allDemos.filter(d => d.demo_status === 'scheduled' && d.demo_date >= today);
   const recentDemos = allDemos.filter(d => d.demo_status !== 'scheduled' || d.demo_date < today);
 
-  // Apply pagination limits
   const displayedUpcoming = upcomingDemos.slice(0, upcomingLimit);
   const displayedRecent = recentDemos.slice(0, recentLimit);
   const hasMoreUpcoming = upcomingDemos.length > upcomingLimit;
@@ -329,6 +470,9 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
   const completedDemos = allDemos.filter(d => d.demo_status === 'completed').length;
   const scheduledDemos = allDemos.filter(d => d.demo_status === 'scheduled').length;
 
+  // Duplicates count from stats
+  const duplicatesCount = quoteMsaStats?.duplicates?.count || 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -339,30 +483,60 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
 
   return (
     <div className="space-y-6">
-      {/* Row 1: KPI Stats (Full Width) */}
+      {/* Header with Presence Indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          {/* Command Bar - Natural Language Query */}
+          <CommandBar
+            onResults={(results) => setQueryResults(results.data)}
+            onClear={() => setQueryResults(null)}
+          />
+        </div>
+        {/* Real-time Presence Indicator */}
+        {presentUsers.length > 0 && (
+          <div className="ml-4 flex-shrink-0">
+            <PresenceIndicator users={presentUsers} />
+          </div>
+        )}
+      </div>
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        onAction={handleInsightAction}
+        collapsed={insightsCollapsed}
+        onToggleCollapse={() => setInsightsCollapsed(!insightsCollapsed)}
+      />
+
+      {/* Row 1: Executive Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Onboarded Value */}
+        {/* Unique Quotes */}
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Target className="w-6 h-6 text-emerald-600" />
+            <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-violet-600" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">Onboarded Value</p>
-              <p className="text-2xl font-bold text-neutral-900">{formatValue(onboardedValue)}</p>
+              <p className="text-sm text-neutral-500">Unique Quotes</p>
+              <p className="text-2xl font-bold text-neutral-900">
+                {quoteMsaStats?.quotes.unique || 0}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-emerald-600 font-medium">{onboardedCount} orgs</span>
-            <span className="text-neutral-400">converted</span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-violet-600 font-medium">
+              {quoteMsaStats?.quotes.uniqueThisWeek || 0} this week
+            </span>
+            <span className="text-neutral-400">
+              {quoteMsaStats?.quotes.totalDownloads || 0} downloads
+            </span>
           </div>
         </div>
 
         {/* Pipeline Value */}
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-violet-600" />
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
               <p className="text-sm text-neutral-500">Pipeline Value</p>
@@ -370,7 +544,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-violet-600 font-medium">{totalOrgs - onboardedCount} orgs</span>
+            <span className="text-emerald-600 font-medium">{totalOrgs - onboardedCount} orgs</span>
             <span className="text-neutral-400">in pipeline</span>
           </div>
         </div>
@@ -403,18 +577,126 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-blue-600 font-medium">{totalOrgs} total</span>
-            <span className="text-neutral-400">organizations</span>
+            <span className="text-blue-600 font-medium">{onboardedCount} converted</span>
+            <span className="text-neutral-400">of {totalOrgs}</span>
           </div>
         </div>
       </div>
 
-      {/* Row 2: Usage Metrics & Pipeline Trends (2-Column Grid) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* myRA Usage Metrics */}
-        <UsageMetricsSection />
+      {/* Row 2: Visualization Tabs */}
+      <div className="bg-white rounded-2xl border border-neutral-200/60 overflow-hidden">
+        {/* Tab headers */}
+        <div className="flex items-center border-b border-neutral-100 px-2">
+          <button
+            onClick={() => setVizTab('heatmap')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              vizTab === 'heatmap'
+                ? 'border-violet-600 text-violet-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            Activity Heatmap
+          </button>
+          <button
+            onClick={() => setVizTab('network')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              vizTab === 'network'
+                ? 'border-violet-600 text-violet-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+            }`}
+          >
+            <Network className="w-4 h-4" />
+            Network
+          </button>
+          <button
+            onClick={() => setVizTab('deals')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              vizTab === 'deals'
+                ? 'border-violet-600 text-violet-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            Deal Cards
+            {dealCardsData.filter((d) => d.daysSinceActivity > 7).length > 0 && (
+              <span className="px-1.5 py-0.5 text-xs bg-red-100 text-red-600 rounded-full">
+                {dealCardsData.filter((d) => d.daysSinceActivity > 7).length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setVizTab('duplicates')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              vizTab === 'duplicates'
+                ? 'border-violet-600 text-violet-600'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Duplicates
+            {duplicatesCount > 0 && (
+              <span className="px-1.5 py-0.5 text-xs bg-amber-100 text-amber-600 rounded-full">
+                {duplicatesCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-        {/* Pipeline Trends */}
+        {/* Tab content */}
+        <div className="p-0">
+          {vizTab === 'heatmap' && (
+            <div className="p-4">
+              <HeatmapCalendar
+                data={heatmapData}
+                onDayClick={(day) => console.log('Day clicked:', day)}
+              />
+            </div>
+          )}
+          {vizTab === 'network' && (
+            <div className="p-4">
+              <NetworkView
+                organizations={organizations.map((o) => ({
+                  id: o.id || '',
+                  name: o.org_name,
+                  value: o.deal_value || 0,
+                  status: o.status,
+                  salesPoc: o.sales_poc,
+                }))}
+                documents={[
+                  ...(quoteMsaStats?.quotes.recent || []).map((q) => ({
+                    id: q.id,
+                    type: 'quote' as const,
+                    companyName: q.companyName,
+                    value: q.totalValue,
+                  })),
+                  ...(quoteMsaStats?.msas.recent || []).map((m) => ({
+                    id: m.id,
+                    type: 'msa' as const,
+                    companyName: m.companyName,
+                    value: m.totalValue,
+                  })),
+                ]}
+                onNodeClick={(node) => console.log('Node clicked:', node)}
+              />
+            </div>
+          )}
+          {vizTab === 'deals' && (
+            <div className="p-4">
+              <DealCards deals={dealCardsData} onAction={handleDealAction} />
+            </div>
+          )}
+          {vizTab === 'duplicates' && (
+            <div className="p-4">
+              <DuplicatesManager />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 3: Usage Metrics & Pipeline Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UsageMetricsSection />
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6">
           <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-neutral-500" />
@@ -424,7 +706,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         </div>
       </div>
 
-      {/* Row 3: Status Breakdown & Quote/MSA Tracking (2-Column Grid) */}
+      {/* Row 4: Status Breakdown & Quote/MSA Tracking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Breakdown */}
         <div className="bg-white rounded-2xl border border-neutral-200/60 p-6">
@@ -434,7 +716,6 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
               Status Breakdown
             </h3>
             {(() => {
-              // Calculate if there are more statuses beyond the priority list
               const allStatuses = Object.keys(stats?.byStatus || {});
               const remainingCount = allStatuses.filter(s => !STATUS_PRIORITY.includes(s)).length;
               const totalStatusCount = STATUS_PRIORITY.filter(s => stats?.byStatus[s] !== undefined).length + remainingCount;
@@ -453,11 +734,9 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
               return null;
             })()}
           </div>
-          {/* Horizontal scroll container for mobile */}
           <div className="overflow-x-auto -mx-2 px-2 pb-2">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-w-[400px]">
               {(() => {
-                // Order statuses by priority, then remaining
                 const orderedStatuses = STATUS_PRIORITY
                   .filter(s => stats?.byStatus[s] !== undefined)
                   .map(s => [s, stats?.byStatus[s] || 0] as [string, number]);
@@ -502,7 +781,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         <QuoteMsaTracking />
       </div>
 
-      {/* Row 4: Demos (Collapsible with localStorage persistence) */}
+      {/* Row 5: Demos (Collapsible) */}
       <CollapsibleSection
         title="Demo Management"
         icon={Calendar}
@@ -599,7 +878,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         </div>
       </CollapsibleSection>
 
-      {/* Row 5: Data Import Tools (Collapsible with localStorage persistence) */}
+      {/* Row 6: Data Import Tools (Collapsible) */}
       <CollapsibleSection
         title="Data Import Tools"
         icon={FileSpreadsheet}
@@ -612,7 +891,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
         </div>
       </CollapsibleSection>
 
-      {/* Usage Review Modal (from bookmarklet) */}
+      {/* Usage Review Modal */}
       <UsageReviewModal
         isOpen={showUsageReviewModal}
         onClose={() => {
@@ -624,7 +903,7 @@ export default function ReportingTab({ organizations, stats, loading }: Reportin
           id: o.id || '',
           org_name: o.org_name,
         }))}
-        existingMappings={[]} // TODO: Fetch from DB
+        existingMappings={[]}
         onCommit={handleUsageCommit}
         isCommitting={isCommittingUsage}
       />

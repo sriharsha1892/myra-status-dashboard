@@ -151,7 +151,7 @@ function StatusPageContent() {
   useStatusNotifications(statusData?.providers || []);
 
   const addToast = (message: string, type: Toast['type'], providerId?: string) => {
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const newToast: Toast = { id, message, type, providerId };
     setToasts((prev) => [...prev, newToast]);
 
