@@ -27,7 +27,6 @@ import {
 
 // Lazy load tab components
 const PipelineTab = lazy(() => import('./_components/tabs/PipelineTab'));
-const ReportingTab = lazy(() => import('./_components/tabs/ReportingTab'));
 const ImportTab = lazy(() => import('./_components/tabs/ImportTab'));
 
 // Loading fallback for lazy-loaded tabs
@@ -183,13 +182,6 @@ function QuoteAdminContent() {
               onUpdateOrg={handleUpdateOrg}
               onBulkStatusChange={handleBulkStatusChange}
               onRefresh={handleRefresh}
-            />
-          )}
-          {activeTab === 'reporting' && (
-            <ReportingTab
-              organizations={organizations}
-              stats={stats}
-              loading={isLoading}
             />
           )}
           {activeTab === 'import' && (

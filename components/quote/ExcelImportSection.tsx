@@ -67,6 +67,44 @@ const FIXED_COLUMNS = [
   'expected_close',   // Closing Month
 ];
 
+// Expected column names for validation (case-insensitive matching)
+const EXPECTED_COLUMN_KEYWORDS = [
+  'company', 'email', 'stage', 'deal', 'value', 'poc', 'sales', 'demo', 'date', 'status'
+];
+
+// Helper to check if detected columns seem reasonable
+export function validateDetectedColumns(columns: string[]): { valid: boolean; warning: string | null } {
+  if (columns.length === 0) {
+    return { valid: false, warning: 'No columns detected in the data' };
+  }
+
+  // Check if at least some expected keywords are present in column names
+  const columnNamesLower = columns.map(c => c.toLowerCase());
+  const matchedKeywords = EXPECTED_COLUMN_KEYWORDS.filter(keyword =>
+    columnNamesLower.some(col => col.includes(keyword))
+  );
+
+  if (matchedKeywords.length < 3) {
+    return {
+      valid: true, // Still allow import, but warn
+      warning: `Column headers may not match expected format. Found columns: ${columns.slice(0, 5).join(', ')}${columns.length > 5 ? '...' : ''}. Expected columns like: company_name, email, stage, deal_value, etc.`,
+    };
+  }
+
+  // Check for key required columns
+  const hasCompany = columnNamesLower.some(c => c.includes('company'));
+  const hasEmailOrContact = columnNamesLower.some(c => c.includes('email') || c.includes('contact'));
+
+  if (!hasCompany) {
+    return {
+      valid: true,
+      warning: 'Warning: No "company" column detected. Import may not work correctly.',
+    };
+  }
+
+  return { valid: true, warning: null };
+}
+
 export default function ExcelImportSection() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -76,6 +114,7 @@ export default function ExcelImportSection() {
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [columnWarning, setColumnWarning] = useState<string | null>(null);
 
   // Review modal state
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -99,6 +138,7 @@ export default function ExcelImportSection() {
     setIsLoading(true);
     setError(null);
     setCommitResult(null);
+    setColumnWarning(null);
 
     try {
       const buffer = await file.arrayBuffer();
@@ -121,6 +161,12 @@ export default function ExcelImportSection() {
 
       const columns = Object.keys(jsonData[0]);
 
+      // Validate detected columns
+      const { warning } = validateDetectedColumns(columns);
+      if (warning) {
+        setColumnWarning(warning);
+      }
+
       setParsedData({
         rows: jsonData,
         columns,
@@ -141,6 +187,7 @@ export default function ExcelImportSection() {
     setIsLoading(true);
     setError(null);
     setCommitResult(null);
+    setColumnWarning(null);
 
     try {
       const lines = text.trim().split('\n').filter(line => line.trim());
@@ -153,9 +200,19 @@ export default function ExcelImportSection() {
 
       // Check if first row looks like headers or data
       const firstRow = lines[0].split('\t');
-      const hasHeaders = firstRow[0]?.toLowerCase().includes('id') ||
-                         firstRow[0]?.toLowerCase() === 'id (don\'t edit)' ||
-                         !firstRow[0]?.match(/^DEMO-\d{4}-\d+$/);
+
+      // Improved header detection:
+      // 1. Check for common header keywords
+      // 2. Check for ID pattern (DEMO-XXXX-X)
+      // 3. Check if it looks like a date or number
+      const firstCellLower = firstRow[0]?.toLowerCase() || '';
+      const looksLikeHeaderKeyword = ['id', 'date', 'company', 'email', 'name', 'poc', 'status'].some(
+        keyword => firstCellLower.includes(keyword)
+      );
+      const looksLikeDataId = /^DEMO-\d{4}-\d+$/.test(firstRow[0] || '');
+      const looksLikeDate = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(firstRow[0] || '');
+
+      const hasHeaders = looksLikeHeaderKeyword || (!looksLikeDataId && !looksLikeDate && isNaN(Number(firstRow[0])));
 
       let dataLines = lines;
       let columns = FIXED_COLUMNS;
@@ -181,6 +238,12 @@ export default function ExcelImportSection() {
         setError('No data rows found in pasted text');
         setIsLoading(false);
         return;
+      }
+
+      // Validate columns
+      const { warning } = validateDetectedColumns(columns);
+      if (warning) {
+        setColumnWarning(warning);
       }
 
       setParsedData({
@@ -316,6 +379,7 @@ export default function ExcelImportSection() {
     setAnalyzeResponse(null);
     setShowReviewModal(false);
     setError(null);
+    setColumnWarning(null);
     setPasteText('');
   };
 
@@ -358,6 +422,23 @@ export default function ExcelImportSection() {
               <button
                 onClick={() => setError(null)}
                 className="ml-auto text-red-400 hover:text-red-600"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Column Warning Display */}
+          {columnWarning && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Column Header Warning</p>
+                <p className="text-sm text-amber-600">{columnWarning}</p>
+              </div>
+              <button
+                onClick={() => setColumnWarning(null)}
+                className="ml-auto text-amber-400 hover:text-amber-600"
               >
                 <XCircle className="w-5 h-5" />
               </button>

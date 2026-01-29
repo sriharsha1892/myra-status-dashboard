@@ -91,49 +91,58 @@ export const deleteOrganization: Action<DeleteOrganizationInput, DeleteOrgOutput
     // Track counts of related records
     const deletedRelated = { users: 0, notes: 0, timelineEvents: 0 };
 
-    // Fetch and delete related users (trial_users)
+    // Fetch and delete related users (trial_users) - batch delete
     const { data: users } = await fetchMany(
       supabase,
       TABLES.USERS,
       { trial_org_id: orgId }
     );
     if (users && users.length > 0) {
+      // Track deletions for undo
       for (const user of users) {
         const userData = user as any;
         changes.push(trackDelete(TABLES.USERS, userData.user_id, userData));
-        await supabase.from(TABLES.USERS).delete().eq('user_id', userData.user_id);
-        deletedRelated.users++;
       }
+      // Batch delete all users at once
+      const userIds = users.map((u: any) => u.user_id);
+      await supabase.from(TABLES.USERS).delete().in('user_id', userIds);
+      deletedRelated.users = users.length;
     }
 
-    // Fetch and delete activity notes
+    // Fetch and delete activity notes - batch delete
     const { data: notes } = await fetchMany(
       supabase,
       TABLES.ACTIVITY_NOTES,
       { trial_org_id: orgId }
     );
     if (notes && notes.length > 0) {
+      // Track deletions for undo
       for (const note of notes) {
         const noteData = note as any;
         changes.push(trackDelete(TABLES.ACTIVITY_NOTES, noteData.note_id, noteData));
-        await supabase.from(TABLES.ACTIVITY_NOTES).delete().eq('note_id', noteData.note_id);
-        deletedRelated.notes++;
       }
+      // Batch delete all notes at once
+      const noteIds = notes.map((n: any) => n.note_id);
+      await supabase.from(TABLES.ACTIVITY_NOTES).delete().in('note_id', noteIds);
+      deletedRelated.notes = notes.length;
     }
 
-    // Fetch and delete timeline events
+    // Fetch and delete timeline events - batch delete
     const { data: events } = await fetchMany(
       supabase,
       TABLES.TIMELINE_EVENTS,
       { trial_org_id: orgId }
     );
     if (events && events.length > 0) {
+      // Track deletions for undo
       for (const event of events) {
         const eventData = event as any;
         changes.push(trackDelete(TABLES.TIMELINE_EVENTS, eventData.event_id, eventData));
-        await supabase.from(TABLES.TIMELINE_EVENTS).delete().eq('event_id', eventData.event_id);
-        deletedRelated.timelineEvents++;
       }
+      // Batch delete all events at once
+      const eventIds = events.map((e: any) => e.event_id);
+      await supabase.from(TABLES.TIMELINE_EVENTS).delete().in('event_id', eventIds);
+      deletedRelated.timelineEvents = events.length;
     }
 
     // Delete the organization itself

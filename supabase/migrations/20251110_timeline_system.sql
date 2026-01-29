@@ -274,14 +274,6 @@ INSERT INTO event_type_taxonomy (event_type, event_category, display_name, icon_
 ('testimonial_received', 'feedback', 'Testimonial Received', 'award', '#DCFCE7', 35),
 ('nps_survey_completed', 'feedback', 'NPS Survey Completed', 'clipboard-check', '#DBEAFE', 36),
 
--- Support (6 types)
-('support_ticket_created', 'support', 'Support Ticket Created', 'headphones', '#FEE2E2', 40),
-('technical_issue_reported', 'support', 'Technical Issue Reported', 'wrench', '#FEE2E2', 41),
-('bug_reported', 'support', 'Bug Reported', 'bug', '#FEE2E2', 42),
-('internal_escalation', 'support', 'Internal Escalation', 'arrow-up-circle', '#FEF3C7', 43),
-('issue_resolved', 'support', 'Issue Resolved', 'check-circle-2', '#DCFCE7', 44),
-('workaround_provided', 'support', 'Workaround Provided', 'tool', '#DBEAFE', 45),
-
 -- Milestones (8 types)
 ('trial_extended', 'milestone', 'Trial Extended', 'clock', '#DBEAFE', 50),
 ('trial_converted', 'milestone', 'Trial Converted to Customer', 'trophy', '#DCFCE7', 51),

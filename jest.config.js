@@ -33,6 +33,7 @@ const customJestConfig = {
     '/.next/',
     '/e2e/',
     '/playwright/',
+    '/tests/',  // Playwright E2E tests
   ],
   coverageThreshold: {
     global: {

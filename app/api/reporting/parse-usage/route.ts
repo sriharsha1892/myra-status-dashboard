@@ -90,15 +90,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }));
 
     const cachedMappings = new Map<string, UserMapping>();
-    (mappingsResult.data || []).forEach((m) => {
-      cachedMappings.set(m.user_name.toLowerCase(), m as UserMapping);
-    });
+    if (mappingsResult.data) {
+      for (const m of mappingsResult.data) {
+        // Skip entries with null/undefined user_name
+        if (m.user_name) {
+          cachedMappings.set(m.user_name.toLowerCase(), m as UserMapping);
+        }
+      }
+    }
 
     // Match users for each entry
     let matchedUsers = 0;
     const enrichedEntries = entries.map((entry) => {
-      // First check cached mappings
-      const cached = cachedMappings.get(entry.user_name.toLowerCase());
+      // First check cached mappings (with null check)
+      const cached = entry.user_name
+        ? cachedMappings.get(entry.user_name.toLowerCase())
+        : undefined;
       if (cached) {
         matchedUsers++;
         return {

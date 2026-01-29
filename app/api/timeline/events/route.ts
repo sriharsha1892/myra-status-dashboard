@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/api-auth-middleware';
+import { z } from 'zod';
+import { uuidSchema } from '@/lib/validation/schemas/common';
+
+// Timeline event validation schema
+const createTimelineEventSchema = z.object({
+  org_id: uuidSchema,
+  event_type: z.string().min(1, 'Event type is required'),
+  event_category: z.string().min(1, 'Event category is required'),
+  title: z.string().min(1, 'Title is required'),
+  event_timestamp: z.string().datetime({ message: 'Invalid timestamp format' }),
+  description: z.string().optional(),
+  sentiment: z.enum(['positive', 'neutral', 'negative']).optional(),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  tags: z.array(z.string()).optional(),
+  follow_up_required: z.boolean().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  source: z.string().optional(),
+});
 
 /**
  * GET /api/timeline/events
@@ -113,22 +131,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate required fields
-    const { org_id, event_type, event_category, title, event_timestamp } = body;
-    if (!org_id || !event_type || !event_category || !title || !event_timestamp) {
+    // Validate request body with Zod
+    const validation = createTimelineEventSchema.safeParse(body);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: firstError?.message || 'Validation failed' },
         { status: 400 }
       );
     }
 
-    // Insert event
+    // Insert event with validated data
     const { data, error } = await supabase
       .from('trial_timeline_events')
       .insert({
-        ...body,
+        ...validation.data,
         logged_by: user.id,
-        source: body.source || 'manual_entry',
+        source: validation.data.source || 'manual_entry',
         created_at: new Date().toISOString(),
       })
       .select()

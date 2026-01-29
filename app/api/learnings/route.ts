@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/api-auth-middleware';
+import { createLearningSchema, validateRequest } from '@/lib/validation/schemas/apiRoutes';
 
 /**
  * GET /api/learnings
@@ -72,9 +73,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate request body
+    const validation = validateRequest(createLearningSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from('learnings')
-      .insert(body)
+      .insert(validation.data)
       .select()
       .single();
 

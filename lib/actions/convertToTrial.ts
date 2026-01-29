@@ -109,7 +109,7 @@ export const convertToTrial: Action<ConvertToTrialInput, ConvertToTrialOutput> =
     // Track the update for undo
     changes.push(trackUpdate(TABLES.ORGANIZATIONS, orgId, previousValues, updateData));
 
-    // Convert prospects to trial_users (if prospects table exists)
+    // Convert prospects to trial_users (if prospects table exists) - batch operations
     let prospectsConverted = 0;
     try {
       const { data: prospects } = await supabase
@@ -119,33 +119,45 @@ export const convertToTrial: Action<ConvertToTrialInput, ConvertToTrialOutput> =
         .eq('status', 'active');
 
       if (prospects && prospects.length > 0) {
+        // Prepare batch data
+        const now = new Date().toISOString();
+        const usersToInsert: Array<{
+          user_id: string;
+          org_id: string;
+          email: string;
+          full_name: string;
+          designation: string;
+          current_stage: string;
+          created_at: string;
+        }> = [];
+        const prospectUpdates: Array<{ id: string; user_id: string }> = [];
+
         for (const prospect of prospects) {
-          // Create trial_user from prospect
-          const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-          const userData = {
-            user_id: userId,
+          const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+          usersToInsert.push({
+            user_id: newUserId,
             org_id: orgId,
             email: prospect.email,
             full_name: prospect.name,
             designation: prospect.title,
             current_stage: 'invited',
-            created_at: new Date().toISOString(),
-          };
+            created_at: now,
+          });
+          prospectUpdates.push({ id: prospect.id, user_id: newUserId });
+        }
 
-          const { error: userError } = await supabase.from(TABLES.USERS).insert(userData);
+        // Batch insert all users at once
+        const { error: userError } = await supabase.from(TABLES.USERS).insert(usersToInsert);
 
-          if (!userError) {
-            // Update prospect to converted
-            await supabase
-              .from('prospects')
-              .update({
-                status: 'converted',
-                converted_user_id: userId,
-              })
-              .eq('id', prospect.id);
+        if (!userError) {
+          // Batch update all prospects at once
+          const prospectIds = prospectUpdates.map(p => p.id);
+          await supabase
+            .from('prospects')
+            .update({ status: 'converted' })
+            .in('id', prospectIds);
 
-            prospectsConverted++;
-          }
+          prospectsConverted = prospects.length;
         }
       }
     } catch (e) {

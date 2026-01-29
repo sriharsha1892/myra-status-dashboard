@@ -46,6 +46,7 @@ export function generatePasswordResetToken(): string {
  * Validate password strength
  * Requirements:
  * - At least 8 characters
+ * - At most 128 characters (DoS prevention)
  * - At least 1 uppercase letter
  * - At least 1 lowercase letter
  * - At least 1 number
@@ -59,6 +60,9 @@ export function validatePasswordStrength(password: string): {
 
   if (password.length < 8) {
     errors.push('Password must be at least 8 characters long');
+  }
+  if (password.length > 128) {
+    errors.push('Password must be at most 128 characters long');
   }
   if (!/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');

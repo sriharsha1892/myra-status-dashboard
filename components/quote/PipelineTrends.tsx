@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { X, TrendingUp, TrendingDown, Minus, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   LineChart,
@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { STAGE_LABELS, STAGE_HEX_COLORS, PipelineStage } from '@/lib/quote/pipeline-types';
+import { usePipelineSnapshots, useCaptureSnapshot } from '@/hooks/usePipelineSnapshots';
 
 interface PipelineTrendsProps {
   isOpen: boolean;
@@ -49,54 +50,30 @@ const STAGE_ORDER: PipelineStage[] = [
 ];
 
 export default function PipelineTrends({ isOpen, onClose, inline = false }: PipelineTrendsProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [chartData, setChartData] = useState<SnapshotData[]>([]);
-  const [comparisons, setComparisons] = useState<StageComparison[]>([]);
   const [days, setDays] = useState(30);
-  const [isCapturing, setIsCapturing] = useState(false);
+  // React Query hooks
+  const {
+    data: chartData = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = usePipelineSnapshots(days, { enabled: isOpen || inline });
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchData();
-    }
-  }, [isOpen, days]);
+  const captureMutation = useCaptureSnapshot();
+  const isCapturing = captureMutation.isPending;
+  const error = queryError?.message || (captureMutation.error as Error)?.message || null;
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/cron/pipeline-snapshot?days=${days}`);
-      const data = await response.json();
-
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-
-      setChartData(data.data || []);
-
-      // Calculate week-over-week comparison
-      calculateComparisons(data.data || []);
-    } catch (err) {
-      setError('Failed to load trend data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateComparisons = (data: SnapshotData[]) => {
-    if (data.length < 2) {
-      setComparisons([]);
-      return;
+  // Calculate comparisons from chart data
+  const comparisons = useMemo<StageComparison[]>(() => {
+    if (chartData.length < 2) {
+      return [];
     }
 
-    const latest = data[data.length - 1];
-    const weekAgoIndex = Math.max(0, data.length - 8);
-    const weekAgo = data[weekAgoIndex];
+    const latest = chartData[chartData.length - 1];
+    const weekAgoIndex = Math.max(0, chartData.length - 8);
+    const weekAgo = chartData[weekAgoIndex];
 
-    const comparisons: StageComparison[] = STAGE_ORDER.map((stage) => {
+    return STAGE_ORDER.map((stage) => {
       const currentCount = (latest[`${stage}_count`] as number) || 0;
       const previousCount = (weekAgo[`${stage}_count`] as number) || 0;
       const change = currentCount - previousCount;
@@ -117,29 +94,10 @@ export default function PipelineTrends({ isOpen, onClose, inline = false }: Pipe
         valueChange,
       };
     });
+  }, [chartData]);
 
-    setComparisons(comparisons);
-  };
-
-  const captureSnapshot = async () => {
-    setIsCapturing(true);
-    try {
-      const response = await fetch('/api/cron/pipeline-snapshot', {
-        method: 'POST',
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        // Refresh the data
-        fetchData();
-      } else {
-        setError(data.error || 'Failed to capture snapshot');
-      }
-    } catch (err) {
-      setError('Failed to capture snapshot');
-    } finally {
-      setIsCapturing(false);
-    }
+  const captureSnapshot = () => {
+    captureMutation.mutate();
   };
 
   const formatDate = (dateStr: string) => {
@@ -165,15 +123,22 @@ export default function PipelineTrends({ isOpen, onClose, inline = false }: Pipe
   const content = (
     <>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+            </div>
+          ) : isCapturing ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+              <p className="mt-3 text-sm text-neutral-500">
+                Capturing snapshot...
+              </p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
               <AlertCircle className="w-10 h-10 text-red-300 mb-3" />
               <p className="text-neutral-600">{error}</p>
               <button
-                onClick={fetchData}
+                onClick={() => refetch()}
                 className="mt-4 text-sm text-violet-600 hover:underline"
               >
                 Try again

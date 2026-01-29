@@ -14,7 +14,6 @@
 
 import { BulkImporter } from '@/lib/bulkImport';
 import { createCSVParser } from '@/lib/bulkImport/parsers/CSVParser';
-import { createClient } from '@supabase/supabase-js';
 
 // =====================================================
 // TYPES
@@ -60,20 +59,12 @@ export const VALID_EVENT_TYPES = [
 
 /**
  * Lookup organization ID by name
+ * Note: This is now handled server-side in the API route
  */
-export async function lookupOrgId(orgName: string): Promise<string | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
-
-  const { data } = await supabase
-    .from('trial_organizations')
-    .select('org_id')
-    .ilike('org_name', orgName)
-    .maybeSingle();
-
-  return data?.org_id || null;
+export async function lookupOrgId(_orgName: string): Promise<string | null> {
+  // This function is no longer used - org lookup happens server-side
+  console.warn('lookupOrgId is deprecated - org lookup happens server-side');
+  return null;
 }
 
 // =====================================================
@@ -289,7 +280,7 @@ export async function importActivityTimeline(
 
 /**
  * Custom database insertion for activity events
- * Resolves org names to org IDs
+ * Uses server-side API route to keep service role key secure
  */
 async function insertActivityEvents(
   items: any[],
@@ -300,71 +291,59 @@ async function insertActivityEvents(
   skipped: number;
   errors: Array<{ item: any; error: string }>;
 }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
+  onProgress?.({
+    stage: 'importing',
+    percentComplete: 70,
+    message: `Sending ${items.length} items to server...`,
+  });
 
-  let successful = 0;
-  let failed = 0;
-  let skipped = 0;
-  const errors: Array<{ item: any; error: string }> = [];
+  try {
+    // Transform items to match API expected format
+    const apiItems = items.map(item => ({
+      org_name: item._org_name,
+      user_id: item.user_id,
+      event_type: item.event_type,
+      event_date: item.event_date,
+      title: item.title,
+      description: item.description,
+      metadata: item.metadata,
+      created_at: item.created_at,
+    }));
 
-  // Pre-fetch all orgs for faster lookup
-  const { data: orgs } = await supabase
-    .from('trial_organizations')
-    .select('org_id, org_name');
+    const response = await fetch('/api/bulk-import/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: apiItems }),
+    });
 
-  const orgNameToId = new Map(
-    (orgs || []).map(org => [org.org_name.toLowerCase(), org.org_id])
-  );
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-
-    try {
-      // Progress update
-      if (i % 10 === 0) {
-        onProgress?.({
-          stage: 'importing',
-          percentComplete: 60 + ((i / items.length) * 35),
-          message: `Importing ${i + 1}/${items.length}...`,
-        });
-      }
-
-      // Resolve org name to org ID
-      const orgId = orgNameToId.get(item._org_name.toLowerCase());
-      if (!orgId) {
-        errors.push({ item, error: `Organization not found: ${item._org_name}` });
-        failed++;
-        continue;
-      }
-
-      // Insert activity event
-      const { error } = await supabase
-        .from('trial_engagement_log')
-        .insert({
-          org_id: orgId,
-          user_id: item.user_id,
-          event_type: item.event_type,
-          event_date: item.event_date,
-          title: item.title,
-          description: item.description,
-          metadata: item.metadata,
-          created_at: item.created_at,
-        });
-
-      if (error) {
-        errors.push({ item, error: error.message });
-        failed++;
-      } else {
-        successful++;
-      }
-    } catch (error: any) {
-      errors.push({ item, error: error.message || 'Unknown error' });
-      failed++;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server import failed');
     }
-  }
 
-  return { successful, failed, skipped, errors };
+    const result = await response.json();
+
+    onProgress?.({
+      stage: 'importing',
+      percentComplete: 95,
+      message: `Imported ${result.successful}/${items.length}...`,
+    });
+
+    return {
+      successful: result.successful,
+      failed: result.failed,
+      skipped: result.skipped,
+      errors: result.errors.map((e: { item: string; error: string }) => ({
+        item: items.find(i => i.title === e.item) || { title: e.item },
+        error: e.error,
+      })),
+    };
+  } catch (error: any) {
+    return {
+      successful: 0,
+      failed: items.length,
+      skipped: 0,
+      errors: [{ item: items[0] || {}, error: error.message || 'Unknown error' }],
+    };
+  }
 }

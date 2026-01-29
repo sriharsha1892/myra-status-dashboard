@@ -61,3 +61,35 @@ For unfamiliar areas, read the relevant doc first:
 - Match the coding style of surrounding files
 - Batch Supabase operations (batch size 50 is optimal)
 - Zod schemas use `message:` syntax (e.g., `{ message: "Error text" }`)
+
+## Pre-Completion Checklist
+
+Before completing ANY task, run these checks:
+
+1. **Security scan** — Scan for hardcoded secrets, API keys, passwords
+2. **Injection vulnerabilities** — Check for SQL injection, shell injection, path traversal
+3. **Input validation** — Verify all user inputs are validated (Zod schemas)
+4. **Test suite** — Run `npm test` for unit tests
+5. **Type check** — Run `npm run build` (includes typecheck)
+
+## Bash Guidelines
+
+### Avoid output buffering issues
+- **DO NOT** pipe through `head`, `tail`, `less`, or `more` when monitoring commands
+- **DO NOT** use `| head -n X` or `| tail -n X` — causes buffering problems
+- Let commands complete fully, or use built-in flags (e.g., `git log -n 10` not `git log | head -10`)
+- For logs, read files directly rather than piping through filters
+
+## Plan Mode
+
+- Plans should be **extremely concise** — sacrifice grammar for brevity
+- End each plan with **unresolved questions** (if any) — be contextual
+- Focus on what changes, not explanations of existing code
+
+## Documentation Requirement
+
+For major features or when onboarding, maintain `docs/FOR_HARSHA.md`:
+- Explain the project in **plain language**, not dry technical docs
+- Cover: technical architecture, codebase structure, how parts connect, tech decisions and why
+- Include **lessons learned**: bugs encountered, how fixed, pitfalls to avoid, best practices
+- Make it **engaging** — use analogies and anecdotes where helpful

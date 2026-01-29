@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   MessageSquare,
   Loader2,
@@ -20,6 +20,7 @@ import {
   type EnrichedUsageEntry,
   type ParseResponse,
 } from '@/hooks/useMyraUsageParser';
+import { useTrialOrganizations } from '@/hooks/useTrialOrganizations';
 
 interface OrgOption {
   id: string;
@@ -31,23 +32,23 @@ export default function UsageInputParser() {
   const [inputText, setInputText] = useState('');
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
   const [editedEntries, setEditedEntries] = useState<EnrichedUsageEntry[]>([]);
-  const [orgs, setOrgs] = useState<OrgOption[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const parseMutation = useParseUsage();
   const saveMutation = useSaveUsageEntries();
 
-  // Fetch organizations for dropdown
-  useEffect(() => {
-    fetch('/api/trials?fields=id,org_name')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.organizations) {
-          setOrgs(data.organizations);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Fetch organizations using React Query hook
+  const { data: orgData } = useTrialOrganizations({
+    pageSize: 500, // Get all orgs for dropdown
+  });
+
+  // Map to expected format for dropdown
+  const orgs = useMemo<OrgOption[]>(() => {
+    return (orgData?.organizations || []).map((org) => ({
+      id: org.org_id,
+      org_name: org.org_name,
+    }));
+  }, [orgData?.organizations]);
 
   const handleParse = async () => {
     if (!inputText.trim()) return;

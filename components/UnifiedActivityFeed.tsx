@@ -131,7 +131,7 @@ export default function UnifiedActivityFeed({
           entityType: 'ticket',
           timestamp: ticket.created_at,
           metadata: { priority: ticket.priority, status: ticket.status },
-          actionUrl: `/support/tickets/${ticket.ticket_id}`,
+          actionUrl: `/status`,
         });
       });
 
@@ -156,7 +156,7 @@ export default function UnifiedActivityFeed({
           entityType: 'trial_org',
           timestamp: org.created_at,
           metadata: { stage: org.org_lifecycle_stage },
-          actionUrl: `/support/trials/${org.org_id}`,
+          actionUrl: `/status`,
         });
       });
 
@@ -188,7 +188,7 @@ export default function UnifiedActivityFeed({
           entityType: 'meeting',
           timestamp: meeting.meeting_date || meeting.created_at,
           metadata: { type: meeting.meeting_type },
-          actionUrl: orgId ? `/support/trials/${orgId}` : '#',
+          actionUrl: `/status`,
         });
       });
 
@@ -222,7 +222,7 @@ export default function UnifiedActivityFeed({
           entityType: 'feature',
           timestamp: feature.created_at,
           metadata: { priority: feature.priority, status: feature.status },
-          actionUrl: '/support/feature-requests',
+          actionUrl: '/status',
         });
       });
 

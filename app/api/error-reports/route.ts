@@ -259,7 +259,7 @@ ${additional_info ? `<p><strong>Additional Info:</strong></p><pre>${JSON.stringi
               actor_id: user_id || user?.id || null,
               title: `🔴 New Error Report: ${context}`,
               message: error_message.substring(0, 200),
-              action_url: `/support/tickets?id=${ticketId}`,
+              action_url: `/status`,
               priority_score: 90, // Very high priority for error reports
               thread_key: `error_report:${ticketId}`,
               status: 'unread'

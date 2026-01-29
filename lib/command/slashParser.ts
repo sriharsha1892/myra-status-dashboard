@@ -730,7 +730,7 @@ const SLASH_COMMANDS: SlashCommandDef[] = [
   },
   {
     action: 'UPDATE_STAGE',
-    aliases: ['/stage', '/s'],
+    aliases: ['/stage', '/status', '/s'],
     usage: '/stage [org] [new_stage]',
     example: '/stage Acme customer',
     parseArgs: (args) => {
@@ -1391,9 +1391,9 @@ const SLASH_COMMANDS: SlashCommandDef[] = [
   // Quick status update command
   {
     action: 'QUICK_STATUS_UPDATE',
-    aliases: ['/status', '/update', '/su'],
-    usage: '/status [org] [sentiment] - [message]',
-    example: '/status Acme positive - demo went great',
+    aliases: ['/update', '/su'],
+    usage: '/update [org] [sentiment] - [message]',
+    example: '/update Acme positive - demo went great',
     parseArgs: (args) => {
       const { org, remaining: afterOrg } = extractOrg(args);
 

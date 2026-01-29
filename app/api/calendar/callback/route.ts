@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/support/dashboard?calendar_error=${error}`
+        `${process.env.NEXT_PUBLIC_APP_URL}/status?calendar_error=${error}`
       );
     }
 
@@ -42,17 +42,17 @@ export async function GET(request: NextRequest) {
     if (dbError) {
       console.error('Failed to store calendar tokens:', dbError);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/support/dashboard?calendar_error=storage_failed`
+        `${process.env.NEXT_PUBLIC_APP_URL}/status?calendar_error=storage_failed`
       );
     }
 
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/support/dashboard?calendar_success=true`
+      `${process.env.NEXT_PUBLIC_APP_URL}/status?calendar_success=true`
     );
   } catch (error: any) {
     console.error('Calendar callback error:', error);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/support/dashboard?calendar_error=${encodeURIComponent(error.message)}`
+      `${process.env.NEXT_PUBLIC_APP_URL}/status?calendar_error=${encodeURIComponent(error.message)}`
     );
   }
 }

@@ -241,9 +241,9 @@ describe('Input Mappers', () => {
 // ============ ACTION REGISTRY TESTS ============
 
 describe('Action Registry', () => {
-  it('should have all 13 actions migrated', () => {
+  it('should have all 42 actions migrated', () => {
     const migrated = getMigratedActions();
-    expect(migrated.length).toBe(13);
+    expect(migrated.length).toBe(42);
   });
 
   it('should recognize migrated actions', () => {

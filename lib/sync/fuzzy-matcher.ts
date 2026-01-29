@@ -43,10 +43,14 @@ export function calculateSimilarity(a: string, b: string): number {
   const strA = normalizeCompanyName(a);
   const strB = normalizeCompanyName(b);
 
+  // If both normalize to empty strings, return 0 (not 100)
+  // This prevents false positives like "Corp Inc" vs "Ltd LLC"
+  if (strA.length === 0 && strB.length === 0) return 0;
+
   if (strA === strB) return 100;
 
   const maxLen = Math.max(strA.length, strB.length);
-  if (maxLen === 0) return 100;
+  if (maxLen === 0) return 0;
 
   const distance = levenshteinDistance(strA, strB);
   return Math.round((1 - distance / maxLen) * 100);
@@ -119,9 +123,14 @@ export function findMatches(
     if (emailMatch && nameSimilarity >= 50) {
       similarity = Math.max(nameSimilarity, 95); // Email match boosts confidence
       matchedBy = 'both';
-    } else if (emailMatch) {
-      similarity = 90;
+    } else if (emailMatch && nameSimilarity >= 30) {
+      // Email match with some name similarity - moderate confidence
+      similarity = 70;
       matchedBy = 'email';
+    } else if (emailMatch) {
+      // Email-only match without name similarity - reduced confidence to prevent false positives
+      // Require at least 30% name similarity to qualify as a match
+      continue; // Skip this record - email alone is not reliable enough
     } else {
       similarity = nameSimilarity;
       matchedBy = 'company_name';

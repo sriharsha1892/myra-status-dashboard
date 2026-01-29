@@ -19,7 +19,6 @@
 
 import { BulkImporter, createFieldBasedDuplicateDetector } from '@/lib/bulkImport';
 import { createExcelParser } from '@/lib/bulkImport/parsers/ExcelParser';
-import { createClient } from '@supabase/supabase-js';
 
 // Import shared helpers
 import {
@@ -27,7 +26,6 @@ import {
   normalizeDomain,
   generateLogoUrl,
   getOrgInitials,
-  findAccountManagerBySalesPOC,
 } from '@/lib/organizations/sharedHelpers';
 
 // =====================================================
@@ -496,7 +494,7 @@ export async function importExcelOrganizations(
 
 /**
  * Custom database insertion handler for organizations + users
- * This handles the multi-entity insertion (org + user) and duplicate detection
+ * Uses server-side API route to keep service role key secure
  */
 async function insertOrganizationsWithUsers(
   items: OrganizationWithUser[],
@@ -508,130 +506,49 @@ async function insertOrganizationsWithUsers(
   errors: Array<{ item: OrganizationWithUser; error: string }>;
   importedOrgIds: string[];
 }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
+  onProgress?.({
+    stage: 'importing',
+    percentComplete: 70,
+    message: `Sending ${items.length} items to server...`,
+  });
 
-  let successful = 0;
-  let failed = 0;
-  let skipped = 0;
-  const errors: Array<{ item: OrganizationWithUser; error: string }> = [];
-  const importedOrgIds: string[] = [];
+  try {
+    const response = await fetch('/api/bulk-import/organizations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-
-    try {
-      // Progress update
-      if (i % 5 === 0) {
-        onProgress?.({
-          stage: 'importing',
-          percentComplete: 60 + ((i / items.length) * 35),
-          message: `Importing ${i + 1}/${items.length}...`,
-        });
-      }
-
-      // Lookup account manager if sales_poc exists
-      const salesPOC = item.custom_fields.sales_poc as string | null;
-      const accountManagerId = salesPOC ? await findAccountManagerBySalesPOC(salesPOC) : null;
-
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('trial_users')
-        .select('user_id, org_id')
-        .eq('email', item.user_email)
-        .maybeSingle();
-
-      if (existingUser) {
-        // User exists - skip
-        skipped++;
-        continue;
-      }
-
-      // Check if org exists (might be different contact)
-      const { data: existingOrg } = await supabase
-        .from('trial_organizations')
-        .select('org_id')
-        .ilike('org_name', item.org_name)
-        .maybeSingle();
-
-      let orgId: string;
-
-      if (existingOrg) {
-        // Org exists - just add new user
-        orgId = existingOrg.org_id;
-
-        // Optionally update org custom_fields to merge comments/notes
-        await supabase
-          .from('trial_organizations')
-          .update({
-            custom_fields: {
-              ...item.custom_fields,
-              [`comments_${item.user_email}`]: item.custom_fields.comments,
-              [`notes_${item.user_email}`]: item.custom_fields.notes,
-            },
-          })
-          .eq('org_id', orgId);
-
-        // Track existing org for enrichment (user was added to it)
-        if (!importedOrgIds.includes(orgId)) {
-          importedOrgIds.push(orgId);
-        }
-      } else {
-        // Create new organization
-        const { data: newOrg, error: orgError } = await supabase
-          .from('trial_organizations')
-          .insert({
-            org_name: item.org_name,
-            domain: item.domain,
-            trial_request_date: item.trial_request_date,
-            trial_access_provided_date: item.trial_access_provided_date,
-            trial_expiry_date: item.trial_expiry_date,
-            trial_status: item.trial_status,
-            org_lifecycle_stage: item.org_lifecycle_stage,
-            description: item.description,
-            logo_url: item.logo_url,
-            org_url: item.org_url,
-            account_manager_id: accountManagerId,
-            custom_fields: item.custom_fields,
-          })
-          .select('org_id')
-          .single();
-
-        if (orgError || !newOrg) {
-          errors.push({ item, error: `Failed to create org: ${orgError?.message}` });
-          failed++;
-          continue;
-        }
-
-        orgId = newOrg.org_id;
-        // Track newly created org for enrichment
-        importedOrgIds.push(orgId);
-      }
-
-      // Create user
-      const { error: userError } = await supabase
-        .from('trial_users')
-        .insert({
-          org_id: orgId,
-          email: item.user_email,
-          name: item.user_name,
-          role: item.user_role,
-          current_stage: item.user_current_stage,
-        });
-
-      if (userError) {
-        errors.push({ item, error: `Failed to create user: ${userError.message}` });
-        failed++;
-      } else {
-        successful++;
-      }
-    } catch (error: any) {
-      errors.push({ item, error: error.message || 'Unknown error' });
-      failed++;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server import failed');
     }
-  }
 
-  return { successful, failed, skipped, errors, importedOrgIds };
+    const result = await response.json();
+
+    onProgress?.({
+      stage: 'importing',
+      percentComplete: 95,
+      message: `Imported ${result.successful}/${items.length}...`,
+    });
+
+    return {
+      successful: result.successful,
+      failed: result.failed,
+      skipped: result.skipped,
+      errors: result.errors.map((e: { item: string; error: string }) => ({
+        item: items.find(i => i.org_name === e.item) || { org_name: e.item } as OrganizationWithUser,
+        error: e.error,
+      })),
+      importedOrgIds: result.importedOrgIds,
+    };
+  } catch (error: any) {
+    return {
+      successful: 0,
+      failed: items.length,
+      skipped: 0,
+      errors: [{ item: items[0] || {} as OrganizationWithUser, error: error.message || 'Unknown error' }],
+      importedOrgIds: [],
+    };
+  }
 }

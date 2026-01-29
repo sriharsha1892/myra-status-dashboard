@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import {
   mapExcelData,
   detectColumns,
@@ -20,6 +21,27 @@ const supabase = createClient(
 );
 
 const BATCH_SIZE = 50;
+
+// Zod schemas for request validation
+const ExcelRowSchema = z.record(z.unknown());
+
+const AnalyzeRequestSchema = z.object({
+  rows: z.array(ExcelRowSchema).min(1, { message: 'At least one row is required' }),
+  action: z.literal('analyze').optional(),
+});
+
+const CommitRowSchema = z.object({
+  rowIndex: z.number(),
+  excelData: z.record(z.unknown()),
+  selectedMatchId: z.string().nullable(),
+  fieldResolutions: z.record(z.enum(['keep_db', 'use_excel'])),
+  status: z.enum(['matched', 'new', 'skipped']),
+});
+
+const CommitRequestSchema = z.object({
+  action: z.literal('commit'),
+  reviewRows: z.array(CommitRowSchema).min(1, { message: 'At least one row is required' }),
+});
 
 // ============================================
 // Types
@@ -73,19 +95,28 @@ interface CommitResponse {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { rows, action } = body as {
-      rows?: ExcelRow[];
-      action?: 'analyze' | 'commit';
-      reviewRows?: CommitRequest['reviewRows'];
-    };
 
-    // Route to appropriate handler
-    if (action === 'commit') {
-      return handleCommit(body.reviewRows || []);
+    // Route based on action and validate with appropriate schema
+    if (body.action === 'commit') {
+      const parseResult = CommitRequestSchema.safeParse(body);
+      if (!parseResult.success) {
+        return NextResponse.json(
+          { error: 'Invalid request data', details: parseResult.error.flatten().fieldErrors },
+          { status: 400 }
+        );
+      }
+      return handleCommit(parseResult.data.reviewRows);
     }
 
-    // Default: Analyze
-    return handleAnalyze(rows || []);
+    // Default: Analyze - validate with analyze schema
+    const parseResult = AnalyzeRequestSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: parseResult.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    return handleAnalyze(parseResult.data.rows as ExcelRow[]);
   } catch (error) {
     console.error('Excel import error:', error);
     return NextResponse.json(
@@ -190,7 +221,7 @@ async function handleAnalyze(rows: ExcelRow[]): Promise<NextResponse> {
 // Commit: Apply user-reviewed changes
 // ============================================
 async function handleCommit(
-  reviewRows: CommitRequest['reviewRows']
+  reviewRows: z.infer<typeof CommitRowSchema>[]
 ): Promise<NextResponse> {
   if (!reviewRows || reviewRows.length === 0) {
     return NextResponse.json(
@@ -204,18 +235,23 @@ async function handleCommit(
   let skipped = 0;
   const errors: string[] = [];
 
+  // Separate rows by operation type for batch processing
+  const rowsToCreate: Array<{ row: z.infer<typeof CommitRowSchema>; data: Record<string, unknown> }> = [];
+  const rowsToUpdate: Array<{ row: z.infer<typeof CommitRowSchema>; data: Record<string, unknown> }> = [];
+
   for (const row of reviewRows) {
-    try {
-      if (row.status === 'skipped') {
-        skipped++;
-        continue;
-      }
+    if (row.status === 'skipped') {
+      skipped++;
+      continue;
+    }
 
-      const excelData = row.excelData;
+    const excelData = row.excelData;
 
-      if (row.status === 'new' || !row.selectedMatchId) {
-        // Create new record
-        const { error } = await supabase.from('sales_pipeline').insert({
+    if (row.status === 'new' || !row.selectedMatchId) {
+      // Prepare for batch insert
+      rowsToCreate.push({
+        row,
+        data: {
           external_id: excelData.external_id as string,
           company_name: excelData.company_name as string,
           primary_email: excelData.primary_email as string,
@@ -225,46 +261,87 @@ async function handleCommit(
           contact_title: excelData.contact_title as string,
           expected_close: excelData.expected_close as string,
           extra_data: excelData.extra_data as Record<string, unknown>,
-        });
+        },
+      });
+    } else {
+      // Prepare update data
+      const updateData: Record<string, unknown> = {};
 
-        if (error) {
-          errors.push(`Create failed (${excelData.company_name}): ${error.message}`);
-        } else {
-          created++;
-        }
-      } else {
-        // Update existing record with resolved fields
-        const updateData: Record<string, unknown> = {};
-
-        // Apply field resolutions
-        for (const [field, resolution] of Object.entries(row.fieldResolutions || {})) {
-          if (resolution === 'use_excel') {
-            // Map field names if needed
-            const excelField = FIELD_MAPPINGS.find((m) => m.dbField === field)?.excelField || field;
-            updateData[field] = excelData[excelField];
-          }
-          // 'keep_db' means we don't update that field
-        }
-
-        // Only update if there are changes
-        if (Object.keys(updateData).length > 0) {
-          const { error } = await supabase
-            .from('sales_pipeline')
-            .update(updateData)
-            .eq('id', row.selectedMatchId);
-
-          if (error) {
-            errors.push(`Update failed (${excelData.company_name}): ${error.message}`);
-          } else {
-            updated++;
-          }
-        } else {
-          // No changes to apply
-          skipped++;
+      for (const [field, resolution] of Object.entries(row.fieldResolutions || {})) {
+        if (resolution === 'use_excel') {
+          const excelField = FIELD_MAPPINGS.find((m) => m.dbField === field)?.excelField || field;
+          updateData[field] = excelData[excelField];
         }
       }
+
+      if (Object.keys(updateData).length > 0) {
+        rowsToUpdate.push({ row, data: updateData });
+      } else {
+        skipped++;
+      }
+    }
+  }
+
+  // Process inserts in batches
+  for (let i = 0; i < rowsToCreate.length; i += BATCH_SIZE) {
+    const batch = rowsToCreate.slice(i, i + BATCH_SIZE);
+    const insertData = batch.map((b) => b.data);
+
+    try {
+      const { error, data } = await supabase
+        .from('sales_pipeline')
+        .insert(insertData)
+        .select('id');
+
+      if (error) {
+        // If batch fails, try individual inserts to identify specific failures
+        for (const item of batch) {
+          const { error: singleError } = await supabase
+            .from('sales_pipeline')
+            .insert(item.data);
+
+          if (singleError) {
+            errors.push(`Create failed (${item.data.company_name}): ${singleError.message}`);
+          } else {
+            created++;
+          }
+        }
+      } else {
+        created += data?.length || batch.length;
+      }
     } catch (err) {
-      errors.push(`Error processing row ${row.rowIndex}: ${err instanceof Error ? err.message : 'Unknown'}`);
+      errors.push(`Batch insert error: ${err instanceof Error ? err.message : 'Unknown'}`);
+    }
+  }
+
+  // Process updates individually (each update targets different record)
+  for (let i = 0; i < rowsToUpdate.length; i += BATCH_SIZE) {
+    const batch = rowsToUpdate.slice(i, i + BATCH_SIZE);
+
+    // Run updates in parallel within the batch
+    const updatePromises = batch.map(async (item) => {
+      try {
+        const { error } = await supabase
+          .from('sales_pipeline')
+          .update(item.data)
+          .eq('id', item.row.selectedMatchId!);
+
+        if (error) {
+          return { success: false, error: `Update failed (${item.row.excelData.company_name}): ${error.message}` };
+        }
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: `Error updating row ${item.row.rowIndex}: ${err instanceof Error ? err.message : 'Unknown'}` };
+      }
+    });
+
+    const results = await Promise.all(updatePromises);
+    for (const result of results) {
+      if (result.success) {
+        updated++;
+      } else if (result.error) {
+        errors.push(result.error);
+      }
     }
   }
 
@@ -296,7 +373,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const sampleJson = searchParams.get('sample');
 
     if (sampleJson) {
-      const sample = JSON.parse(sampleJson) as ExcelRow;
+      let sample: ExcelRow;
+      try {
+        sample = JSON.parse(sampleJson) as ExcelRow;
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid JSON in sample parameter' },
+          { status: 400 }
+        );
+      }
       const detection = detectColumns(sample);
       return NextResponse.json(detection);
     }

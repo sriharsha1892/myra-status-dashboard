@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
               actor_id: user.id,
               title: `New Feature Proposal from ${proposerName}`,
               message: plain_text?.substring(0, 200) || '',
-              action_url: `/support/feature-proposals`,
+              action_url: `/status`,
               priority_score: 85, // High priority for feature proposals
               thread_key: `feature_proposal:${data.id}`,
               status: 'unread'
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         actor_id: user.id,
         title: `You were mentioned in a note`,
         message: plain_text?.substring(0, 200) || '',
-        action_url: `/support/admin/trial-orgs/${entity_id}#note-${data.id}`,
+        action_url: `/status`,
         priority_score: 60, // Base priority for mentions
         thread_key: `note:${data.id}`,
         status: 'unread'

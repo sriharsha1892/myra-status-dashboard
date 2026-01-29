@@ -16,7 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import type { ReviewRow } from '@/app/api/sync/excel-import/route';
-import type { DbRecord, FieldDiff } from '@/lib/sync/fuzzy-matcher';
+import { compareRecords, FIELD_MAPPINGS, type DbRecord, type FieldDiff } from '@/lib/sync/fuzzy-matcher';
 
 interface ExcelReviewModalProps {
   isOpen: boolean;
@@ -96,15 +96,21 @@ export default function ExcelReviewModal({
         const newStatus: EditableReviewRow['status'] =
           matchId === null ? 'new' : matchId === 'skip' ? 'skipped' : 'matched';
 
-        // Find the new match to recalculate diffs
+        // Recalculate diffs for the new match
         let newFieldDiffs: FieldDiff[] = [];
         if (matchId && matchId !== 'skip') {
           const matchedRecord = dbRecords.find((r) => r.id === matchId);
           if (matchedRecord) {
-            // Recalculate diffs for the new match
-            // This is a simplified version - in production, call the API
-            newFieldDiffs = row.fieldDiffs; // Keep existing for now
+            // Recalculate diffs using the fuzzy-matcher's compareRecords function
+            newFieldDiffs = compareRecords(row.excelData, matchedRecord, FIELD_MAPPINGS);
           }
+        }
+
+        // Build new field resolutions based on the recalculated diffs
+        const newFieldResolutions: Record<string, 'keep_db' | 'use_excel'> = {};
+        for (const diff of newFieldDiffs) {
+          // Default to keeping DB value for matched rows, use Excel for new
+          newFieldResolutions[diff.field] = newStatus === 'new' ? 'use_excel' : 'keep_db';
         }
 
         return {
@@ -112,10 +118,7 @@ export default function ExcelReviewModal({
           selectedMatchId: matchId === 'skip' ? null : matchId,
           status: newStatus,
           fieldDiffs: newFieldDiffs,
-          fieldResolutions:
-            newStatus === 'new'
-              ? Object.fromEntries(row.fieldDiffs.map((d) => [d.field, 'use_excel' as const]))
-              : row.fieldResolutions,
+          fieldResolutions: newFieldResolutions,
         };
       })
     );

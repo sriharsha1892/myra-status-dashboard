@@ -15,9 +15,8 @@
 
 import { BulkImporter, createFieldBasedDuplicateDetector } from '@/lib/bulkImport';
 import { createCSVParser } from '@/lib/bulkImport/parsers/CSVParser';
-import { createClient } from '@supabase/supabase-js';
 
-// Import helper functions that are exported from Excel Organizations importer
+// Import helper functions
 import {
   normalizeDomain,
   generateLogoUrl,
@@ -317,6 +316,7 @@ export async function importCSVOrganizations(
 
 /**
  * Custom database insertion for CSV organizations + users
+ * Uses server-side API route to keep service role key secure
  */
 async function insertCSVOrganizationsWithUsers(
   items: OrganizationWithUser[],
@@ -327,104 +327,49 @@ async function insertCSVOrganizationsWithUsers(
   skipped: number;
   errors: Array<{ item: OrganizationWithUser; error: string }>;
 }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
+  onProgress?.({
+    stage: 'importing',
+    percentComplete: 70,
+    message: `Sending ${items.length} items to server...`,
+  });
 
-  let successful = 0;
-  let failed = 0;
-  let skipped = 0;
-  const errors: Array<{ item: OrganizationWithUser; error: string }> = [];
+  try {
+    const response = await fetch('/api/bulk-import/organizations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-
-    try {
-      // Progress update
-      if (i % 5 === 0) {
-        onProgress?.({
-          stage: 'importing',
-          percentComplete: 60 + ((i / items.length) * 35),
-          message: `Importing ${i + 1}/${items.length}...`,
-        });
-      }
-
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('trial_users')
-        .select('user_id, org_id')
-        .eq('email', item.user_email)
-        .maybeSingle();
-
-      if (existingUser) {
-        skipped++;
-        continue;
-      }
-
-      // Check if org exists
-      const { data: existingOrg } = await supabase
-        .from('trial_organizations')
-        .select('org_id')
-        .ilike('org_name', item.org_name)
-        .maybeSingle();
-
-      let orgId: string;
-
-      if (existingOrg) {
-        // Org exists - just add new user
-        orgId = existingOrg.org_id;
-      } else {
-        // Create new organization
-        const { data: newOrg, error: orgError } = await supabase
-          .from('trial_organizations')
-          .insert({
-            org_name: item.org_name,
-            domain: item.domain,
-            org_url: item.org_url,
-            logo_url: item.logo_url,
-            description: item.description,
-            sales_poc_id: item.sales_poc_id,
-            account_manager_id: item.account_manager_id,
-            org_lifecycle_stage: item.org_lifecycle_stage,
-            trial_status: item.trial_status,
-          })
-          .select('org_id')
-          .single();
-
-        if (orgError || !newOrg) {
-          errors.push({ item, error: `Failed to create org: ${orgError?.message}` });
-          failed++;
-          continue;
-        }
-
-        orgId = newOrg.org_id;
-      }
-
-      // Create user
-      const { error: userError } = await supabase
-        .from('trial_users')
-        .insert({
-          org_id: orgId,
-          email: item.user_email,
-          name: item.user_name,
-          role: item.user_role,
-          current_stage: item.user_current_stage,
-        });
-
-      if (userError) {
-        errors.push({ item, error: `Failed to create user: ${userError.message}` });
-        failed++;
-      } else {
-        successful++;
-      }
-    } catch (error: any) {
-      errors.push({ item, error: error.message || 'Unknown error' });
-      failed++;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server import failed');
     }
-  }
 
-  return { successful, failed, skipped, errors };
+    const result = await response.json();
+
+    onProgress?.({
+      stage: 'importing',
+      percentComplete: 95,
+      message: `Imported ${result.successful}/${items.length}...`,
+    });
+
+    return {
+      successful: result.successful,
+      failed: result.failed,
+      skipped: result.skipped,
+      errors: result.errors.map((e: { item: string; error: string }) => ({
+        item: items.find(i => i.org_name === e.item) || { org_name: e.item } as OrganizationWithUser,
+        error: e.error,
+      })),
+    };
+  } catch (error: any) {
+    return {
+      successful: 0,
+      failed: items.length,
+      skipped: 0,
+      errors: [{ item: items[0] || {} as OrganizationWithUser, error: error.message || 'Unknown error' }],
+    };
+  }
 }
 
 /**

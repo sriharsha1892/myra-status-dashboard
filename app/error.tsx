@@ -48,7 +48,7 @@ export default function Error({
           </button>
 
           <button
-            onClick={() => window.location.href = '/support/dashboard'}
+            onClick={() => window.location.href = '/status'}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium rounded-lg transition-colors"
           >
             <Home className="w-4 h-4" />

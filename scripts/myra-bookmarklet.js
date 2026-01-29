@@ -72,6 +72,9 @@
     if (!match) return null;
 
     const month = months.indexOf(match[1]);
+    // indexOf returns -1 if not found, not undefined
+    if (month === -1) return null;
+
     const day = parseInt(match[2]);
     const year = targetYear; // Use year from user's date range input
 

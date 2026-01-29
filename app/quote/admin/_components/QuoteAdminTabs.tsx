@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
-import { LayoutGrid, TrendingUp, Upload } from 'lucide-react';
+import { LayoutGrid, Upload } from 'lucide-react';
 
-export type QuoteAdminTab = 'pipeline' | 'reporting' | 'import';
+export type QuoteAdminTab = 'pipeline' | 'import';
 
 interface TabConfig {
   id: QuoteAdminTab;
@@ -30,13 +30,6 @@ export function QuoteAdminTabs({ activeTab, onTabChange }: QuoteAdminTabsProps) 
       description: 'Organization board',
       icon: <LayoutGrid className="w-4 h-4" />,
       gradient: 'from-violet-500 to-purple-600',
-    },
-    {
-      id: 'reporting',
-      label: 'Reporting',
-      description: 'Analytics & trends',
-      icon: <TrendingUp className="w-4 h-4" />,
-      gradient: 'from-emerald-500 to-green-600',
     },
     {
       id: 'import',
@@ -88,7 +81,7 @@ export function useQuoteAdminTab(): QuoteAdminTab {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') as QuoteAdminTab | null;
 
-  const validTabs: QuoteAdminTab[] = ['pipeline', 'reporting', 'import'];
+  const validTabs: QuoteAdminTab[] = ['pipeline', 'import'];
   if (tab && validTabs.includes(tab)) {
     return tab;
   }

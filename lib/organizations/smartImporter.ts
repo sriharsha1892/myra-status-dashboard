@@ -15,11 +15,9 @@
 
 import { BulkImporter, createFieldBasedDuplicateDetector } from '@/lib/bulkImport';
 import { createCSVParser } from '@/lib/bulkImport/parsers/CSVParser';
-import { createClient } from '@supabase/supabase-js';
 import {
   generateLogoUrl,
   getOrgInitials,
-  findAccountManagerBySalesPOC,
 } from '@/lib/organizations/sharedHelpers';
 
 // =====================================================
@@ -369,6 +367,7 @@ export async function importSmart(
 
 /**
  * Custom database insertion for smart import
+ * Uses server-side API route to keep service role key secure
  */
 async function insertSmartOrganizations(
   items: any[],
@@ -379,109 +378,67 @@ async function insertSmartOrganizations(
   skipped: number;
   errors: Array<{ item: any; error: string }>;
 }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  );
+  onProgress?.({
+    stage: 'importing',
+    percentComplete: 70,
+    message: `Sending ${items.length} items to server...`,
+  });
 
-  let successful = 0;
-  let failed = 0;
-  let skipped = 0;
-  const errors: Array<{ item: any; error: string }> = [];
+  try {
+    // Transform items to match API expected format
+    const apiItems = items.map(item => ({
+      org_name: item.org_name,
+      domain: item.domain,
+      org_url: item.org_url,
+      logo_url: item.logo_url,
+      description: item.description,
+      org_lifecycle_stage: item.org_lifecycle_stage,
+      trial_status: item.trial_status,
+      trial_request_date: null,
+      trial_access_provided_date: null,
+      trial_expiry_date: null,
+      account_manager_id: null,
+      user_email: item.user_email,
+      user_name: item.user_name,
+      user_role: item.user_role,
+      user_current_stage: item.user_current_stage,
+      user_sales_poc: item._sales_poc,
+    }));
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+    const response = await fetch('/api/bulk-import/organizations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: apiItems }),
+    });
 
-    try {
-      // Progress update
-      if (i % 5 === 0) {
-        onProgress?.({
-          stage: 'importing',
-          percentComplete: 60 + ((i / items.length) * 35),
-          message: `Importing ${i + 1}/${items.length}...`,
-        });
-      }
-
-      // Lookup account manager if sales_poc exists
-      const salesPOC = item._sales_poc;
-      const accountManagerId = salesPOC ? await findAccountManagerBySalesPOC(salesPOC) : null;
-
-      // Check if user exists (skip if duplicate)
-      if (item.user_email) {
-        const { data: existingUser } = await supabase
-          .from('trial_users')
-          .select('user_id')
-          .eq('email', item.user_email)
-          .maybeSingle();
-
-        if (existingUser) {
-          skipped++;
-          continue;
-        }
-      }
-
-      // Check if org exists
-      const { data: existingOrg } = await supabase
-        .from('trial_organizations')
-        .select('org_id')
-        .ilike('org_name', item.org_name)
-        .maybeSingle();
-
-      let orgId: string;
-
-      if (existingOrg) {
-        orgId = existingOrg.org_id;
-      } else {
-        // Create new organization
-        const { data: newOrg, error: orgError } = await supabase
-          .from('trial_organizations')
-          .insert({
-            org_name: item.org_name,
-            domain: item.domain,
-            org_url: item.org_url,
-            logo_url: item.logo_url,
-            description: item.description,
-            account_manager_id: accountManagerId,
-            org_lifecycle_stage: item.org_lifecycle_stage,
-            trial_status: item.trial_status,
-          })
-          .select('org_id')
-          .single();
-
-        if (orgError || !newOrg) {
-          errors.push({ item, error: `Failed to create org: ${orgError?.message}` });
-          failed++;
-          continue;
-        }
-
-        orgId = newOrg.org_id;
-      }
-
-      // Create user if email provided
-      if (item.user_email) {
-        const { error: userError } = await supabase
-          .from('trial_users')
-          .insert({
-            org_id: orgId,
-            email: item.user_email,
-            name: item.user_name,
-            role: item.user_role,
-            current_stage: item.user_current_stage,
-          });
-
-        if (userError) {
-          errors.push({ item, error: `Failed to create user: ${userError.message}` });
-          failed++;
-          continue;
-        }
-      }
-
-      successful++;
-    } catch (error: any) {
-      errors.push({ item, error: error.message || 'Unknown error' });
-      failed++;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Server import failed');
     }
-  }
 
-  return { successful, failed, skipped, errors };
+    const result = await response.json();
+
+    onProgress?.({
+      stage: 'importing',
+      percentComplete: 95,
+      message: `Imported ${result.successful}/${items.length}...`,
+    });
+
+    return {
+      successful: result.successful,
+      failed: result.failed,
+      skipped: result.skipped,
+      errors: result.errors.map((e: { item: string; error: string }) => ({
+        item: items.find(i => i.org_name === e.item) || { org_name: e.item },
+        error: e.error,
+      })),
+    };
+  } catch (error: any) {
+    return {
+      successful: 0,
+      failed: items.length,
+      skipped: 0,
+      errors: [{ item: items[0] || {}, error: error.message || 'Unknown error' }],
+    };
+  }
 }
