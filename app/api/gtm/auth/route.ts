@@ -7,10 +7,14 @@ import { isGtmEmail } from '@/lib/gtm/auth';
  * Returns { authenticated: true, email } or { authenticated: false }.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const email = getSessionFromRequest(request);
+  try {
+    const email = getSessionFromRequest(request);
 
-  if (email && isGtmEmail(email)) {
-    return NextResponse.json({ authenticated: true, email });
+    if (email && isGtmEmail(email)) {
+      return NextResponse.json({ authenticated: true, email });
+    }
+  } catch {
+    // Missing GTM_COOKIE_SECRET or malformed token — treat as unauthenticated
   }
 
   return NextResponse.json({ authenticated: false });
