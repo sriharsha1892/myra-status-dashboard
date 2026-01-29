@@ -17,6 +17,8 @@ export interface PipelineOrg {
   demo_date: string | null;
   notes: string | null;
   prospect_source: string | null;
+  manual_cost: number | null;
+  manual_conversation_count: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -54,7 +56,7 @@ export const pipelineManagerKeys = {
 };
 
 // Fetch function
-async function fetchPipelineOrgs(filters: PipelineFilters, leadershipEmail: string | null): Promise<PipelineOrgResponse> {
+async function fetchPipelineOrgs(filters: PipelineFilters): Promise<PipelineOrgResponse> {
   const params = new URLSearchParams();
 
   if (filters.search) params.set('search', filters.search);
@@ -64,12 +66,7 @@ async function fetchPipelineOrgs(filters: PipelineFilters, leadershipEmail: stri
   if (filters.page) params.set('page', filters.page.toString());
   if (filters.limit) params.set('limit', filters.limit.toString());
 
-  const headers: HeadersInit = {};
-  if (leadershipEmail) {
-    headers['x-leadership-email'] = leadershipEmail;
-  }
-
-  const response = await fetch(`/api/leadership/orgs?${params.toString()}`, { headers });
+  const response = await fetch(`/api/gtm/orgs?${params.toString()}`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -80,31 +77,25 @@ async function fetchPipelineOrgs(filters: PipelineFilters, leadershipEmail: stri
 }
 
 // Main hook for fetching pipeline organizations
-export function usePipelineOrgs(filters: PipelineFilters = {}, leadershipEmail: string | null = null) {
+export function usePipelineOrgs(filters: PipelineFilters = {}) {
   return useQuery({
-    queryKey: [...pipelineManagerKeys.list(filters), leadershipEmail],
-    queryFn: () => fetchPipelineOrgs(filters, leadershipEmail),
+    queryKey: pipelineManagerKeys.list(filters),
+    queryFn: () => fetchPipelineOrgs(filters),
     staleTime: 30_000, // 30 seconds
     gcTime: 5 * 60_000, // 5 minutes
     placeholderData: (previousData) => previousData,
-    enabled: !!leadershipEmail,
   });
 }
 
 // Hook for updating a single organization
-export function useUpdatePipelineOrg(leadershipEmail: string | null = null) {
+export function useUpdatePipelineOrg() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ orgId, updates }: { orgId: string; updates: Partial<PipelineOrg> }) => {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (leadershipEmail) {
-        headers['x-leadership-email'] = leadershipEmail;
-      }
-
-      const response = await fetch(`/api/leadership/orgs/${orgId}`, {
+      const response = await fetch(`/api/gtm/orgs/${orgId}`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
 
@@ -195,19 +186,14 @@ interface BulkUpdateRequest {
 }
 
 // Hook for bulk updating organizations
-export function useBulkUpdatePipelineOrgs(leadershipEmail: string | null = null) {
+export function useBulkUpdatePipelineOrgs() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ orgIds, updates }: BulkUpdateRequest) => {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (leadershipEmail) {
-        headers['x-leadership-email'] = leadershipEmail;
-      }
-
-      const response = await fetch('/api/leadership/orgs/bulk', {
+      const response = await fetch('/api/gtm/orgs/bulk', {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ org_ids: orgIds, updates }),
       });
 

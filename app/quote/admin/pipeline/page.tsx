@@ -12,8 +12,7 @@ import {
   type PipelineFilters,
 } from '@/hooks/usePipelineManager';
 import { enhancedToast } from '@/lib/toast/manager';
-import { getLeadershipEmail, clearLeadershipAuth } from '@/lib/leadership/auth';
-import { LeadershipAuthModal } from '@/components/leadership/LeadershipAuthModal';
+import { GtmAccessRequired } from '@/components/gtm/GtmAccessRequired';
 
 // Get row styling based on momentum
 const getMomentumRowClass = (momentum: string | null) => {
@@ -252,6 +251,90 @@ function InlinePOCEdit({
   );
 }
 
+// Inline number edit component for cost and conversation count
+function InlineNumberEdit({
+  value,
+  orgId,
+  field,
+  onUpdate,
+  disabled,
+  prefix = '',
+  placeholder,
+}: {
+  value: number | null;
+  orgId: string;
+  field: 'manual_cost' | 'manual_conversation_count';
+  onUpdate: (orgId: string, field: string, value: number | null) => void;
+  disabled?: boolean;
+  prefix?: string;
+  placeholder: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(value?.toString() || '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    const numValue = inputValue.trim() === '' ? null : parseFloat(inputValue);
+    if (numValue !== value) {
+      onUpdate(orgId, field, numValue);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setInputValue(value?.toString() || '');
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        type="number"
+        step={field === 'manual_cost' ? '0.01' : '1'}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className="w-20 px-2 py-1 text-sm text-right border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400"
+        placeholder="0"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => {
+        setInputValue(value?.toString() || '');
+        setIsEditing(true);
+      }}
+      disabled={disabled}
+      className="text-right hover:bg-neutral-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors disabled:opacity-50 min-w-[60px]"
+    >
+      {value != null ? (
+        <span className="font-medium text-neutral-700">
+          {prefix}
+          {field === 'manual_cost' ? Number(value).toFixed(2) : Number(value).toLocaleString()}
+        </span>
+      ) : (
+        <span className="text-neutral-400 text-sm">{placeholder}</span>
+      )}
+    </button>
+  );
+}
+
 // Notes preview component (clickable to expand)
 function NotesPreview({
   notes,
@@ -284,7 +367,7 @@ function NotesRow({ notes, isExpanded }: { notes: string | null; isExpanded: boo
 
   return (
     <tr className="bg-neutral-50">
-      <td colSpan={8} className="px-4 py-3">
+      <td colSpan={10} className="px-4 py-3">
         <div className="text-sm text-neutral-600 whitespace-pre-wrap">{notes}</div>
       </td>
     </tr>
@@ -430,7 +513,7 @@ function BulkActionBar({
 }
 
 export default function PipelineManagerPage() {
-  const [leadershipEmail, setLeadershipEmail] = useState<string | null>(null);
+  const [gtmEmail, setGtmEmail] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [filters, setFilters] = useState<PipelineFilters>({
@@ -444,20 +527,26 @@ export default function PipelineManagerPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Check for existing auth on mount
+  // Check cookie-based auth on mount
   useEffect(() => {
-    const email = getLeadershipEmail();
-    setLeadershipEmail(email);
-    setIsCheckingAuth(false);
+    fetch('/api/gtm/auth')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          setGtmEmail(data.email);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsCheckingAuth(false));
   }, []);
 
-  const { data, isLoading, refetch, isFetching } = usePipelineOrgs(filters, leadershipEmail);
-  const updateMutation = useUpdatePipelineOrg(leadershipEmail);
-  const bulkUpdateMutation = useBulkUpdatePipelineOrgs(leadershipEmail);
+  const { data, isLoading, refetch, isFetching } = usePipelineOrgs(filters);
+  const updateMutation = useUpdatePipelineOrg();
+  const bulkUpdateMutation = useBulkUpdatePipelineOrgs();
 
-  const handleLogout = () => {
-    clearLeadershipAuth();
-    setLeadershipEmail(null);
+  const handleLogout = async () => {
+    await fetch('/api/gtm/auth', { method: 'DELETE' });
+    setGtmEmail(null);
   };
 
   const organizations = data?.organizations || [];
@@ -581,6 +670,35 @@ export default function PipelineManagerPage() {
     }
   };
 
+  const handleNumberFieldUpdate = async (orgId: string, field: string, newValue: number | null) => {
+    const org = organizations.find((o) => o.org_id === orgId);
+    const previousValue = field === 'manual_cost' ? org?.manual_cost : org?.manual_conversation_count;
+
+    try {
+      await updateMutation.mutateAsync({
+        orgId,
+        updates: { [field]: newValue },
+      });
+
+      const fieldLabel = field === 'manual_cost' ? 'Cost' : 'Conversations';
+      enhancedToast.success(
+        newValue !== null ? `${fieldLabel} updated to ${newValue}` : `${fieldLabel} cleared`,
+        {
+          description: org?.org_name,
+          onUndo: async () => {
+            await updateMutation.mutateAsync({
+              orgId,
+              updates: { [field]: previousValue },
+            });
+            enhancedToast.info(`${fieldLabel} reverted`);
+          },
+        }
+      );
+    } catch {
+      enhancedToast.error(`Failed to update ${field === 'manual_cost' ? 'cost' : 'conversations'}`);
+    }
+  };
+
   const handleBulkStageChange = async (newStage: string) => {
     const orgIds = Array.from(selectedIds);
     const previousStages = new Map(
@@ -686,9 +804,9 @@ export default function PipelineManagerPage() {
     );
   }
 
-  // Show auth modal if not authenticated
-  if (!leadershipEmail) {
-    return <LeadershipAuthModal onSuccess={(email) => setLeadershipEmail(email)} />;
+  // Show access required if not authenticated
+  if (!gtmEmail) {
+    return <GtmAccessRequired />;
   }
 
   return (
@@ -701,10 +819,16 @@ export default function PipelineManagerPage() {
             <p className="text-sm text-neutral-500 mt-1">
               {pagination.total} organizations
               <span className="mx-2">|</span>
-              <span className="text-neutral-400">{leadershipEmail}</span>
+              <span className="text-neutral-400">{gtmEmail}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <a
+              href="/quote/admin/dashboard"
+              className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+            >
+              GTM Dashboard
+            </a>
             <button
               onClick={() => refetch()}
               disabled={isFetching}
@@ -862,6 +986,12 @@ export default function PipelineManagerPage() {
                   <th className="px-4 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                     Domain
                   </th>
+                  <th className="px-4 py-4 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                    Cost
+                  </th>
+                  <th className="px-4 py-4 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                    Convos
+                  </th>
                   <th className="px-4 py-4 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                     Notes
                   </th>
@@ -919,6 +1049,27 @@ export default function PipelineManagerPage() {
                       </td>
                       <td className="px-4 py-4 text-neutral-600">
                         {org.domain || <span className="text-neutral-400">-</span>}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <InlineNumberEdit
+                          value={org.manual_cost}
+                          orgId={org.org_id}
+                          field="manual_cost"
+                          onUpdate={handleNumberFieldUpdate}
+                          disabled={isAnyLoading}
+                          prefix="$"
+                          placeholder="Add $"
+                        />
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <InlineNumberEdit
+                          value={org.manual_conversation_count}
+                          orgId={org.org_id}
+                          field="manual_conversation_count"
+                          onUpdate={handleNumberFieldUpdate}
+                          disabled={isAnyLoading}
+                          placeholder="Add #"
+                        />
                       </td>
                       <td className="px-4 py-4">
                         <NotesPreview
