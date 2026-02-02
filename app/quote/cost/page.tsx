@@ -919,7 +919,7 @@ export default function QuotePage() {
                     <button
                       type="button"
                       onClick={addRow}
-                      className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-700 transition-colors"
+                      className="relative z-[1] flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       Add Row
@@ -1246,6 +1246,16 @@ export default function QuotePage() {
                       );
                     })}
                   </div>
+
+                  {/* Add Row below table */}
+                  <button
+                    type="button"
+                    onClick={addRow}
+                    className="mt-3 flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Row
+                  </button>
 
                   {/* Additional Hour Rate */}
                   <div className="mt-4 flex items-center gap-4">

@@ -64,6 +64,8 @@ export function loadDraft(): QuoteFormData | null {
         showConfidential: parsed.showConfidential ?? true,
         // Add showUsersColumn for old drafts (default to true)
         showUsersColumn: parsed.showUsersColumn ?? true,
+        // Add showPromotionalPrice for old drafts
+        showPromotionalPrice: parsed.showPromotionalPrice ?? true,
         // Add dealContext for old drafts
         dealContext: parsed.dealContext ?? { ...DEFAULT_DEAL_CONTEXT },
         // Add additionalHourRate for old drafts
