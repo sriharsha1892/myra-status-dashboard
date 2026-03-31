@@ -1,5 +1,5 @@
 import { rgb } from 'pdf-lib';
-import type { QuoteRow, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from './types';
+import type { QuoteRow, PPUQuoteRow, PricingModel, PricingOptionGroup, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from './types';
 
 // Brand colors (RGB 0-1 for pdf-lib)
 export const PDF_COLORS = {
@@ -248,6 +248,76 @@ export const DEFAULT_QUOTE_FORM: Omit<import('./types').QuoteFormData, 'quoteDat
   dealContext: DEFAULT_DEAL_CONTEXT,
   additionalHourRate: '',
   paymentTerms: DEFAULT_PAYMENT_TERMS,
+};
+
+// ============================================================================
+// PPU (Pay-Per-Use / Project-Based) PRICING
+// ============================================================================
+
+export const DEFAULT_PPU_ROW: PPUQuoteRow = {
+  term: '1-Year',
+  namedUsers: 'Unlimited',
+  projectsIncluded: '',
+  consultingHours: '',
+  listPrice: '',
+  offerPrice: '',
+};
+
+export const DEFAULT_SCOPE_DEFINITION =
+  'A Research Project is a single topic or decision theme. Follow-up questions, refined assumptions, and scenario iterations all remain within that project. A new, unrelated topic constitutes a separate Research Project.';
+
+export function createPricingOptionGroup(
+  model: PricingModel,
+  index: number
+): PricingOptionGroup {
+  const letter = String.fromCharCode(65 + index); // A, B, C...
+  const title = model === 'per-seat' ? 'User-Based' : 'Project-Based';
+  return {
+    id: `opt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    label: `Option ${letter}: ${title}`,
+    pricingModel: model,
+    rows: model === 'per-seat'
+      ? [{ term: '1-Year', users: '', consultingHours: '', listPrice: '', offerPrice: '' }]
+      : [],
+    ppuRows: model === 'per-project'
+      ? [{ ...DEFAULT_PPU_ROW }]
+      : [],
+    showUsersColumn: true,
+    showPromotionalPrice: true,
+    showProjectsColumn: true,
+    showOverageRate: false,
+    additionalHourRate: '',
+    scopeDefinition: model === 'per-project' ? DEFAULT_SCOPE_DEFINITION : undefined,
+  };
+}
+
+export const PPU_TEMPLATE_PRESETS = [
+  {
+    name: 'PPU Starter',
+    description: 'Unlimited users, 25 projects, 25 consulting hours',
+    ppuRows: [
+      { term: '1-Year', namedUsers: 'Unlimited', projectsIncluded: '25', consultingHours: '25/year', listPrice: '7500', offerPrice: '5000' },
+    ],
+  },
+  {
+    name: 'PPU Growth',
+    description: 'Unlimited users, 50 projects, 50 consulting hours',
+    ppuRows: [
+      { term: '1-Year', namedUsers: 'Unlimited', projectsIncluded: '50', consultingHours: '50/year', listPrice: '12500', offerPrice: '8750' },
+    ],
+  },
+  {
+    name: 'PPU Enterprise',
+    description: 'Unlimited users, 100 projects, 100 consulting hours',
+    ppuRows: [
+      { term: '1-Year', namedUsers: 'Unlimited', projectsIncluded: '100', consultingHours: '100/year', listPrice: '22500', offerPrice: '15000' },
+    ],
+  },
+];
+
+export const PPU_STATIC_CONTENT = {
+  overageNote: (rate: string, currencySymbol: string) =>
+    `Additional research projects beyond the included allocation are available at ${currencySymbol}${rate} per project.`,
 };
 
 // Common company suffixes to exclude from client code generation

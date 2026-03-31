@@ -7,6 +7,33 @@ export interface QuoteRow {
   additionalHourRate?: string; // Per-row rate for additional consulting hours (optional)
 }
 
+// Pay-Per-Use / Project-Based pricing row
+export interface PPUQuoteRow {
+  term: string;               // e.g., "1-Year"
+  namedUsers: string;          // Default "Unlimited", AM can set a number
+  projectsIncluded: string;    // e.g., "25", "50", "100"
+  consultingHours: string;     // e.g., "25/year"
+  listPrice: string;
+  offerPrice: string;
+  overageRate?: string;        // Per-project overage rate (optional)
+}
+
+export type PricingModel = 'per-seat' | 'per-project';
+
+export interface PricingOptionGroup {
+  id: string;                  // UUID for keying
+  label: string;               // e.g., "Option A: User-Based"
+  pricingModel: PricingModel;
+  rows: QuoteRow[];            // Used when pricingModel === 'per-seat'
+  ppuRows: PPUQuoteRow[];      // Used when pricingModel === 'per-project'
+  showUsersColumn: boolean;
+  showPromotionalPrice: boolean;
+  showProjectsColumn: boolean;
+  showOverageRate: boolean;
+  additionalHourRate: string;
+  scopeDefinition?: string;    // "What counts as a Research Project?" paragraph
+}
+
 // Payment terms types
 export type PaymentFrequency = 'annual' | 'semi-annual' | 'quarterly' | 'monthly';
 export type PaymentBasis = 'immediate' | 'invoice' | 'msa';
@@ -35,7 +62,7 @@ export interface QuoteFormData {
   contactEmail: string;       // Email (required)
   quoteDate: string;          // ISO date, defaults to today
   currency: 'USD' | 'EUR' | 'GBP' | 'INR';
-  rows: QuoteRow[];
+  rows: QuoteRow[];           // Per-seat rows (used when pricingOptions is absent)
   validUntil: string;         // ISO date, defaults to quoteDate + 30 days
   preparedBy: string;         // Account Manager name (optional)
   preparedByEmail: string;    // Account Manager email (optional)
@@ -45,6 +72,7 @@ export interface QuoteFormData {
   dealContext: DealContext;   // Internal negotiation context (not shown in PDF)
   additionalHourRate: string; // Optional per-analyst-hour rate for additional hours
   paymentTerms: PaymentTerms; // Payment frequency and terms
+  pricingOptions?: PricingOptionGroup[]; // Multiple option groups (per-seat + PPU). When absent, uses `rows`.
 }
 
 export interface QuoteHistoryEntry {

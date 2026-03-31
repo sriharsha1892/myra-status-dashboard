@@ -17,9 +17,9 @@ import {
   ArrowRightLeft,
   FileCheck,
 } from 'lucide-react';
-import type { QuoteFormData, QuoteRow, ValidationErrors, Currency, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from '@/lib/quote/types';
+import type { QuoteFormData, QuoteRow, PricingOptionGroup, ValidationErrors, Currency, DiscountReason, Urgency, PaymentFrequency, PaymentBasis, NetTerms, PaymentTerms } from '@/lib/quote/types';
 import { CURRENCY_SYMBOLS } from '@/lib/quote/types';
-import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES, PAYMENT_FREQUENCY_OPTIONS, PAYMENT_BASIS_OPTIONS, NET_TERMS_OPTIONS, DEFAULT_PAYMENT_TERMS } from '@/lib/quote/constants';
+import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPTIONS, ACCOUNT_MANAGERS, TERM_OPTIONS, CURRENCY_RATES, PAYMENT_FREQUENCY_OPTIONS, PAYMENT_BASIS_OPTIONS, NET_TERMS_OPTIONS, DEFAULT_PAYMENT_TERMS, createPricingOptionGroup } from '@/lib/quote/constants';
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { generateQuoteWord, generateQuoteWordFilename } from '@/lib/quote/docx-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
@@ -28,6 +28,7 @@ import { QuotePreviewModal } from '@/components/quote/QuotePreviewModal';
 import { QuoteHistory } from '@/components/quote/QuoteHistory';
 import { TemplatePresets } from '@/components/quote/TemplatePresets';
 import { QuoteAuthModal } from '@/components/quote/QuoteAuthModal';
+import { PricingOptionCard } from '@/components/quote/PricingOptionCard';
 
 // Validation helpers
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -299,6 +300,7 @@ export default function QuotePage() {
     setFormData({ ...data, preparedByEmail });
     setErrors({});
     setTouched({});
+    setCustomTermRows(new Set());
     toast.success('Quote loaded from history');
   }, []);
 
@@ -897,6 +899,99 @@ export default function QuotePage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <h3 className="text-sm font-medium text-neutral-700">Investment</h3>
+                      {/* Pricing Structure Toggle */}
+                      <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-0.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formData.pricingOptions) {
+                              // Switch back to single mode — use first per-seat group's rows if available
+                              const firstPerSeat = formData.pricingOptions.find(g => g.pricingModel === 'per-seat');
+                              if (firstPerSeat && firstPerSeat.rows.length > 0) {
+                                updateField('rows', firstPerSeat.rows);
+                              }
+                              updateField('pricingOptions', undefined as unknown as PricingOptionGroup[]);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                            !formData.pricingOptions ? 'bg-white text-violet-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+                          }`}
+                        >
+                          Single
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!formData.pricingOptions) {
+                              // Migrate current rows into first per-seat option group
+                              const group = createPricingOptionGroup('per-seat', 0);
+                              group.rows = formData.rows.length > 0 ? [...formData.rows] : group.rows;
+                              group.showUsersColumn = formData.showUsersColumn;
+                              group.showPromotionalPrice = formData.showPromotionalPrice;
+                              group.additionalHourRate = formData.additionalHourRate;
+                              updateField('pricingOptions', [group]);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                            formData.pricingOptions ? 'bg-white text-violet-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+                          }`}
+                        >
+                          Multiple Options
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Multi-Option Mode */}
+                  {formData.pricingOptions ? (
+                    <div className="space-y-4">
+                      {formData.pricingOptions.map((group, gIdx) => (
+                        <PricingOptionCard
+                          key={group.id}
+                          group={group}
+                          index={gIdx}
+                          currency={formData.currency}
+                          canRemove={formData.pricingOptions!.length > 1}
+                          onUpdate={(updates) => {
+                            const newOptions = formData.pricingOptions!.map((g, i) =>
+                              i === gIdx ? { ...g, ...updates } : g
+                            );
+                            updateField('pricingOptions', newOptions);
+                          }}
+                          onRemove={() => {
+                            const newOptions = formData.pricingOptions!.filter((_, i) => i !== gIdx);
+                            updateField('pricingOptions', newOptions);
+                          }}
+                        />
+                      ))}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newGroup = createPricingOptionGroup('per-seat', formData.pricingOptions!.length);
+                            updateField('pricingOptions', [...formData.pricingOptions!, newGroup]);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-violet-600 hover:bg-violet-50 border border-violet-200 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-4 h-4" /> Per-Seat Option
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newGroup = createPricingOptionGroup('per-project', formData.pricingOptions!.length);
+                            updateField('pricingOptions', [...formData.pricingOptions!, newGroup]);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 border border-emerald-200 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-4 h-4" /> Project-Based Option
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                  /* Single Mode — existing table */
+                  <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2 text-sm text-neutral-500 cursor-pointer">
                         <input
                           type="checkbox"
@@ -919,7 +1014,7 @@ export default function QuotePage() {
                     <button
                       type="button"
                       onClick={addRow}
-                      className="relative z-[1] flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+                      className="relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       Add Row
@@ -1251,7 +1346,7 @@ export default function QuotePage() {
                   <button
                     type="button"
                     onClick={addRow}
-                    className="mt-3 flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+                    className="mt-3 md:hidden flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     Add Row
@@ -1285,6 +1380,8 @@ export default function QuotePage() {
                       <span className="text-sm text-neutral-500">/hour</span>
                     </div>
                   </div>
+                  </div>
+                  )}
                 </div>
 
                 {/* Deal Context (Collapsible) */}

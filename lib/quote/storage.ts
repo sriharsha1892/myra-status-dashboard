@@ -72,6 +72,8 @@ export function loadDraft(): QuoteFormData | null {
         additionalHourRate: parsed.additionalHourRate ?? '',
         // Add paymentTerms for old drafts
         paymentTerms: parsed.paymentTerms ?? { ...DEFAULT_PAYMENT_TERMS },
+        // Add pricingOptions for old drafts (undefined = single mode)
+        pricingOptions: parsed.pricingOptions ?? undefined,
       };
     }
   } catch (error) {
@@ -115,11 +117,21 @@ export function saveToHistory(email: string, data: QuoteFormData): void {
     const key = getHistoryKey(email);
     const history = getHistory(email);
 
-    // Calculate total value from offer prices
-    const totalValue = data.rows.reduce((sum, row) => {
-      const price = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
-      return sum + (isNaN(price) ? 0 : price);
-    }, 0);
+    // Calculate total value from offer prices (first option group if multi-option, else flat rows)
+    let totalValue: number;
+    if (data.pricingOptions && data.pricingOptions.length > 0) {
+      const first = data.pricingOptions[0];
+      const rows = first.pricingModel === 'per-seat' ? first.rows : first.ppuRows;
+      totalValue = rows.reduce((sum, row) => {
+        const price = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
+        return sum + (isNaN(price) ? 0 : price);
+      }, 0);
+    } else {
+      totalValue = data.rows.reduce((sum, row) => {
+        const price = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
+        return sum + (isNaN(price) ? 0 : price);
+      }, 0);
+    }
 
     const entry: QuoteHistoryEntry = {
       id: `quote_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,

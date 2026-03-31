@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, PDFPage, PDFFont, degrees, rgb } from 'pdf-lib';
-import type { QuoteFormData, Currency } from './types';
+import type { QuoteFormData, PPUQuoteRow, PricingOptionGroup, Currency } from './types';
 import {
   PDF_COLORS,
   PAGE_WIDTH,
@@ -297,6 +297,76 @@ function drawConfidentialWatermark(page: PDFPage, font: PDFFont): void {
   });
 }
 
+// Draw a PPU investment table on a page at the given y position
+function drawPPUTable(
+  page: PDFPage,
+  ppuRows: PPUQuoteRow[],
+  showPromotionalPrice: boolean,
+  showOverageRate: boolean,
+  currency: Currency,
+  y: number,
+  font: PDFFont,
+  fontBold: PDFFont
+): number {
+  const tableX = MARGIN_LEFT;
+  const rowHeight = 24;
+  const validRows = ppuRows.filter(r => r.term || r.projectsIncluded || r.offerPrice);
+
+  // Column setup
+  const headers: string[] = ['Term', 'Users', 'Projects', 'Consult Hrs'];
+  let colWidths: number[];
+  if (showPromotionalPrice) {
+    headers.push('List Price', 'Annual Price');
+    colWidths = [65, 70, 65, 75, 85, 85];
+  } else {
+    headers.push('Annual Price');
+    colWidths = [80, 80, 75, 90, 120];
+  }
+  if (showOverageRate) {
+    headers.push('Overage');
+    colWidths.push(65);
+  }
+
+  // Header row
+  page.drawRectangle({ x: tableX, y: y - rowHeight + 6, width: CONTENT_WIDTH, height: rowHeight, color: rgb(0.02, 0.588, 0.412) }); // emerald-600
+  let colX = tableX + 6;
+  for (let i = 0; i < headers.length; i++) {
+    page.drawText(headers[i], { x: colX, y: y - 10, size: 7.5, font: fontBold, color: PDF_COLORS.white });
+    colX += colWidths[i];
+  }
+  y -= rowHeight;
+
+  // Data rows
+  for (let idx = 0; idx < validRows.length; idx++) {
+    const row = validRows[idx];
+    page.drawRectangle({ x: tableX, y: y - rowHeight + 6, width: CONTENT_WIDTH, height: rowHeight, color: idx % 2 === 0 ? PDF_COLORS.slate50 : PDF_COLORS.white });
+
+    const cells: string[] = [
+      sanitizeForPdf(row.term),
+      sanitizeForPdf(row.namedUsers || 'Unlimited'),
+      sanitizeForPdf(row.projectsIncluded),
+      sanitizeForPdf(row.consultingHours),
+    ];
+    if (showPromotionalPrice) {
+      cells.push(formatCurrency(row.listPrice, currency), formatCurrency(row.offerPrice, currency));
+    } else {
+      cells.push(formatCurrency(row.listPrice, currency));
+    }
+    if (showOverageRate) {
+      cells.push(row.overageRate ? formatCurrency(row.overageRate, currency) : '');
+    }
+
+    colX = tableX + 6;
+    for (let i = 0; i < cells.length; i++) {
+      page.drawText(cells[i] || '', { x: colX, y: y - 10, size: 7.5, font: font, color: PDF_COLORS.slate700 });
+      colX += colWidths[i];
+    }
+    y -= rowHeight;
+  }
+
+  return y;
+}
+
 // Main PDF generation function
 export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
@@ -414,6 +484,80 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
   // Investment section
   y -= 20;
   y = drawSectionHeader(page1, 'Investment', y, fontBold);
+
+  if (data.pricingOptions && data.pricingOptions.length > 0) {
+    // Multi-option mode
+    for (const group of data.pricingOptions) {
+      // Option group label
+      y -= 8;
+      page1.drawText(sanitizeForPdf(group.label), { x: MARGIN_LEFT, y, size: 9.5, font: fontBold, color: PDF_COLORS.slate800 });
+      y -= 16;
+
+      if (group.pricingModel === 'per-project') {
+        y = drawPPUTable(page1, group.ppuRows, group.showPromotionalPrice, group.showOverageRate, data.currency, y, font, fontBold);
+
+        // Scope definition
+        if (group.scopeDefinition) {
+          y -= 8;
+          page1.drawText('What counts as a Research Project?', { x: MARGIN_LEFT, y, size: 7.5, font: fontBold, color: PDF_COLORS.slate700 });
+          y -= 12;
+          y = drawWrappedText(page1, sanitizeForPdf(group.scopeDefinition), MARGIN_LEFT, y, CONTENT_WIDTH, font, 7.5, PDF_COLORS.slate600);
+        }
+      } else {
+        // Per-seat: draw inline table for this group
+        const gRows = group.rows.filter(r => r.term || r.users || r.consultingHours || r.offerPrice);
+        const gShowUsers = group.showUsersColumn;
+        const gShowPromo = group.showPromotionalPrice;
+        let gColWidths: number[];
+        let gHeaders: string[];
+        if (gShowUsers && gShowPromo) {
+          gHeaders = ['Term', 'Users', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+          gColWidths = [70, 55, 120, 95, 95];
+        } else if (gShowUsers) {
+          gHeaders = ['Term', 'Users', 'Consulting Hours', 'List Price'];
+          gColWidths = [85, 70, 150, 130];
+        } else if (gShowPromo) {
+          gHeaders = ['Term', 'Consulting Hours', 'List Price', 'Promotional Price/Year'];
+          gColWidths = [85, 150, 110, 110];
+        } else {
+          gHeaders = ['Term', 'Consulting Hours', 'List Price'];
+          gColWidths = [100, 200, 145];
+        }
+
+        const rowHeight = 24;
+        page1.drawRectangle({ x: MARGIN_LEFT, y: y - rowHeight + 6, width: CONTENT_WIDTH, height: rowHeight, color: PDF_COLORS.violet });
+        let colX = MARGIN_LEFT + 6;
+        for (let i = 0; i < gHeaders.length; i++) {
+          page1.drawText(gHeaders[i], { x: colX, y: y - 10, size: 7.5, font: fontBold, color: PDF_COLORS.white });
+          colX += gColWidths[i];
+        }
+        y -= rowHeight;
+
+        for (let ri = 0; ri < gRows.length; ri++) {
+          const row = gRows[ri];
+          page1.drawRectangle({ x: MARGIN_LEFT, y: y - rowHeight + 6, width: CONTENT_WIDTH, height: rowHeight, color: ri % 2 === 0 ? PDF_COLORS.slate50 : PDF_COLORS.white });
+          let rd: string[];
+          if (gShowUsers && gShowPromo) {
+            rd = [sanitizeForPdf(row.term), sanitizeForPdf(row.users), sanitizeForPdf(row.consultingHours), formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)];
+          } else if (gShowUsers) {
+            rd = [sanitizeForPdf(row.term), sanitizeForPdf(row.users), sanitizeForPdf(row.consultingHours), formatCurrency(row.listPrice, data.currency)];
+          } else if (gShowPromo) {
+            rd = [sanitizeForPdf(row.term), sanitizeForPdf(row.consultingHours), formatCurrency(row.listPrice, data.currency), formatCurrency(row.offerPrice, data.currency)];
+          } else {
+            rd = [sanitizeForPdf(row.term), sanitizeForPdf(row.consultingHours), formatCurrency(row.listPrice, data.currency)];
+          }
+          colX = MARGIN_LEFT + 6;
+          for (let i = 0; i < rd.length; i++) {
+            page1.drawText(rd[i] || '', { x: colX, y: y - 10, size: 7.5, font: font, color: PDF_COLORS.slate700 });
+            colX += gColWidths[i];
+          }
+          y -= rowHeight;
+        }
+      }
+      y -= 8;
+    }
+  } else {
+  // Single-option mode (existing code)
 
   // Filter out empty rows
   const validRows = data.rows.filter(row =>
@@ -540,6 +684,8 @@ export async function generateQuotePDF(data: QuoteFormData): Promise<Uint8Array>
 
     y -= rowHeight;
   }
+
+  } // end single-option else block
 
   // What's Included section
   y -= 20;

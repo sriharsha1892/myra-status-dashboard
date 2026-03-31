@@ -17,12 +17,13 @@ import {
   LevelFormat,
   HeadingLevel,
 } from 'docx';
-import type { QuoteFormData, Currency } from './types';
+import type { QuoteFormData, PPUQuoteRow, PricingOptionGroup, Currency } from './types';
 import {
   STATIC_CONTENT,
   COMPANY_SUFFIXES,
   getBillingText,
   DEFAULT_PAYMENT_TERMS,
+  PPU_STATIC_CONTENT,
 } from './constants';
 
 // ============================================================================
@@ -400,6 +401,127 @@ function createInvestmentTable(data: QuoteFormData): Table {
   });
 }
 
+// Create PPU (project-based) investment table
+function createPPUInvestmentTable(
+  ppuRows: PPUQuoteRow[],
+  showPromotionalPrice: boolean,
+  showOverageRate: boolean,
+  currency: Currency
+): Table {
+  const validRows = ppuRows.filter(row => row.term || row.projectsIncluded || row.offerPrice);
+
+  // Build headers and column widths
+  const headers: string[] = ['Term', 'Named Users', 'Projects Included', 'Consulting Hours'];
+  const columnWidths: number[] = [14, 16, 16, 18];
+
+  if (showPromotionalPrice) {
+    headers.push('List Price', 'Annual Price');
+    columnWidths.push(18, 18);
+  } else {
+    headers.push('Annual Price');
+    columnWidths.push(36);
+  }
+
+  if (showOverageRate) {
+    headers.push('Overage/Project');
+    // Steal width proportionally
+    const total = columnWidths.reduce((a, b) => a + b, 0);
+    const overageWidth = 14;
+    const scale = (100 - overageWidth) / total;
+    for (let i = 0; i < columnWidths.length; i++) columnWidths[i] = Math.round(columnWidths[i] * scale);
+    columnWidths.push(overageWidth);
+  }
+
+  // Header row
+  const headerRow = new TableRow({
+    children: headers.map((header, idx) =>
+      new TableCell({
+        children: [new Paragraph({
+          children: [new TextRun({ text: header, bold: true, size: FONT_SIZES.tableHeader, color: DOCX_COLORS.white, font: DEFAULT_FONT })],
+          alignment: AlignmentType.CENTER,
+        })],
+        shading: { fill: '059669' }, // emerald-600
+        verticalAlign: VerticalAlign.CENTER,
+        width: { size: columnWidths[idx], type: WidthType.PERCENTAGE },
+        margins: TABLE_CELL_MARGINS,
+      })
+    ),
+    tableHeader: true,
+  });
+
+  // Data rows
+  const dataRows = validRows.map((row, idx) => {
+    const cells: string[] = [
+      row.term,
+      row.namedUsers || 'Unlimited',
+      row.projectsIncluded,
+      row.consultingHours,
+    ];
+
+    if (showPromotionalPrice) {
+      cells.push(formatCurrency(row.listPrice, currency), formatCurrency(row.offerPrice, currency));
+    } else {
+      cells.push(formatCurrency(row.listPrice, currency));
+    }
+
+    if (showOverageRate) {
+      cells.push(row.overageRate ? formatCurrency(row.overageRate, currency) : '');
+    }
+
+    // Bold the last price column
+    const priceColIdx = showPromotionalPrice
+      ? (showOverageRate ? cells.length - 2 : cells.length - 1)
+      : (showOverageRate ? cells.length - 2 : cells.length - 1);
+
+    return new TableRow({
+      children: cells.map((cell, cellIdx) =>
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({
+              text: cell || '',
+              size: FONT_SIZES.tableBody,
+              bold: cellIdx === priceColIdx && showPromotionalPrice,
+              color: DOCX_COLORS.slate700,
+              font: DEFAULT_FONT,
+            })],
+          })],
+          shading: { fill: idx % 2 === 0 ? DOCX_COLORS.slate50 : DOCX_COLORS.white },
+          verticalAlign: VerticalAlign.CENTER,
+          width: { size: columnWidths[cellIdx], type: WidthType.PERCENTAGE },
+          margins: TABLE_CELL_MARGINS,
+        })
+      ),
+    });
+  });
+
+  return new Table({
+    rows: [headerRow, ...dataRows],
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 4, color: DOCX_COLORS.slate200 },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: DOCX_COLORS.slate200 },
+      left: { style: BorderStyle.SINGLE, size: 4, color: DOCX_COLORS.slate200 },
+      right: { style: BorderStyle.SINGLE, size: 4, color: DOCX_COLORS.slate200 },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: DOCX_COLORS.slate200 },
+      insideVertical: { style: BorderStyle.SINGLE, size: 2, color: DOCX_COLORS.slate200 },
+    },
+  });
+}
+
+// Helper: create option group heading
+function createOptionGroupHeading(label: string): Paragraph {
+  return new Paragraph({
+    children: [new TextRun({
+      text: label,
+      bold: true,
+      size: FONT_SIZES.sectionBody,
+      color: DOCX_COLORS.slate800,
+      font: DEFAULT_FONT,
+    })],
+    spacing: { before: 240, after: 120 },
+  });
+}
+
 // ============================================================================
 // MAIN DOCUMENT GENERATOR
 // ============================================================================
@@ -514,7 +636,56 @@ export async function generateQuoteWord(data: QuoteFormData): Promise<Uint8Array
 
   // Investment
   children.push(createSectionHeader('Investment'));
-  children.push(createInvestmentTable(data));
+
+  if (data.pricingOptions && data.pricingOptions.length > 0) {
+    // Multi-option mode: render each option group with its own table
+    for (const group of data.pricingOptions) {
+      children.push(createOptionGroupHeading(group.label));
+
+      if (group.pricingModel === 'per-seat') {
+        // Build a temporary QuoteFormData-like object for the existing table function
+        const tempData: QuoteFormData = {
+          ...data,
+          rows: group.rows,
+          showUsersColumn: group.showUsersColumn,
+          showPromotionalPrice: group.showPromotionalPrice,
+          additionalHourRate: group.additionalHourRate,
+        };
+        children.push(createInvestmentTable(tempData));
+      } else {
+        children.push(createPPUInvestmentTable(
+          group.ppuRows,
+          group.showPromotionalPrice,
+          group.showOverageRate,
+          data.currency
+        ));
+
+        // Scope definition paragraph (PPU-specific)
+        if (group.scopeDefinition) {
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: 'What counts as a Research Project? ', bold: true, size: FONT_SIZES.small, color: DOCX_COLORS.slate700, font: DEFAULT_FONT }),
+              new TextRun({ text: group.scopeDefinition, size: FONT_SIZES.small, color: DOCX_COLORS.slate600, font: DEFAULT_FONT }),
+            ],
+            spacing: { before: 120, after: 80 },
+          }));
+        }
+      }
+
+      // Per-group additional hour rate note
+      if (group.additionalHourRate) {
+        const symbol = data.currency === 'INR' ? '₹' : data.currency === 'EUR' ? '€' : data.currency === 'GBP' ? '£' : '$';
+        children.push(createBodyParagraph(
+          STATIC_CONTENT.additionalHoursNote(group.additionalHourRate, symbol)
+        ));
+      }
+
+      children.push(new Paragraph({ children: [], spacing: { after: 80 } }));
+    }
+  } else {
+    // Single-option mode: existing flat table
+    children.push(createInvestmentTable(data));
+  }
 
   // Add spacing after table
   children.push(new Paragraph({ children: [], spacing: { after: 100 } }));
