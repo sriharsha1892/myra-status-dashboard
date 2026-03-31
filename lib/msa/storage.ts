@@ -84,6 +84,8 @@ export function loadMSADraft(): MSAFormData | null {
         specialTerms: parsed.specialTerms ?? '',
         preparedBy: parsed.preparedBy ?? '',
         preparedByEmail: parsed.preparedByEmail || getAMEmail(parsed.preparedBy ?? ''),
+        paymentTerms: parsed.paymentTerms ?? { frequency: 'annual', basis: 'immediate' },
+        customPaymentText: parsed.customPaymentText ?? '',
         sourceQuoteId: parsed.sourceQuoteId,
       };
     }
