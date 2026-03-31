@@ -45,6 +45,7 @@ import { saveMSADraft, loadMSADraft, saveToMSAHistory } from '@/lib/msa/storage'
 import {
   generateLockedMSA,
   generateLockedMSAFilename,
+  getValidationErrors,
   MSAValidationError,
   type PlaceholderValues,
 } from '@/lib/msa/locked-template';
@@ -81,6 +82,19 @@ function validateStep(step: number, data: MSAFormData): MSAValidationErrors {
 
   if (step === 2) {
     if (!data.effectiveDate) errors.effectiveDate = 'Effective date is required';
+  }
+
+  if (step === 3) {
+    const rowErrors: { [index: number]: { users?: string; consultingHours?: string; listPrice?: string; offerPrice?: string } } = {};
+    data.orderFormRows.forEach((row, index) => {
+      const re: { users?: string; consultingHours?: string; listPrice?: string; offerPrice?: string } = {};
+      if (data.showUsersColumn && !row.users.trim()) re.users = 'Users is required';
+      if (!row.consultingHours.trim()) re.consultingHours = 'Consulting hours is required';
+      if (!row.listPrice.trim()) re.listPrice = 'List price is required';
+      if (!row.offerPrice.trim()) re.offerPrice = 'Investment is required';
+      if (Object.keys(re).length > 0) rowErrors[index] = re;
+    });
+    if (Object.keys(rowErrors).length > 0) errors.orderFormRows = rowErrors;
   }
 
   return errors;
@@ -322,7 +336,7 @@ export default function MSAPage() {
       SOF_PRIMARY_CONTACT: data.clientContactName,
       SOF_EMAIL: data.clientContactEmail,
       SOF_TERM: selectedRow?.term || '',
-      SOF_USERS: selectedRow?.users || '',
+      SOF_USERS: data.showUsersColumn ? (selectedRow?.users || '') : 'N/A',
       SOF_CONSULTING_HOURS: selectedRow?.consultingHours || '',
       SOF_LIST_PRICE: formatPrice(selectedRow?.listPrice || '0'),
       SOF_INVESTMENT: formatPrice(selectedRow?.offerPrice || '0'),
@@ -522,6 +536,15 @@ export default function MSAPage() {
     setIsGenerating(true);
     try {
       const values = toPlaceholderValues(formData);
+
+      // Pre-flight validation — catch missing fields before generation
+      const validationErrors = getValidationErrors(values);
+      if (validationErrors.length > 0) {
+        toast.error(validationErrors[0], { duration: 5000 });
+        setIsGenerating(false);
+        return;
+      }
+
       const bytes = await generateLockedMSA(values);
       const filename = generateLockedMSAFilename(values);
 
@@ -550,9 +573,9 @@ export default function MSAPage() {
       );
     } catch (error) {
       console.error('Failed to generate Word:', error);
-      if (error instanceof MSAValidationError) {
-        // Error message is already user-friendly from validation.ts
-        toast.error(error.message);
+      if (error instanceof MSAValidationError ||
+          (error instanceof Error && error.name === 'MSAValidationError')) {
+        toast.error(error.message, { duration: 5000 });
       } else {
         toast.error('Failed to generate Word document. Please try again.');
       }
@@ -966,7 +989,7 @@ export default function MSAPage() {
                                   type="text"
                                   value={row.users}
                                   onChange={(e) => updateOrderFormRow(index, 'users', e.target.value)}
-                                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 ${errors.orderFormRows?.[index]?.users ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-neutral-300 focus:ring-violet-500'}`}
                                   placeholder="10"
                                 />
                               </td>
@@ -976,7 +999,7 @@ export default function MSAPage() {
                                 type="text"
                                 value={row.consultingHours}
                                 onChange={(e) => updateOrderFormRow(index, 'consultingHours', e.target.value)}
-                                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 ${errors.orderFormRows?.[index]?.consultingHours ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-neutral-300 focus:ring-violet-500'}`}
                                 placeholder="500/year"
                               />
                             </td>
@@ -995,7 +1018,7 @@ export default function MSAPage() {
                                       updateOrderFormRow(index, 'listPrice', formatted);
                                     }
                                   }}
-                                  className="w-full pl-8 pr-3 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                  className={`w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:ring-2 ${errors.orderFormRows?.[index]?.listPrice ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-neutral-300 focus:ring-violet-500'}`}
                                   placeholder="75,000"
                                 />
                               </div>
@@ -1015,7 +1038,7 @@ export default function MSAPage() {
                                       updateOrderFormRow(index, 'offerPrice', formatted);
                                     }
                                   }}
-                                  className="w-full pl-8 pr-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-violet-500"
+                                  className={`w-full pl-8 pr-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 ${errors.orderFormRows?.[index]?.offerPrice ? 'border-red-300 focus:ring-red-200 bg-red-50' : 'border-neutral-300 focus:ring-violet-500'}`}
                                   placeholder="60,000"
                                 />
                               </div>
@@ -1202,15 +1225,34 @@ export default function MSAPage() {
                     <h2 className="text-lg font-semibold text-neutral-800">Review & Generate</h2>
                   </div>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-green-800 font-medium flex items-center gap-2">
-                      <Check className="w-5 h-5" />
-                      Ready to generate your MSA
-                    </p>
-                    <p className="text-green-700 text-sm mt-1">
-                      Review the preview on the right and click Generate when ready.
-                    </p>
-                  </div>
+                  {(() => {
+                    const missingFields = getValidationErrors(toPlaceholderValues(formData));
+                    if (missingFields.length > 0) {
+                      return (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <p className="text-red-800 font-medium flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            Missing required fields
+                          </p>
+                          <ul className="text-red-700 text-sm mt-2 list-disc list-inside space-y-0.5">
+                            {missingFields.map((msg, i) => <li key={i}>{msg}</li>)}
+                          </ul>
+                          <p className="text-red-600 text-xs mt-2">Go back to fill in the missing fields before generating.</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <p className="text-green-800 font-medium flex items-center gap-2">
+                          <Check className="w-5 h-5" />
+                          Ready to generate your MSA
+                        </p>
+                        <p className="text-green-700 text-sm mt-1">
+                          Review the preview on the right and click Generate when ready.
+                        </p>
+                      </div>
+                    );
+                  })()}
 
                   {/* Special Terms */}
                   <div>

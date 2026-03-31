@@ -77,5 +77,10 @@ export interface MSAValidationErrors {
   clientContactName?: string;
   clientContactEmail?: string;
   effectiveDate?: string;
-  orderFormRows?: { [index: number]: { offerPrice?: string } };
+  orderFormRows?: { [index: number]: {
+    users?: string;
+    consultingHours?: string;
+    listPrice?: string;
+    offerPrice?: string;
+  } };
 }
