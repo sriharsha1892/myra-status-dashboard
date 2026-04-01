@@ -38,7 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const isLocalhost = request.nextUrl.hostname === 'localhost';
 
   const response = NextResponse.redirect(
-    new URL('/quote/admin/dashboard', request.url)
+    new URL('/gtmcatchup', request.url)
   );
 
   response.cookies.set('gtm_session', sessionToken, {

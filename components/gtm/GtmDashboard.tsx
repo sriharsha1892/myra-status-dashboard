@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RefreshCw, Loader2, TrendingUp, TrendingDown, ArrowRight, AlertTriangle, CheckCircle2, Clock, XCircle, Zap, ArrowUpRight, Activity } from 'lucide-react';
+import { RefreshCw, Loader2, TrendingUp, TrendingDown, ArrowRight, AlertTriangle, CheckCircle2, Clock, XCircle, Zap, ArrowUpRight, Activity, Pencil } from 'lucide-react';
 import { useGtmDashboard, useRefreshDashboard } from '@/hooks/useGtmDashboard';
 import { useGtmCosts } from '@/hooks/useGtmDashboard';
 import { useGTMMetrics } from '@/hooks/useGTMMetrics';
@@ -297,6 +297,13 @@ export default function GtmDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              <a
+                href="/gtmcatchup"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-all"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit Data
+              </a>
               <div className="flex bg-slate-100 rounded-lg p-1">
                 {([7, 30, 90] as DateRange[]).map((days) => (
                   <button
@@ -431,7 +438,7 @@ export default function GtmDashboard() {
               transition-all duration-300 ease-out h-full">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-slate-900">Outbound</h2>
-                <a href="/quote/admin/reporting" className="text-xs text-indigo-600 hover:text-indigo-800 transition-all flex items-center gap-1 group">
+                <a href="/gtmcatchup" className="text-xs text-indigo-600 hover:text-indigo-800 transition-all flex items-center gap-1 group">
                   Add Data <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </a>
               </div>
