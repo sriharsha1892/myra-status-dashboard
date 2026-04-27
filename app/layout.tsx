@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Analytics } from '@vercel/analytics/react';
@@ -8,6 +8,13 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ['400', '500', '600'],
   variable: '--font-inter',
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  variable: '--font-serif',
 });
 
 export const metadata: Metadata = {
@@ -29,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${instrumentSerif.variable}`}>
       <body className={inter.className} suppressHydrationWarning>
         <Providers>{children}</Providers>
         <Analytics />
