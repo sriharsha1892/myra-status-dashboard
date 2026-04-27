@@ -251,8 +251,8 @@ export async function GET() {
         // Status breakdown
         byStatus: quotesByStatus,
 
-        // Recent unique quotes
-        recent: uniqueQuotes.slice(0, 5).map((q) => ({
+        // All unique quotes (latest version per company+contact)
+        recent: uniqueQuotes.map((q) => ({
           id: q.id,
           reference: q.quote_reference,
           companyName: q.company_name,
@@ -287,8 +287,8 @@ export async function GET() {
         // Status breakdown
         byStatus: msasByStatus,
 
-        // Recent unique MSAs
-        recent: uniqueMsas.slice(0, 5).map((m) => ({
+        // All unique MSAs (latest version per company+contact)
+        recent: uniqueMsas.map((m) => ({
           id: m.id,
           reference: m.msa_reference,
           companyName: m.company_name,
