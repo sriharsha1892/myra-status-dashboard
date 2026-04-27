@@ -214,6 +214,8 @@ export const ACCOUNT_MANAGERS: { name: string; email: string }[] = [
   { name: 'Kartheek Puttaparthini', email: 'kartheek@mordorintelligence.com' },
   { name: 'Krati Agarwal', email: 'krati@mordorintelligence.com' },
   { name: 'Nikita Manmode', email: 'nikita@mordorintelligence.com' },
+  { name: 'Aditya Prasad', email: 'aditya.a@mordorintelligence.com' },
+  { name: 'Vijay Ravi', email: 'vijay.ravi@mordorintelligence.com' },
 ];
 
 // Default deal context
