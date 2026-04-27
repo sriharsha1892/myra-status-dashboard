@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { DollarSign, Scale, ArrowRight, Download, Search, ChevronUp, ChevronDown, FileText, Plus } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { DollarSign, Scale, ArrowRight, Download, Search, ChevronUp, ChevronDown, FileText, Plus, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useQuoteMsaStats, formatStatsCurrency } from '@/hooks/useQuoteMsaStats';
+import { isAdminAuthenticated, setAdminAuthenticated } from '@/lib/quote/admin-auth';
+import { QuoteAdminAuthModal } from '@/components/quote/QuoteAdminAuthModal';
+import { StatusDropdown } from '@/components/quote/StatusDropdown';
+import { DocDetailDrawer } from '@/components/quote/DocDetailDrawer';
+import type { DocStatus } from '@/hooks/useUpdateDocStatus';
 
 // ============================================================================
 // UTILS
@@ -25,6 +30,14 @@ function currencySymbol(c: string): string {
   return c === 'INR' ? '₹' : c === 'EUR' ? '€' : c === 'GBP' ? '£' : '$';
 }
 
+const STALE_DAYS = 14;
+
+function isStale(doc: DocItem): boolean {
+  if (doc.status !== 'downloaded') return false;
+  const ageMs = Date.now() - new Date(doc.createdAt).getTime();
+  return ageMs > STALE_DAYS * 24 * 60 * 60 * 1000;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -32,6 +45,7 @@ function currencySymbol(c: string): string {
 type SortField = 'date' | 'company' | 'value' | 'preparedBy' | 'type';
 type SortDir = 'asc' | 'desc';
 type DocFilter = 'all' | 'Quote' | 'MSA';
+type DateRange = 'all' | '7d' | '30d' | '90d';
 
 interface DocItem {
   id: string;
@@ -50,22 +64,6 @@ interface DocItem {
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
-
-function StatusDot({ status }: { status?: string }) {
-  const s = status || 'downloaded';
-  const colors: Record<string, string> = {
-    draft: 'bg-neutral-300',
-    downloaded: 'bg-blue-400',
-    sent: 'bg-amber-400',
-    signed: 'bg-emerald-400',
-  };
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-neutral-600">
-      <span className={`w-1.5 h-1.5 rounded-full ${colors[s] || colors.downloaded}`} />
-      {s.charAt(0).toUpperCase() + s.slice(1)}
-    </span>
-  );
-}
 
 function SortHeader({
   label,
@@ -101,13 +99,25 @@ function SortHeader({
 // ============================================================================
 
 export default function QuoteLandingPage() {
+  // Admin auth gate
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    setIsAuthed(isAdminAuthenticated());
+    setAuthChecked(true);
+  }, []);
+
   const { data, isLoading } = useQuoteMsaStats();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<DocFilter>('all');
+  const [preparedByFilter, setPreparedByFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [drawerDoc, setDrawerDoc] = useState<{ id: string; type: 'Quote' | 'MSA' } | null>(null);
 
-  // Merge + filter + sort documents
+  // Merge documents
   const allDocs: DocItem[] = useMemo(() => {
     if (!data) return [];
     return [
@@ -116,13 +126,25 @@ export default function QuoteLandingPage() {
     ];
   }, [data]);
 
+  // Unique AMs for filter dropdown
+  const amOptions = useMemo(() => {
+    const set = new Set<string>();
+    allDocs.forEach(d => { if (d.preparedBy) set.add(d.preparedBy); });
+    return Array.from(set).sort();
+  }, [allDocs]);
+
   const filteredDocs = useMemo(() => {
     let docs = allDocs;
 
-    // Type filter
     if (filter !== 'all') docs = docs.filter(d => d.type === filter);
+    if (preparedByFilter !== 'all') docs = docs.filter(d => d.preparedBy === preparedByFilter);
 
-    // Search
+    if (dateRange !== 'all') {
+      const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      docs = docs.filter(d => new Date(d.createdAt).getTime() >= cutoff);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       docs = docs.filter(d =>
@@ -132,7 +154,6 @@ export default function QuoteLandingPage() {
       );
     }
 
-    // Sort
     docs = [...docs].sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -146,7 +167,7 @@ export default function QuoteLandingPage() {
     });
 
     return docs;
-  }, [allDocs, filter, search, sortField, sortDir]);
+  }, [allDocs, filter, preparedByFilter, dateRange, search, sortField, sortDir]);
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -158,18 +179,41 @@ export default function QuoteLandingPage() {
   };
 
   const totalValue = data ? data.quotes.uniqueTotalValue + data.msas.uniqueTotalValue : 0;
+  const staleCount = useMemo(() => allDocs.filter(isStale).length, [allDocs]);
+  const hasFilters = search || filter !== 'all' || preparedByFilter !== 'all' || dateRange !== 'all';
+
+  // Auth render
+  if (!authChecked) {
+    return <div className="min-h-screen bg-[#fafafa]" />;
+  }
+  if (!isAuthed) {
+    return (
+      <QuoteAdminAuthModal
+        onSuccess={() => {
+          setAdminAuthenticated();
+          setIsAuthed(true);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <div className="max-w-6xl mx-auto px-6 py-8">
 
-        {/* Action bar — compact create buttons */}
+        {/* Action bar */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-[22px] font-bold text-neutral-900 tracking-tight">Sales Documents</h1>
             {data && (
               <p className="text-sm text-neutral-400 mt-0.5">
                 {data.quotes.unique} quotes · {data.msas.unique} MSAs · {formatStatsCurrency(totalValue)} total
+                {staleCount > 0 && (
+                  <>
+                    {' · '}
+                    <span className="text-amber-600">{staleCount} stale</span>
+                  </>
+                )}
               </p>
             )}
           </div>
@@ -197,9 +241,9 @@ export default function QuoteLandingPage() {
           </div>
         </div>
 
-        {/* Search + filter bar */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="relative flex-1 max-w-sm">
+        {/* Filter row */}
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <div className="relative flex-1 max-w-sm min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input
               type="text"
@@ -209,6 +253,7 @@ export default function QuoteLandingPage() {
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-neutral-400 focus:ring-1 focus:ring-neutral-200 placeholder:text-neutral-300"
             />
           </div>
+
           <div className="flex bg-white border border-neutral-200 rounded-lg p-0.5">
             {(['all', 'Quote', 'MSA'] as DocFilter[]).map((f) => (
               <button
@@ -224,6 +269,47 @@ export default function QuoteLandingPage() {
               </button>
             ))}
           </div>
+
+          <select
+            value={preparedByFilter}
+            onChange={(e) => setPreparedByFilter(e.target.value)}
+            className="px-3 py-1.5 text-xs font-medium bg-white border border-neutral-200 rounded-lg text-neutral-700 focus:outline-none focus:border-neutral-400 cursor-pointer"
+          >
+            <option value="all">All AMs</option>
+            {amOptions.map(am => (
+              <option key={am} value={am}>{am}</option>
+            ))}
+          </select>
+
+          <div className="flex bg-white border border-neutral-200 rounded-lg p-0.5">
+            {(['all', '7d', '30d', '90d'] as DateRange[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setDateRange(r)}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  dateRange === r
+                    ? 'bg-neutral-900 text-white shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                {r === 'all' ? 'All time' : r}
+              </button>
+            ))}
+          </div>
+
+          {hasFilters && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setFilter('all');
+                setPreparedByFilter('all');
+                setDateRange('all');
+              }}
+              className="text-xs text-neutral-500 hover:text-neutral-700 underline underline-offset-2"
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         {/* Documents table */}
@@ -244,10 +330,10 @@ export default function QuoteLandingPage() {
           ) : filteredDocs.length === 0 ? (
             <div className="py-16 text-center">
               <FileText className="w-10 h-10 mx-auto text-neutral-200 mb-3" />
-              {search || filter !== 'all' ? (
+              {hasFilters ? (
                 <>
                   <p className="text-sm text-neutral-500">No documents match your filters</p>
-                  <button onClick={() => { setSearch(''); setFilter('all'); }}
+                  <button onClick={() => { setSearch(''); setFilter('all'); setPreparedByFilter('all'); setDateRange('all'); }}
                     className="mt-2 text-xs text-violet-600 hover:text-violet-700 font-medium">
                     Clear filters
                   </button>
@@ -282,57 +368,81 @@ export default function QuoteLandingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDocs.map((doc, idx) => (
-                    <tr
-                      key={`${doc.type}-${doc.id}`}
-                      className={`border-b border-neutral-50 hover:bg-neutral-50/80 transition-colors ${idx === filteredDocs.length - 1 ? 'border-b-0' : ''}`}
-                    >
-                      <td className="py-2.5 pl-4 pr-4">
-                        <span className="font-mono text-[11px] text-neutral-500">{doc.reference}</span>
-                        {(doc.version ?? 0) > 1 && (
-                          <span className="ml-1 text-[10px] text-neutral-300">v{doc.version}</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-4">
-                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${
-                          doc.type === 'Quote' ? 'text-violet-600' : 'text-indigo-600'
-                        }`}>
-                          {doc.type === 'Quote' ? <DollarSign className="w-3 h-3" /> : <Scale className="w-3 h-3" />}
-                          {doc.type}
-                        </span>
-                      </td>
-                      <td className="py-2.5 pr-4 font-medium text-neutral-800 max-w-[220px] truncate">{doc.companyName}</td>
-                      <td className="py-2.5 pr-4 text-neutral-700 tabular-nums text-xs">
-                        {currencySymbol(doc.currency)}{doc.totalValue.toLocaleString()}
-                      </td>
-                      <td className="py-2.5 pr-4 text-neutral-500 text-xs">{doc.preparedBy || '—'}</td>
-                      <td className="py-2.5 pr-4"><StatusDot status={doc.status} /></td>
-                      <td className="py-2.5 pr-4">
-                        {(doc.downloadCount ?? 0) > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
-                            <Download className="w-3 h-3" />{doc.downloadCount}
+                  {filteredDocs.map((doc, idx) => {
+                    const stale = isStale(doc);
+                    return (
+                      <tr
+                        key={`${doc.type}-${doc.id}`}
+                        onClick={() => setDrawerDoc({ id: doc.id, type: doc.type })}
+                        className={`border-b border-neutral-50 hover:bg-neutral-50/80 transition-colors cursor-pointer ${idx === filteredDocs.length - 1 ? 'border-b-0' : ''}`}
+                      >
+                        <td className="py-2.5 pl-4 pr-4">
+                          <span className="font-mono text-[11px] text-neutral-500">{doc.reference}</span>
+                          {(doc.version ?? 0) > 1 && (
+                            <span className="ml-1 text-[10px] text-neutral-300">v{doc.version}</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 pr-4">
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                            doc.type === 'Quote' ? 'text-violet-600' : 'text-indigo-600'
+                          }`}>
+                            {doc.type === 'Quote' ? <DollarSign className="w-3 h-3" /> : <Scale className="w-3 h-3" />}
+                            {doc.type}
                           </span>
-                        ) : <span className="text-neutral-200 text-xs">—</span>}
-                      </td>
-                      <td className="py-2.5 pr-4 text-xs text-neutral-400 whitespace-nowrap">{formatDate(doc.createdAt)}</td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-2.5 pr-4 max-w-[240px]">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-neutral-800 truncate">{doc.companyName}</span>
+                            {stale && (
+                              <span
+                                title={`Downloaded ${formatDate(doc.createdAt)}, never sent`}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 rounded border border-amber-100 flex-shrink-0"
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                Stale
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 pr-4 text-neutral-700 tabular-nums text-xs">
+                          {currencySymbol(doc.currency)}{doc.totalValue.toLocaleString()}
+                        </td>
+                        <td className="py-2.5 pr-4 text-neutral-500 text-xs">{doc.preparedBy || '—'}</td>
+                        <td className="py-2.5 pr-4">
+                          <StatusDropdown id={doc.id} type={doc.type} status={(doc.status as DocStatus) || 'draft'} />
+                        </td>
+                        <td className="py-2.5 pr-4">
+                          {(doc.downloadCount ?? 0) > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
+                              <Download className="w-3 h-3" />{doc.downloadCount}
+                            </span>
+                          ) : <span className="text-neutral-200 text-xs">—</span>}
+                        </td>
+                        <td className="py-2.5 pr-4 text-xs text-neutral-400 whitespace-nowrap">{formatDate(doc.createdAt)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
 
-          {/* Footer count */}
           {filteredDocs.length > 0 && (
             <div className="px-4 py-2.5 border-t border-neutral-100 bg-neutral-50/50">
               <p className="text-[11px] text-neutral-400">
                 {filteredDocs.length} document{filteredDocs.length !== 1 ? 's' : ''}
-                {(search || filter !== 'all') && ` (filtered from ${allDocs.length})`}
+                {hasFilters && ` (filtered from ${allDocs.length})`}
               </p>
             </div>
           )}
         </div>
       </div>
+
+      <DocDetailDrawer
+        type={drawerDoc?.type ?? null}
+        id={drawerDoc?.id ?? null}
+        onClose={() => setDrawerDoc(null)}
+      />
     </div>
   );
 }
