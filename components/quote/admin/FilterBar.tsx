@@ -3,15 +3,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import type {
-  EffectiveStatus,
   OptionCountBucket,
   PricingModel,
+  QuoteStatus,
   RegisterDateRange,
   RegisterFacets,
   RegisterFilters,
   UsersBand,
 } from '@/lib/quote/types';
-import { EFFECTIVE_STATUSES } from '@/lib/quote/types';
+import { QUOTE_STATUSES } from '@/lib/quote/types';
 import { hasActiveFilters, MODEL_LABEL, STATUS_LABEL } from '@/lib/quote/register';
 import { FacetChip, FacetGroup } from './FacetChip';
 import { AmMultiSelect } from './AmMultiSelect';
@@ -151,7 +151,7 @@ export function FilterBar({ filters, facets, onChange, onClear, summary }: Filte
         </FacetGroup>
 
         <FacetGroup label="Status">
-          {EFFECTIVE_STATUSES.map((s: EffectiveStatus) => (
+          {QUOTE_STATUSES.map((s: QuoteStatus) => (
             <FacetChip
               key={s}
               label={STATUS_LABEL[s]}

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import {
-  effectiveStatus,
   flattenOptions,
   groupByAccount,
   normaliseStatus,
@@ -9,14 +8,14 @@ import {
 } from '@/lib/quote/register';
 import type {
   Currency,
-  EffectiveStatus,
   LegacyLineItem,
   PricingModel,
   QuoteRegisterResponse,
+  QuoteStatus,
   RegisterQuote,
   StoredPricingOption,
 } from '@/lib/quote/types';
-import { EFFECTIVE_STATUSES } from '@/lib/quote/types';
+import { QUOTE_STATUSES } from '@/lib/quote/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +49,7 @@ function toNumber(v: number | string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function toRegisterQuote(row: QuoteRow, now: Date): RegisterQuote {
+function toRegisterQuote(row: QuoteRow): RegisterQuote {
   const options = flattenOptions(row.pricing_options, row.line_items);
   // Prefer persisted range; derive when the migration hasn't populated it yet.
   const derived = valueRange(options);
@@ -65,7 +64,6 @@ function toRegisterQuote(row: QuoteRow, now: Date): RegisterQuote {
     preparedBy: row.prepared_by || '',
     currency: (row.currency || 'USD') as Currency,
     status,
-    effectiveStatus: effectiveStatus(status, row.valid_until, now),
     createdAt: row.created_at,
     quoteDate: row.quote_date || row.created_at,
     validUntil: row.valid_until,
@@ -90,20 +88,19 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const now = new Date();
-    const quotes = ((data || []) as unknown as QuoteRow[]).map((r) => toRegisterQuote(r, now));
+    const quotes = ((data || []) as unknown as QuoteRow[]).map(toRegisterQuote);
     const accounts = groupByAccount(quotes);
 
     // Facets
     const amCounts = new Map<string, number>();
     const termSet = new Set<string>();
     const modelSet = new Set<PricingModel>();
-    const statusCounts = new Map<EffectiveStatus, number>();
+    const statusCounts = new Map<QuoteStatus, number>();
     let optionTotal = 0;
 
     quotes.forEach((q) => {
       if (q.preparedBy) amCounts.set(q.preparedBy, (amCounts.get(q.preparedBy) || 0) + 1);
-      statusCounts.set(q.effectiveStatus, (statusCounts.get(q.effectiveStatus) || 0) + 1);
+      statusCounts.set(q.status, (statusCounts.get(q.status) || 0) + 1);
       optionTotal += q.options.length;
       q.options.forEach((o) => {
         if (o.term) termSet.add(o.term);
@@ -119,7 +116,7 @@ export async function GET() {
           .sort((a, b) => a.name.localeCompare(b.name)),
         terms: Array.from(termSet).sort(termOrder),
         models: (['per-seat', 'per-project'] as PricingModel[]).filter((m) => modelSet.has(m)),
-        statuses: EFFECTIVE_STATUSES.map((status) => ({
+        statuses: QUOTE_STATUSES.map((status) => ({
           status,
           count: statusCounts.get(status) || 0,
         })),

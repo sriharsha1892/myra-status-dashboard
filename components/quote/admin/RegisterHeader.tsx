@@ -28,11 +28,9 @@ export function RegisterHeader({ accounts, quotes, options, totals, filtered }: 
   return (
     <header className="mr-header sticky top-0 z-30">
       <div className="max-w-[1120px] mx-auto px-6 h-14 flex items-center gap-4">
-        <Link href="/quote" className="flex items-center gap-2.5 shrink-0" aria-label="myRA sales documents">
-          <Image src="/logo-myra.svg" alt="myRA" width={87} height={26} priority unoptimized className="h-[26px] w-auto" />
+        <Link href="/quote" className="flex items-center shrink-0" aria-label="myRA sales documents">
+          <Image src="/logo-myra.svg" alt="myRA" width={100} height={30} priority unoptimized className="h-[30px] w-auto" />
         </Link>
-        <span className="h-5 w-px bg-[var(--hairline-2)]" aria-hidden />
-        <span className="text-[13px] font-semibold">Quotes</span>
 
         <div className="flex-1" />
 

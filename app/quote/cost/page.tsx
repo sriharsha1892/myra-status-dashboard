@@ -23,7 +23,8 @@ import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPT
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { generateQuoteWord, generateQuoteWordFilename } from '@/lib/quote/docx-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
-import { buildQuoteSavePayload } from '@/lib/quote/savePayload';
+import { buildQuoteSavePayload, generateQuoteReference } from '@/lib/quote/savePayload';
+import { RegisterSyncCard } from '@/components/quote/RegisterSyncCard';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
 import { QuotePreviewModal } from '@/components/quote/QuotePreviewModal';
 import { QuoteHistory } from '@/components/quote/QuoteHistory';
@@ -88,14 +89,6 @@ function getDefaultValidUntil(fromDate?: string): string {
   const date = fromDate ? new Date(fromDate) : new Date();
   date.setDate(date.getDate() + 30);
   return date.toISOString().split('T')[0];
-}
-
-// Generate quote reference: MQ-YYYYMMDD-XXXX
-function generateQuoteReference(): string {
-  const date = new Date();
-  const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `MQ-${dateStr}-${random}`;
 }
 
 // Format number with commas (INR uses Indian numbering)
@@ -429,7 +422,7 @@ export default function QuotePage() {
   }, []);
 
   // Save quote to database - returns isNew flag to indicate if it's a new quote or existing
-  const saveQuoteToDb = useCallback(async (): Promise<{ success: boolean; isNew: boolean; downloadCount?: number }> => {
+  const saveQuoteToDb = useCallback(async (): Promise<{ success: boolean; isNew: boolean; downloadCount?: number; error?: string }> => {
     try {
       const quoteReference = generateQuoteReference();
       const payload = buildQuoteSavePayload(formData, quoteReference);
@@ -442,8 +435,11 @@ export default function QuotePage() {
 
       const result = await response.json();
       if (!result.success) {
-        console.error('Failed to save quote to database:', result.error);
-        return { success: false, isNew: false };
+        console.error('Failed to save quote to database:', result.error, result.issues);
+        const detail = Array.isArray(result.issues) && result.issues[0]?.message
+          ? result.issues[0].message
+          : result.error || `HTTP ${response.status}`;
+        return { success: false, isNew: false, error: detail };
       }
 
       return {
@@ -452,11 +448,22 @@ export default function QuotePage() {
         downloadCount: result.quote?.downloadCount,
       };
     } catch (err) {
-      // Don't block the user if DB save fails - just log it
       console.error('Error saving quote to database:', err);
-      return { success: false, isNew: false };
+      return { success: false, isNew: false, error: err instanceof Error ? err.message : 'Network error' };
     }
   }, [formData]);
+
+  // One place decides what the user sees after a download + register save.
+  const notifyRegisterSave = useCallback(
+    (result: { success: boolean; isNew: boolean; downloadCount?: number; error?: string }, noun: string) => {
+      if (result.success) {
+        toast.success(result.isNew ? `${noun} downloaded and added to the register` : `${noun} downloaded (${result.downloadCount || 1}x)`);
+      } else {
+        toast.error(`${noun} downloaded, but NOT saved to the register: ${result.error || 'unknown error'}`, { duration: 8000 });
+      }
+    },
+    []
+  );
 
   // Generate PDF
   const handleGenerate = useCallback(async (preview: boolean = false) => {
@@ -500,17 +507,7 @@ export default function QuotePage() {
         saveToHistory(formData.contactEmail, formData);
         setHistoryRefresh((prev) => prev + 1);
 
-        // Save to database and show appropriate toast based on isNew flag
-        const { success, isNew, downloadCount } = await saveQuoteToDb();
-        if (success) {
-          if (isNew) {
-            toast.success('Quote created and downloaded');
-          } else {
-            toast.success(`Quote downloaded (${downloadCount || 1}x)`);
-          }
-        } else {
-          toast.success('Quote generated successfully');
-        }
+        notifyRegisterSave(await saveQuoteToDb(), 'Quote');
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -518,7 +515,7 @@ export default function QuotePage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [formData, saveQuoteToDb]);
+  }, [formData, saveQuoteToDb, notifyRegisterSave]);
 
   // Download PDF
   const downloadPdf = useCallback((bytes: Uint8Array, filename: string) => {
@@ -540,21 +537,11 @@ export default function QuotePage() {
       saveToHistory(formData.contactEmail, formData);
       setHistoryRefresh((prev) => prev + 1);
 
-      // Save to database and show appropriate toast based on isNew flag
-      const { success, isNew, downloadCount } = await saveQuoteToDb();
+      const result = await saveQuoteToDb();
       setPreviewOpen(false);
-
-      if (success) {
-        if (isNew) {
-          toast.success('Quote created and downloaded');
-        } else {
-          toast.success(`Quote downloaded (${downloadCount || 1}x)`);
-        }
-      } else {
-        toast.success('Quote downloaded');
-      }
+      notifyRegisterSave(result, 'Quote');
     }
-  }, [pdfBytes, pdfFilename, formData, downloadPdf, saveQuoteToDb]);
+  }, [pdfBytes, pdfFilename, formData, downloadPdf, saveQuoteToDb, notifyRegisterSave]);
 
   // Handle Word download
   const handleGenerateWord = useCallback(async () => {
@@ -601,14 +588,15 @@ export default function QuotePage() {
       saveToHistory(formData.contactEmail, formData);
       setHistoryRefresh((prev) => prev + 1);
 
-      toast.success('Word document generated successfully');
+      // Word downloads count as quotes too; register them like PDFs.
+      notifyRegisterSave(await saveQuoteToDb(), 'Word document');
     } catch (error) {
       console.error('Word generation failed:', error);
       toast.error('Failed to generate Word document. Please try again.');
     } finally {
       setIsGenerating(false);
     }
-  }, [formData]);
+  }, [formData, saveQuoteToDb, notifyRegisterSave]);
 
   // Input class helper
   const getInputClass = (field: string, hasError: boolean) => {
@@ -1612,6 +1600,9 @@ export default function QuotePage() {
               onDuplicateQuote={handleDuplicateQuote}
               refreshTrigger={historyRefresh}
             />
+
+            {/* Push quotes that only exist in this browser into the register */}
+            <RegisterSyncCard refreshTrigger={historyRefresh} />
 
             {/* MSA Generator Link */}
             <a

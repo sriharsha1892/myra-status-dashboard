@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { X, Mail } from 'lucide-react';
 import { useQuoteDetail } from '@/hooks/useQuoteDetail';
 import { currencySymbol, formatLongDate } from '@/lib/quote/format';
-import { effectiveStatus, flattenOptions, normaliseStatus, valueRange } from '@/lib/quote/register';
+import { flattenOptions, normaliseStatus, valueRange } from '@/lib/quote/register';
 import { OptionsTable } from '@/components/quote/admin/OptionsTable';
 import { StatusBadge } from '@/components/quote/admin/StatusBadge';
 import { AmAvatar } from '@/components/quote/admin/AmAvatar';
@@ -36,7 +36,7 @@ export function QuoteDetailDrawer({ id, onClose }: QuoteDetailDrawerProps) {
 
   const options = doc ? flattenOptions(doc.pricing_options, doc.line_items) : [];
   const range = valueRange(options);
-  const status = doc ? effectiveStatus(normaliseStatus(doc.status), doc.valid_until) : null;
+  const status = doc ? normaliseStatus(doc.status) : null;
 
   return (
     <div className="fixed inset-0 z-40 flex">

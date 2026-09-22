@@ -72,6 +72,13 @@ export function buildLegacyLineItems(groups: StoredPricingOption[]): QuoteSavePa
   );
 }
 
+/** Quote reference: MQ-YYYYMMDD-XXXX. Date defaults to now. */
+export function generateQuoteReference(date: Date = new Date()): string {
+  const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `MQ-${dateStr}-${random}`;
+}
+
 export function buildQuoteSavePayload(formData: QuoteFormData, quoteReference: string): QuoteSavePayload {
   const pricingOptions = buildPricingOptions(formData);
   return {

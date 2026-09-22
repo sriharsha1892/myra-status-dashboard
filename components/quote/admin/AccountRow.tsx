@@ -91,7 +91,7 @@ export function AccountRow({ account, visible, hidden, expanded, onToggle, onOpe
           <span className="text-[12px] font-normal text-[var(--fg-faint)] whitespace-nowrap">
             {formatRelativeDate(latest.createdAt)}
           </span>
-          <StatusBadge status={latest.effectiveStatus} />
+          <StatusBadge status={latest.status} />
         </div>
       </button>
 

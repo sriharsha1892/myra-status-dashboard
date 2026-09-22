@@ -95,6 +95,25 @@ function getHistoryKey(email: string): string {
   return `${HISTORY_PREFIX}${hashEmail(email)}`;
 }
 
+/** Every quote in this browser's local history, across all contacts, newest first. */
+export function getAllHistoryEntries(): QuoteHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  const entries: QuoteHistoryEntry[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(HISTORY_PREFIX)) continue;
+      const saved = localStorage.getItem(key);
+      if (!saved) continue;
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) entries.push(...(parsed as QuoteHistoryEntry[]));
+    }
+  } catch (error) {
+    console.warn('Failed to scan quote history:', error);
+  }
+  return entries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
 export function getHistory(email: string): QuoteHistoryEntry[] {
   if (!email) return [];
 

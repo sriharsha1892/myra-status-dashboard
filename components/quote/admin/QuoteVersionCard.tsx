@@ -40,7 +40,7 @@ export function QuoteVersionCard({ quote, onOpen }: QuoteVersionCardProps) {
               Valid until {formatLongDate(quote.validUntil)}
             </span>
           )}
-          <StatusBadge status={quote.effectiveStatus} />
+          <StatusBadge status={quote.status} />
         </div>
       </div>
 

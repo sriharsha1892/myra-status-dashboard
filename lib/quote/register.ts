@@ -7,7 +7,6 @@
 
 import type {
   Account,
-  EffectiveStatus,
   LegacyLineItem,
   OptionCountBucket,
   PricingModel,
@@ -19,7 +18,7 @@ import type {
   StoredPricingOption,
   UsersBand,
 } from './types';
-import { EFFECTIVE_STATUSES, QUOTE_STATUSES } from './types';
+import { QUOTE_STATUSES } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -46,24 +45,6 @@ export function normaliseStatus(raw: string | null | undefined): QuoteStatus {
   if (raw === 'downloaded' || raw == null || raw === '') return 'draft';
   if (raw === 'signed') return 'accepted';
   return (QUOTE_STATUSES as readonly string[]).includes(raw) ? (raw as QuoteStatus) : 'draft';
-}
-
-/**
- * `expired` when validity has lapsed and the quote is still open (draft / sent).
- * Accepted / declined quotes keep their terminal status regardless of validity.
- */
-export function effectiveStatus(
-  status: QuoteStatus,
-  validUntil: string | null | undefined,
-  now: Date = new Date()
-): EffectiveStatus {
-  if (status === 'accepted' || status === 'declined') return status;
-  if (!validUntil) return status;
-  const until = new Date(validUntil);
-  if (Number.isNaN(until.getTime())) return status;
-  // valid_until is a DATE; treat the quote as valid through the end of that day (UTC).
-  const endOfDay = Date.UTC(until.getUTCFullYear(), until.getUTCMonth(), until.getUTCDate(), 23, 59, 59, 999);
-  return now.getTime() > endOfDay ? 'expired' : status;
 }
 
 // ------------------------------------------------------------
@@ -244,7 +225,7 @@ function dateRangeCutoff(range: RegisterDateRange, now: Date): number | null {
  */
 export function matchesFilters(q: RegisterQuote, f: RegisterFilters, now: Date = new Date()): boolean {
   if (f.ams.length > 0 && !f.ams.includes(q.preparedBy)) return false;
-  if (f.statuses.length > 0 && !f.statuses.includes(q.effectiveStatus)) return false;
+  if (f.statuses.length > 0 && !f.statuses.includes(q.status)) return false;
   if (f.optionCounts.length > 0 && !f.optionCounts.includes(optionCountBucket(q.optionCount))) return false;
 
   const cutoff = dateRangeCutoff(f.dateRange, now);
@@ -306,7 +287,7 @@ export function filtersFromSearchParams(params: URLSearchParams): RegisterFilter
   return {
     search: params.get('q') ?? '',
     ams: (params.get('am') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
-    statuses: pickList(params.get('status'), EFFECTIVE_STATUSES),
+    statuses: pickList(params.get('status'), QUOTE_STATUSES),
     terms: (params.get('term') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     models: pickList(params.get('model'), MODELS),
     optionCounts: pickList(params.get('options'), OPTION_COUNTS),
@@ -351,12 +332,11 @@ export function shortTerm(term: string): string {
   return term.replace(/-Year$/i, '-Yr');
 }
 
-export const STATUS_LABEL: Record<EffectiveStatus, string> = {
+export const STATUS_LABEL: Record<QuoteStatus, string> = {
   draft: 'Draft',
   sent: 'Sent',
   accepted: 'Accepted',
   declined: 'Declined',
-  expired: 'Expired',
 };
 
 export const MODEL_LABEL: Record<PricingModel, string> = {

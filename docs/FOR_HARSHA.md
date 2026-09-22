@@ -81,9 +81,9 @@ changes status elsewhere.
 | `accepted` | Client accepted an option |
 | `declined` | Client declined |
 
-Plus one **derived** status the register computes: **`expired`** = still
-`draft` or `sent` and `valid_until` is in the past. It's never written to the
-database; it's a lens, not a state.
+`valid_until` is shown on each quote but does not change its status. An
+earlier version derived an "expired" status from it; that hid most of the
+list behind a red badge and was removed. Status is only what the team set.
 
 Old rows had `downloaded` and `signed`; the migration folded those into `draft`
 and `accepted`. "Downloaded" is an event (we keep `download_count`), not a
@@ -122,6 +122,16 @@ worth keeping: no serif display type, no decorative icons, uppercase tracked
 labels only for facet groups and table headers, avatars are rounded squares,
 motion stays under 200ms.
 
+### Getting quotes into the register
+
+Every download from `/quote/cost` (PDF, PDF from preview, and Word) calls
+`POST /api/quote/save`. If that call fails, the generator now shows a red
+toast saying the file downloaded but was **not** registered, with the reason.
+Quotes downloaded before this existed, or on a machine where the save failed,
+sit only in that browser's local history. The "Register local quotes" card in
+the generator sidebar pushes every local history entry to the register;
+already-registered quotes are skipped by content hash.
+
 ### Lessons learned (the expensive kind)
 
 1. **Ask what a number *means* before you sum it.** `total_value` was
@@ -154,7 +164,12 @@ motion stays under 200ms.
    quotes-only until MSA persistence is actually built. Don't add MSA columns
    back to the register "for later".
 
-6. **Legacy `line_items` is still read.** Rows from before the migration have
+6. **The Word download never saved to the database.** For months, anyone
+   who downloaded .docx quotes was invisible to the register, and the PDF
+   path hid save failures behind a green "Quote generated successfully"
+   toast. Every download path now registers the quote and failures are loud.
+
+7. **Legacy `line_items` is still read.** Rows from before the migration have
    `pricing_options` populated by the backfill, but `flattenOptions` still falls
    back to `line_items` when `pricing_options` is null. Keep that fallback until
    every row has been through the migration (check with

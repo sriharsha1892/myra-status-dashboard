@@ -110,10 +110,6 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined';
 export const QUOTE_STATUSES: readonly QuoteStatus[] = ['draft', 'sent', 'accepted', 'declined'] as const;
 
-/** Status as shown in the register: lifecycle status, or `expired` derived from `valid_until`. */
-export type EffectiveStatus = QuoteStatus | 'expired';
-export const EFFECTIVE_STATUSES: readonly EffectiveStatus[] = ['draft', 'sent', 'accepted', 'declined', 'expired'] as const;
-
 /** One row inside a stored pricing option group. Per-seat and per-project rows share this shape. */
 export interface StoredOptionRow {
   term: string;
@@ -169,7 +165,6 @@ export interface RegisterQuote {
   preparedBy: string;
   currency: Currency;
   status: QuoteStatus;
-  effectiveStatus: EffectiveStatus;
   createdAt: string;
   quoteDate: string;
   validUntil: string | null;
@@ -193,7 +188,7 @@ export interface Account {
 export interface RegisterFilters {
   search: string;
   ams: string[];
-  statuses: EffectiveStatus[];
+  statuses: QuoteStatus[];
   terms: string[];
   models: PricingModel[];
   optionCounts: OptionCountBucket[];
@@ -205,7 +200,7 @@ export interface RegisterFacets {
   ams: Array<{ name: string; count: number }>;
   terms: string[];
   models: PricingModel[];
-  statuses: Array<{ status: EffectiveStatus; count: number }>;
+  statuses: Array<{ status: QuoteStatus; count: number }>;
 }
 
 export interface QuoteRegisterResponse {

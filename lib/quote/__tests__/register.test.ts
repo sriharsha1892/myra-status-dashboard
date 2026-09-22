@@ -2,7 +2,6 @@ import {
   accountKey,
   activeFilterCount,
   compactMoney,
-  effectiveStatus,
   filterAccounts,
   filtersFromSearchParams,
   filtersToSearchParams,
@@ -34,7 +33,6 @@ function quote(overrides: Partial<RegisterQuote> = {}): RegisterQuote {
     preparedBy: 'Satish Boini',
     currency: 'USD',
     status: 'draft',
-    effectiveStatus: 'draft',
     createdAt: '2026-09-01T00:00:00Z',
     quoteDate: '2026-09-01',
     validUntil: '2026-10-01',
@@ -69,25 +67,6 @@ describe('normaliseStatus', () => {
     expect(normaliseStatus(null)).toBe('draft');
     expect(normaliseStatus('sent')).toBe('sent');
     expect(normaliseStatus('garbage')).toBe('draft');
-  });
-});
-
-describe('effectiveStatus', () => {
-  it('expires open quotes past valid_until', () => {
-    expect(effectiveStatus('draft', '2026-09-01', NOW)).toBe('expired');
-    expect(effectiveStatus('sent', '2026-09-01', NOW)).toBe('expired');
-  });
-  it('keeps open quotes within validity', () => {
-    expect(effectiveStatus('draft', '2026-10-01', NOW)).toBe('draft');
-    expect(effectiveStatus('sent', '2026-09-22', NOW)).toBe('sent'); // valid through end of day
-  });
-  it('never expires terminal statuses', () => {
-    expect(effectiveStatus('accepted', '2020-01-01', NOW)).toBe('accepted');
-    expect(effectiveStatus('declined', '2020-01-01', NOW)).toBe('declined');
-  });
-  it('tolerates missing or bad dates', () => {
-    expect(effectiveStatus('draft', null, NOW)).toBe('draft');
-    expect(effectiveStatus('sent', 'not-a-date', NOW)).toBe('sent');
   });
 });
 
@@ -211,7 +190,7 @@ describe('matchesFilters', () => {
     expect(matchesFilters(multi, { ...EMPTY_FILTERS, optionCounts: ['multi'] }, NOW)).toBe(true);
     expect(matchesFilters(multi, { ...EMPTY_FILTERS, optionCounts: ['single'] }, NOW)).toBe(false);
     expect(matchesFilters(multi, { ...EMPTY_FILTERS, statuses: ['draft'] }, NOW)).toBe(true);
-    expect(matchesFilters(multi, { ...EMPTY_FILTERS, statuses: ['expired'] }, NOW)).toBe(false);
+    expect(matchesFilters(multi, { ...EMPTY_FILTERS, statuses: ['sent'] }, NOW)).toBe(false);
     expect(matchesFilters(multi, { ...EMPTY_FILTERS, ams: ['Satish Boini'] }, NOW)).toBe(true);
     expect(matchesFilters(multi, { ...EMPTY_FILTERS, dateRange: '30d' }, NOW)).toBe(true);
     expect(matchesFilters(quote({ createdAt: '2025-01-01T00:00:00Z' }), { ...EMPTY_FILTERS, dateRange: '90d' }, NOW)).toBe(false);
@@ -241,7 +220,7 @@ describe('URL round trip', () => {
     const f: RegisterFilters = {
       search: 'ceva',
       ams: ['Satish Boini', 'Kirandeep Kaur'],
-      statuses: ['draft', 'expired'],
+      statuses: ['draft', 'sent'],
       terms: ['1-Year'],
       models: ['per-project'],
       optionCounts: ['multi'],
