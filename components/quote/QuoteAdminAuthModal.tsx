@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { AlertCircle } from 'lucide-react';
 
 interface QuoteAdminAuthModalProps {
@@ -42,53 +43,46 @@ export function QuoteAdminAuthModal({ onSuccess }: QuoteAdminAuthModalProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] flex items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400 mb-2">
-          Sales operations
-        </p>
-        <h1 className="font-serif text-4xl leading-[1] text-neutral-900 mb-6">
-          Sales documents
-          <span className="font-serif italic text-neutral-400 ml-2">archive</span>
-        </h1>
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="mr-card w-full max-w-[400px] p-7" style={{ boxShadow: 'var(--shadow-card)' }}>
+        <div className="flex items-center gap-2.5 mb-6">
+          <Image src="/logo-myra.svg" alt="myRA" width={94} height={28} className="h-[28px] w-auto" priority unoptimized />
+        </div>
 
-        <p className="text-sm text-neutral-600 mb-8 leading-relaxed">
-          This view shows every quote and MSA across the team — status updates and stale tracking included. It's gated by a separate admin password.
+        <h1 className="text-[20px] font-bold tracking-[-0.02em] leading-tight">Quotes register</h1>
+        <p className="mt-2 text-[13.5px] font-normal text-[var(--fg-dim)] leading-relaxed">
+          Every quote the team has sent, grouped by account. This view uses a separate admin password.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-3">
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Admin password"
-            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-300 placeholder:text-neutral-400 transition-colors"
+            className="mr-input"
             autoFocus
             disabled={isLoading}
           />
 
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2 bg-[#fef2f2] border border-[#fecaca] rounded-lg">
-              <AlertCircle className="w-4 h-4 text-[#dc2626] flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-[#991b1b]">{error}</p>
+            <div className="flex items-start gap-2 px-3 py-2 rounded-[9px] bg-[var(--danger-bg)] border border-[var(--danger-border)]">
+              <AlertCircle className="w-4 h-4 text-[var(--danger-ink)] flex-shrink-0 mt-0.5" />
+              <p className="text-[12.5px] text-[var(--danger-ink)]">{error}</p>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={!password || isLoading}
-            className="w-full py-3 bg-neutral-900 text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
+          <button type="submit" disabled={!password || isLoading} className="mr-btn mr-btn-solid w-full h-10">
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               'Unlock'
             )}
           </button>
         </form>
 
-        <p className="mt-8 pt-6 border-t border-neutral-200 text-[11px] text-neutral-400">
-          Different from the regular quote password. Ask Adi if you don't have it.
+        <p className="mt-6 pt-5 border-t border-[var(--hairline)] text-[12px] font-normal text-[var(--fg-faint)]">
+          Different from the regular quote password. Ask Adi if you don&apos;t have it.
         </p>
       </div>
     </div>

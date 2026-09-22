@@ -1,50 +1,24 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/service';
 import crypto from 'crypto';
+import { createServiceClient } from '@/lib/supabase/service';
+import { quoteSavePayloadSchema } from '@/lib/validation/schemas/quote';
+import { flattenOptions, valueRange } from '@/lib/quote/register';
+import type { StoredPricingOption } from '@/lib/quote/types';
 
-interface QuotePayload {
-  quoteReference: string;
-  companyName: string;
-  contactName: string;
-  contactEmail: string;
-  contactTitle?: string;
-  quoteDate: string;
-  validUntil: string;
-  currency: 'USD' | 'EUR' | 'GBP' | 'INR';
-  totalValue: number;
-  lineItems: Array<{
-    term: string;
-    users: string;
-    consultingHours: string;
-    investment: string;
-  }>;
-  preparedBy: string;
-  dealContext?: {
-    discountReason?: string;
-    specialTerms?: string;
-    decisionDate?: string;
-    urgency?: string;
-  };
-}
-
-// Generate content hash client-side to match the DB function
+/**
+ * Deterministic hash of what was actually quoted. Two downloads of the same
+ * options for the same client collapse onto one row (download_count++).
+ */
 function generateContentHash(
   companyName: string,
   contactEmail: string,
-  lineItems: Array<{
-    term: string;
-    users: string;
-    consultingHours: string;
-    investment: string;
-  }>,
-  totalValue: number,
+  pricingOptions: StoredPricingOption[],
   currency: string
 ): string {
   const content = [
     companyName || '',
     contactEmail || '',
-    JSON.stringify(lineItems || []),
-    String(totalValue || 0),
+    JSON.stringify(pricingOptions || []),
     currency || 'USD',
   ].join('|');
 
@@ -53,48 +27,43 @@ function generateContentHash(
 
 export async function POST(request: Request) {
   try {
-    const payload: QuotePayload = await request.json();
-
-    // Validate required fields
-    if (!payload.quoteReference || !payload.companyName || !payload.preparedBy) {
+    const parsed = quoteSavePayloadSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Invalid quote payload', issues: parsed.error.issues },
         { status: 400 }
       );
     }
+    const payload = parsed.data;
+
+    const options = flattenOptions(payload.pricingOptions, null);
+    const { min: valueMin, max: valueMax } = valueRange(options);
+    const optionCount = options.length;
 
     const supabase = createServiceClient();
-
-    // Generate content hash for deduplication
     const contentHash = generateContentHash(
       payload.companyName,
       payload.contactEmail,
-      payload.lineItems,
-      payload.totalValue,
+      payload.pricingOptions,
       payload.currency
     );
 
-    // Check if quote with identical content already exists
+    // Identical content already saved → count the download, leave lifecycle status alone.
     const { data: existingQuote } = await supabase
       .from('quotes')
       .select('id, quote_reference, version, download_count')
       .eq('content_hash', contentHash)
-      .single();
+      .maybeSingle();
 
     if (existingQuote) {
-      // Quote already exists - increment download count and update status
       const { data: updated, error: updateError } = await supabase
         .from('quotes')
-        .update({
-          download_count: (existingQuote.download_count || 0) + 1,
-          status: 'downloaded',
-          first_sent_at: new Date().toISOString(),
-        })
+        .update({ download_count: (existingQuote.download_count || 0) + 1 })
         .eq('id', existingQuote.id)
-        .select()
+        .select('id, quote_reference, version, download_count')
         .single();
 
-      if (updateError) {
+      if (updateError || !updated) {
         console.error('Error updating quote download count:', updateError);
         return NextResponse.json(
           { success: false, error: 'Failed to update quote' },
@@ -115,7 +84,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // New quote - check for existing quotes to this client to determine version
+    // New content → next version for this client.
     const { data: existingQuotes } = await supabase
       .from('quotes')
       .select('version')
@@ -124,11 +93,9 @@ export async function POST(request: Request) {
       .order('version', { ascending: false })
       .limit(1);
 
-    const version = existingQuotes && existingQuotes.length > 0
-      ? existingQuotes[0].version + 1
-      : 1;
+    const version =
+      existingQuotes && existingQuotes.length > 0 ? (existingQuotes[0].version || 0) + 1 : 1;
 
-    // Insert the new quote
     const { data, error } = await supabase
       .from('quotes')
       .insert({
@@ -141,34 +108,35 @@ export async function POST(request: Request) {
         quote_date: payload.quoteDate,
         valid_until: payload.validUntil,
         currency: payload.currency,
-        total_value: payload.totalValue,
+        pricing_options: payload.pricingOptions,
         line_items: payload.lineItems,
+        option_count: optionCount,
+        value_min: valueMin,
+        value_max: valueMax,
+        // total_value is legacy: equals the largest option quoted, never a sum.
+        total_value: valueMax ?? 0,
         prepared_by: payload.preparedBy,
         deal_context: payload.dealContext || {},
         content_hash: contentHash,
-        status: 'downloaded',
+        status: 'draft',
         download_count: 1,
-        first_sent_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, quote_reference, version, download_count')
       .single();
 
     if (error) {
-      // Check if it's a duplicate key error (race condition)
+      // Race: another request inserted the same content first.
       if (error.code === '23505' && error.message.includes('content_hash')) {
-        // Another request created this quote - fetch and update
         const { data: raceQuote } = await supabase
           .from('quotes')
           .select('id, quote_reference, version, download_count')
           .eq('content_hash', contentHash)
-          .single();
+          .maybeSingle();
 
         if (raceQuote) {
           await supabase
             .from('quotes')
-            .update({
-              download_count: (raceQuote.download_count || 0) + 1,
-            })
+            .update({ download_count: (raceQuote.download_count || 0) + 1 })
             .eq('id', raceQuote.id);
 
           return NextResponse.json({

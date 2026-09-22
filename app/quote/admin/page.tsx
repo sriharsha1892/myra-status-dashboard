@@ -1,39 +1,33 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useQuoteMsaStats } from '@/hooks/useQuoteMsaStats';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQuoteRegister } from '@/hooks/useQuoteRegister';
 import { isAdminAuthenticated, setAdminAuthenticated } from '@/lib/quote/admin-auth';
 import { QuoteAdminAuthModal } from '@/components/quote/QuoteAdminAuthModal';
-import { DocDetailDrawer } from '@/components/quote/DocDetailDrawer';
-import { HeroHeader } from '@/components/quote/admin/HeroHeader';
-import { FiltersPopover, type DocFilter, type DateRange } from '@/components/quote/admin/FiltersPopover';
-import { SectionHeader } from '@/components/quote/admin/SectionHeader';
-import { DocRow, type DocRowItem } from '@/components/quote/admin/DocRow';
-import { daysSince } from '@/lib/quote/format';
-
-const STALE_DAYS = 14;
-const DRAFT_NEEDS_ATTENTION_DAYS = 7;
-
-interface AttentionEntry {
-  doc: DocRowItem;
-  label: string;
-  severity: number; // higher = older / worse
-}
-
-function attentionEntry(doc: DocRowItem): AttentionEntry | null {
-  const age = daysSince(doc.createdAt);
-  if (doc.status === 'downloaded' && age > STALE_DAYS) {
-    return { doc, label: `Stale ${age}d`, severity: age };
-  }
-  if ((doc.status === 'draft' || !doc.status) && age > DRAFT_NEEDS_ATTENTION_DAYS) {
-    return { doc, label: `Draft ${age}d`, severity: age };
-  }
-  return null;
-}
+import { QuoteDetailDrawer } from '@/components/quote/QuoteDetailDrawer';
+import { RegisterHeader } from '@/components/quote/admin/RegisterHeader';
+import { FilterBar } from '@/components/quote/admin/FilterBar';
+import { AccountRow } from '@/components/quote/admin/AccountRow';
+import {
+  EMPTY_FILTERS,
+  filterAccounts,
+  filtersFromSearchParams,
+  filtersToSearchParams,
+  hasActiveFilters,
+} from '@/lib/quote/register';
+import type { RegisterFilters } from '@/lib/quote/types';
 
 export default function QuoteAdminPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <QuoteRegister />
+    </Suspense>
+  );
+}
+
+function QuoteRegister() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -42,81 +36,61 @@ export default function QuoteAdminPage() {
     setAuthChecked(true);
   }, []);
 
-  const { data, isLoading } = useQuoteMsaStats();
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<DocFilter>('all');
-  const [preparedByFilter, setPreparedByFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<DateRange>('all');
-  const [drawerDoc, setDrawerDoc] = useState<{ id: string; type: 'Quote' | 'MSA' } | null>(null);
-
-  const allDocs: DocRowItem[] = useMemo(() => {
-    if (!data) return [];
-    return [
-      ...data.quotes.recent.map((q) => ({ ...q, type: 'Quote' as const })),
-      ...data.msas.recent.map((m) => ({ ...m, type: 'MSA' as const })),
-    ];
-  }, [data]);
-
-  const amOptions = useMemo(() => {
-    const set = new Set<string>();
-    allDocs.forEach((d) => {
-      if (d.preparedBy) set.add(d.preparedBy);
-    });
-    return Array.from(set).sort();
-  }, [allDocs]);
-
-  const baseFiltered = useMemo(() => {
-    let docs = allDocs;
-    if (filterType !== 'all') docs = docs.filter((d) => d.type === filterType);
-    if (preparedByFilter !== 'all') docs = docs.filter((d) => d.preparedBy === preparedByFilter);
-    if (dateRange !== 'all') {
-      const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
-      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-      docs = docs.filter((d) => new Date(d.createdAt).getTime() >= cutoff);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      docs = docs.filter(
-        (d) =>
-          d.companyName.toLowerCase().includes(q) ||
-          d.reference.toLowerCase().includes(q) ||
-          (d.preparedBy || '').toLowerCase().includes(q)
-      );
-    }
-    return docs;
-  }, [allDocs, filterType, preparedByFilter, dateRange, search]);
-
-  const { needsAttention, restDocs } = useMemo(() => {
-    const attention: AttentionEntry[] = [];
-    const rest: DocRowItem[] = [];
-    baseFiltered.forEach((d) => {
-      const entry = attentionEntry(d);
-      if (entry) attention.push(entry);
-      else rest.push(d);
-    });
-    attention.sort((a, b) => b.severity - a.severity);
-    rest.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return { needsAttention: attention, restDocs: rest };
-  }, [baseFiltered]);
-
-  const totalAttentionAcrossAll = useMemo(
-    () => allDocs.filter((d) => attentionEntry(d) !== null).length,
-    [allDocs]
+  // Filters live in the URL so a filtered view is shareable and Back works.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filters = useMemo(
+    () => filtersFromSearchParams(new URLSearchParams(searchParams.toString())),
+    [searchParams]
   );
 
-  const totalValue = data ? data.quotes.uniqueTotalValue + data.msas.uniqueTotalValue : 0;
-  const hasFilters =
-    !!search || filterType !== 'all' || preparedByFilter !== 'all' || dateRange !== 'all';
+  const setFilters = useCallback(
+    (next: RegisterFilters) => {
+      const qs = filtersToSearchParams(next).toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname]
+  );
+  const clearFilters = useCallback(() => setFilters(EMPTY_FILTERS), [setFilters]);
 
-  const clearFilters = () => {
-    setSearch('');
-    setFilterType('all');
-    setPreparedByFilter('all');
-    setDateRange('all');
+  const { data, isPending, error } = useQuoteRegister();
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [drawerId, setDrawerId] = useState<string | null>(null);
+
+  const rows = useMemo(() => (data ? filterAccounts(data.accounts, filters) : []), [data, filters]);
+
+  const inView = useMemo(() => {
+    let quotes = 0;
+    let options = 0;
+    rows.forEach((r) => {
+      quotes += r.visible.length;
+      r.visible.forEach((q) => {
+        options += q.options.length;
+      });
+    });
+    return { accounts: rows.length, quotes, options };
+  }, [rows]);
+
+  const filtered = hasActiveFilters(filters);
+  const totals = data?.totals ?? { accounts: 0, quotes: 0, options: 0 };
+
+  const toggleExpanded = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const allExpanded = rows.length > 0 && rows.every((r) => expanded.has(r.account.key));
+  const toggleAll = () => {
+    setExpanded(allExpanded ? new Set() : new Set(rows.map((r) => r.account.key)));
   };
 
   if (!authChecked) {
-    return <div className="min-h-screen bg-[#fafaf7]" />;
+    return <div className="min-h-screen" />;
   }
   if (!isAuthed) {
     return (
@@ -129,162 +103,120 @@ export default function QuoteAdminPage() {
     );
   }
 
+  const summary = `${inView.accounts} of ${totals.accounts} ${totals.accounts === 1 ? 'account' : 'accounts'}, ${inView.quotes} of ${totals.quotes} ${totals.quotes === 1 ? 'quote' : 'quotes'}`;
+
   return (
-    <div className="min-h-screen bg-[#fafaf7]">
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <HeroHeader
-          totalValue={totalValue}
-          quotesCount={data?.quotes.unique ?? 0}
-          msasCount={data?.msas.unique ?? 0}
-          staleCount={totalAttentionAcrossAll}
-        />
+    <div className="min-h-screen">
+      <RegisterHeader
+        accounts={inView.accounts}
+        quotes={inView.quotes}
+        options={inView.options}
+        totals={totals}
+        filtered={filtered}
+      />
 
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 mt-6">
-          <div className="relative flex-1 min-w-[260px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search company, reference, or AM"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-neutral-200 rounded-lg focus:outline-none focus:border-neutral-400 focus:ring-1 focus:ring-neutral-200 placeholder:text-neutral-400"
-            />
-          </div>
-
-          <FiltersPopover
-            type={filterType}
-            preparedBy={preparedByFilter}
-            dateRange={dateRange}
-            amOptions={amOptions}
-            onChange={(next) => {
-              if (next.type !== undefined) setFilterType(next.type);
-              if (next.preparedBy !== undefined) setPreparedByFilter(next.preparedBy);
-              if (next.dateRange !== undefined) setDateRange(next.dateRange);
-            }}
-            onClear={clearFilters}
-          />
-
-          <div className="flex-1" />
-
-          <Link
-            href="/quote/cost"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New quote
-          </Link>
-          <Link
-            href="/quote/msa"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New MSA
-          </Link>
+      <main className="max-w-[1120px] mx-auto px-6 py-7 space-y-5">
+        {/* Page title */}
+        <div>
+          <h1 className="text-[24px] font-bold tracking-[-0.02em] leading-tight">Quotes</h1>
+          <p className="mt-1 text-[13.5px] font-normal text-[var(--fg-dim)]">
+            Every quote the team has sent, grouped by account. Each price is one option. The client picks one.
+          </p>
         </div>
 
-        {/* Content */}
-        <div className="mt-2">
-          {isLoading ? (
-            <div className="mt-8 space-y-3">
+        <FilterBar
+          filters={filters}
+          facets={data?.facets ?? { ams: [], terms: [], models: [], statuses: [] }}
+          onChange={setFilters}
+          onClear={clearFilters}
+          summary={summary}
+        />
+
+        {/* Accounts */}
+        <section className="mr-card overflow-hidden">
+          <div className="px-4 h-12 flex items-center justify-between border-b border-[var(--hairline)]">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-[14px] font-semibold">Accounts</h2>
+              {!isPending && (
+                <span className="text-[12px] font-normal text-[var(--fg-faint)] tabular-nums">
+                  {inView.accounts} {inView.accounts === 1 ? 'result' : 'results'}
+                </span>
+              )}
+            </div>
+            {rows.length > 0 && (
+              <button type="button" onClick={toggleAll} className="mr-link">
+                {allExpanded ? 'Collapse all' : 'Expand all'}
+              </button>
+            )}
+          </div>
+
+          {isPending ? (
+            <div className="p-4 space-y-4">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-16 bg-white border border-neutral-100 rounded animate-pulse" />
+                <div key={i} className="grid grid-cols-[16px_1.1fr_1.6fr_auto] items-center gap-4">
+                  <div className="mr-skbar w-3" />
+                  <div className="space-y-2">
+                    <div className="mr-skbar w-2/3 h-3" />
+                    <div className="mr-skbar w-1/2" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="mr-skbar w-24 h-5" />
+                    <div className="mr-skbar w-24 h-5" />
+                  </div>
+                  <div className="mr-skbar w-16 h-5" />
+                </div>
               ))}
             </div>
-          ) : baseFiltered.length === 0 ? (
-            <div className="py-24 text-center">
-              <p className="font-serif italic text-2xl text-neutral-400">
-                {hasFilters ? 'No documents match these filters.' : 'Nothing here yet.'}
+          ) : error ? (
+            <div className="py-20 text-center">
+              <p className="text-[15px] font-semibold">Could not load the register.</p>
+              <p className="mt-1.5 text-[12.5px] font-normal text-[var(--fg-faint)]">{(error as Error).message}</p>
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="text-[15px] font-semibold">
+                {filtered ? 'No quotes match these filters.' : 'No quotes yet.'}
               </p>
-              {hasFilters ? (
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 text-sm text-neutral-700 underline underline-offset-4 decoration-neutral-300 hover:decoration-neutral-700"
-                >
+              {filtered ? (
+                <button onClick={clearFilters} className="mr-btn mr-btn-outline mr-btn-sm mt-4">
                   Clear filters
                 </button>
               ) : (
-                <div className="flex items-center justify-center gap-3 mt-6">
-                  <Link
-                    href="/quote/cost"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 border border-neutral-200 rounded-lg hover:border-neutral-400"
-                  >
-                    <Plus className="w-3 h-3" /> Create quote
-                  </Link>
-                  <Link
-                    href="/quote/msa"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-neutral-900 text-white rounded-lg hover:bg-neutral-800"
-                  >
-                    <Plus className="w-3 h-3" /> Create MSA
-                  </Link>
-                </div>
+                <Link href="/quote/cost" className="mr-btn mr-btn-solid mr-btn-sm mt-4">
+                  Create the first quote
+                </Link>
               )}
             </div>
           ) : (
-            <>
-              {needsAttention.length > 0 && (
-                <section>
-                  <SectionHeader
-                    label="Needs attention"
-                    count={needsAttention.length}
-                    countLabel={needsAttention.length === 1 ? 'doc' : 'docs'}
-                    tone="warning"
-                  />
-                  <div>
-                    {needsAttention.map((entry, idx) => (
-                      <DocRow
-                        key={`${entry.doc.type}-${entry.doc.id}`}
-                        doc={entry.doc}
-                        index={idx}
-                        attentionLabel={entry.label}
-                        onClick={() => setDrawerDoc({ id: entry.doc.id, type: entry.doc.type })}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {restDocs.length > 0 && (
-                <section>
-                  <SectionHeader
-                    label="All documents"
-                    count={restDocs.length}
-                    countLabel={restDocs.length === 1 ? 'result' : 'results'}
-                  />
-                  <div>
-                    {restDocs.map((doc, idx) => (
-                      <DocRow
-                        key={`${doc.type}-${doc.id}`}
-                        doc={doc}
-                        index={idx}
-                        onClick={() => setDrawerDoc({ id: doc.id, type: doc.type })}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <div className="mt-8 pt-4 border-t border-neutral-200 text-[11px] text-neutral-400 tabular-nums">
-                Showing {baseFiltered.length} of {allDocs.length}
-                {hasFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="ml-3 underline underline-offset-2 hover:text-neutral-700"
-                  >
-                    clear
-                  </button>
-                )}
-              </div>
-            </>
+            <div>
+              {rows.map((r) => (
+                <AccountRow
+                  key={r.account.key}
+                  account={r.account}
+                  visible={r.visible}
+                  hidden={r.hidden}
+                  expanded={expanded.has(r.account.key)}
+                  onToggle={() => toggleExpanded(r.account.key)}
+                  onOpenQuote={setDrawerId}
+                />
+              ))}
+            </div>
           )}
-        </div>
-      </div>
+        </section>
 
-      <DocDetailDrawer
-        type={drawerDoc?.type ?? null}
-        id={drawerDoc?.id ?? null}
-        onClose={() => setDrawerDoc(null)}
-      />
+        {!isPending && !error && rows.length > 0 && (
+          <p className="text-[12px] font-normal text-[var(--fg-faint)] tabular-nums px-1">
+            Showing {summary}.
+            {filtered && (
+              <button onClick={clearFilters} className="mr-link ml-2">
+                Clear filters
+              </button>
+            )}
+          </p>
+        )}
+      </main>
+
+      <QuoteDetailDrawer id={drawerId} onClose={() => setDrawerId(null)} />
     </div>
   );
 }

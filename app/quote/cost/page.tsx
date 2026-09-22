@@ -23,6 +23,7 @@ import { DEFAULT_QUOTE_FORM, DEFAULT_DEAL_CONTEXT, DISCOUNT_REASONS, URGENCY_OPT
 import { generateQuotePDF, generateFilename } from '@/lib/quote/pdf-generator';
 import { generateQuoteWord, generateQuoteWordFilename } from '@/lib/quote/docx-generator';
 import { saveDraft, loadDraft, saveToHistory } from '@/lib/quote/storage';
+import { buildQuoteSavePayload } from '@/lib/quote/savePayload';
 import { isQuoteAuthenticated, setQuoteAuthenticated } from '@/lib/quote/auth';
 import { QuotePreviewModal } from '@/components/quote/QuotePreviewModal';
 import { QuoteHistory } from '@/components/quote/QuoteHistory';
@@ -95,14 +96,6 @@ function generateQuoteReference(): string {
   const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `MQ-${dateStr}-${random}`;
-}
-
-// Calculate total value from rows
-function calculateTotalValue(rows: QuoteRow[]): number {
-  return rows.reduce((sum, row) => {
-    const value = parseFloat(row.offerPrice.replace(/[^0-9.]/g, ''));
-    return sum + (isNaN(value) ? 0 : value);
-  }, 0);
 }
 
 // Format number with commas (INR uses Indian numbering)
@@ -439,32 +432,7 @@ export default function QuotePage() {
   const saveQuoteToDb = useCallback(async (): Promise<{ success: boolean; isNew: boolean; downloadCount?: number }> => {
     try {
       const quoteReference = generateQuoteReference();
-      const totalValue = calculateTotalValue(formData.rows);
-
-      const payload = {
-        quoteReference,
-        companyName: formData.preparedFor,
-        contactName: formData.contactName,
-        contactEmail: formData.contactEmail,
-        contactTitle: formData.contactTitle || undefined,
-        quoteDate: formData.quoteDate,
-        validUntil: formData.validUntil,
-        currency: formData.currency,
-        totalValue,
-        lineItems: formData.rows.map(row => ({
-          term: row.term,
-          users: row.users,
-          consultingHours: row.consultingHours,
-          investment: row.offerPrice,
-        })),
-        preparedBy: formData.preparedBy || 'Unknown AM',
-        dealContext: {
-          discountReason: formData.dealContext.discountReason || undefined,
-          specialTerms: formData.dealContext.specialTerms || undefined,
-          decisionDate: formData.dealContext.decisionDate || undefined,
-          urgency: formData.dealContext.urgency || undefined,
-        },
-      };
+      const payload = buildQuoteSavePayload(formData, quoteReference);
 
       const response = await fetch('/api/quote/save', {
         method: 'POST',

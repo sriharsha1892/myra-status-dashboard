@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-
-const VALID_STATUSES = ['draft', 'downloaded', 'sent', 'signed'] as const;
-type QuoteStatus = typeof VALID_STATUSES[number];
+import { quoteStatusPatchSchema } from '@/lib/validation/schemas/quote';
 
 export async function GET(
   _request: Request,
@@ -33,22 +31,41 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { status } = body as { status?: QuoteStatus };
+    const parsed = quoteStatusPatchSchema.safeParse(await request.json());
 
-    if (!status || !VALID_STATUSES.includes(status)) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+        { success: false, error: parsed.error.issues[0]?.message || 'Invalid status' },
         { status: 400 }
       );
     }
+    const { status } = parsed.data;
 
     const supabase = createServiceClient();
+
+    const { data: current, error: readError } = await supabase
+      .from('quotes')
+      .select('id, first_sent_at')
+      .eq('id', id)
+      .single();
+
+    if (readError || !current) {
+      return NextResponse.json(
+        { success: false, error: readError?.message || 'Quote not found' },
+        { status: 404 }
+      );
+    }
+
+    const patch: { status: string; first_sent_at?: string } = { status };
+    if (status === 'sent' && !current.first_sent_at) {
+      patch.first_sent_at = new Date().toISOString();
+    }
+
     const { data, error } = await supabase
       .from('quotes')
-      .update({ status })
+      .update(patch)
       .eq('id', id)
-      .select('id, status')
+      .select('id, status, first_sent_at')
       .single();
 
     if (error || !data) {

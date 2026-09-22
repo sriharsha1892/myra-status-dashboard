@@ -101,3 +101,115 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   GBP: '£',
   INR: '₹',
 };
+
+// ============================================================
+// Quote register (admin) — persisted + derived shapes
+// ============================================================
+
+/** Lifecycle status stored on `quotes.status`. */
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined';
+export const QUOTE_STATUSES: readonly QuoteStatus[] = ['draft', 'sent', 'accepted', 'declined'] as const;
+
+/** Status as shown in the register: lifecycle status, or `expired` derived from `valid_until`. */
+export type EffectiveStatus = QuoteStatus | 'expired';
+export const EFFECTIVE_STATUSES: readonly EffectiveStatus[] = ['draft', 'sent', 'accepted', 'declined', 'expired'] as const;
+
+/** One row inside a stored pricing option group. Per-seat and per-project rows share this shape. */
+export interface StoredOptionRow {
+  term: string;
+  users?: string;            // per-seat
+  namedUsers?: string;       // per-project
+  projectsIncluded?: string; // per-project
+  consultingHours: string;
+  listPrice: string;
+  offerPrice: string;
+  additionalHourRate?: string;
+  overageRate?: string;
+}
+
+/** A pricing option group as persisted in `quotes.pricing_options` (UI-only flags stripped). */
+export interface StoredPricingOption {
+  label: string;
+  pricingModel: PricingModel;
+  rows: StoredOptionRow[];
+  scopeDefinition?: string;
+}
+
+/** Legacy flat `quotes.line_items` row (pre pricing_options). */
+export interface LegacyLineItem {
+  term?: string;
+  users?: string;
+  consultingHours?: string;
+  investment?: string | number;
+}
+
+/** One selectable option, normalised for display and filtering. An option is a single row. */
+export interface QuoteOption {
+  groupLabel: string;
+  model: PricingModel;
+  term: string;
+  users: string | null;     // per-seat seats, or per-project named users
+  projects: string | null;  // per-project only
+  hours: string;
+  price: number | null;
+}
+
+export type UsersBand = '1' | '2-5' | '6-10' | '10+';
+export type OptionCountBucket = 'single' | 'multi';
+export type RegisterDateRange = 'all' | '30d' | '90d' | '12mo';
+
+/** A quote as served by /api/quote/list. All versions are served, newest first. */
+export interface RegisterQuote {
+  id: string;
+  reference: string;
+  version: number;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  preparedBy: string;
+  currency: Currency;
+  status: QuoteStatus;
+  effectiveStatus: EffectiveStatus;
+  createdAt: string;
+  quoteDate: string;
+  validUntil: string | null;
+  downloadCount: number;
+  optionCount: number;
+  valueMin: number | null;
+  valueMax: number | null;
+  options: QuoteOption[];
+}
+
+/** Quotes grouped by account (company). */
+export interface Account {
+  key: string;
+  companyName: string;
+  ams: string[];
+  contacts: string[];
+  quotes: RegisterQuote[]; // newest first
+  latest: RegisterQuote;
+}
+
+export interface RegisterFilters {
+  search: string;
+  ams: string[];
+  statuses: EffectiveStatus[];
+  terms: string[];
+  models: PricingModel[];
+  optionCounts: OptionCountBucket[];
+  usersBands: UsersBand[];
+  dateRange: RegisterDateRange;
+}
+
+export interface RegisterFacets {
+  ams: Array<{ name: string; count: number }>;
+  terms: string[];
+  models: PricingModel[];
+  statuses: Array<{ status: EffectiveStatus; count: number }>;
+}
+
+export interface QuoteRegisterResponse {
+  accounts: Account[];
+  facets: RegisterFacets;
+  totals: { accounts: number; quotes: number; options: number };
+}
