@@ -1,7 +1,9 @@
 import {
   accountKey,
   activeFilterCount,
+  buildRegisterCsv,
   compactMoney,
+  facetCounts,
   filterAccounts,
   filtersFromSearchParams,
   filtersToSearchParams,
@@ -11,7 +13,9 @@ import {
   normaliseStatus,
   optionCountBucket,
   parseMoney,
+  sortAccounts,
   usersBand,
+  validityLapsed,
   valueRange,
   EMPTY_FILTERS,
 } from '../register';
@@ -226,6 +230,7 @@ describe('URL round trip', () => {
       optionCounts: ['multi'],
       usersBands: ['2-5', '10+'],
       dateRange: '90d',
+      sort: 'company',
     };
     const params = filtersToSearchParams(f);
     expect(filtersFromSearchParams(params)).toEqual(f);
@@ -234,6 +239,49 @@ describe('URL round trip', () => {
     const dirty = new URLSearchParams('status=draft,bogus&model=nope&range=weird');
     expect(filtersFromSearchParams(dirty)).toEqual({ ...EMPTY_FILTERS, statuses: ['draft'] });
     expect(filtersToSearchParams(EMPTY_FILTERS).toString()).toBe('');
+  });
+});
+
+describe('sortAccounts / facetCounts / csv / validity', () => {
+  const rows = filterAccounts(
+    groupByAccount([
+      quote({ id: 'a', companyName: 'Zeta', createdAt: '2026-09-01T00:00:00Z' }),
+      quote({ id: 'b', companyName: 'Alpha', createdAt: '2026-08-01T00:00:00Z' }),
+      quote({ id: 'c', companyName: 'Alpha', createdAt: '2026-07-01T00:00:00Z', options: [
+        { groupLabel: '', model: 'per-project', term: '2-Year', users: 'Unlimited', projects: '25', hours: '25', price: 30000 },
+      ], optionCount: 1 }),
+    ]),
+    EMPTY_FILTERS,
+    NOW
+  );
+  it('sorts by each mode', () => {
+    expect(sortAccounts(rows, 'newest').map((r) => r.account.companyName)).toEqual(['Zeta', 'Alpha']);
+    expect(sortAccounts(rows, 'oldest').map((r) => r.account.companyName)).toEqual(['Alpha', 'Zeta']);
+    expect(sortAccounts(rows, 'company').map((r) => r.account.companyName)).toEqual(['Alpha', 'Zeta']);
+    expect(sortAccounts(rows, 'quotes').map((r) => r.account.companyName)).toEqual(['Alpha', 'Zeta']);
+  });
+  it('counts quotes per facet value with any-option semantics', () => {
+    const all = rows.flatMap((r) => r.visible);
+    const c = facetCounts(all);
+    expect(c.terms).toEqual({ '1-Year': 2, '2-Year': 1 });
+    expect(c.models).toEqual({ 'per-seat': 2, 'per-project': 1 });
+    expect(c.optionCounts).toEqual({ single: 3, multi: 0 });
+    expect(c.usersBands['2-5']).toBe(2);
+    expect(c.usersBands['10+']).toBe(1);
+  });
+  it('exports one CSV line per option and escapes commas', () => {
+    const csv = buildRegisterCsv(rows);
+    const lines = csv.split('\n');
+    expect(lines).toHaveLength(4);
+    expect(lines[0].startsWith('Company,Quote reference')).toBe(true);
+    expect(lines[3]).toContain('Alpha,MQ-20260901-AAAA,1,Draft,Satish Boini');
+    const escaped = buildRegisterCsv(filterAccounts(groupByAccount([quote({ companyName: 'Acme, Inc' })]), EMPTY_FILTERS, NOW));
+    expect(escaped.split('\n')[1].startsWith('"Acme, Inc"')).toBe(true);
+  });
+  it('detects lapsed validity', () => {
+    expect(validityLapsed('2026-09-01', NOW)).toBe(true);
+    expect(validityLapsed('2026-09-22', NOW)).toBe(false);
+    expect(validityLapsed(null, NOW)).toBe(false);
   });
 });
 

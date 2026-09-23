@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { X, Mail } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Mail, Copy, Check } from 'lucide-react';
 import { useQuoteDetail } from '@/hooks/useQuoteDetail';
 import { currencySymbol, formatLongDate } from '@/lib/quote/format';
-import { flattenOptions, normaliseStatus, valueRange } from '@/lib/quote/register';
+import { flattenOptions, normaliseStatus, validityLapsed, valueRange } from '@/lib/quote/register';
 import { OptionsTable } from '@/components/quote/admin/OptionsTable';
 import { StatusBadge } from '@/components/quote/admin/StatusBadge';
-import { AmAvatar } from '@/components/quote/admin/AmAvatar';
 
 interface QuoteDetailDrawerProps {
   id: string | null;
@@ -22,6 +21,18 @@ function money(value: number | null, currency: string): string {
 export function QuoteDetailDrawer({ id, onClose }: QuoteDetailDrawerProps) {
   const { data: doc, isPending, error } = useQuoteDetail(id);
   const open = !!id;
+  const [copied, setCopied] = useState(false);
+
+  const copyReference = async () => {
+    if (!doc?.quote_reference) return;
+    try {
+      await navigator.clipboard.writeText(doc.quote_reference);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable; the reference is still visible to select */
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +58,17 @@ export function QuoteDetailDrawer({ id, onClose }: QuoteDetailDrawerProps) {
           <div className="min-w-0 flex items-center gap-2.5">
             <span className="text-[13px] font-semibold">Quote</span>
             <span className="mr-mono text-[12px] text-[var(--fg-faint)] truncate">{doc?.quote_reference || ''}</span>
+            {doc?.quote_reference && (
+              <button
+                type="button"
+                onClick={copyReference}
+                title="Copy reference"
+                aria-label="Copy reference"
+                className="w-6 h-6 rounded-[6px] flex items-center justify-center text-[var(--fg-faint)] hover:text-[var(--primary)] hover:bg-[var(--wash)] transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-[var(--success-ink)]" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            )}
             {doc?.version && doc.version > 1 && (
               <span className="mr-mono text-[11px] text-[var(--fg-faint)]">v{doc.version}</span>
             )}
@@ -110,23 +132,21 @@ export function QuoteDetailDrawer({ id, onClose }: QuoteDetailDrawerProps) {
               </Section>
 
               <Section label="Prepared by">
-                <div className="flex items-center gap-2">
-                  <AmAvatar name={doc.prepared_by || '?'} size={24} />
-                  <div>
-                    <div className="text-[13.5px] font-semibold">{doc.prepared_by || 'Unassigned'}</div>
-                    {doc.prepared_by_email && (
-                      <a href={`mailto:${doc.prepared_by_email}`} className="mr-link">
-                        {doc.prepared_by_email}
-                      </a>
-                    )}
-                  </div>
-                </div>
+                <div className="text-[13.5px] font-semibold">{doc.prepared_by || 'Unassigned'}</div>
+                {doc.prepared_by_email && (
+                  <a href={`mailto:${doc.prepared_by_email}`} className="mr-link">
+                    {doc.prepared_by_email}
+                  </a>
+                )}
               </Section>
 
               <Section label="Dates">
                 <Row k="Created" v={formatLongDate(doc.created_at)} />
                 <Row k="Quote date" v={formatLongDate(doc.quote_date)} />
-                <Row k="Valid until" v={formatLongDate(doc.valid_until)} />
+                <Row
+                  k={validityLapsed(doc.valid_until) ? 'Validity lapsed' : 'Valid until'}
+                  v={formatLongDate(doc.valid_until)}
+                />
                 {doc.first_sent_at && <Row k="First sent" v={formatLongDate(doc.first_sent_at)} />}
               </Section>
 

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { AmAvatar } from './AmAvatar';
 
 interface AmMultiSelectProps {
   options: Array<{ name: string; count: number }>;
@@ -52,7 +51,7 @@ export function AmMultiSelect({ options, selected, onChange }: AmMultiSelectProp
       </button>
 
       {open && (
-        <div role="listbox" aria-multiselectable className="mr-popover absolute left-0 top-full mt-2 z-30 w-[272px] overflow-hidden">
+        <div role="listbox" aria-multiselectable className="mr-popover absolute left-0 top-full mt-2 z-30 w-[260px] overflow-hidden">
           <div className="px-3 h-10 flex items-center justify-between border-b border-[var(--hairline)]">
             <span className="text-[13px] font-semibold">Prepared by</span>
             {selected.length > 0 && (
@@ -85,7 +84,6 @@ export function AmMultiSelect({ options, selected, onChange }: AmMultiSelectProp
                   >
                     {on && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                   </span>
-                  <AmAvatar name={o.name} size={20} />
                   <span className="flex-1 text-left truncate">{o.name}</span>
                   <span className="text-[11px] tabular-nums text-[var(--fg-faint)] font-normal">{o.count}</span>
                 </button>

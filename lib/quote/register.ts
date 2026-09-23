@@ -15,6 +15,7 @@ import type {
   RegisterDateRange,
   RegisterFilters,
   RegisterQuote,
+  RegisterSort,
   StoredPricingOption,
   UsersBand,
 } from './types';
@@ -178,6 +179,7 @@ export const EMPTY_FILTERS: RegisterFilters = {
   optionCounts: [],
   usersBands: [],
   dateRange: 'all',
+  sort: 'newest',
 };
 
 export function hasActiveFilters(f: RegisterFilters): boolean {
@@ -273,6 +275,7 @@ const MODELS: readonly PricingModel[] = ['per-seat', 'per-project'] as const;
 const OPTION_COUNTS: readonly OptionCountBucket[] = ['single', 'multi'] as const;
 const USERS_BANDS: readonly UsersBand[] = ['1', '2-5', '6-10', '10+'] as const;
 const DATE_RANGES: readonly RegisterDateRange[] = ['all', '30d', '90d', '12mo'] as const;
+const SORTS: readonly RegisterSort[] = ['newest', 'oldest', 'company', 'quotes'] as const;
 
 function pickList<T extends string>(raw: string | null, allowed: readonly T[]): T[] {
   if (!raw) return [];
@@ -284,6 +287,7 @@ function pickList<T extends string>(raw: string | null, allowed: readonly T[]): 
 
 export function filtersFromSearchParams(params: URLSearchParams): RegisterFilters {
   const dateRaw = params.get('range');
+  const sortRaw = params.get('sort');
   return {
     search: params.get('q') ?? '',
     ams: (params.get('am') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
@@ -295,6 +299,7 @@ export function filtersFromSearchParams(params: URLSearchParams): RegisterFilter
     dateRange: (DATE_RANGES as readonly string[]).includes(dateRaw ?? '')
       ? (dateRaw as RegisterDateRange)
       : 'all',
+    sort: (SORTS as readonly string[]).includes(sortRaw ?? '') ? (sortRaw as RegisterSort) : 'newest',
   };
 }
 
@@ -308,6 +313,7 @@ export function filtersToSearchParams(f: RegisterFilters): URLSearchParams {
   if (f.optionCounts.length) p.set('options', f.optionCounts.join(','));
   if (f.usersBands.length) p.set('users', f.usersBands.join(','));
   if (f.dateRange !== 'all') p.set('range', f.dateRange);
+  if (f.sort !== 'newest') p.set('sort', f.sort);
   return p;
 }
 
@@ -343,3 +349,120 @@ export const MODEL_LABEL: Record<PricingModel, string> = {
   'per-seat': 'User-based',
   'per-project': 'Project-based',
 };
+
+// ------------------------------------------------------------
+// Sorting, facet counts, grouping, export
+// ------------------------------------------------------------
+
+export interface FilteredAccount {
+  account: Account;
+  visible: RegisterQuote[];
+  hidden: number;
+}
+
+export const SORT_LABEL: Record<RegisterSort, string> = {
+  newest: 'Newest first',
+  oldest: 'Oldest first',
+  company: 'Company A to Z',
+  quotes: 'Most quotes',
+};
+
+function latestTime(r: FilteredAccount): number {
+  return new Date(r.visible[0].createdAt).getTime();
+}
+
+export function sortAccounts(rows: FilteredAccount[], sort: RegisterSort): FilteredAccount[] {
+  const out = [...rows];
+  switch (sort) {
+    case 'oldest':
+      out.sort((a, b) => latestTime(a) - latestTime(b));
+      break;
+    case 'company':
+      out.sort((a, b) => a.account.companyName.localeCompare(b.account.companyName, undefined, { sensitivity: 'base' }));
+      break;
+    case 'quotes':
+      out.sort((a, b) => b.visible.length - a.visible.length || latestTime(b) - latestTime(a));
+      break;
+    default:
+      out.sort((a, b) => latestTime(b) - latestTime(a));
+  }
+  return out;
+}
+
+export interface FacetCounts {
+  terms: Record<string, number>;
+  models: Record<string, number>;
+  optionCounts: Record<OptionCountBucket, number>;
+  usersBands: Record<UsersBand, number>;
+}
+
+/** Quotes per facet value, using the same any-option semantics as the filters. */
+export function facetCounts(quotes: RegisterQuote[]): FacetCounts {
+  const counts: FacetCounts = {
+    terms: {},
+    models: {},
+    optionCounts: { single: 0, multi: 0 },
+    usersBands: { '1': 0, '2-5': 0, '6-10': 0, '10+': 0 },
+  };
+  quotes.forEach((q) => {
+    counts.optionCounts[optionCountBucket(q.optionCount)] += 1;
+    const terms = new Set<string>();
+    const models = new Set<string>();
+    const bands = new Set<UsersBand>();
+    q.options.forEach((o) => {
+      if (o.term) terms.add(o.term);
+      models.add(o.model);
+      const b = usersBand(o.users);
+      if (b) bands.add(b);
+    });
+    terms.forEach((t) => (counts.terms[t] = (counts.terms[t] || 0) + 1));
+    models.forEach((m) => (counts.models[m] = (counts.models[m] || 0) + 1));
+    bands.forEach((b) => (counts.usersBands[b] += 1));
+  });
+  return counts;
+}
+
+/** "September 2026" for list dividers. */
+export function monthLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+/** True when a valid-until date is in the past (calendar day precision, UTC). */
+export function validityLapsed(validUntil: string | null | undefined, now: Date = new Date()): boolean {
+  if (!validUntil) return false;
+  const d = new Date(validUntil);
+  if (Number.isNaN(d.getTime())) return false;
+  const endOfDay = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999);
+  return now.getTime() > endOfDay;
+}
+
+function csvCell(v: string | number | null | undefined): string {
+  if (v == null) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** One line per option, in list order. Mirrors exactly what the register shows. */
+export function buildRegisterCsv(rows: FilteredAccount[]): string {
+  const header = [
+    'Company', 'Quote reference', 'Version', 'Status', 'Prepared by', 'Contact', 'Contact email',
+    'Quote date', 'Valid until', 'Currency', 'Option group', 'Term', 'Users', 'Projects', 'Hours', 'Price',
+  ];
+  const lines = [header.join(',')];
+  rows.forEach((r) => {
+    r.visible.forEach((q) => {
+      const base = [
+        r.account.companyName, q.reference, q.version, STATUS_LABEL[q.status], q.preparedBy, q.contactName,
+        q.contactEmail, q.quoteDate?.slice(0, 10) ?? '', q.validUntil?.slice(0, 10) ?? '', q.currency,
+      ];
+      if (q.options.length === 0) {
+        lines.push([...base, '', '', '', '', '', ''].map(csvCell).join(','));
+        return;
+      }
+      q.options.forEach((o) => {
+        lines.push([...base, o.groupLabel, o.term, o.users ?? '', o.projects ?? '', o.hours, o.price ?? ''].map(csvCell).join(','));
+      });
+    });
+  });
+  return lines.join('\n');
+}

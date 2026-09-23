@@ -2,6 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuoteRegister } from '@/hooks/useQuoteRegister';
 import { isAdminAuthenticated, setAdminAuthenticated } from '@/lib/quote/admin-auth';
@@ -12,12 +13,17 @@ import { FilterBar } from '@/components/quote/admin/FilterBar';
 import { AccountRow } from '@/components/quote/admin/AccountRow';
 import {
   EMPTY_FILTERS,
+  SORT_LABEL,
+  buildRegisterCsv,
+  facetCounts,
   filterAccounts,
   filtersFromSearchParams,
   filtersToSearchParams,
   hasActiveFilters,
+  monthLabel,
+  sortAccounts,
 } from '@/lib/quote/register';
-import type { RegisterFilters } from '@/lib/quote/types';
+import type { RegisterFilters, RegisterSort } from '@/lib/quote/types';
 
 export default function QuoteAdminPage() {
   return (
@@ -26,6 +32,8 @@ export default function QuoteAdminPage() {
     </Suspense>
   );
 }
+
+const SORTS: RegisterSort[] = ['newest', 'oldest', 'company', 'quotes'];
 
 function QuoteRegister() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -36,7 +44,7 @@ function QuoteRegister() {
     setAuthChecked(true);
   }, []);
 
-  // Filters live in the URL so a filtered view is shareable and Back works.
+  // Filters and sort live in the URL so a view is shareable and Back works.
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,13 +60,19 @@ function QuoteRegister() {
     },
     [router, pathname]
   );
-  const clearFilters = useCallback(() => setFilters(EMPTY_FILTERS), [setFilters]);
+  const clearFilters = useCallback(() => setFilters({ ...EMPTY_FILTERS, sort: filters.sort }), [setFilters, filters.sort]);
 
   const { data, isPending, error } = useQuoteRegister();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [drawerId, setDrawerId] = useState<string | null>(null);
 
-  const rows = useMemo(() => (data ? filterAccounts(data.accounts, filters) : []), [data, filters]);
+  const allQuotes = useMemo(() => (data ? data.accounts.flatMap((a) => a.quotes) : []), [data]);
+  const counts = useMemo(() => facetCounts(allQuotes), [allQuotes]);
+
+  const rows = useMemo(
+    () => (data ? sortAccounts(filterAccounts(data.accounts, filters), filters.sort) : []),
+    [data, filters]
+  );
 
   const inView = useMemo(() => {
     let quotes = 0;
@@ -74,6 +88,7 @@ function QuoteRegister() {
 
   const filtered = hasActiveFilters(filters);
   const totals = data?.totals ?? { accounts: 0, quotes: 0, options: 0 };
+  const byDate = filters.sort === 'newest' || filters.sort === 'oldest';
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => {
@@ -87,6 +102,24 @@ function QuoteRegister() {
   const allExpanded = rows.length > 0 && rows.every((r) => expanded.has(r.account.key));
   const toggleAll = () => {
     setExpanded(allExpanded ? new Set() : new Set(rows.map((r) => r.account.key)));
+  };
+
+  const filterAm = (name: string) => {
+    const ams = filters.ams.includes(name) ? filters.ams.filter((a) => a !== name) : [...filters.ams, name];
+    setFilters({ ...filters, ams });
+  };
+
+  const exportCsv = () => {
+    const csv = buildRegisterCsv(rows);
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `myra-quotes-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (!authChecked) {
@@ -127,6 +160,7 @@ function QuoteRegister() {
         <FilterBar
           filters={filters}
           facets={data?.facets ?? { ams: [], terms: [], models: [], statuses: [] }}
+          counts={counts}
           onChange={setFilters}
           onClear={clearFilters}
           summary={summary}
@@ -134,8 +168,8 @@ function QuoteRegister() {
 
         {/* Accounts */}
         <section className="mr-card overflow-hidden">
-          <div className="px-4 h-12 flex items-center justify-between border-b border-[var(--hairline)]">
-            <div className="flex items-baseline gap-2">
+          <div className="px-4 h-12 flex items-center justify-between gap-3 border-b border-[var(--hairline)]">
+            <div className="flex items-baseline gap-2 min-w-0">
               <h2 className="text-[14px] font-semibold">Accounts</h2>
               {!isPending && (
                 <span className="text-[12px] font-normal text-[var(--fg-faint)] tabular-nums">
@@ -143,11 +177,39 @@ function QuoteRegister() {
                 </span>
               )}
             </div>
-            {rows.length > 0 && (
-              <button type="button" onClick={toggleAll} className="mr-link">
-                {allExpanded ? 'Collapse all' : 'Expand all'}
-              </button>
-            )}
+            <div className="flex items-center gap-2.5">
+              <label className="sr-only" htmlFor="register-sort">
+                Sort
+              </label>
+              <select
+                id="register-sort"
+                className="mr-select"
+                value={filters.sort}
+                onChange={(e) => setFilters({ ...filters, sort: e.target.value as RegisterSort })}
+              >
+                {SORTS.map((s) => (
+                  <option key={s} value={s}>
+                    {SORT_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+              {rows.length > 0 && (
+                <>
+                  <button type="button" onClick={toggleAll} className="mr-btn mr-btn-ghost mr-btn-sm">
+                    {allExpanded ? 'Collapse all' : 'Expand all'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={exportCsv}
+                    className="mr-btn mr-btn-outline mr-btn-sm"
+                    title="Download what's in view as CSV, one line per option"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {isPending ? (
@@ -189,17 +251,27 @@ function QuoteRegister() {
             </div>
           ) : (
             <div>
-              {rows.map((r) => (
-                <AccountRow
-                  key={r.account.key}
-                  account={r.account}
-                  visible={r.visible}
-                  hidden={r.hidden}
-                  expanded={expanded.has(r.account.key)}
-                  onToggle={() => toggleExpanded(r.account.key)}
-                  onOpenQuote={setDrawerId}
-                />
-              ))}
+              {rows.map((r, idx) => {
+                const month = byDate ? monthLabel(r.visible[0].createdAt) : null;
+                const prevMonth = byDate && idx > 0 ? monthLabel(rows[idx - 1].visible[0].createdAt) : null;
+                return (
+                  <React.Fragment key={r.account.key}>
+                    {month && month !== prevMonth && (
+                      <div className={`mr-month ${idx === 0 ? 'border-t-0' : ''}`}>{month}</div>
+                    )}
+                    <AccountRow
+                      account={r.account}
+                      visible={r.visible}
+                      hidden={r.hidden}
+                      expanded={expanded.has(r.account.key)}
+                      highlight={filters.search}
+                      onToggle={() => toggleExpanded(r.account.key)}
+                      onOpenQuote={setDrawerId}
+                      onFilterAm={filterAm}
+                    />
+                  </React.Fragment>
+                );
+              })}
             </div>
           )}
         </section>

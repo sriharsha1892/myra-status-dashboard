@@ -12,7 +12,7 @@ import type {
   UsersBand,
 } from '@/lib/quote/types';
 import { QUOTE_STATUSES } from '@/lib/quote/types';
-import { hasActiveFilters, MODEL_LABEL, STATUS_LABEL } from '@/lib/quote/register';
+import { hasActiveFilters, MODEL_LABEL, STATUS_LABEL, type FacetCounts } from '@/lib/quote/register';
 import { FacetChip, FacetGroup } from './FacetChip';
 import { AmMultiSelect } from './AmMultiSelect';
 import { ActivePills, buildPills } from './ActivePills';
@@ -20,6 +20,7 @@ import { ActivePills, buildPills } from './ActivePills';
 interface FilterBarProps {
   filters: RegisterFilters;
   facets: RegisterFacets;
+  counts: FacetCounts;
   onChange: (next: RegisterFilters) => void;
   onClear: () => void;
   summary: string;
@@ -42,7 +43,7 @@ function toggleIn<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-export function FilterBar({ filters, facets, onChange, onClear, summary }: FilterBarProps) {
+export function FilterBar({ filters, facets, counts, onChange, onClear, summary }: FilterBarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   // "/" focuses search; Esc inside search clears it.
@@ -63,6 +64,24 @@ export function FilterBar({ filters, facets, onChange, onClear, summary }: Filte
   const active = hasActiveFilters(filters);
   const pills = buildPills(filters, onChange);
   const statusCount = new Map(facets.statuses.map((s) => [s.status, s.count]));
+
+  // A chip with nothing behind it is muted unless it's already selected.
+  const chip = <T extends string>(
+    key: T,
+    label: string,
+    count: number,
+    selected: T[],
+    apply: (next: T[]) => void
+  ) => (
+    <FacetChip
+      key={key}
+      label={label}
+      count={count}
+      active={selected.includes(key)}
+      disabled={count === 0 && !selected.includes(key)}
+      onToggle={() => apply(toggleIn(selected, key))}
+    />
+  );
 
   return (
     <section className="mr-card p-4 space-y-3.5">
@@ -124,64 +143,39 @@ export function FilterBar({ filters, facets, onChange, onClear, summary }: Filte
         )}
       </div>
 
-      {/* Row 2: facet chips */}
+      {/* Row 2: facet chips, each with the number of quotes behind it */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5">
         <FacetGroup label="Term">
           {facets.terms.length === 0 && <span className="text-[12px] text-[var(--fg-faint)]">None yet</span>}
-          {facets.terms.map((t) => (
-            <FacetChip
-              key={t}
-              label={t}
-              active={filters.terms.includes(t)}
-              onToggle={() => onChange({ ...filters, terms: toggleIn(filters.terms, t) })}
-            />
-          ))}
+          {facets.terms.map((t) =>
+            chip(t, t, counts.terms[t] ?? 0, filters.terms, (terms) => onChange({ ...filters, terms }))
+          )}
         </FacetGroup>
 
         <FacetGroup label="Pricing">
-          {(['per-seat', 'per-project'] as PricingModel[]).map((m) => (
-            <FacetChip
-              key={m}
-              label={MODEL_LABEL[m]}
-              active={filters.models.includes(m)}
-              disabled={!facets.models.includes(m) && !filters.models.includes(m)}
-              onToggle={() => onChange({ ...filters, models: toggleIn(filters.models, m) })}
-            />
-          ))}
+          {(['per-seat', 'per-project'] as PricingModel[]).map((m) =>
+            chip(m, MODEL_LABEL[m], counts.models[m] ?? 0, filters.models, (models) => onChange({ ...filters, models }))
+          )}
         </FacetGroup>
 
         <FacetGroup label="Status">
-          {QUOTE_STATUSES.map((s: QuoteStatus) => (
-            <FacetChip
-              key={s}
-              label={STATUS_LABEL[s]}
-              count={statusCount.get(s) ?? 0}
-              active={filters.statuses.includes(s)}
-              onToggle={() => onChange({ ...filters, statuses: toggleIn(filters.statuses, s) })}
-            />
-          ))}
+          {QUOTE_STATUSES.map((s: QuoteStatus) =>
+            chip(s, STATUS_LABEL[s], statusCount.get(s) ?? 0, filters.statuses, (statuses) => onChange({ ...filters, statuses }))
+          )}
         </FacetGroup>
 
         <FacetGroup label="Options">
-          {OPTION_COUNTS.map((o) => (
-            <FacetChip
-              key={o.value}
-              label={o.label}
-              active={filters.optionCounts.includes(o.value)}
-              onToggle={() => onChange({ ...filters, optionCounts: toggleIn(filters.optionCounts, o.value) })}
-            />
-          ))}
+          {OPTION_COUNTS.map((o) =>
+            chip(o.value, o.label, counts.optionCounts[o.value], filters.optionCounts, (optionCounts) =>
+              onChange({ ...filters, optionCounts })
+            )
+          )}
         </FacetGroup>
 
         <FacetGroup label="Users">
-          {USERS_BANDS.map((b) => (
-            <FacetChip
-              key={b}
-              label={b}
-              active={filters.usersBands.includes(b)}
-              onToggle={() => onChange({ ...filters, usersBands: toggleIn(filters.usersBands, b) })}
-            />
-          ))}
+          {USERS_BANDS.map((b) =>
+            chip(b, b, counts.usersBands[b], filters.usersBands, (usersBands) => onChange({ ...filters, usersBands }))
+          )}
         </FacetGroup>
       </div>
 

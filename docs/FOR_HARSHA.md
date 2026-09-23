@@ -65,8 +65,16 @@ company that got three revised quotes shows as one row with "3 quotes".
 "AM: Satish" = quotes by Satish that offered *at least one* 1-year or 2-year
 option. Option filters match if *any* option on the quote satisfies them.
 
-**Filters live in the URL** (`?term=1-Year&am=Satish+Boini`). Copy the link to
-share a filtered view; the browser Back button undoes a filter change.
+**Filters and sort live in the URL** (`?term=1-Year&am=Satish+Boini&sort=company`).
+Copy the link to share a view; the browser Back button undoes a change.
+
+**Small things that are deliberate.** Every facet chip shows how many quotes
+sit behind it and mutes itself at zero. Clicking an AM's name on a row filters
+to that AM. When every option on a quote shares a term, the term is stated
+once so the chips read as the real choice: seats and price. Search matches
+are highlighted. Relative dates carry the exact date on hover. Month dividers
+appear when sorted by date. "Export CSV" downloads exactly what's in view, one
+line per option. The drawer has a copy button for the reference.
 
 **Status is read-only here.** It is shown and filterable, but not editable on
 this page. The `PATCH /api/quote/[id]` endpoint still exists for whatever

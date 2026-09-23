@@ -153,6 +153,7 @@ export interface QuoteOption {
 export type UsersBand = '1' | '2-5' | '6-10' | '10+';
 export type OptionCountBucket = 'single' | 'multi';
 export type RegisterDateRange = 'all' | '30d' | '90d' | '12mo';
+export type RegisterSort = 'newest' | 'oldest' | 'company' | 'quotes';
 
 /** A quote as served by /api/quote/list. All versions are served, newest first. */
 export interface RegisterQuote {
@@ -194,6 +195,7 @@ export interface RegisterFilters {
   optionCounts: OptionCountBucket[];
   usersBands: UsersBand[];
   dateRange: RegisterDateRange;
+  sort: RegisterSort;
 }
 
 export interface RegisterFacets {
