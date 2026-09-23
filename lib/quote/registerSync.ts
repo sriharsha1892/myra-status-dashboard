@@ -18,7 +18,11 @@ export interface RegisterSyncResult {
 async function registerEntry(entry: QuoteHistoryEntry): Promise<'created' | 'existing' | string> {
   const created = new Date(entry.createdAt || entry.date);
   const reference = generateQuoteReference(Number.isNaN(created.getTime()) ? new Date() : created);
-  const payload = buildQuoteSavePayload(entry.formData, reference);
+  const payload = {
+    ...buildQuoteSavePayload(entry.formData, reference),
+    createdAt: Number.isNaN(created.getTime()) ? undefined : created.toISOString(),
+    source: 'recovery' as const,
+  };
   const res = await fetch('/api/quote/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

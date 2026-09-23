@@ -122,6 +122,15 @@ export function optionCountBucket(count: number): OptionCountBucket {
 }
 
 // ------------------------------------------------------------
+// Dates: a quote is dated by its quote date, not by when it reached the register
+// ------------------------------------------------------------
+
+export function quoteTime(q: Pick<RegisterQuote, 'quoteDate' | 'createdAt'>): number {
+  const t = new Date(q.quoteDate || q.createdAt).getTime();
+  return Number.isNaN(t) ? new Date(q.createdAt).getTime() : t;
+}
+
+// ------------------------------------------------------------
 // Grouping
 // ------------------------------------------------------------
 
@@ -141,9 +150,7 @@ export function groupByAccount(quotes: RegisterQuote[]): Account[] {
 
   const accounts: Account[] = [];
   byKey.forEach((list, key) => {
-    const sorted = [...list].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const sorted = [...list].sort((a, b) => quoteTime(b) - quoteTime(a));
     const ams = uniqueSorted(sorted.map((q) => q.preparedBy).filter(Boolean));
     const contacts = uniqueSorted(sorted.map((q) => q.contactName).filter(Boolean));
     accounts.push({
@@ -156,9 +163,7 @@ export function groupByAccount(quotes: RegisterQuote[]): Account[] {
     });
   });
 
-  accounts.sort(
-    (a, b) => new Date(b.latest.createdAt).getTime() - new Date(a.latest.createdAt).getTime()
-  );
+  accounts.sort((a, b) => quoteTime(b.latest) - quoteTime(a.latest));
   return accounts;
 }
 
@@ -231,7 +236,7 @@ export function matchesFilters(q: RegisterQuote, f: RegisterFilters, now: Date =
   if (f.optionCounts.length > 0 && !f.optionCounts.includes(optionCountBucket(q.optionCount))) return false;
 
   const cutoff = dateRangeCutoff(f.dateRange, now);
-  if (cutoff != null && new Date(q.createdAt).getTime() < cutoff) return false;
+  if (cutoff != null && quoteTime(q) < cutoff) return false;
 
   if (f.terms.length > 0 && !q.options.some((o) => f.terms.includes(o.term))) return false;
   if (f.models.length > 0 && !q.options.some((o) => f.models.includes(o.model))) return false;
@@ -368,7 +373,7 @@ export const SORT_LABEL: Record<RegisterSort, string> = {
 };
 
 function latestTime(r: FilteredAccount): number {
-  return new Date(r.visible[0].createdAt).getTime();
+  return quoteTime(r.visible[0]);
 }
 
 export function sortAccounts(rows: FilteredAccount[], sort: RegisterSort): FilteredAccount[] {

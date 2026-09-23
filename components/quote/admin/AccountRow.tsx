@@ -148,9 +148,9 @@ export function AccountRow({
         <div className="flex items-center gap-3 justify-end">
           <span
             className="text-[12px] font-normal text-[var(--fg-faint)] whitespace-nowrap"
-            title={formatLongDate(latest.createdAt)}
+            title={`Quote date ${formatLongDate(latest.quoteDate)}`}
           >
-            {formatRelativeDate(latest.createdAt)}
+            {formatRelativeDate(latest.quoteDate)}
           </span>
           <StatusBadge status={latest.status} />
         </div>

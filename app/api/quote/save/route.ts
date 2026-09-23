@@ -35,6 +35,10 @@ export async function POST(request: Request) {
       );
     }
     const payload = parsed.data;
+    const isRecovery = payload.source === 'recovery';
+    // Only accept an original timestamp that is in the past.
+    const originalCreatedAt =
+      payload.createdAt && new Date(payload.createdAt).getTime() < Date.now() ? payload.createdAt : null;
 
     const options = flattenOptions(payload.pricingOptions, null);
     const { min: valueMin, max: valueMax } = valueRange(options);
@@ -51,14 +55,37 @@ export async function POST(request: Request) {
     // Identical content already saved → count the download, leave lifecycle status alone.
     const { data: existingQuote } = await supabase
       .from('quotes')
-      .select('id, quote_reference, version, download_count')
+      .select('id, quote_reference, version, download_count, created_at')
       .eq('content_hash', contentHash)
       .maybeSingle();
 
     if (existingQuote) {
+      const patch: { download_count?: number; created_at?: string } = {};
+      if (!isRecovery) patch.download_count = (existingQuote.download_count || 0) + 1;
+      // A recovered copy may know the true creation time; keep the earliest.
+      if (
+        originalCreatedAt &&
+        existingQuote.created_at &&
+        new Date(originalCreatedAt).getTime() < new Date(existingQuote.created_at).getTime()
+      ) {
+        patch.created_at = originalCreatedAt;
+      }
+      if (Object.keys(patch).length === 0) {
+        return NextResponse.json({
+          success: true,
+          isNew: false,
+          quote: {
+            id: existingQuote.id,
+            quoteReference: existingQuote.quote_reference,
+            version: existingQuote.version,
+            downloadCount: existingQuote.download_count,
+          },
+          message: 'Quote already registered',
+        });
+      }
       const { data: updated, error: updateError } = await supabase
         .from('quotes')
-        .update({ download_count: (existingQuote.download_count || 0) + 1 })
+        .update(patch)
         .eq('id', existingQuote.id)
         .select('id, quote_reference, version, download_count')
         .single();
@@ -119,7 +146,8 @@ export async function POST(request: Request) {
         deal_context: payload.dealContext || {},
         content_hash: contentHash,
         status: 'draft',
-        download_count: 1,
+        download_count: isRecovery ? 0 : 1,
+        ...(originalCreatedAt ? { created_at: originalCreatedAt } : {}),
       })
       .select('id, quote_reference, version, download_count')
       .single();
@@ -134,10 +162,10 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (raceQuote) {
-          await supabase
-            .from('quotes')
-            .update({ download_count: (raceQuote.download_count || 0) + 1 })
-            .eq('id', raceQuote.id);
+          const downloadCount = isRecovery ? raceQuote.download_count || 0 : (raceQuote.download_count || 0) + 1;
+          if (!isRecovery) {
+            await supabase.from('quotes').update({ download_count: downloadCount }).eq('id', raceQuote.id);
+          }
 
           return NextResponse.json({
             success: true,
@@ -146,7 +174,7 @@ export async function POST(request: Request) {
               id: raceQuote.id,
               quoteReference: raceQuote.quote_reference,
               version: raceQuote.version,
-              downloadCount: (raceQuote.download_count || 0) + 1,
+              downloadCount,
             },
             message: 'Quote already exists (race condition handled)',
           });

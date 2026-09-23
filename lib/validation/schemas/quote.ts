@@ -70,6 +70,10 @@ export const quoteSavePayloadSchema = z.object({
   lineItems: z.array(legacyLineItemSchema).default([]),
   preparedBy: z.string().min(1, { message: 'Prepared-by is required' }),
   dealContext: dealContextSchema,
+  /** Original creation time, sent when re-registering a quote from local history. */
+  createdAt: z.string().datetime({ offset: true, message: 'createdAt must be an ISO timestamp' }).optional(),
+  /** 'recovery' re-registers an existing quote without counting a download. */
+  source: z.enum(['download', 'recovery']).optional(),
 });
 
 export type QuoteSavePayload = z.infer<typeof quoteSavePayloadSchema>;

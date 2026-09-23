@@ -140,6 +140,11 @@ sit only in that browser's local history. The "Register local quotes" card in
 the generator sidebar pushes every local history entry to the register;
 already-registered quotes are skipped by content hash.
 
+**Dates.** The register dates every quote by its `quote_date`, the date on the
+document, never by `created_at`, which is only when the row reached the
+database. Recovery from local history sends the original creation time and
+the save route keeps the earliest; a recovery never counts as a download.
+
 ### Lessons learned (the expensive kind)
 
 1. **Ask what a number *means* before you sum it.** `total_value` was
@@ -177,7 +182,14 @@ already-registered quotes are skipped by content hash.
    path hid save failures behind a green "Quote generated successfully"
    toast. Every download path now registers the quote and failures are loud.
 
-7. **Legacy `line_items` is still read.** Rows from before the migration have
+7. **Recovered rows landed with today's date.** The first recovery pass let
+   `created_at` default to now, so months-old quotes sorted to the top as
+   "Today". Fixed by sending the original timestamp with each recovered quote,
+   repairing the 19 affected rows from their quote dates, and dating the
+   register by `quote_date` so registration time can never masquerade as the
+   business date again.
+
+8. **Legacy `line_items` is still read.** Rows from before the migration have
    `pricing_options` populated by the backfill, but `flattenOptions` still falls
    back to `line_items` when `pricing_options` is null. Keep that fallback until
    every row has been through the migration (check with

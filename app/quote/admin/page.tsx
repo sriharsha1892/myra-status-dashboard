@@ -252,8 +252,8 @@ function QuoteRegister() {
           ) : (
             <div>
               {rows.map((r, idx) => {
-                const month = byDate ? monthLabel(r.visible[0].createdAt) : null;
-                const prevMonth = byDate && idx > 0 ? monthLabel(rows[idx - 1].visible[0].createdAt) : null;
+                const month = byDate ? monthLabel(r.visible[0].quoteDate) : null;
+                const prevMonth = byDate && idx > 0 ? monthLabel(rows[idx - 1].visible[0].quoteDate) : null;
                 return (
                   <React.Fragment key={r.account.key}>
                     {month && month !== prevMonth && (

@@ -38,7 +38,7 @@ function quote(overrides: Partial<RegisterQuote> = {}): RegisterQuote {
     currency: 'USD',
     status: 'draft',
     createdAt: '2026-09-01T00:00:00Z',
-    quoteDate: '2026-09-01',
+    quoteDate: (overrides.createdAt ?? '2026-09-01T00:00:00Z').slice(0, 10),
     validUntil: '2026-10-01',
     downloadCount: 1,
     optionCount: options.length,

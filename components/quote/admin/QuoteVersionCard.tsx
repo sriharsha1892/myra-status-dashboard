@@ -24,8 +24,8 @@ export function QuoteVersionCard({ quote, onOpen }: QuoteVersionCardProps) {
             {quote.version > 1 && <span className="mr-mono text-[11px] text-[var(--fg-faint)]">v{quote.version}</span>}
             <ArrowUpRight className="w-3.5 h-3.5 text-[var(--fg-faint)] group-hover:text-[var(--primary)] transition-colors" />
           </button>
-          <span className="text-[12.5px] font-normal text-[var(--fg-faint)]" title={formatLongDate(quote.createdAt)}>
-            {formatRelativeDate(quote.createdAt)}
+          <span className="text-[12.5px] font-normal text-[var(--fg-faint)]" title={`Quote date ${formatLongDate(quote.quoteDate)}`}>
+            {formatRelativeDate(quote.quoteDate)}
           </span>
           <span className="text-[12.5px] text-[var(--fg-dim)]">{quote.preparedBy || 'Unassigned'}</span>
           {quote.contactName && (
